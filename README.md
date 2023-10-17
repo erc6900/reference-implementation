@@ -4,11 +4,10 @@ Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900)
 
 The implementation includes an upgradable modular account with two plugins (`SingleOwnerPlugin` and `TokenReceiverPlugin`). It is compliant with ERC-6900 with the latest updates.
 
-## Caveat
+## Important Callouts
 
-- **_Not audited and should not be used in production_**.
-- Not optimized in both deployments and execution.
-- Lack support for easy account states building. It is possible off-chain, but not easy.
+- **Not audited and should NOT be used in production**.
+- Not optimized in both deployments and execution. We’ve explicitly removed some optimizations for reader comprehension.
 
 ## Development
 
