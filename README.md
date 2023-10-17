@@ -30,3 +30,7 @@ forge test -vvv
 # or use the lite profile to reduce compilation time
 FOUNDRY_PROFILE=lite forge test -vvv
 ```
+
+### Resources
+
+(add resources)
