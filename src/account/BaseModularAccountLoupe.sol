@@ -59,7 +59,7 @@ abstract contract BaseModularAccountLoupe is IPluginLoupe {
         uint256 numHooks = preExecHooks.length;
         execHooks = new ExecutionHooks[](numHooks);
 
-        for (uint256 i = 0; i < numHooks; i++) {
+        for (uint256 i = 0; i < numHooks;) {
             execHooks[i].preExecHook = preExecHooks[i];
             execHooks[i].postExecHook = _storage.selectorData[selector].associatedPostExecHooks[preExecHooks[i]];
 
@@ -88,7 +88,7 @@ abstract contract BaseModularAccountLoupe is IPluginLoupe {
         uint256 numHooks = prePermittedCallHooks.length;
         execHooks = new ExecutionHooks[](numHooks);
 
-        for (uint256 i = 0; i < numHooks; i++) {
+        for (uint256 i = 0; i < numHooks;) {
             execHooks[i].preExecHook = prePermittedCallHooks[i];
             execHooks[i].postExecHook =
                 _storage.permittedCalls[key].associatedPostPermittedCallHooks[prePermittedCallHooks[i]];

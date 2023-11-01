@@ -9,6 +9,12 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {
+    ManifestAssociatedFunctionType,
+    ManifestExecutionHook,
+    ManifestFunction,
+    PluginManifest
+} from "../../src/interfaces/IPlugin.sol";
 import {IPluginLoupe} from "../../src/interfaces/IPluginLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
@@ -16,6 +22,7 @@ import {FunctionReference, FunctionReferenceLib} from "../../src/libraries/Funct
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {MockPlugin} from "../mocks/MockPlugin.sol";
 
 contract ModularAccountLoupeTest is Test {
     EntryPoint public entryPoint;
@@ -186,6 +193,104 @@ contract ModularAccountLoupeTest is Test {
                     uint8(ComprehensivePlugin.FunctionId.POST_PERMITTED_CALL_EXECUTION_HOOK)
                 )
             )
+        );
+    }
+
+    function test_pluginLoupe_getHooks_multiple() public {
+        // Add a second set of execution hooks to the account, and validate that it can return all hooks applied
+        // over the function.
+
+        PluginManifest memory mockPluginManifest;
+
+        mockPluginManifest.executionHooks = new ManifestExecutionHook[](1);
+        mockPluginManifest.executionHooks[0] = ManifestExecutionHook({
+            executionSelector: ComprehensivePlugin.foo.selector,
+            preExecHook: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: 0,
+                dependencyIndex: 0
+            }),
+            postExecHook: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: 0,
+                dependencyIndex: 0
+            })
+        });
+
+        mockPluginManifest.permittedCallHooks = new ManifestExecutionHook[](2);
+        // Copy over the same hooks from executionHooks.
+        mockPluginManifest.permittedCallHooks[0] = mockPluginManifest.executionHooks[0];
+        mockPluginManifest.permittedCallHooks[1] = ManifestExecutionHook({
+            executionSelector: ComprehensivePlugin.foo.selector,
+            preExecHook: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: 1,
+                dependencyIndex: 0
+            }),
+            postExecHook: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: 1,
+                dependencyIndex: 0
+            })
+        });
+
+        MockPlugin mockPlugin = new MockPlugin(mockPluginManifest);
+        bytes32 manifestHash = keccak256(abi.encode(mockPlugin.pluginManifest()));
+
+        account1.installPlugin(
+            address(mockPlugin), manifestHash, "", new FunctionReference[](0), new IPluginManager.InjectedHook[](0)
+        );
+
+        // Assert that the returned execution hooks are what is expected
+
+        IPluginLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
+
+        assertEq(hooks.length, 2);
+        assertEq(
+            FunctionReference.unwrap(hooks[0].preExecHook),
+            FunctionReference.unwrap(
+                FunctionReferenceLib.pack(
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
+                )
+            )
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[0].postExecHook),
+            FunctionReference.unwrap(
+                FunctionReferenceLib.pack(
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
+                )
+            )
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[1].preExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[1].postExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+        );
+
+        // Assert that the returned permitted call hooks are what is expected
+
+        hooks = account1.getPermittedCallHooks(address(mockPlugin), comprehensivePlugin.foo.selector);
+
+        assertEq(hooks.length, 2);
+        assertEq(
+            FunctionReference.unwrap(hooks[0].preExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[0].postExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[1].preExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(1)))
+        );
+        assertEq(
+            FunctionReference.unwrap(hooks[1].postExecHook),
+            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(1)))
         );
     }
 
