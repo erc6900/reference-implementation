@@ -509,7 +509,7 @@ contract UpgradeableModularAccount is
 
             // Check to see if there is a postExec hook set for this preExec hook
             FunctionReference postExecHook =
-                getAccountStorage().selectorData[msg.sig].associatedPostExecHooks[preExecHook];
+                getAccountStorage().selectorData[selector].associatedPostExecHooks[preExecHook];
             if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
                 postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
                 postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
