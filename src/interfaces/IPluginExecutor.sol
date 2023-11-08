@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 interface IPluginExecutor {
-    /// @notice Method from cals made from plugins.
+    /// @notice Method from calls made from plugins.
     /// @param data The call data for the call.
     /// @return The return data from the call.
     function executeFromPlugin(bytes calldata data) external payable returns (bytes memory);
