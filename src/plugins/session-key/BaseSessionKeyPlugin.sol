@@ -36,28 +36,26 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
-    uint256 internal constant _DATE_LENGTH = 6;
-
-    mapping(address => mapping(address => bytes)) internal _sessionDuration;
+    mapping(address => mapping(address => mapping(bytes4 => bytes))) internal _sessionInfo;
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ISessionKeyPlugin
-    function addTemporaryOwner(address tempOwner, uint48 _after, uint48 _until) external {
+    function addTemporaryOwner(address tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until) external {
         if (_until <= _after) {
             revert WrongTimeRangeForSession();
         }
-        bytes memory sessionDuration_ = abi.encodePacked(_after, _until);
-        _sessionDuration[msg.sender][tempOwner] = sessionDuration_;
-        emit TemporaryOwnerAdded(msg.sender, tempOwner, _after, _until);
+        bytes memory sessionInfo = abi.encodePacked(_after, _until);
+        _sessionInfo[msg.sender][tempOwner][allowedSelector] = sessionInfo;
+        emit TemporaryOwnerAdded(msg.sender, tempOwner, allowedSelector, _after, _until);
     }
 
     /// @inheritdoc ISessionKeyPlugin
-    function removeTemporaryOwner(address tempOwner) external {
-        delete _sessionDuration[msg.sender][tempOwner];
-        emit TemporaryOwnerRemoved(msg.sender, tempOwner);
+    function removeTemporaryOwner(address tempOwner, bytes4 allowedSelector) external {
+        delete _sessionInfo[msg.sender][tempOwner][allowedSelector];
+        emit TemporaryOwnerRemoved(msg.sender, tempOwner, allowedSelector);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -65,8 +63,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ISessionKeyPlugin
-    function getSessionDuration(address account, address tempOwner) external view returns (uint48 _after, uint48 _until) {
-        (_after, _until) = _decode(_sessionDuration[account][tempOwner]);
+    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector) external view returns (uint48 _after, uint48 _until) {
+        (_after, _until) = _decode(_sessionInfo[account][tempOwner][allowedSelector]);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -88,7 +86,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     {
         (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
-            bytes memory duration = _sessionDuration[userOp.sender][signer];
+            bytes4 selector = bytes4(userOp.callData[0:4]);
+            bytes memory duration = _sessionInfo[userOp.sender][signer][selector];
             if (duration.length != 0) {
                 (uint48 _after, uint48 _until) = _decode(duration);
                 // first parameter of _packValidationData is sigFailed, which should be false
@@ -99,13 +98,14 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
+    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata data)
         external
         view
         override
     {
         if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)) {
-            bytes memory duration = _sessionDuration[msg.sender][sender];
+            bytes4 selector = bytes4(data[0:4]);
+            bytes memory duration = _sessionInfo[msg.sender][sender][selector];
             if (duration.length != 0) {
                 (uint48 _after, uint48 _until) = _decode(duration);
                 if (block.timestamp < _after || block.timestamp > _until) {
@@ -198,8 +198,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
 
     function _decode(bytes memory _data) internal pure returns (uint48 _after, uint48 _until) {
         assembly {
-            _after := mload(add(_data, _DATE_LENGTH))
-            _until := mload(add(_data, mul(_DATE_LENGTH, 2)))
+            _after := mload(add(_data, 0x06))
+            _until := mload(add(_data, 0x0C))
         }
     }
 

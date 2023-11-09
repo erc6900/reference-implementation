@@ -13,6 +13,7 @@ import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol
 import {BaseSessionKeyPlugin} from "../../src/plugins/session-key/BaseSessionKeyPlugin.sol";
 import {ISessionKeyPlugin} from "../../src/plugins/session-key/interfaces/ISessionKeyPlugin.sol";
 import {TokenSessionKeyPlugin} from "../../src/plugins/session-key/TokenSessionKeyPlugin.sol";
+import {ITokenSessionKeyPlugin} from "../../src/plugins/session-key/interfaces/ITokenSessionKeyPlugin.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -49,6 +50,8 @@ contract SessionKeyPluginTest is Test {
     uint256 public constant CALL_GAS_LIMIT = 150000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 3600000;
 
+    bytes4 public constant TRANSFERFROM_SESSIONKEY_SELECTOR = ITokenSessionKeyPlugin.transferFromSessionKey.selector;
+
     // Event declarations (needed for vm.expectEmit)
     event UserOperationRevertReason(
         bytes32 indexed userOpHash,
@@ -56,8 +59,8 @@ contract SessionKeyPluginTest is Test {
         uint256 nonce,
         bytes revertReason
     );
-    event TemporaryOwnerAdded(address indexed account, address indexed owner, uint48 _after, uint48 _until);
-    event TemporaryOwnerRemoved(address indexed account, address indexed owner);
+    event TemporaryOwnerAdded(address indexed account, address indexed tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until);
+    event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
 
     function setUp() public {
         ownerPlugin = new SingleOwnerPlugin();
@@ -128,29 +131,25 @@ contract SessionKeyPluginTest is Test {
         vm.stopPrank();
 
         vm.startPrank(address(account));
+        mockERC20.approve(address(account), 1 ether);
+
         vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnerAdded(address(account), tempOwner, 0, type(uint48).max);
-        baseSessionKeyPlugin.addTemporaryOwner(tempOwner, 0, type(uint48).max);
+        emit TemporaryOwnerAdded(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
+        baseSessionKeyPlugin.addTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
         
         (uint48 _after, uint48 _until) = 
-            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner);
+            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
         
         assertEq(_after, 0);
-        assertEq(_until, type(uint48).max);
+        assertEq(_until, 2);
     }
 
     function test_sessionKey_userOp() public {
-        bytes[] memory callData = new bytes[](2);
-        // Since mint function at MockERC20 is not increasing allowance, we should do it manually for testing
-        callData[0] = _getApproveCalldata(address(account), 1 ether);
-        callData[1] = _getTransferFromCalldata(address(account), beneficiary, 1 ether);
+        UserOperation[] memory userOps = new UserOperation[](1);
 
-        UserOperation[] memory userOps = new UserOperation[](2);
-
-        for (uint256 i; i < callData.length; i++) {
-            (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), callData[i], i);
-            userOps[i] = userOp;
-        }
+        (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), beneficiary, 1 ether);
+        userOps[0] = userOp;
+        
         entryPoint.handleOps(userOps, beneficiary);
         
         assertEq(mockERC20.balanceOf(address(account)), 0);
@@ -158,15 +157,9 @@ contract SessionKeyPluginTest is Test {
     }
 
     function test_sessionKey_runtime() public {
-        vm.prank(address(account));
-        mockERC20.approve(address(account), 1 ether);
-
-        bytes memory callData = _getTransferFromCalldata(address(account), beneficiary, 1 ether);
-
         vm.prank(address(tempOwner));
-        TokenSessionKeyPlugin(address(account)).routeCallToExecuteFromPluginExternal(
-            address(mockERC20), 
-            callData
+        TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
+            address(mockERC20), address(account), beneficiary, 1 ether
         );
 
         assertEq(mockERC20.balanceOf(address(account)), 0);
@@ -177,13 +170,13 @@ contract SessionKeyPluginTest is Test {
         vm.startPrank(address(account));
         
         vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnerRemoved(address(account), tempOwner);
-        baseSessionKeyPlugin.removeTemporaryOwner(tempOwner);
+        emit TemporaryOwnerRemoved(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        baseSessionKeyPlugin.removeTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
         
         vm.stopPrank();
         
         (uint48 _after, uint48 _until) = 
-            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner);
+            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
         assertEq(_after, 0);
         assertEq(_until, 0);
 
@@ -193,61 +186,37 @@ contract SessionKeyPluginTest is Test {
         bytes memory revertReason = abi.encodeWithSelector(
             BasePlugin.NotImplemented.selector
         );
-        bytes memory callData = _getTransferFromCalldata(address(account), beneficiary, 1 ether);
-
         vm.expectRevert(abi.encodeWithSelector(
             UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
             address(baseSessionKeyPlugin),
             ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
             revertReason
         ));
-        TokenSessionKeyPlugin(address(account)).routeCallToExecuteFromPluginExternal(
-            address(mockERC20), 
-            callData
+        TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
+            address(mockERC20), address(account), beneficiary, 1 ether
         );
     }
 
     function test_sessionKey_invalidContractFails() public {
         address wrongERC20Contract = makeAddr("wrongERC20Contract");
-        bytes memory callData = _getApproveCalldata(address(account), 1 ether);
-        (bytes32 userOpHash, UserOperation memory userOp) = _constructUserOp(wrongERC20Contract, callData);
+        (bytes32 userOpHash, UserOperation memory userOp) =
+            _constructUserOp(address(wrongERC20Contract), address(account), beneficiary, 1 ether);
         
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        
+
+        bytes memory revertCallData = abi.encodeWithSelector(
+            tokenSessionKeyPlugin.TRANSFERFROM_SELECTOR(),
+            address(account),
+            beneficiary,
+            1 ether
+        );
         bytes memory revertReason = abi.encodeWithSelector(
             UpgradeableModularAccount.ExecFromPluginExternalNotPermitted.selector,
             address(tokenSessionKeyPlugin),
             address(wrongERC20Contract),
             0,
-            callData
-        );
-        vm.expectEmit(true, true, true, true);
-        emit UserOperationRevertReason(userOpHash, address(account), 0, revertReason);
-        
-        entryPoint.handleOps(userOps, beneficiary);
-    }
-
-    function test_sessionKey_invalidMethodFails() public {
-        bytes4 wrongSelector = 0x394697a3; // bytes4(keccak256(bytes("safeApprove(address,uint256)")))
-        bytes memory callData = abi.encodeWithSelector(
-            wrongSelector,
-            address(account),
-            1 ether
-        );
-        
-        (bytes32 userOpHash, UserOperation memory userOp) = _constructUserOp(address(mockERC20), callData);
-        
-        UserOperation[] memory userOps = new UserOperation[](1);
-
-        userOps[0] = userOp;
-        
-        bytes memory revertReason = abi.encodeWithSelector(
-            UpgradeableModularAccount.ExecFromPluginExternalNotPermitted.selector,
-            address(tokenSessionKeyPlugin),
-            address(mockERC20),
-            0,
-            callData
+            revertCallData
         );
         vm.expectEmit(true, true, true, true);
         emit UserOperationRevertReason(userOpHash, address(account), 0, revertReason);
@@ -257,7 +226,6 @@ contract SessionKeyPluginTest is Test {
 
     function test_sessionKey_unregisteredTempOwnerFails() public {
         vm.prank(address(maliciousOwner));
-        bytes memory callData = _getApproveCalldata(address(account), 1 ether); 
         bytes memory revertReason = abi.encodeWithSelector(
             BasePlugin.NotImplemented.selector
         );
@@ -268,20 +236,16 @@ contract SessionKeyPluginTest is Test {
             ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
             revertReason
         ));
-        TokenSessionKeyPlugin(address(account)).routeCallToExecuteFromPluginExternal(
-            address(mockERC20), 
-            callData
+        TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
+            address(mockERC20), address(account), beneficiary, 1 ether
         );
     }
 
     function test_sessionKey_invalidSessionDurationFails() public {
-        vm.prank(address(account));
-        baseSessionKeyPlugin.addTemporaryOwner(tempOwner, 0, 2);
         // Move block.timestamp to 12345
         vm.warp(12345);
 
         vm.startPrank(address(tempOwner));
-        bytes memory callData = _getApproveCalldata(address(account), 1 ether);
 
         bytes memory revertReason = abi.encodeWithSelector(
             ISessionKeyPlugin.WrongTimeRangeForSession.selector
@@ -293,70 +257,31 @@ contract SessionKeyPluginTest is Test {
             ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
             revertReason
         ));
-        TokenSessionKeyPlugin(address(account)).routeCallToExecuteFromPluginExternal(
-            address(mockERC20), 
-            callData
-        );
+        TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
+            address(mockERC20), address(account), beneficiary, 1 ether
+    );
     }
 
     // Internal Function
 
-    function _getApproveCalldata(address spender, uint256 amount) internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(
-            bytes4(keccak256(bytes("approve(address,uint256)"))),
-            spender,
-            amount
+    function _getTransferFromCalldata(address targetContract, address from, address to, uint256 amount) internal pure
+    returns (bytes memory) {
+        return abi.encodeCall(
+            TokenSessionKeyPlugin.transferFromSessionKey,
+            (targetContract, from, to, amount)
         );
     }
 
-    function _getTransferFromCalldata(address from, address to, uint256 amount) internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(
-            bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))),
-            from,
-            to,
-            amount
-        );
-    }
-
-    function _constructUserOp(address targetContract, bytes memory callData) internal view
+    function _constructUserOp(address targetContract, address from, address to, uint256 amount) internal view
     returns (bytes32, UserOperation memory) {
-        bytes memory userOpCallData = abi.encodeCall(
-            TokenSessionKeyPlugin.routeCallToExecuteFromPluginExternal,
-            (targetContract, callData)
+        bytes memory userOpCallData =  abi.encodeCall(
+            TokenSessionKeyPlugin.transferFromSessionKey,
+            (targetContract, from, to, amount)
         );
 
         UserOperation memory userOp = UserOperation({
             sender: address(account),
             nonce: 0,
-            initCode: "",
-            callData: userOpCallData,
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
-            preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
-            paymasterAndData: "",
-            signature: ""
-        });
-
-        // Generate signature
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(tempOwnerKey, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
-
-        return (userOpHash, userOp);
-    }
-
-    function _constructUserOp(address targetContract, bytes memory callData, uint256 nonce)
-    internal view returns (bytes32, UserOperation memory) {
-        bytes memory userOpCallData = abi.encodeCall(
-            TokenSessionKeyPlugin.routeCallToExecuteFromPluginExternal,
-            (targetContract, callData)
-        );
-
-        UserOperation memory userOp = UserOperation({
-            sender: address(account),
-            nonce: nonce,
             initCode: "",
             callData: userOpCallData,
             callGasLimit: CALL_GAS_LIMIT,
