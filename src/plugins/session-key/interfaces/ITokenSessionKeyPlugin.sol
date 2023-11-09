@@ -10,9 +10,9 @@ interface ITokenSessionKeyPlugin {
     /// @dev This function will call with value = 0, since sending ether 
     /// for ERC20 contract is not a normal case.
     /// @param target The target address to execute the call on.
-    /// @param data The call data to execute.
-    function routeCallToExecuteFromPluginExternal(
-        address target,
-        bytes memory data    
-    ) external returns (bytes memory returnData);
+    /// @param from The address to transfer tokens from.
+    /// @param to The address to transfer tokens to.
+    /// @param amount The amount of tokens to transfer.
+    function transferFromSessionKey(address target, address from, address to, uint256 amount) external 
+    returns (bytes memory returnData);
 }

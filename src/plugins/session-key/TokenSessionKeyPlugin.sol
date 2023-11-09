@@ -41,17 +41,15 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
 
     address public constant TARGET_ERC20_CONTRACT = 0xdeaDDeADDEaDdeaDdEAddEADDEAdDeadDEADDEaD;
     bytes4 public constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
-    bytes4 public constant APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ITokenSessionKeyPlugin
-    function routeCallToExecuteFromPluginExternal(
-        address target,
-        bytes memory data    
-    ) external returns (bytes memory returnData) {
+    function transferFromSessionKey(address target, address from, address to, uint256 amount) external 
+    returns (bytes memory returnData) {
+        bytes memory data = abi.encodeWithSelector(TRANSFERFROM_SELECTOR, from, to, amount);
         returnData = IPluginExecutor(msg.sender).executeFromPluginExternal(target, 0, data);
     }
 
@@ -77,7 +75,7 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         ownerPermissions[0] = "Allow Token Operation By Session Key";
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.routeCallToExecuteFromPluginExternal.selector, ownerPermissions);
+        manifest.executionFunctions[0] = ManifestExecutionFunction(this.transferFromSessionKey.selector, ownerPermissions);
 
         ManifestFunction memory tempOwnerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
@@ -87,18 +85,18 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         ManifestFunction memory tempOwnerRuntimeValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
             functionId: 0, // Unused
-            dependencyIndex: 1 // Used as first index
+            dependencyIndex: 1 // Used as second index
         });
 
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.routeCallToExecuteFromPluginExternal.selector,
+            executionSelector: this.transferFromSessionKey.selector,
             associatedFunction: tempOwnerUserOpValidationFunction
         });
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.routeCallToExecuteFromPluginExternal.selector,
+            executionSelector: this.transferFromSessionKey.selector,
             associatedFunction: tempOwnerRuntimeValidationFunction
         });
 
@@ -110,9 +108,8 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
             }
         }
 
-        bytes4[] memory permittedExecutionSelectors = new bytes4[](2);
+        bytes4[] memory permittedExecutionSelectors = new bytes4[](1);
         permittedExecutionSelectors[0] = TRANSFERFROM_SELECTOR;
-        permittedExecutionSelectors[1] = APPROVE_SELECTOR;
 
         manifest.permittedExternalCalls = new ManifestExternalCallPermission[](1);
         manifest.permittedExternalCalls[0] = ManifestExternalCallPermission({
