@@ -59,7 +59,13 @@ contract SessionKeyPluginTest is Test {
         uint256 nonce,
         bytes revertReason
     );
-    event TemporaryOwnerAdded(address indexed account, address indexed tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until);
+    event TemporaryOwnerAdded(
+        address indexed account,
+        address indexed tempOwner,
+        bytes4 allowedSelector,
+        uint48 _after,
+        uint48 _until
+    );
     event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
 
     function setUp() public {
