@@ -40,7 +40,6 @@ contract SessionKeyPluginTest is Test {
     uint256 public ownerKey;
 
     address public maliciousOwner;
-    uint256 public maliciousOwnerKey;
 
     address public tempOwner;
     uint256 public tempOwnerKey;
@@ -84,7 +83,7 @@ contract SessionKeyPluginTest is Test {
         mockERC20 = MockERC20(mockEmptyERC20Addr);
 
         (owner, ownerKey) = makeAddrAndKey("owner");
-        (maliciousOwner, maliciousOwnerKey) = makeAddrAndKey("maliciousOwner");
+        (maliciousOwner, ) = makeAddrAndKey("maliciousOwner");
         (tempOwner, tempOwnerKey) = makeAddrAndKey("tempOwner");
 
         beneficiary = payable(makeAddr("beneficiary"));
@@ -94,7 +93,7 @@ contract SessionKeyPluginTest is Test {
         // Here, SingleOwnerPlugin already installed in factory
         account = factory.createAccount(owner, 0);
 
-        // Mine Mock ERC20 Tokens to account
+        // Mint Mock ERC20 Tokens to account
         mockERC20.mint(address(account), 1 ether);
         // Fund the account with some ether
         vm.deal(address(account), 1 ether);
@@ -269,15 +268,6 @@ contract SessionKeyPluginTest is Test {
     }
 
     // Internal Function
-
-    function _getTransferFromCalldata(address targetContract, address from, address to, uint256 amount) internal pure
-    returns (bytes memory) {
-        return abi.encodeCall(
-            TokenSessionKeyPlugin.transferFromSessionKey,
-            (targetContract, from, to, amount)
-        );
-    }
-
     function _constructUserOp(address targetContract, address from, address to, uint256 amount) internal view
     returns (bytes32, UserOperation memory) {
         bytes memory userOpCallData =  abi.encodeCall(
