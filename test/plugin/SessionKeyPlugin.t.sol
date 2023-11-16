@@ -147,6 +147,7 @@ contract SessionKeyPluginTest is Test {
         
         assertEq(_after, 0);
         assertEq(_until, 2);
+        vm.stopPrank();
     }
 
     function test_sessionKey_userOp() public {
