@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
@@ -23,11 +22,13 @@ import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
 /// @notice This plugin allows some designated EOA or smart contract to temporarily
 /// own a modular account.
 /// This base session key plugin acts as a 'parent plugin' for all specific session
-/// keys. Using dependency, this plugin can be thought as a proxy contract that stores
-/// session key duration information, but with validation functions for session keys.
-///
+/// keys. Using dependency, this plugin can be thought as a parent contract that stores
+/// session key duration information, and validation functions for session keys. All 
+/// logics for session keys will be implemented in child plugins.
 /// It allows for session key owners to access MSCA both through user operation and 
 /// runtime, with its own validation functions.
+/// Also, it has a dependency on SingleOwnerPlugin, to make sure that only the owner of
+/// the MSCA can add or remove session keys.
 
 contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     using ECDSA for bytes32;

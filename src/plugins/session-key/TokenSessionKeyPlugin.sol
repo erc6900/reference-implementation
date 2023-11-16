@@ -19,26 +19,25 @@ import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 
 /// @title Token Session Key Plugin
 /// @author Decipher ERC-6900 Team
-/// @notice This plugin allows an EOA or smart contract to own a modular account.
-/// It also supports [ERC-1271](https://eips.ethereum.org/EIPS/eip-1271) signature
-/// validation for both validating the signature on user operations and in
-/// exposing its own `isValidSignature` method. This only works when the owner of
-/// modular account also support ERC-1271.
+/// @notice This plugin acts as a 'child plugin' for BaseSessionKeyPlugin. 
+/// It implements the logic for session keys that are allowed to call ERC20
+/// transferFrom function. It allows for session key owners to access MSCA
+/// with `transferFromSessionKey` function, which calls `executeFromPluginExternal`
+/// function in PluginExecutor contract.
 ///
-/// ERC-4337's bundler validation rules limit the types of contracts that can be
-/// used as owners to validate user operation signatures. For example, the
-/// contract's `isValidSignature` function may not use any forbidden opcodes
-/// such as `TIMESTAMP` or `NUMBER`, and the contract may not be an ERC-1967
-/// proxy as it accesses a constant implementation slot not associated with
-/// the account, violating storage access rules. This also means that the
-/// owner of a modular account may not be another modular account if you want to
-/// send user operations through a bundler.
+/// The target ERC20 contract and the selector for transferFrom function are hardcoded
+/// in this plugin, since the pluginManifest function requires the information of 
+/// permitted external calls not to be changed in the future. For other child session 
+/// key plugins, there can be a set of permitted external calls according to the 
+/// specific needs.
+
 contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
 
     string public constant NAME = "Token Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
+    // Mock address of target ERC20 contract
     address public constant TARGET_ERC20_CONTRACT = 0xdeaDDeADDEaDdeaDdEAddEADDEAdDeadDEADDEaD;
     bytes4 public constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
 

@@ -21,7 +21,6 @@ interface ISessionKeyPlugin {
     /// @param account The account whose temporary owner is updated.
     /// @param tempOwner The address of the temporary owner.
     /// @param selector The selector of the function that the temporary owner is allowed to call.
-
     event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 selector);
 
     error NotAuthorized();

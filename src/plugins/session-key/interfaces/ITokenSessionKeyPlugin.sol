@@ -8,7 +8,7 @@ interface ITokenSessionKeyPlugin {
 
     /// @notice Route call to executeFromPluginExternal at the MSCA.
     /// @dev This function will call with value = 0, since sending ether 
-    /// for ERC20 contract is not a normal case.
+    /// to ERC20 contract is not a normal case.
     /// @param target The target address to execute the call on.
     /// @param from The address to transfer tokens from.
     /// @param to The address to transfer tokens to.
