@@ -207,7 +207,8 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
     {
         bytes24 key = getPermittedCallKey(plugin, selector);
 
-        if (accountStorage.selectorData[selector].plugin == address(0)) {
+        address execPlugin = accountStorage.selectorData[selector].plugin;
+        if (execPlugin == address(0)) {
             revert PermittedExecutionSelectorNotInstalled(selector, plugin);
         }
 
@@ -215,16 +216,21 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
             revert ExecuteFromPluginAlreadySet(selector, plugin);
         }
         accountStorage.permittedCalls[key].callPermitted = true;
+        accountStorage.pluginData[execPlugin].dependentCount += 1;
     }
 
     function _disableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
         internal
     {
         bytes24 key = getPermittedCallKey(plugin, selector);
+
+        address execPlugin = accountStorage.selectorData[selector].plugin;
+
         if (!accountStorage.permittedCalls[key].callPermitted) {
             revert ExecuteFromPluginNotSet(selector, plugin);
         }
         accountStorage.permittedCalls[key].callPermitted = false;
+        accountStorage.pluginData[execPlugin].dependentCount -= 1;
     }
 
     function _addPermittedCallHooks(
