@@ -8,14 +8,16 @@ interface ISessionKeyPlugin {
         RUNTIME_VALIDATION_TEMPORARY_OWNER,
         USER_OP_VALIDATION_TEMPORARY_OWNER
     }
-    
+
     /// @notice This event is emitted when a temporary owner is added to the account.
     /// @param account The account whose temporary owner is updated.
     /// @param tempOwner The address of the temporary owner.
     /// @param selector The selector of the function that the temporary owner is allowed to call.
     /// @param _after The time after which the owner is valid.
     /// @param _until The time until which the owner is valid.
-    event TemporaryOwnerAdded(address indexed account, address indexed tempOwner, bytes4 selector, uint48 _after, uint48 _until);
+    event TemporaryOwnerAdded(
+        address indexed account, address indexed tempOwner, bytes4 selector, uint48 _after, uint48 _until
+    );
 
     /// @notice This event is emitted when a temporary owner is removed from the account.
     /// @param account The account whose temporary owner is updated.
@@ -46,6 +48,8 @@ interface ISessionKeyPlugin {
     /// @param account The account to get session data for.
     /// @param tempOwner The address of the temporary owner.
     /// @param allowedSelector The selector of the function that the temporary owner is allowed to call.
-    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector) external view 
-    returns (uint48 _after, uint48 _until);
+    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector)
+        external
+        view
+        returns (uint48 _after, uint48 _until);
 }

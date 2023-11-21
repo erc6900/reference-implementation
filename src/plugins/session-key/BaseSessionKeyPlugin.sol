@@ -23,9 +23,9 @@ import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
 /// own a modular account.
 /// This base session key plugin acts as a 'parent plugin' for all specific session
 /// keys. Using dependency, this plugin can be thought as a parent contract that stores
-/// session key duration information, and validation functions for session keys. All 
+/// session key duration information, and validation functions for session keys. All
 /// logics for session keys will be implemented in child plugins.
-/// It allows for session key owners to access MSCA both through user operation and 
+/// It allows for session key owners to access MSCA both through user operation and
 /// runtime, with its own validation functions.
 /// Also, it has a dependency on SingleOwnerPlugin, to make sure that only the owner of
 /// the MSCA can add or remove session keys.
@@ -64,7 +64,11 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ISessionKeyPlugin
-    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector) external view returns (uint48 _after, uint48 _until) {
+    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector)
+        external
+        view
+        returns (uint48 _after, uint48 _until)
+    {
         (_after, _until) = _decode(_sessionInfo[account][tempOwner][allowedSelector]);
     }
 
@@ -151,7 +155,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
             executionSelector: this.removeTemporaryOwner.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
-        
+
         ManifestFunction memory ownerOrSelfRuntimeValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
             functionId: 0, // Unused.
@@ -204,7 +208,11 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         }
     }
 
-    function _packValidationData(bool sigFailed, uint48 validUntil, uint48 validAfter) internal pure returns (uint256) {
+    function _packValidationData(bool sigFailed, uint48 validUntil, uint48 validAfter)
+        internal
+        pure
+        returns (uint256)
+    {
         return (sigFailed ? 1 : 0) | (uint256(validUntil) << 160) | (uint256(validAfter) << (160 + 48));
     }
 }

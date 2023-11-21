@@ -17,35 +17,37 @@ import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 
 /// @title Token Session Key Plugin
 /// @author Decipher ERC-6900 Team
-/// @notice This plugin acts as a 'child plugin' for BaseSessionKeyPlugin. 
+/// @notice This plugin acts as a 'child plugin' for BaseSessionKeyPlugin.
 /// It implements the logic for session keys that are allowed to call ERC20
 /// transferFrom function. It allows for session key owners to access MSCA
 /// with `transferFromSessionKey` function, which calls `executeFromPluginExternal`
 /// function in PluginExecutor contract.
 ///
 /// The target ERC20 contract and the selector for transferFrom function are hardcoded
-/// in this plugin, since the pluginManifest function requires the information of 
-/// permitted external calls not to be changed in the future. For other child session 
-/// key plugins, there can be a set of permitted external calls according to the 
+/// in this plugin, since the pluginManifest function requires the information of
+/// permitted external calls not to be changed in the future. For other child session
+/// key plugins, there can be a set of permitted external calls according to the
 /// specific needs.
 
 contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
-
     string public constant NAME = "Token Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
     // Mock address of target ERC20 contract
     address public constant TARGET_ERC20_CONTRACT = 0xdeaDDeADDEaDdeaDdEAddEADDEAdDeadDEADDEaD;
-    bytes4 public constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
+    bytes4 public constant TRANSFERFROM_SELECTOR =
+        bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ITokenSessionKeyPlugin
-    function transferFromSessionKey(address target, address from, address to, uint256 amount) external 
-    returns (bytes memory returnData) {
+    function transferFromSessionKey(address target, address from, address to, uint256 amount)
+        external
+        returns (bytes memory returnData)
+    {
         bytes memory data = abi.encodeWithSelector(TRANSFERFROM_SELECTOR, from, to, amount);
         returnData = IPluginExecutor(msg.sender).executeFromPluginExternal(target, 0, data);
     }
@@ -53,7 +55,7 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    
+
     /// @inheritdoc BasePlugin
     function onInstall(bytes calldata data) external override {}
 
@@ -72,7 +74,8 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         ownerPermissions[0] = "Allow Token Operation By Session Key";
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.transferFromSessionKey.selector, ownerPermissions);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction(this.transferFromSessionKey.selector, ownerPermissions);
 
         ManifestFunction memory tempOwnerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
