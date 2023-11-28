@@ -3,9 +3,7 @@ pragma solidity ^0.8.19;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {AccountExecutor} from "./AccountExecutor.sol";
 import {
     AccountStorage,
     getAccountStorage,
