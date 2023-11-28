@@ -8,7 +8,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
 import {BaseModularAccount} from "./BaseModularAccount.sol";
-import {BaseModularAccountLoupe} from "./BaseModularAccountLoupe.sol";
+import {AccountLoupe} from "./AccountLoupe.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
@@ -22,7 +22,7 @@ contract UpgradeableModularAccount is
     IPluginManager,
     BaseAccount,
     BaseModularAccount,
-    BaseModularAccountLoupe,
+    AccountLoupe,
     UUPSUpgradeable,
     AccountStorageInitializable,
     IStandardExecutor,

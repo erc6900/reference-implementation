@@ -24,7 +24,7 @@ import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 
-contract ModularAccountLoupeTest is Test {
+contract AccountLoupeTest is Test {
     EntryPoint public entryPoint;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
@@ -295,7 +295,7 @@ contract ModularAccountLoupeTest is Test {
     }
 
     function test_pluginLoupe_getPreUserOpValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreUserOpValidationHooks(comprehensivePlugin.foo.selector);
+        (FunctionReference[] memory hooks,) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 2);
         assertEq(
@@ -319,7 +319,7 @@ contract ModularAccountLoupeTest is Test {
     }
 
     function test_pluginLoupe_getPreRuntimeValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreRuntimeValidationHooks(comprehensivePlugin.foo.selector);
+        (, FunctionReference[] memory hooks) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 2);
         assertEq(
