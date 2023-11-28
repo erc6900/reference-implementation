@@ -53,8 +53,13 @@ contract UpgradeableModularAccountTest is Test {
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
-    event PluginUninstalled(address indexed plugin, bytes32 manifestHash, bool onUninstallSucceeded);
+    event PluginInstalled(
+        address indexed plugin,
+        bytes32 manifestHash,
+        FunctionReference[] dependencies,
+        IPluginManager.InjectedHook[] injectedHooks
+    );
+    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
@@ -271,7 +276,12 @@ contract UpgradeableModularAccountTest is Test {
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash);
+        emit PluginInstalled(
+            address(tokenReceiverPlugin),
+            manifestHash,
+            new FunctionReference[](0),
+            new IPluginManager.InjectedHook[](0)
+        );
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
@@ -381,7 +391,7 @@ contract UpgradeableModularAccountTest is Test {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), manifestHash, true);
+        emit PluginUninstalled(address(plugin), true);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: "",
@@ -408,7 +418,7 @@ contract UpgradeableModularAccountTest is Test {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), manifestHash, true);
+        emit PluginUninstalled(address(plugin), true);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: serializedManifest,
@@ -485,7 +495,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.prank(owner2);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(newPlugin), manifestHash);
+        emit PluginInstalled(address(newPlugin), manifestHash, new FunctionReference[](0), hooks);
         emit ReceivedCall(abi.encodeCall(IPlugin.onHookApply, (address(newPlugin), injectedHooksInfo, "")), 0);
         IPluginManager(account2).installPlugin({
             plugin: address(newPlugin),
@@ -539,7 +549,7 @@ contract UpgradeableModularAccountTest is Test {
         );
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(newPlugin), manifestHash);
+        emit PluginInstalled(address(newPlugin), manifestHash, new FunctionReference[](0), hooks);
         emit ReceivedCall(
             abi.encodeCall(IPlugin.onHookApply, (address(newPlugin), injectedHooksInfo, onApplyData)), 0
         );
@@ -583,7 +593,7 @@ contract UpgradeableModularAccountTest is Test {
         (, MockPlugin newPlugin, bytes32 manifestHash) = _installWithInjectHooks();
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(newPlugin), manifestHash, true);
+        emit PluginUninstalled(address(newPlugin), true);
         vm.prank(owner2);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(newPlugin),

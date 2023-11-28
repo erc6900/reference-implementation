@@ -615,7 +615,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
             revert PluginInstallCallbackFailed(plugin, revertReason);
         }
 
-        emit PluginInstalled(plugin, manifestHash);
+        emit PluginInstalled(plugin, manifestHash, dependencies, injectedHooks);
     }
 
     function _uninstallPlugin(
@@ -893,7 +893,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
             onUninstallSuccess = false;
         }
 
-        emit PluginUninstalled(plugin, manifestHash, onUninstallSuccess);
+        emit PluginUninstalled(plugin, onUninstallSuccess);
     }
 
     function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {
