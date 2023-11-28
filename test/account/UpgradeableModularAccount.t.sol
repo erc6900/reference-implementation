@@ -7,7 +7,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
-import {BaseModularAccount} from "../../src/account/BaseModularAccount.sol";
+import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
@@ -308,7 +308,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                BaseModularAccount.PermittedExecutionSelectorNotInstalled.selector,
+                PluginManagerInternals.PermittedExecutionSelectorNotInstalled.selector,
                 IPlugin.onInstall.selector,
                 address(mockPluginWithBadPermittedExec)
             )
@@ -325,7 +325,7 @@ contract UpgradeableModularAccountTest is Test {
     function test_installPlugin_invalidManifest() public {
         vm.startPrank(owner2);
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
@@ -340,7 +340,7 @@ contract UpgradeableModularAccountTest is Test {
 
         address badPlugin = address(1);
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.PluginInterfaceNotSupported.selector, address(badPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.PluginInterfaceNotSupported.selector, address(badPlugin))
         );
         IPluginManager(account2).installPlugin({
             plugin: address(badPlugin),
@@ -365,7 +365,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                BaseModularAccount.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
+                PluginManagerInternals.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
             )
         );
         IPluginManager(account2).installPlugin({
@@ -447,7 +447,7 @@ contract UpgradeableModularAccountTest is Test {
         // Attempt to uninstall with a blank manifest
         PluginManifest memory blankManifest;
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: abi.encode(blankManifest),
@@ -577,7 +577,7 @@ contract UpgradeableModularAccountTest is Test {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.MissingPluginDependency.selector, address(hooksPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.MissingPluginDependency.selector, address(hooksPlugin))
         );
         vm.prank(owner2);
         IPluginManager(account2).installPlugin({
@@ -608,7 +608,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.prank(owner2);
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.PluginDependencyViolation.selector, address(hooksPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.PluginDependencyViolation.selector, address(hooksPlugin))
         );
         IPluginManager(account2).uninstallPlugin({
             plugin: address(hooksPlugin),
@@ -644,7 +644,7 @@ contract UpgradeableModularAccountTest is Test {
         // length != installed hooks length
         bytes[] memory injectedHooksDatas = new bytes[](2);
 
-        vm.expectRevert(BaseModularAccount.ArrayLengthMismatch.selector);
+        vm.expectRevert(PluginManagerInternals.ArrayLengthMismatch.selector);
         vm.prank(owner2);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(newPlugin),

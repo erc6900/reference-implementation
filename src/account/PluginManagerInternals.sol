@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
-import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {
     AccountStorage,
     getAccountStorage,
@@ -17,6 +15,8 @@ import {
     PermittedExternalCallData,
     StoredInjectedHook
 } from "../libraries/AccountStorage.sol";
+import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
+import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
@@ -27,13 +27,9 @@ import {
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 
-abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165 {
+abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    // As per the EIP-165 spec, no interface should ever match 0xffffffff
-    bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
-    bytes4 internal constant _IERC165_INTERFACE_ID = 0x01ffc9a7;
 
     error ArrayLengthMismatch();
     error ExecuteFromPluginAlreadySet(bytes4 selector, address plugin);

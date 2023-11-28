@@ -1,30 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
-import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
-import {BaseModularAccount} from "./BaseModularAccount.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+
+import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {AccountStorage, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
-import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
+import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
+import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
+import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 
 contract UpgradeableModularAccount is
+    AccountExecutor,
     IPluginManager,
     BaseAccount,
-    BaseModularAccount,
+    PluginManagerInternals,
     AccountLoupe,
     UUPSUpgradeable,
     AccountStorageInitializable,
+    IERC165,
     IStandardExecutor,
     IPluginExecutor
 {
@@ -36,6 +43,10 @@ contract UpgradeableModularAccount is
     }
 
     IEntryPoint private immutable _ENTRY_POINT;
+
+    // As per the EIP-165 spec, no interface should ever match 0xffffffff
+    bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
+    bytes4 internal constant _IERC165_INTERFACE_ID = 0x01ffc9a7;
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
