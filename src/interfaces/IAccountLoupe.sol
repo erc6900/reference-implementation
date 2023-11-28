@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
-interface IPluginLoupe {
+interface IAccountLoupe {
     // Config for a Plugin Execution function
     struct ExecutionFunctionConfig {
         address plugin;

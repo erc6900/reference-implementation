@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IPluginLoupe} from "../interfaces/IPluginLoupe.sol";
+import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
@@ -15,7 +15,7 @@ import {
 } from "../libraries/AccountStorage.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
-abstract contract BaseModularAccountLoupe is IPluginLoupe {
+abstract contract BaseModularAccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     error ManifestDiscrepancy(address plugin);

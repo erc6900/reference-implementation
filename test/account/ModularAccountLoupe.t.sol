@@ -15,7 +15,7 @@ import {
     ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
-import {IPluginLoupe} from "../../src/interfaces/IPluginLoupe.sol";
+import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/libraries/FunctionReferenceLib.sol";
@@ -98,7 +98,7 @@ contract ModularAccountLoupeTest is Test {
         expectedRuntimeValidations[4] = ownerRuntimeValidation;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            IPluginLoupe.ExecutionFunctionConfig memory config =
+            IAccountLoupe.ExecutionFunctionConfig memory config =
                 account1.getExecutionFunctionConfig(selectorsToCheck[i]);
 
             assertEq(config.plugin, address(account1));
@@ -134,7 +134,7 @@ contract ModularAccountLoupeTest is Test {
         expectedRuntimeValidations[1] = ownerRuntimeValidation;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            IPluginLoupe.ExecutionFunctionConfig memory config =
+            IAccountLoupe.ExecutionFunctionConfig memory config =
                 account1.getExecutionFunctionConfig(selectorsToCheck[i]);
 
             assertEq(config.plugin, expectedPluginAddress[i]);
@@ -150,7 +150,7 @@ contract ModularAccountLoupeTest is Test {
     }
 
     function test_pluginLoupe_getExecutionHooks() public {
-        IPluginLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
+        IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 1);
         assertEq(
@@ -172,7 +172,7 @@ contract ModularAccountLoupeTest is Test {
     }
 
     function test_pluginLoupe_getPermittedCallHooks() public {
-        IPluginLoupe.ExecutionHooks[] memory hooks =
+        IAccountLoupe.ExecutionHooks[] memory hooks =
             account1.getPermittedCallHooks(address(comprehensivePlugin), comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 1);
@@ -243,7 +243,7 @@ contract ModularAccountLoupeTest is Test {
 
         // Assert that the returned execution hooks are what is expected
 
-        IPluginLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
+        IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 2);
         assertEq(

@@ -12,7 +12,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {IPluginLoupe} from "../../src/interfaces/IPluginLoupe.sol";
+import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IPluginExecutor} from "../../src/interfaces/IPluginExecutor.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
@@ -290,7 +290,7 @@ contract UpgradeableModularAccountTest is Test {
             injectedHooks: new IPluginManager.InjectedHook[](0)
         });
 
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(tokenReceiverPlugin));
@@ -398,7 +398,7 @@ contract UpgradeableModularAccountTest is Test {
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
@@ -425,7 +425,7 @@ contract UpgradeableModularAccountTest is Test {
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
@@ -454,7 +454,7 @@ contract UpgradeableModularAccountTest is Test {
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(plugin));
