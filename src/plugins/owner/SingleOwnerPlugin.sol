@@ -6,7 +6,8 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
-import {UpgradeableModularAccount, UUPSUpgradeable} from "../../account/UpgradeableModularAccount.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {IPluginManager} from "../../interfaces/IPluginManager.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -170,11 +171,11 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: UpgradeableModularAccount.installPlugin.selector,
+            executionSelector: IPluginManager.installPlugin.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[4] = ManifestAssociatedFunction({
-            executionSelector: UpgradeableModularAccount.uninstallPlugin.selector,
+            executionSelector: IPluginManager.uninstallPlugin.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[5] = ManifestAssociatedFunction({
@@ -214,11 +215,11 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[4] = ManifestAssociatedFunction({
-            executionSelector: UpgradeableModularAccount.installPlugin.selector,
+            executionSelector: IPluginManager.installPlugin.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[5] = ManifestAssociatedFunction({
-            executionSelector: UpgradeableModularAccount.uninstallPlugin.selector,
+            executionSelector: IPluginManager.uninstallPlugin.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[6] = ManifestAssociatedFunction({
