@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-import {PluginManifest, IPlugin} from "../../src/interfaces/IPlugin.sol";
+import {PluginManifest, IPlugin, PluginMetadata} from "../../src/interfaces/IPlugin.sol";
 
 contract MockPlugin is ERC165 {
     // It's super inefficient to hold the entire abi-encoded manifest in storage, but this is fine since it's
@@ -26,10 +26,6 @@ contract MockPlugin is ERC165 {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     constructor(PluginManifest memory _pluginManifest) {
-        _pluginManifest.name = NAME;
-        _pluginManifest.version = VERSION;
-        _pluginManifest.author = AUTHOR;
-
         _manifest = abi.encode(_pluginManifest);
     }
 
@@ -52,6 +48,14 @@ contract MockPlugin is ERC165 {
         return _castToPure(_getManifest)();
     }
 
+    function pluginMetadata() external pure returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+        return metadata;
+    }
+
     /// @dev Returns true if this contract implements the interface defined by
     /// `interfaceId`. See the corresponding
     /// https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]
@@ -64,6 +68,7 @@ contract MockPlugin is ERC165 {
     /// making calls to plugins.
     /// @param interfaceId The interface ID to check for support.
     /// @return True if the contract supports `interfaceId`.
+
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
     }

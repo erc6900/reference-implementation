@@ -6,13 +6,12 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExternalCallPermission,
-    PluginManifest,
-    ManifestExecutionFunction
+    PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 import {FunctionReference} from "../../../src/libraries/FunctionReferenceLib.sol";
 
 contract RegularResultContract {
@@ -25,7 +24,7 @@ contract RegularResultContract {
     }
 }
 
-contract ResultCreatorPlugin is BasePlugin {
+contract ResultCreatorPlugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -41,9 +40,9 @@ contract ResultCreatorPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](2);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
-        manifest.executionFunctions[1] = ManifestExecutionFunction(this.bar.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](2);
+        manifest.executionFunctions[0] = this.foo.selector;
+        manifest.executionFunctions[1] = this.bar.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -59,7 +58,7 @@ contract ResultCreatorPlugin is BasePlugin {
     }
 }
 
-contract ResultConsumerPlugin is BasePlugin {
+contract ResultConsumerPlugin is BaseTestPlugin {
     ResultCreatorPlugin public immutable resultCreator;
     RegularResultContract public immutable regularResultContract;
 
@@ -117,11 +116,9 @@ contract ResultConsumerPlugin is BasePlugin {
     function _innerPluginManifest() internal view returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](2);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.checkResultEFPFallback.selector, new string[](0));
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction(this.checkResultEFPExternal.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](2);
+        manifest.executionFunctions[0] = this.checkResultEFPFallback.selector;
+        manifest.executionFunctions[1] = this.checkResultEFPExternal.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](2);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({

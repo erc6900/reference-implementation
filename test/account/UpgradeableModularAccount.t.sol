@@ -483,7 +483,7 @@ contract UpgradeableModularAccountTest is Test {
     {
         hooksPlugin = _installPluginWithExecHooks();
 
-        manifest.permitAnyExternalContract = true;
+        manifest.permitAnyExternalAddress = true;
         newPlugin = new MockPlugin(manifest);
 
         manifestHash = keccak256(abi.encode(newPlugin.pluginManifest()));

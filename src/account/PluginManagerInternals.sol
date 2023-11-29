@@ -378,7 +378,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         // All conflicts should revert.
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
-            _setExecutionFunction(manifest.executionFunctions[i].selector, plugin);
+            _setExecutionFunction(manifest.executionFunctions[i], plugin);
 
             unchecked {
                 ++i;
@@ -396,7 +396,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Add the permitted external calls to the account.
-        if (manifest.permitAnyExternalContract) {
+        if (manifest.permitAnyExternalAddress) {
             _storage.pluginData[plugin].anyExternalExecPermitted = true;
         } else {
             // Only store the specific permitted external calls if "permit any" flag was not set.
@@ -767,7 +767,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // remove external call permissions
 
-        if (manifest.permitAnyExternalContract) {
+        if (manifest.permitAnyExternalAddress) {
             // Only clear if it was set during install time
             _storage.pluginData[plugin].anyExternalExecPermitted = false;
         } else {
@@ -833,7 +833,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
-            _removeExecutionFunction(manifest.executionFunctions[i].selector);
+            _removeExecutionFunction(manifest.executionFunctions[i]);
 
             unchecked {
                 ++i;
