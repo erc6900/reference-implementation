@@ -10,6 +10,9 @@ bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c40149916
 
 struct PluginData {
     bool anyExternalExecPermitted;
+    // boolean to indicate if the plugin can spend native tokens, if any of the execution function can spend
+    // native tokens, a plugin is considered to be able to spend native tokens of the accounts
+    bool canSpendNativeToken;
     bytes32 manifestHash;
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function

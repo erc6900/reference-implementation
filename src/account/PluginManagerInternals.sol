@@ -376,6 +376,12 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Update components according to the manifest.
         // All conflicts should revert.
+
+        // Mark whether or not this plugin may spend native token amounts
+        if (manifest.canSpendNativeToken) {
+            _storage.pluginData[plugin].canSpendNativeToken = true;
+        }
+
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
             _setExecutionFunction(manifest.executionFunctions[i], plugin);

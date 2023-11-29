@@ -55,6 +55,7 @@ contract UpgradeableModularAccount is
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
     error InvalidConfiguration();
+    error NativeTokenSpendingNotPermitted(address plugin);
     error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
@@ -223,6 +224,11 @@ contract UpgradeableModularAccount is
     {
         bytes4 selector = bytes4(data);
         AccountStorage storage _storage = getAccountStorage();
+
+        // Make sure plugin is allowed to spend native token.
+        if (value > 0 && value > msg.value && !_storage.pluginData[msg.sender].canSpendNativeToken) {
+            revert NativeTokenSpendingNotPermitted(msg.sender);
+        }
 
         // Check the caller plugin's permission to make this call
 
