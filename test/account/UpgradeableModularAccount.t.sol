@@ -296,7 +296,7 @@ contract UpgradeableModularAccountTest is Test {
         assertEq(plugins[1], address(tokenReceiverPlugin));
     }
 
-    function test_installPlugin_ExecuteFromPlugin_BadPermittedExecSelector() public {
+    function test_installPlugin_ExecuteFromPlugin_PermittedExecSelectorNotInstalled() public {
         vm.startPrank(owner2);
 
         PluginManifest memory m;
@@ -306,13 +306,6 @@ contract UpgradeableModularAccountTest is Test {
         MockPlugin mockPluginWithBadPermittedExec = new MockPlugin(m);
         bytes32 manifestHash = keccak256(abi.encode(mockPluginWithBadPermittedExec.pluginManifest()));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                PluginManagerInternals.PermittedExecutionSelectorNotInstalled.selector,
-                IPlugin.onInstall.selector,
-                address(mockPluginWithBadPermittedExec)
-            )
-        );
         IPluginManager(account2).installPlugin({
             plugin: address(mockPluginWithBadPermittedExec),
             manifestHash: manifestHash,
@@ -590,7 +583,7 @@ contract UpgradeableModularAccountTest is Test {
     }
 
     function test_injectHooksUninstall() external {
-        (, MockPlugin newPlugin, bytes32 manifestHash) = _installWithInjectHooks();
+        (, MockPlugin newPlugin,) = _installWithInjectHooks();
 
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(newPlugin), true);

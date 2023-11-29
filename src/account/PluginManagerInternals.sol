@@ -31,14 +31,8 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     error ArrayLengthMismatch();
     error ExecuteFromPluginAlreadySet(bytes4 selector, address plugin);
-    error PermittedExecutionSelectorNotInstalled(bytes4 selector, address plugin);
-    error ExecuteFromPluginNotSet(bytes4 selector, address plugin);
     error ExecutionFunctionAlreadySet(bytes4 selector);
-    error ExecutionFunctionNotSet(bytes4 selector);
     error ExecutionHookAlreadySet(bytes4 selector, FunctionReference hook);
-    error ExecutionHookNotSet(bytes4 selector, FunctionReference hook);
-    error InvalidPostExecHook(bytes4 selector, FunctionReference hook);
-    error InvalidPostPermittedCallHook(bytes4 selector, FunctionReference hook);
     error InvalidDependenciesProvided();
     error InvalidPluginManifest();
     error MissingPluginDependency(address dependency);
@@ -47,18 +41,13 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginAlreadyInstalled(address plugin);
     error PluginDependencyViolation(address plugin);
     error PermittedCallHookAlreadySet(bytes4 selector, address plugin, FunctionReference hook);
-    error PermittedCallHookNotSet(bytes4 selector, address plugin, FunctionReference hook);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
     error PreRuntimeValidationHookAlreadySet(bytes4 selector, FunctionReference hook);
-    error PreRuntimeValidationHookNotSet(bytes4 selector, FunctionReference hook);
     error PreUserOpValidationHookAlreadySet(bytes4 selector, FunctionReference hook);
-    error PreUserOpValidationHookNotSet(bytes4 selector, FunctionReference hook);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
-    error RuntimeValidationFunctionNotSet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
-    error UserOpValidationFunctionNotSet(bytes4 selector, FunctionReference validationFunction);
     error PluginApplyHookCallbackFailed(address providingPlugin, bytes revertReason);
     error PluginUnapplyHookCallbackFailed(address providingPlugin, bytes revertReason);
 
@@ -91,10 +80,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _removeExecutionFunction(bytes4 selector) internal {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.plugin == address(0)) {
-            revert ExecutionFunctionNotSet(selector);
-        }
-
         _selectorData.plugin = address(0);
     }
 
@@ -117,14 +102,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.userOpValidation != validationFunction) {
-            // Revert if there's a different validationFunction set than the one the manifest intendes to remove.
-            // This
-            // indicates something wrong with the manifest and should not be allowed. In these cases, the original
-            // manifest should be passed for uninstall.
-            revert UserOpValidationFunctionNotSet(selector, validationFunction);
-        }
-
         _selectorData.userOpValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
     }
 
@@ -146,14 +123,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         notNullFunction(validationFunction)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (_selectorData.runtimeValidation != validationFunction) {
-            // Revert if there's a different validationFunction set than the one the manifest intendes to remove.
-            // This
-            // indicates something wrong with the manifest and should not be allowed. In these cases, the original
-            // manifest should be passed for uninstall.
-            revert RuntimeValidationFunctionNotSet(selector, validationFunction);
-        }
 
         _selectorData.runtimeValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
     }
@@ -181,15 +150,9 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        // Removal also clears the flags.
-        if (!_selectorData.preExecHooks.remove(_toSetValue(preExecHook))) {
-            revert ExecutionHookNotSet(selector, preExecHook);
-        }
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        _selectorData.preExecHooks.remove(_toSetValue(preExecHook));
 
-        // Remove the associated post-exec hook, if it is set to the expected value.
-        if (postExecHook != _selectorData.associatedPostExecHooks[preExecHook]) {
-            revert InvalidPostExecHook(selector, postExecHook);
-        }
         // If the post exec hook is set, clear it.
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
             _selectorData.associatedPostExecHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
@@ -201,13 +164,8 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         bytes24 key = getPermittedCallKey(plugin, selector);
 
-        if (accountStorage.selectorData[selector].plugin == address(0)) {
-            revert PermittedExecutionSelectorNotInstalled(selector, plugin);
-        }
-
-        if (accountStorage.permittedCalls[key].callPermitted) {
-            revert ExecuteFromPluginAlreadySet(selector, plugin);
-        }
+        // If there are duplicates, this will just enable the flag again. This is not a problem, since the boolean
+        // will be set to false twice during uninstall, which is fine.
         accountStorage.permittedCalls[key].callPermitted = true;
     }
 
@@ -215,9 +173,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
     {
         bytes24 key = getPermittedCallKey(plugin, selector);
-        if (!accountStorage.permittedCalls[key].callPermitted) {
-            revert ExecuteFromPluginNotSet(selector, plugin);
-        }
         accountStorage.permittedCalls[key].callPermitted = false;
     }
 
@@ -250,14 +205,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
         PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
 
-        if (!_permittedCalldata.prePermittedCallHooks.remove(_toSetValue(preExecHook))) {
-            revert PermittedCallHookNotSet(selector, plugin, preExecHook);
-        }
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        _permittedCalldata.prePermittedCallHooks.remove(_toSetValue(preExecHook));
 
-        // Remove the associated post-exec hook, if it is set to the expected value.
-        if (postExecHook != _permittedCalldata.associatedPostPermittedCallHooks[preExecHook]) {
-            revert InvalidPostPermittedCallHook(selector, postExecHook);
-        }
         // If the post permitted call exec hook is set, clear it.
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
             _permittedCalldata.associatedPostPermittedCallHooks[preExecHook] =
@@ -282,13 +232,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preUserOpValidationHook)
     {
-        if (
-            !getAccountStorage().selectorData[selector].preUserOpValidationHooks.remove(
-                _toSetValue(preUserOpValidationHook)
-            )
-        ) {
-            revert PreUserOpValidationHookNotSet(selector, preUserOpValidationHook);
-        }
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        getAccountStorage().selectorData[selector].preUserOpValidationHooks.remove(
+            _toSetValue(preUserOpValidationHook)
+        );
     }
 
     function _addPreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
@@ -308,13 +255,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preRuntimeValidationHook)
     {
-        if (
-            !getAccountStorage().selectorData[selector].preRuntimeValidationHooks.remove(
-                _toSetValue(preRuntimeValidationHook)
-            )
-        ) {
-            revert PreRuntimeValidationHookNotSet(selector, preRuntimeValidationHook);
-        }
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        getAccountStorage().selectorData[selector].preRuntimeValidationHooks.remove(
+            _toSetValue(preRuntimeValidationHook)
+        );
     }
 
     function _installPlugin(
