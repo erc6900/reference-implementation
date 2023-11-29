@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test, console} from "forge-std/Test.sol";
+import {console} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
@@ -23,8 +23,9 @@ import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract UpgradeableModularAccountTest is Test {
+contract UpgradeableModularAccountTest is OptimizedTest {
     using ECDSA for bytes32;
 
     EntryPoint public entryPoint;
@@ -68,8 +69,8 @@ contract UpgradeableModularAccountTest is Test {
         beneficiary = payable(makeAddr("beneficiary"));
         vm.deal(beneficiary, 1 wei);
 
-        singleOwnerPlugin = new SingleOwnerPlugin();
-        tokenReceiverPlugin = new TokenReceiverPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
+        tokenReceiverPlugin = _deployTokenReceiverPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Compute counterfactual address

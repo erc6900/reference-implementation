@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
@@ -23,8 +21,9 @@ import {FunctionReference, FunctionReferenceLib} from "../../src/libraries/Funct
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract AccountLoupeTest is Test {
+contract AccountLoupeTest is OptimizedTest {
     EntryPoint public entryPoint;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
@@ -40,7 +39,7 @@ contract AccountLoupeTest is Test {
     function setUp() public {
         entryPoint = new EntryPoint();
 
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
         comprehensivePlugin = new ComprehensivePlugin();
 

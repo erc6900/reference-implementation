@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -22,8 +20,9 @@ import {
     BadHookMagicValue_RuntimeValidationFunction_Plugin,
     BadHookMagicValue_PostExecHook_Plugin
 } from "../mocks/plugins/ManifestValidityMocks.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract ManifestValidityTest is Test {
+contract ManifestValidityTest is OptimizedTest {
     EntryPoint public entryPoint; // Just to be able to construct the factory
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
@@ -32,7 +31,7 @@ contract ManifestValidityTest is Test {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
