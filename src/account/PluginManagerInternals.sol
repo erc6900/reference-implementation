@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
-import {AccountExecutor} from "./AccountExecutor.sol";
-import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {
     AccountStorage,
     getAccountStorage,
@@ -17,6 +13,8 @@ import {
     PermittedExternalCallData,
     StoredInjectedHook
 } from "../libraries/AccountStorage.sol";
+import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
+import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
@@ -27,13 +25,9 @@ import {
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 
-abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165 {
+abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    // As per the EIP-165 spec, no interface should ever match 0xffffffff
-    bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
-    bytes4 internal constant _IERC165_INTERFACE_ID = 0x01ffc9a7;
 
     error ArrayLengthMismatch();
     error ExecuteFromPluginAlreadySet(bytes4 selector, address plugin);
@@ -382,9 +376,15 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
 
         // Update components according to the manifest.
         // All conflicts should revert.
+
+        // Mark whether or not this plugin may spend native token amounts
+        if (manifest.canSpendNativeToken) {
+            _storage.pluginData[plugin].canSpendNativeToken = true;
+        }
+
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
-            _setExecutionFunction(manifest.executionFunctions[i].selector, plugin);
+            _setExecutionFunction(manifest.executionFunctions[i], plugin);
 
             unchecked {
                 ++i;
@@ -402,7 +402,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
         }
 
         // Add the permitted external calls to the account.
-        if (manifest.permitAnyExternalContract) {
+        if (manifest.permitAnyExternalAddress) {
             _storage.pluginData[plugin].anyExternalExecPermitted = true;
         } else {
             // Only store the specific permitted external calls if "permit any" flag was not set.
@@ -615,7 +615,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
             revert PluginInstallCallbackFailed(plugin, revertReason);
         }
 
-        emit PluginInstalled(plugin, manifestHash);
+        emit PluginInstalled(plugin, manifestHash, dependencies, injectedHooks);
     }
 
     function _uninstallPlugin(
@@ -773,7 +773,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
 
         // remove external call permissions
 
-        if (manifest.permitAnyExternalContract) {
+        if (manifest.permitAnyExternalAddress) {
             // Only clear if it was set during install time
             _storage.pluginData[plugin].anyExternalExecPermitted = false;
         } else {
@@ -839,7 +839,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
 
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
-            _removeExecutionFunction(manifest.executionFunctions[i].selector);
+            _removeExecutionFunction(manifest.executionFunctions[i]);
 
             unchecked {
                 ++i;
@@ -893,7 +893,7 @@ abstract contract BaseModularAccount is IPluginManager, AccountExecutor, IERC165
             onUninstallSuccess = false;
         }
 
-        emit PluginUninstalled(plugin, manifestHash, onUninstallSuccess);
+        emit PluginUninstalled(plugin, onUninstallSuccess);
     }
 
     function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {

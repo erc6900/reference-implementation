@@ -10,7 +10,7 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
-    ManifestExecutionFunction
+    PluginMetadata
 } from "../interfaces/IPlugin.sol";
 import {BasePlugin} from "./BasePlugin.sol";
 
@@ -72,17 +72,11 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC777Recipient, I
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.name = NAME;
-        manifest.version = VERSION;
-        manifest.author = AUTHOR;
-
-        manifest.executionFunctions = new ManifestExecutionFunction[](4);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.tokensReceived.selector, new string[](0));
-        manifest.executionFunctions[1] = ManifestExecutionFunction(this.onERC721Received.selector, new string[](0));
-        manifest.executionFunctions[2] =
-            ManifestExecutionFunction(this.onERC1155Received.selector, new string[](0));
-        manifest.executionFunctions[3] =
-            ManifestExecutionFunction(this.onERC1155BatchReceived.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](4);
+        manifest.executionFunctions[0] = this.tokensReceived.selector;
+        manifest.executionFunctions[1] = this.onERC721Received.selector;
+        manifest.executionFunctions[2] = this.onERC1155Received.selector;
+        manifest.executionFunctions[3] = this.onERC1155BatchReceived.selector;
 
         // Only runtime validationFunction is needed since callbacks come from token contracts only
         ManifestFunction memory alwaysAllowFunction = ManifestFunction({
@@ -114,5 +108,14 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC777Recipient, I
         manifest.interfaceIds[2] = type(IERC1155Receiver).interfaceId;
 
         return manifest;
+    }
+
+    /// @inheritdoc BasePlugin
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+        return metadata;
     }
 }

@@ -7,7 +7,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {BaseModularAccount} from "../../src/account/BaseModularAccount.sol";
+import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 
@@ -47,7 +47,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -65,7 +65,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -83,7 +83,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -99,7 +99,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -115,7 +115,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -132,7 +132,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -149,7 +149,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -165,7 +165,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,

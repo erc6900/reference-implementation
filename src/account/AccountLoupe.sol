@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IPluginLoupe} from "../interfaces/IPluginLoupe.sol";
+import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
@@ -15,14 +15,12 @@ import {
 } from "../libraries/AccountStorage.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
-abstract contract BaseModularAccountLoupe is IPluginLoupe {
+abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     error ManifestDiscrepancy(address plugin);
 
-    /// @notice Gets the validator and plugin configuration for a selector
-    /// @param selector The selector to get the configuration for
-    /// @return config The configuration for this selector
+    /// @inheritdoc IAccountLoupe
     function getExecutionFunctionConfig(bytes4 selector)
         external
         view
@@ -47,9 +45,7 @@ abstract contract BaseModularAccountLoupe is IPluginLoupe {
         config.runtimeValidationFunction = _storage.selectorData[selector].runtimeValidation;
     }
 
-    /// @notice Gets the pre and post execution hooks for a selector
-    /// @param selector The selector to get the hooks for
-    /// @return execHooks The pre and post execution hooks for this selector
+    /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
         AccountStorage storage _storage = getAccountStorage();
 
@@ -69,10 +65,7 @@ abstract contract BaseModularAccountLoupe is IPluginLoupe {
         }
     }
 
-    /// @notice Gets the pre and post permitted call hooks applied for a plugin calling this selector
-    /// @param callingPlugin The plugin that is calling the selector
-    /// @param selector The selector the plugin is calling
-    /// @return execHooks The pre and post permitted call hooks for this selector
+    /// @inheritdoc IAccountLoupe
     function getPermittedCallHooks(address callingPlugin, bytes4 selector)
         external
         view
@@ -99,32 +92,22 @@ abstract contract BaseModularAccountLoupe is IPluginLoupe {
         }
     }
 
-    /// @notice Gets the pre user op validation hooks associated with a selector
-    /// @param selector The selector to get the hooks for
-    /// @return preValidationHooks The pre user op validation hooks for this selector
-    function getPreUserOpValidationHooks(bytes4 selector)
+    /// @inheritdoc IAccountLoupe
+    function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (FunctionReference[] memory preValidationHooks)
+        returns (
+            FunctionReference[] memory preUserOpValidationHooks,
+            FunctionReference[] memory preRuntimeValidationHooks
+        )
     {
-        preValidationHooks =
+        preUserOpValidationHooks =
             toFunctionReferenceArray(getAccountStorage().selectorData[selector].preUserOpValidationHooks);
-    }
-
-    /// @notice Gets the pre runtime validation hooks associated with a selector
-    /// @param selector The selector to get the hooks for
-    /// @return preValidationHooks The pre runtime validation hooks for this selector
-    function getPreRuntimeValidationHooks(bytes4 selector)
-        external
-        view
-        returns (FunctionReference[] memory preValidationHooks)
-    {
-        preValidationHooks =
+        preRuntimeValidationHooks =
             toFunctionReferenceArray(getAccountStorage().selectorData[selector].preRuntimeValidationHooks);
     }
 
-    /// @notice Gets an array of all installed plugins
-    /// @return pluginAddresses The addresses of all installed plugins
+    /// @inheritdoc IAccountLoupe
     function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
         pluginAddresses = getAccountStorage().plugins.values();
     }

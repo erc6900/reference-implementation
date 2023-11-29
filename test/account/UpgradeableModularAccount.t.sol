@@ -7,12 +7,12 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
-import {BaseModularAccount} from "../../src/account/BaseModularAccount.sol";
+import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {IPluginLoupe} from "../../src/interfaces/IPluginLoupe.sol";
+import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IPluginExecutor} from "../../src/interfaces/IPluginExecutor.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
@@ -53,8 +53,13 @@ contract UpgradeableModularAccountTest is Test {
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
-    event PluginUninstalled(address indexed plugin, bytes32 manifestHash, bool onUninstallSucceeded);
+    event PluginInstalled(
+        address indexed plugin,
+        bytes32 manifestHash,
+        FunctionReference[] dependencies,
+        IPluginManager.InjectedHook[] injectedHooks
+    );
+    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
@@ -271,7 +276,12 @@ contract UpgradeableModularAccountTest is Test {
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash);
+        emit PluginInstalled(
+            address(tokenReceiverPlugin),
+            manifestHash,
+            new FunctionReference[](0),
+            new IPluginManager.InjectedHook[](0)
+        );
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
@@ -280,7 +290,7 @@ contract UpgradeableModularAccountTest is Test {
             injectedHooks: new IPluginManager.InjectedHook[](0)
         });
 
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(tokenReceiverPlugin));
@@ -298,7 +308,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                BaseModularAccount.PermittedExecutionSelectorNotInstalled.selector,
+                PluginManagerInternals.PermittedExecutionSelectorNotInstalled.selector,
                 IPlugin.onInstall.selector,
                 address(mockPluginWithBadPermittedExec)
             )
@@ -315,7 +325,7 @@ contract UpgradeableModularAccountTest is Test {
     function test_installPlugin_invalidManifest() public {
         vm.startPrank(owner2);
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
@@ -330,7 +340,7 @@ contract UpgradeableModularAccountTest is Test {
 
         address badPlugin = address(1);
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.PluginInterfaceNotSupported.selector, address(badPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.PluginInterfaceNotSupported.selector, address(badPlugin))
         );
         IPluginManager(account2).installPlugin({
             plugin: address(badPlugin),
@@ -355,7 +365,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                BaseModularAccount.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
+                PluginManagerInternals.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
             )
         );
         IPluginManager(account2).installPlugin({
@@ -381,14 +391,14 @@ contract UpgradeableModularAccountTest is Test {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), manifestHash, true);
+        emit PluginUninstalled(address(plugin), true);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: "",
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
@@ -408,14 +418,14 @@ contract UpgradeableModularAccountTest is Test {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), manifestHash, true);
+        emit PluginUninstalled(address(plugin), true);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: serializedManifest,
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
@@ -437,14 +447,14 @@ contract UpgradeableModularAccountTest is Test {
         // Attempt to uninstall with a blank manifest
         PluginManifest memory blankManifest;
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         IPluginManager(account2).uninstallPlugin({
             plugin: address(plugin),
             config: abi.encode(blankManifest),
             pluginUninstallData: "",
             hookUnapplyData: new bytes[](0)
         });
-        address[] memory plugins = IPluginLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(plugin));
@@ -473,7 +483,7 @@ contract UpgradeableModularAccountTest is Test {
     {
         hooksPlugin = _installPluginWithExecHooks();
 
-        manifest.permitAnyExternalContract = true;
+        manifest.permitAnyExternalAddress = true;
         newPlugin = new MockPlugin(manifest);
 
         manifestHash = keccak256(abi.encode(newPlugin.pluginManifest()));
@@ -485,7 +495,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.prank(owner2);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(newPlugin), manifestHash);
+        emit PluginInstalled(address(newPlugin), manifestHash, new FunctionReference[](0), hooks);
         emit ReceivedCall(abi.encodeCall(IPlugin.onHookApply, (address(newPlugin), injectedHooksInfo, "")), 0);
         IPluginManager(account2).installPlugin({
             plugin: address(newPlugin),
@@ -539,7 +549,7 @@ contract UpgradeableModularAccountTest is Test {
         );
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(newPlugin), manifestHash);
+        emit PluginInstalled(address(newPlugin), manifestHash, new FunctionReference[](0), hooks);
         emit ReceivedCall(
             abi.encodeCall(IPlugin.onHookApply, (address(newPlugin), injectedHooksInfo, onApplyData)), 0
         );
@@ -567,7 +577,7 @@ contract UpgradeableModularAccountTest is Test {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.MissingPluginDependency.selector, address(hooksPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.MissingPluginDependency.selector, address(hooksPlugin))
         );
         vm.prank(owner2);
         IPluginManager(account2).installPlugin({
@@ -583,7 +593,7 @@ contract UpgradeableModularAccountTest is Test {
         (, MockPlugin newPlugin, bytes32 manifestHash) = _installWithInjectHooks();
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(newPlugin), manifestHash, true);
+        emit PluginUninstalled(address(newPlugin), true);
         vm.prank(owner2);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(newPlugin),
@@ -598,7 +608,7 @@ contract UpgradeableModularAccountTest is Test {
 
         vm.prank(owner2);
         vm.expectRevert(
-            abi.encodeWithSelector(BaseModularAccount.PluginDependencyViolation.selector, address(hooksPlugin))
+            abi.encodeWithSelector(PluginManagerInternals.PluginDependencyViolation.selector, address(hooksPlugin))
         );
         IPluginManager(account2).uninstallPlugin({
             plugin: address(hooksPlugin),
@@ -634,7 +644,7 @@ contract UpgradeableModularAccountTest is Test {
         // length != installed hooks length
         bytes[] memory injectedHooksDatas = new bytes[](2);
 
-        vm.expectRevert(BaseModularAccount.ArrayLengthMismatch.selector);
+        vm.expectRevert(PluginManagerInternals.ArrayLengthMismatch.selector);
         vm.prank(owner2);
         IPluginManager(account2).uninstallPlugin({
             plugin: address(newPlugin),
