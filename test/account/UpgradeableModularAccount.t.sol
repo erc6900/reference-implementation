@@ -15,7 +15,7 @@ import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IPluginLoupe} from "../../src/interfaces/IPluginLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IPluginExecutor} from "../../src/interfaces/IPluginExecutor.sol";
-import {Execution} from "../../src/libraries/ERC6900TypeUtils.sol";
+import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 
@@ -122,9 +122,7 @@ contract UpgradeableModularAccountTest is Test {
             sender: address(account1),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
-            callData: abi.encodeCall(
-                UpgradeableModularAccount(payable(account1)).execute, Execution(recipient, 1 wei, "")
-                ),
+            callData: abi.encodeCall(UpgradeableModularAccount.execute, (recipient, 1 wei, "")),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: 0,
@@ -152,9 +150,7 @@ contract UpgradeableModularAccountTest is Test {
             sender: address(account2),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(
-                UpgradeableModularAccount(payable(account2)).execute, Execution(ethRecipient, 1 wei, "")
-                ),
+            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: 0,
@@ -182,9 +178,7 @@ contract UpgradeableModularAccountTest is Test {
             sender: address(account2),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(
-                UpgradeableModularAccount(payable(account2)).execute, Execution(ethRecipient, 1 wei, "")
-                ),
+            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: 0,
@@ -213,8 +207,7 @@ contract UpgradeableModularAccountTest is Test {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(
-                UpgradeableModularAccount(payable(account2)).execute,
-                Execution(address(counter), 0, abi.encodeCall(counter.increment, ()))
+                UpgradeableModularAccount.execute, (address(counter), 0, abi.encodeCall(counter.increment, ()))
                 ),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
@@ -240,16 +233,15 @@ contract UpgradeableModularAccountTest is Test {
 
     function test_batchExecute() public {
         // Performs both an eth send and a contract interaction with counter
-        Execution[] memory executions = new Execution[](2);
-        executions[0] = Execution({target: ethRecipient, value: 1 wei, data: ""});
-        executions[1] =
-            Execution({target: address(counter), value: 0, data: abi.encodeCall(counter.increment, ())});
+        Call[] memory calls = new Call[](2);
+        calls[0] = Call({target: ethRecipient, value: 1 wei, data: ""});
+        calls[1] = Call({target: address(counter), value: 0, data: abi.encodeCall(counter.increment, ())});
 
         UserOperation memory userOp = UserOperation({
             sender: address(account2),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount(payable(account2)).executeBatch, (executions)),
+            callData: abi.encodeCall(UpgradeableModularAccount.executeBatch, (calls)),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: 0,

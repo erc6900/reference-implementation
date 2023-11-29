@@ -10,10 +10,9 @@ import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.
 import {BaseModularAccount} from "./BaseModularAccount.sol";
 import {BaseModularAccountLoupe} from "./BaseModularAccountLoupe.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
+import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {AccountStorage, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
-import {Execution} from "../libraries/ERC6900TypeUtils.sol";
 import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
@@ -137,35 +136,30 @@ contract UpgradeableModularAccount is
         return execReturnData;
     }
 
-    /// @notice Executes a transaction from the account
-    /// @param execution The execution to perform
-    /// @return result The result of the execution
-    function execute(Execution calldata execution)
+    /// @inheritdoc IStandardExecutor
+    function execute(address target, uint256 value, bytes calldata data)
         external
         payable
         override
         wrapNativeFunction
         returns (bytes memory result)
     {
-        result = _exec(execution.target, execution.value, execution.data);
+        result = _exec(target, value, data);
     }
 
-    /// @notice Executes a batch of transactions from the account
-    /// @dev If any of the transactions revert, the entire batch reverts
-    /// @param executions The executions to perform
-    /// @return results The results of the executions
-    function executeBatch(Execution[] calldata executions)
+    /// @inheritdoc IStandardExecutor
+    function executeBatch(Call[] calldata calls)
         external
         payable
         override
         wrapNativeFunction
         returns (bytes[] memory results)
     {
-        uint256 executionsLength = executions.length;
-        results = new bytes[](executionsLength);
+        uint256 callsLength = calls.length;
+        results = new bytes[](callsLength);
 
-        for (uint256 i = 0; i < executionsLength;) {
-            results[i] = _exec(executions[i].target, executions[i].value, executions[i].data);
+        for (uint256 i = 0; i < callsLength;) {
+            results[i] = _exec(calls[i].target, calls[i].value, calls[i].data);
 
             unchecked {
                 ++i;
@@ -173,10 +167,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    /// @notice Executes a call from a plugin to another plugin
-    /// @dev Permissions must be granted to the calling plugin for the call to go through
-    /// @param data calldata to send to the plugin
-    /// @return The result of the call
+    /// @inheritdoc IPluginExecutor
     function executeFromPlugin(bytes calldata data) external payable override returns (bytes memory) {
         bytes4 selector = bytes4(data[:4]);
         address callingPlugin = msg.sender;
@@ -213,12 +204,7 @@ contract UpgradeableModularAccount is
         return returnData;
     }
 
-    /// @notice Executes a call from a plugin to a non-plugin address
-    /// @dev Permissions must be granted to the calling plugin for the call to go through
-    /// @param target address of the target to call
-    /// @param value value to send with the call
-    /// @param data calldata to send to the target
-    /// @return The result of the call
+    /// @inheritdoc IPluginExecutor
     function executeFromPluginExternal(address target, uint256 value, bytes calldata data)
         external
         payable
