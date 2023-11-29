@@ -10,30 +10,26 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
-import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {AccountStorage, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
-import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
+import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
-    IPluginManager,
-    BaseAccount,
-    PluginManagerInternals,
     AccountLoupe,
-    UUPSUpgradeable,
     AccountStorageInitializable,
+    BaseAccount,
     IERC165,
+    IPluginExecutor,
     IStandardExecutor,
-    IPluginExecutor
+    PluginManagerInternals,
+    UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
