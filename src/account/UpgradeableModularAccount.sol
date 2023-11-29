@@ -477,7 +477,8 @@ contract UpgradeableModularAccount is
     }
 
     function _doPreExecHooks(bytes4 selector) internal returns (PostExecToRun[] memory postHooksToRun) {
-        EnumerableSet.Bytes32Set storage preExecHooks = getAccountStorage().selectorData[selector].preExecHooks;
+        EnumerableSet.Bytes32Set storage preExecHooks =
+            getAccountStorage().selectorData[selector].executionHooks.preHooks;
 
         uint256 postExecHooksLength = 0;
         uint256 preExecHooksLength = preExecHooks.length();
@@ -508,7 +509,7 @@ contract UpgradeableModularAccount is
 
             // Check to see if there is a postExec hook set for this preExec hook
             FunctionReference postExecHook =
-                getAccountStorage().selectorData[selector].associatedPostExecHooks[preExecHook];
+                getAccountStorage().selectorData[selector].executionHooks.associatedPostHooks[preExecHook];
             if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
                 postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
                 postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
@@ -530,7 +531,7 @@ contract UpgradeableModularAccount is
         bytes24 permittedCallKey = getPermittedCallKey(callerPlugin, executionSelector);
 
         EnumerableSet.Bytes32Set storage preExecHooks =
-            getAccountStorage().permittedCalls[permittedCallKey].prePermittedCallHooks;
+            getAccountStorage().permittedCalls[permittedCallKey].permittedCallHooks.preHooks;
 
         uint256 postExecHooksLength = 0;
         uint256 preExecHooksLength = preExecHooks.length();
@@ -559,8 +560,9 @@ contract UpgradeableModularAccount is
             }
 
             // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook =
-                getAccountStorage().permittedCalls[permittedCallKey].associatedPostPermittedCallHooks[preExecHook];
+            FunctionReference postExecHook = getAccountStorage().permittedCalls[permittedCallKey]
+                .permittedCallHooks
+                .associatedPostHooks[preExecHook];
             if (FunctionReference.unwrap(postExecHook) != 0) {
                 postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
                 postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;

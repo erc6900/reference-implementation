@@ -133,14 +133,14 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!_selectorData.preExecHooks.add(_toSetValue(preExecHook))) {
+        if (!_selectorData.executionHooks.preHooks.add(_toSetValue(preExecHook))) {
             // Treat the pre-exec and post-exec hook as a single unit, identified by the pre-exec hook.
             // If the pre-exec hook exists, revert.
             revert ExecutionHookAlreadySet(selector, preExecHook);
         }
 
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _selectorData.associatedPostExecHooks[preExecHook] = postExecHook;
+            _selectorData.executionHooks.associatedPostHooks[preExecHook] = postExecHook;
         }
     }
 
@@ -151,11 +151,12 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _selectorData.preExecHooks.remove(_toSetValue(preExecHook));
+        _selectorData.executionHooks.preHooks.remove(_toSetValue(preExecHook));
 
         // If the post exec hook is set, clear it.
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _selectorData.associatedPostExecHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+            _selectorData.executionHooks.associatedPostHooks[preExecHook] =
+                FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
         }
     }
 
@@ -185,14 +186,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
         PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
 
-        if (!_permittedCalldata.prePermittedCallHooks.add(_toSetValue(preExecHook))) {
+        if (!_permittedCalldata.permittedCallHooks.preHooks.add(_toSetValue(preExecHook))) {
             // Treat the pre-exec and post-exec hook as a single unit, identified by the pre-exec hook.
             // If the pre-exec hook exists, revert.
             revert PermittedCallHookAlreadySet(selector, plugin, preExecHook);
         }
 
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _permittedCalldata.associatedPostPermittedCallHooks[preExecHook] = postExecHook;
+            _permittedCalldata.permittedCallHooks.associatedPostHooks[preExecHook] = postExecHook;
         }
     }
 
@@ -203,14 +204,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         FunctionReference postExecHook
     ) internal notNullPlugin(plugin) notNullFunction(preExecHook) {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
+        PermittedCallData storage _permittedCallData = getAccountStorage().permittedCalls[permittedCallKey];
 
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _permittedCalldata.prePermittedCallHooks.remove(_toSetValue(preExecHook));
+        _permittedCallData.permittedCallHooks.preHooks.remove(_toSetValue(preExecHook));
 
         // If the post permitted call exec hook is set, clear it.
         if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _permittedCalldata.associatedPostPermittedCallHooks[preExecHook] =
+            _permittedCallData.permittedCallHooks.associatedPostHooks[preExecHook] =
                 FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
         }
     }
