@@ -167,10 +167,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    /// @notice Executes a call from a plugin to another plugin
-    /// @dev Permissions must be granted to the calling plugin for the call to go through
-    /// @param data calldata to send to the plugin
-    /// @return The result of the call
+    /// @inheritdoc IPluginExecutor
     function executeFromPlugin(bytes calldata data) external payable override returns (bytes memory) {
         bytes4 selector = bytes4(data[:4]);
         address callingPlugin = msg.sender;
@@ -207,12 +204,7 @@ contract UpgradeableModularAccount is
         return returnData;
     }
 
-    /// @notice Executes a call from a plugin to a non-plugin address
-    /// @dev Permissions must be granted to the calling plugin for the call to go through
-    /// @param target address of the target to call
-    /// @param value value to send with the call
-    /// @param data calldata to send to the target
-    /// @return The result of the call
+    /// @inheritdoc IPluginExecutor
     function executeFromPluginExternal(address target, uint256 value, bytes calldata data)
         external
         payable

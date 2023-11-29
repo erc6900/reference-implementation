@@ -2,16 +2,18 @@
 pragma solidity ^0.8.19;
 
 interface IPluginExecutor {
-    /// @notice Method from calls made from plugins.
-    /// @param data The call data for the call.
-    /// @return The return data from the call.
+    /// @notice Executes a call from a plugin to another plugin.
+    /// @dev Permissions must be granted to the calling plugin for the call to go through.
+    /// @param data calldata to send to the plugin
+    /// @return The result of the call
     function executeFromPlugin(bytes calldata data) external payable returns (bytes memory);
 
-    /// @notice Method from calls made from plugins.
-    /// @dev If the target is a plugin, the call SHOULD revert.
-    /// @param target The target of the external contract to be called.
-    /// @param value The value to pass.
-    /// @param data The data to pass.
+    /// @notice Executes a call from a plugin to a non-plugin address.
+    /// @dev Permissions must be granted to the calling plugin for the call to go through.
+    /// @param target address of the target to call
+    /// @param value value to send with the call
+    /// @param data calldata to send to the target
+    /// @return The result of the call
     function executeFromPluginExternal(address target, uint256 value, bytes calldata data)
         external
         payable
