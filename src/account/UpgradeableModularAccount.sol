@@ -10,7 +10,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
+import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
@@ -66,7 +66,7 @@ contract UpgradeableModularAccount is
     modifier wrapNativeFunction() {
         _doRuntimeValidationIfNotFromEP();
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
         _;
 
@@ -127,7 +127,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
-        postExecHooks = _doPreExecHooks(msg.sig);
+        postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execPlugin.call(msg.data);
@@ -188,7 +188,8 @@ contract UpgradeableModularAccount is
             revert ExecFromPluginNotPermitted(callingPlugin, selector);
         }
 
-        PostExecToRun[] memory postPermittedCallHooks = _doPrePermittedCallHooks(selector, callingPlugin);
+        PostExecToRun[] memory postPermittedCallHooks =
+            _doPrePermittedCallHooks(getPermittedCallKey(callingPlugin, selector), data);
 
         address execFunctionPlugin = _storage.selectorData[selector].plugin;
 
@@ -196,7 +197,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(selector);
         }
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector, data);
 
         (bool success, bytes memory returnData) = execFunctionPlugin.call(data);
 
@@ -250,11 +251,13 @@ contract UpgradeableModularAccount is
 
         // Run any pre plugin exec specific to this caller and the `executeFromPluginExternal` selector
 
-        PostExecToRun[] memory postPermittedCallHooks =
-            _doPrePermittedCallHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.sender);
+        PostExecToRun[] memory postPermittedCallHooks = _doPrePermittedCallHooks(
+            getPermittedCallKey(msg.sender, IPluginExecutor.executeFromPluginExternal.selector), msg.data
+        );
 
         // Run any pre exec hooks for this selector
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector);
+        PostExecToRun[] memory postExecHooks =
+            _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
 
         // Perform the external call
         bytes memory returnData = _exec(target, value, data);
@@ -476,68 +479,34 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doPreExecHooks(bytes4 selector) internal returns (PostExecToRun[] memory postHooksToRun) {
-        EnumerableSet.Bytes32Set storage preExecHooks = getAccountStorage().selectorData[selector].preExecHooks;
-
-        uint256 postExecHooksLength = 0;
-        uint256 preExecHooksLength = preExecHooks.length();
-
-        // Over-allocate on length, but not all of this may get filled up.
-        postHooksToRun = new PostExecToRun[](preExecHooksLength);
-        for (uint256 i = 0; i < preExecHooksLength;) {
-            FunctionReference preExecHook = _toFunctionReference(preExecHooks.at(i));
-
-            if (preExecHook.isEmptyOrMagicValue()) {
-                if (preExecHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
-                    revert AlwaysDenyRule();
-                }
-                // Function reference cannot be 0. If _RUNTIME_VALIDATION_ALWAYS_ALLOW, revert since it's an
-                // invalid configuration.
-                revert InvalidConfiguration();
-            }
-
-            (address plugin, uint8 functionId) = preExecHook.unpack();
-            bytes memory preExecHookReturnData;
-            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, msg.data) returns (
-                bytes memory returnData
-            ) {
-                preExecHookReturnData = returnData;
-            } catch (bytes memory revertReason) {
-                revert PreExecHookReverted(plugin, functionId, revertReason);
-            }
-
-            // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook =
-                getAccountStorage().selectorData[selector].associatedPostExecHooks[preExecHook];
-            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-                postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
-                postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
-                unchecked {
-                    ++postExecHooksLength;
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    function _doPrePermittedCallHooks(bytes4 executionSelector, address callerPlugin)
+    function _doPreExecHooks(bytes4 selector, bytes calldata data)
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
-        bytes24 permittedCallKey = getPermittedCallKey(callerPlugin, executionSelector);
+        HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
 
-        EnumerableSet.Bytes32Set storage preExecHooks =
-            getAccountStorage().permittedCalls[permittedCallKey].prePermittedCallHooks;
+        return _doPreHooks(hooks, data);
+    }
 
+    function _doPrePermittedCallHooks(bytes24 permittedCallKey, bytes calldata data)
+        internal
+        returns (PostExecToRun[] memory postHooksToRun)
+    {
+        HookGroup storage hooks = getAccountStorage().permittedCalls[permittedCallKey].permittedCallHooks;
+
+        return _doPreHooks(hooks, data);
+    }
+
+    function _doPreHooks(HookGroup storage hooks, bytes calldata data)
+        internal
+        returns (PostExecToRun[] memory postHooksToRun)
+    {
         uint256 postExecHooksLength = 0;
-        uint256 preExecHooksLength = preExecHooks.length();
-        postHooksToRun = new PostExecToRun[](preExecHooksLength); // Over-allocate on length, but not all of this
-            // may get filled up.
+        uint256 preExecHooksLength = hooks.preHooks.length();
+        // Over-allocate on length, but not all of this may get filled up.
+        postHooksToRun = new PostExecToRun[](preExecHooksLength + hooks.postOnlyHooks.length());
         for (uint256 i = 0; i < preExecHooksLength;) {
-            FunctionReference preExecHook = _toFunctionReference(preExecHooks.at(i));
+            FunctionReference preExecHook = _toFunctionReference(hooks.preHooks.at(i));
 
             if (preExecHook.isEmptyOrMagicValue()) {
                 if (preExecHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
@@ -550,7 +519,7 @@ contract UpgradeableModularAccount is
 
             (address plugin, uint8 functionId) = preExecHook.unpack();
             bytes memory preExecHookReturnData;
-            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, msg.data) returns (
+            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
                 bytes memory returnData
             ) {
                 preExecHookReturnData = returnData;
@@ -559,8 +528,7 @@ contract UpgradeableModularAccount is
             }
 
             // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook =
-                getAccountStorage().permittedCalls[permittedCallKey].associatedPostPermittedCallHooks[preExecHook];
+            FunctionReference postExecHook = hooks.associatedPostHooks[preExecHook];
             if (FunctionReference.unwrap(postExecHook) != 0) {
                 postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
                 postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
@@ -570,6 +538,16 @@ contract UpgradeableModularAccount is
             }
 
             unchecked {
+                ++i;
+            }
+        }
+
+        // Copy post-only hooks to the end of the array
+        uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
+        for (uint256 i = 0; i < postOnlyHooksLength;) {
+            postHooksToRun[postExecHooksLength].postExecHook = _toFunctionReference(hooks.postOnlyHooks.at(i));
+            unchecked {
+                ++postExecHooksLength;
                 ++i;
             }
         }

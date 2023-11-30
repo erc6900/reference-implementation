@@ -50,14 +50,15 @@ abstract contract AccountLoupe is IAccountLoupe {
         AccountStorage storage _storage = getAccountStorage();
 
         FunctionReference[] memory preExecHooks =
-            toFunctionReferenceArray(_storage.selectorData[selector].preExecHooks);
+            toFunctionReferenceArray(_storage.selectorData[selector].executionHooks.preHooks);
 
         uint256 numHooks = preExecHooks.length;
         execHooks = new ExecutionHooks[](numHooks);
 
         for (uint256 i = 0; i < numHooks;) {
             execHooks[i].preExecHook = preExecHooks[i];
-            execHooks[i].postExecHook = _storage.selectorData[selector].associatedPostExecHooks[preExecHooks[i]];
+            execHooks[i].postExecHook =
+                _storage.selectorData[selector].executionHooks.associatedPostHooks[preExecHooks[i]];
 
             unchecked {
                 ++i;
@@ -76,7 +77,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         bytes24 key = getPermittedCallKey(callingPlugin, selector);
 
         FunctionReference[] memory prePermittedCallHooks =
-            toFunctionReferenceArray(_storage.permittedCalls[key].prePermittedCallHooks);
+            toFunctionReferenceArray(_storage.permittedCalls[key].permittedCallHooks.preHooks);
 
         uint256 numHooks = prePermittedCallHooks.length;
         execHooks = new ExecutionHooks[](numHooks);
@@ -84,7 +85,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         for (uint256 i = 0; i < numHooks;) {
             execHooks[i].preExecHook = prePermittedCallHooks[i];
             execHooks[i].postExecHook =
-                _storage.permittedCalls[key].associatedPostPermittedCallHooks[prePermittedCallHooks[i]];
+                _storage.permittedCalls[key].permittedCallHooks.associatedPostHooks[prePermittedCallHooks[i]];
 
             unchecked {
                 ++i;

@@ -10,6 +10,7 @@ import {
     SelectorData,
     PermittedCallData,
     getPermittedCallKey,
+    HookGroup,
     PermittedExternalCallData,
     StoredInjectedHook
 } from "../libraries/AccountStorage.sol";
@@ -129,34 +130,18 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
-        notNullFunction(preExecHook)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!_selectorData.preExecHooks.add(_toSetValue(preExecHook))) {
-            // Treat the pre-exec and post-exec hook as a single unit, identified by the pre-exec hook.
-            // If the pre-exec hook exists, revert.
-            revert ExecutionHookAlreadySet(selector, preExecHook);
-        }
-
-        if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _selectorData.associatedPostExecHooks[preExecHook] = postExecHook;
-        }
+        _addHooks(_selectorData.executionHooks, selector, preExecHook, postExecHook);
     }
 
     function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
-        notNullFunction(preExecHook)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _selectorData.preExecHooks.remove(_toSetValue(preExecHook));
-
-        // If the post exec hook is set, clear it.
-        if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _selectorData.associatedPostExecHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
-        }
+        _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
     }
 
     function _enableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
@@ -181,19 +166,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         address plugin,
         FunctionReference preExecHook,
         FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) notNullFunction(preExecHook) {
+    ) internal notNullPlugin(plugin) {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
         PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
 
-        if (!_permittedCalldata.prePermittedCallHooks.add(_toSetValue(preExecHook))) {
-            // Treat the pre-exec and post-exec hook as a single unit, identified by the pre-exec hook.
-            // If the pre-exec hook exists, revert.
-            revert PermittedCallHookAlreadySet(selector, plugin, preExecHook);
-        }
-
-        if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _permittedCalldata.associatedPostPermittedCallHooks[preExecHook] = postExecHook;
-        }
+        _addHooks(_permittedCalldata.permittedCallHooks, selector, preExecHook, postExecHook);
     }
 
     function _removePermittedCallHooks(
@@ -201,17 +178,55 @@ abstract contract PluginManagerInternals is IPluginManager {
         address plugin,
         FunctionReference preExecHook,
         FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) notNullFunction(preExecHook) {
+    ) internal notNullPlugin(plugin) {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
+        PermittedCallData storage _permittedCallData = getAccountStorage().permittedCalls[permittedCallKey];
 
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _permittedCalldata.prePermittedCallHooks.remove(_toSetValue(preExecHook));
+        _removeHooks(_permittedCallData.permittedCallHooks, preExecHook, postExecHook);
+    }
 
-        // If the post permitted call exec hook is set, clear it.
-        if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            _permittedCalldata.associatedPostPermittedCallHooks[preExecHook] =
-                FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+    function _addHooks(
+        HookGroup storage hooks,
+        bytes4 selector,
+        FunctionReference preExecHook,
+        FunctionReference postExecHook
+    ) internal {
+        if (preExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+            // add pre or pre/post pair of exec hooks
+            if (!hooks.preHooks.add(_toSetValue(preExecHook))) {
+                revert ExecutionHookAlreadySet(selector, preExecHook);
+            }
+
+            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+                hooks.associatedPostHooks[preExecHook] = postExecHook;
+            }
+        } else {
+            if (postExecHook == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+                // both pre and post hooks cannot be null
+                revert NullFunctionReference();
+            }
+
+            hooks.postOnlyHooks.add(_toSetValue(postExecHook));
+        }
+    }
+
+    function _removeHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        if (preExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+            // remove pre or pre/post pair of exec hooks
+
+            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+            hooks.preHooks.remove(_toSetValue(preExecHook));
+
+            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+                hooks.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+            }
+        } else {
+            // THe case where both pre and post hooks are null was checked during installation.
+
+            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+            hooks.postOnlyHooks.remove(_toSetValue(postExecHook));
         }
     }
 

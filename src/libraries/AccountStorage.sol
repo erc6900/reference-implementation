@@ -20,7 +20,7 @@ struct PluginData {
     StoredInjectedHook[] injectedHooks;
 }
 
-// A version of IPluginManager. InjectedHook used to track injected hooks in storage.
+// A version of IPluginManager.InjectedHook used to track injected hooks in storage.
 // Omits the hookApplyData field, which is not needed for storage, and flattens the struct.
 struct StoredInjectedHook {
     // The plugin that provides the hook
@@ -37,9 +37,7 @@ struct StoredInjectedHook {
 // to interact with another plugin installed on the account.
 struct PermittedCallData {
     bool callPermitted;
-    EnumerableSet.Bytes32Set prePermittedCallHooks;
-    // bytes21 key = pre exec hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostPermittedCallHooks;
+    HookGroup permittedCallHooks;
 }
 
 // Represents data associated with a plugin's permission to use `executeFromPluginExternal`
@@ -50,6 +48,14 @@ struct PermittedExternalCallData {
     bool addressPermitted;
     bool anySelectorPermitted;
     mapping(bytes4 => bool) permittedSelectors;
+}
+
+// Represets a set of pre- and post- hooks. Used to store both execution hooks and permitted call hooks.
+struct HookGroup {
+    EnumerableSet.Bytes32Set preHooks;
+    // bytes21 key = pre hook function reference
+    mapping(FunctionReference => FunctionReference) associatedPostHooks;
+    EnumerableSet.Bytes32Set postOnlyHooks;
 }
 
 // Represents data associated with a specifc function selector.
@@ -63,9 +69,7 @@ struct SelectorData {
     EnumerableSet.Bytes32Set preUserOpValidationHooks;
     EnumerableSet.Bytes32Set preRuntimeValidationHooks;
     // The execution hooks for this function selector.
-    EnumerableSet.Bytes32Set preExecHooks;
-    // bytes21 key = pre exec hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostExecHooks;
+    HookGroup executionHooks;
 }
 
 struct AccountStorage {
@@ -86,7 +90,7 @@ struct AccountStorage {
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
-    assembly {
+    assembly ("memory-safe") {
         _storage.slot := _ACCOUNT_STORAGE_SLOT
     }
 }
