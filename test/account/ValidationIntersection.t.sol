@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
@@ -18,8 +16,9 @@ import {
     MockUserOpValidation2HookPlugin,
     MockUserOpValidationPlugin
 } from "../mocks/plugins/ValidationPluginMocks.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract ValidationIntersectionTest is Test {
+contract ValidationIntersectionTest is OptimizedTest {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     EntryPoint public entryPoint;
@@ -35,7 +34,7 @@ contract ValidationIntersectionTest is Test {
         entryPoint = new EntryPoint();
         owner1 = makeAddr("owner1");
 
-        SingleOwnerPlugin singleOwnerPlugin = new SingleOwnerPlugin();
+        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin();
         MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         account1 = factory.createAccount(owner1, 0);

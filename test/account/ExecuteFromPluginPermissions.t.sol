@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test, console} from "forge-std/Test.sol";
+import {console} from "forge-std/Test.sol";
 
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
@@ -11,18 +11,17 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
-
 import {Counter} from "../mocks/Counter.sol";
 import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
-
 import {
     EFPCallerPlugin,
     EFPCallerPluginAnyExternal,
     EFPPermittedCallHookPlugin,
     EFPExternalPermittedCallHookPlugin
 } from "../mocks/plugins/ExecFromPluginPermissionsMocks.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract ExecuteFromPluginPermissionsTest is Test {
+contract ExecuteFromPluginPermissionsTest is OptimizedTest {
     Counter public counter1;
     Counter public counter2;
     Counter public counter3;
@@ -47,7 +46,7 @@ contract ExecuteFromPluginPermissionsTest is Test {
 
         // Initialize the contracts needed to use the account.
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Initialize the EFP caller plugins, which will attempt to use the permissions system to authorize calls.

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {ERC721PresetMinterPauserAutoId} from
@@ -10,7 +8,6 @@ import {ERC721PresetMinterPauserAutoId} from
 import {IERC777Recipient} from "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
@@ -19,8 +16,9 @@ import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {MockERC777} from "../mocks/MockERC777.sol";
 import {MockERC1155} from "../mocks/MockERC1155.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract TokenReceiverPluginTest is Test, IERC1155Receiver {
+contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     UpgradeableModularAccount public acct;
     TokenReceiverPlugin public plugin;
 
@@ -39,10 +37,10 @@ contract TokenReceiverPluginTest is Test, IERC1155Receiver {
     uint256 internal constant _BATCH_TOKEN_IDS = 5;
 
     function setUp() public {
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), new SingleOwnerPlugin());
+        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
 
         acct = factory.createAccount(address(this), 0);
-        plugin = new TokenReceiverPlugin();
+        plugin = _deployTokenReceiverPlugin();
 
         t0 = new ERC721PresetMinterPauserAutoId("t0", "t0", "");
         t0.mint(address(this));
