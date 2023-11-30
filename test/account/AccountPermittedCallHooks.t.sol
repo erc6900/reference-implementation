@@ -22,8 +22,9 @@ import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract AccountPermittedCallHooksTest is Test {
+contract AccountPermittedCallHooksTest is OptimizedTest {
     using ECDSA for bytes32;
 
     EntryPoint public entryPoint;
@@ -56,7 +57,7 @@ contract AccountPermittedCallHooksTest is Test {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
