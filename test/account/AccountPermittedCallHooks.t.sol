@@ -208,6 +208,143 @@ contract AccountPermittedCallHooksTest is OptimizedTest {
         _uninstallPlugin(mockPlugin1);
     }
 
+    function test_overlappingPermittedCallHookPairs_install() public {
+        _installPlugin1WithHooks(
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _PRE_HOOK_FUNCTION_ID_1,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _POST_HOOK_FUNCTION_ID_2,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _PRE_HOOK_FUNCTION_ID_1,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _POST_HOOK_FUNCTION_ID_2,
+                dependencyIndex: 0
+            })
+        );
+    }
+
+    /// @dev Plugin hook pair(s): [1, 2], [1, 2]
+    ///      Expected execution: [1, 2]
+    function test_overlappingPermittedCallHookPairs_run() public {
+        test_overlappingPermittedCallHookPairs_install();
+
+        vm.startPrank(address(mockPlugin1));
+
+        // Expect the pre hook to be called just once.
+        vm.expectCall(
+            address(mockPlugin1),
+            abi.encodeWithSelector(
+                IPlugin.preExecutionHook.selector,
+                _PRE_HOOK_FUNCTION_ID_1,
+                address(mockPlugin1), // caller
+                0, // msg.value in call to account
+                abi.encodePacked(_EXEC_SELECTOR)
+            ),
+            1
+        );
+
+        // Expect the post hook to be called just once, with the expected data.
+        vm.expectCall(
+            address(mockPlugin1),
+            abi.encodeWithSelector(IPlugin.postExecutionHook.selector, _POST_HOOK_FUNCTION_ID_2, ""),
+            1
+        );
+
+        account.executeFromPlugin(abi.encodePacked(_EXEC_SELECTOR));
+
+        vm.stopPrank();
+    }
+
+    function test_overlappingPermittedCallHookPairs_uninstall() public {
+        test_overlappingPermittedCallHookPairs_install();
+
+        _uninstallPlugin(mockPlugin1);
+    }
+
+    function test_overlappingPermittedCallHookPairsOnPost_install() public {
+        _installPlugin1WithHooks(
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _PRE_HOOK_FUNCTION_ID_1,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _POST_HOOK_FUNCTION_ID_2,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _PRE_HOOK_FUNCTION_ID_3,
+                dependencyIndex: 0
+            }),
+            ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: _POST_HOOK_FUNCTION_ID_2,
+                dependencyIndex: 0
+            })
+        );
+    }
+
+    /// @dev Plugin hook pair(s): [1, 2], [3, 2]
+    ///      Expected execution: [1, 2], [3, 2]
+    function test_overlappingPermittedCallHookPairsOnPost_run() public {
+        test_overlappingPermittedCallHookPairsOnPost_install();
+
+        vm.startPrank(address(mockPlugin1));
+
+        // Expect each pre hook to be called once.
+        vm.expectCall(
+            address(mockPlugin1),
+            abi.encodeWithSelector(
+                IPlugin.preExecutionHook.selector,
+                _PRE_HOOK_FUNCTION_ID_3,
+                address(mockPlugin1), // caller
+                0, // msg.value in call to account
+                abi.encodePacked(_EXEC_SELECTOR)
+            ),
+            1
+        );
+        vm.expectCall(
+            address(mockPlugin1),
+            abi.encodeWithSelector(
+                IPlugin.preExecutionHook.selector,
+                _PRE_HOOK_FUNCTION_ID_1,
+                address(mockPlugin1), // caller
+                0, // msg.value in call to account
+                abi.encodePacked(_EXEC_SELECTOR)
+            ),
+            1
+        );
+
+        // Expect the post hook to be called twice, with the expected data.
+        vm.expectCall(
+            address(mockPlugin1),
+            abi.encodeWithSelector(IPlugin.postExecutionHook.selector, _POST_HOOK_FUNCTION_ID_2, ""),
+            2
+        );
+
+        account.executeFromPlugin(abi.encodePacked(_EXEC_SELECTOR));
+
+        vm.stopPrank();
+    }
+
+    function test_overlappingPermittedCallHookPairsOnPost_uninstall() public {
+        test_overlappingPermittedCallHookPairsOnPost_install();
+
+        _uninstallPlugin(mockPlugin1);
+    }
+
     function _installPlugin1WithHooks(ManifestFunction memory preHook1, ManifestFunction memory postHook1)
         internal
     {

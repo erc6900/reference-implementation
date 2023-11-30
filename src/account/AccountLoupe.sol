@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
@@ -11,11 +12,13 @@ import {
     AccountStorage,
     getAccountStorage,
     getPermittedCallKey,
+    HookGroup,
     toFunctionReferenceArray
 } from "../libraries/AccountStorage.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
+    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     error ManifestDiscrepancy(address plugin);
@@ -47,23 +50,7 @@ abstract contract AccountLoupe is IAccountLoupe {
 
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
-        AccountStorage storage _storage = getAccountStorage();
-
-        FunctionReference[] memory preExecHooks =
-            toFunctionReferenceArray(_storage.selectorData[selector].executionHooks.preHooks);
-
-        uint256 numHooks = preExecHooks.length;
-        execHooks = new ExecutionHooks[](numHooks);
-
-        for (uint256 i = 0; i < numHooks;) {
-            execHooks[i].preExecHook = preExecHooks[i];
-            execHooks[i].postExecHook =
-                _storage.selectorData[selector].executionHooks.associatedPostHooks[preExecHooks[i]];
-
-            unchecked {
-                ++i;
-            }
-        }
+        execHooks = _getHooks(getAccountStorage().selectorData[selector].executionHooks);
     }
 
     /// @inheritdoc IAccountLoupe
@@ -72,25 +59,8 @@ abstract contract AccountLoupe is IAccountLoupe {
         view
         returns (ExecutionHooks[] memory execHooks)
     {
-        AccountStorage storage _storage = getAccountStorage();
-
         bytes24 key = getPermittedCallKey(callingPlugin, selector);
-
-        FunctionReference[] memory prePermittedCallHooks =
-            toFunctionReferenceArray(_storage.permittedCalls[key].permittedCallHooks.preHooks);
-
-        uint256 numHooks = prePermittedCallHooks.length;
-        execHooks = new ExecutionHooks[](numHooks);
-
-        for (uint256 i = 0; i < numHooks;) {
-            execHooks[i].preExecHook = prePermittedCallHooks[i];
-            execHooks[i].postExecHook =
-                _storage.permittedCalls[key].permittedCallHooks.associatedPostHooks[prePermittedCallHooks[i]];
-
-            unchecked {
-                ++i;
-            }
-        }
+        execHooks = _getHooks(getAccountStorage().permittedCalls[key].permittedCallHooks);
     }
 
     /// @inheritdoc IAccountLoupe
@@ -111,5 +81,68 @@ abstract contract AccountLoupe is IAccountLoupe {
     /// @inheritdoc IAccountLoupe
     function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
         pluginAddresses = getAccountStorage().plugins.values();
+    }
+
+    function _getHooks(HookGroup storage hooks) internal view returns (ExecutionHooks[] memory execHooks) {
+        uint256 preExecHooksLength = hooks.preHooks.length();
+        uint256 postOnlyExecHooksLength = hooks.postOnlyHooks.length();
+        uint256 maxExecHooksLength = postOnlyExecHooksLength;
+
+        // There can only be as many associated post hooks to run as there are pre hooks.
+        for (uint256 i = 0; i < preExecHooksLength;) {
+            (, uint256 count) = hooks.preHooks.at(i);
+            unchecked {
+                maxExecHooksLength += (count + 1);
+                ++i;
+            }
+        }
+
+        // Overallocate on length - not all of this may get filled up. We set the correct length later.
+        execHooks = new ExecutionHooks[](maxExecHooksLength);
+        uint256 actualExecHooksLength;
+
+        for (uint256 i = 0; i < preExecHooksLength;) {
+            (bytes32 key,) = hooks.preHooks.at(i);
+            FunctionReference preExecHook = FunctionReference.wrap(bytes21(key));
+
+            uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
+            if (associatedPostExecHooksLength > 0) {
+                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
+                    execHooks[actualExecHooksLength].preExecHook = preExecHook;
+                    (key,) = hooks.associatedPostHooks[preExecHook].at(j);
+                    execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
+
+                    unchecked {
+                        ++actualExecHooksLength;
+                        ++j;
+                    }
+                }
+            } else {
+                execHooks[actualExecHooksLength].preExecHook = preExecHook;
+
+                unchecked {
+                    ++actualExecHooksLength;
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        for (uint256 i = 0; i < postOnlyExecHooksLength;) {
+            (bytes32 key,) = hooks.postOnlyHooks.at(i);
+            execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
+
+            unchecked {
+                ++actualExecHooksLength;
+                ++i;
+            }
+        }
+
+        // Trim the exec hooks array to the actual length, since we may have overallocated.
+        assembly ("memory-safe") {
+            mstore(execHooks, actualExecHooksLength)
+        }
     }
 }

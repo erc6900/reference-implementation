@@ -25,6 +25,10 @@ library FunctionReferenceLib {
         functionId = uint8(bytes1(underlying << 160));
     }
 
+    function isEmpty(FunctionReference fr) internal pure returns (bool) {
+        return fr == _EMPTY_FUNCTION_REFERENCE;
+    }
+
     function isEmptyOrMagicValue(FunctionReference fr) internal pure returns (bool) {
         return FunctionReference.unwrap(fr) <= bytes21(uint168(2));
     }
