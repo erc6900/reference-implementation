@@ -66,7 +66,7 @@ contract UpgradeableModularAccount is
     modifier wrapNativeFunction() {
         _doRuntimeValidationIfNotFromEP();
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
         _;
 
@@ -127,7 +127,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
-        postExecHooks = _doPreExecHooks(msg.sig);
+        postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execPlugin.call(msg.data);
@@ -197,7 +197,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(selector);
         }
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector, data);
 
         (bool success, bytes memory returnData) = execFunctionPlugin.call(data);
 
@@ -256,7 +256,8 @@ contract UpgradeableModularAccount is
         );
 
         // Run any pre exec hooks for this selector
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector);
+        PostExecToRun[] memory postExecHooks =
+            _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
 
         // Perform the external call
         bytes memory returnData = _exec(target, value, data);
@@ -478,7 +479,10 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doPreExecHooks(bytes4 selector) internal returns (PostExecToRun[] memory postHooksToRun) {
+    function _doPreExecHooks(bytes4 selector, bytes calldata data)
+        internal
+        returns (PostExecToRun[] memory postHooksToRun)
+    {
         HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
 
         uint256 postExecHooksLength = 0;
@@ -500,7 +504,7 @@ contract UpgradeableModularAccount is
 
             (address plugin, uint8 functionId) = preExecHook.unpack();
             bytes memory preExecHookReturnData;
-            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, msg.data) returns (
+            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
                 bytes memory returnData
             ) {
                 preExecHookReturnData = returnData;
