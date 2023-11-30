@@ -1,4 +1,4 @@
-# ERC-6900 Ref Implementation
+# ERC-6900 Reference Implementation
 
 Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900). It is an early draft implementation.
 
@@ -13,20 +13,18 @@ The implementation includes an upgradable modular account with two plugins (`Sin
 
 Anyone is welcome to submit feedback and/or PRs to improve code or add Plugins.
 
-### Build
+### Testing
+
+The default Foundry profile can be used to compile (without IR) and test the entire project. The default profile should be used when generating coverage and debugging.
 
 ```bash
 forge build
-
-# or use the lite profile to reduce compilation time
-FOUNDRY_PROFILE=lite forge build
+forge test -vvv
 ```
 
-### Test
+Since IR compilation generates different bytecode, it's useful to test against the contracts compiled via IR. Since compiling the entire project (including the test suite) takes a long time, special profiles can be used to precompile just the source contracts, and have the tests deploy the relevant contracts using those artifacts.
 
 ```bash
-forge test -vvv
-
-# or use the lite profile to reduce compilation time
-FOUNDRY_PROFILE=lite forge test -vvv
+FOUNDRY_PROFILE=optimized-build forge build
+FOUNDRY_PROFILE=optimized-test forge test -vvv
 ```

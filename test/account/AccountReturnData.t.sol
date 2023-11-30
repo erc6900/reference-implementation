@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -17,9 +15,10 @@ import {
     ResultConsumerPlugin
 } from "../mocks/plugins/ReturnDataPluginMocks.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 // Tests all the different ways that return data can be read from plugins through an account
-contract AccountReturnDataTest is Test {
+contract AccountReturnDataTest is OptimizedTest {
     EntryPoint public entryPoint; // Just to be able to construct the factory
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
@@ -32,7 +31,7 @@ contract AccountReturnDataTest is Test {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         regularResultContract = new RegularResultContract();

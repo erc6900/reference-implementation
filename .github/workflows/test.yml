@@ -1,4 +1,4 @@
-name: ERC6900 RI Test CI
+name: ERC-6900 RI Test CI
 
 on: [pull_request, workflow_dispatch]
 
@@ -45,9 +45,31 @@ jobs:
 
       - name: "Lint the contracts"
         run: "pnpm lint"
-        
-  test:
-    name: Run Forge Tests
+
+  test-optimized-test-deep:
+    name: Run Forge Tests (optimized-test-deep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install forge dependencies
+        run: forge install
+
+      - name: Build project
+        run: FOUNDRY_PROFILE=optimized-build forge build
+
+      - name: Run tests
+        run: FOUNDRY_PROFILE=optimized-test-deep forge test -vvv
+
+  test-default:
+    name: Run Forge Tests (default)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -66,26 +88,4 @@ jobs:
         run: forge build
 
       - name: Run tests
-        run: FOUNDRY_PROFILE=deep forge test -vvv
-
-  test-lite:
-    name: Run Forge Tests [lite build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Install forge dependencies
-        run: forge install
-
-      - name: Build project
-        run: FOUNDRY_PROFILE=lite forge build
-
-      - name: Run tests
-        run: FOUNDRY_PROFILE=lite forge test -vvv
+        run: forge test -vvv

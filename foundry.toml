@@ -1,13 +1,16 @@
 [profile.default]
 solc = '0.8.19'
-via_ir = true
+via_ir = false
 src = 'src'
-out = 'out'
 test = 'test'
 libs = ['lib']
+out = 'out'
 optimizer = true
 optimizer_runs = 10_000
 ignored_error_codes = [3628]
+fs_permissions = [
+  { access = "read", path = "./out-optimized" }
+]
 
 [fuzz]
 runs = 500
@@ -17,12 +20,23 @@ runs=500
 fail_on_revert = true
 depth = 10
 
-[profile.lite]
-solc = '0.8.19'
-via_ir = false
-optimizer = true
-optimizer_runs = 10_000
-ignored_error_codes = [3628]
+[profile.optimized-build]
+via_ir = true
+test = 'src'
+out = 'out-optimized'
+
+[profile.optimized-test]
+src = 'test'
+
+[profile.optimized-test-deep]
+src = 'test'
+
+[profile.optimized-test-deep.fuzz]
+runs = 10000
+
+[profile.optimized-test-deep.invariant]
+runs = 5000
+depth = 32
 
 [profile.deep.fuzz]
 runs = 10000
