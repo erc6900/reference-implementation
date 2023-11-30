@@ -90,7 +90,7 @@ struct AccountStorage {
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
-    assembly {
+    assembly ("memory-safe") {
         _storage.slot := _ACCOUNT_STORAGE_SLOT
     }
 }

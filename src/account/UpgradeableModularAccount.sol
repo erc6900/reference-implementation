@@ -485,58 +485,7 @@ contract UpgradeableModularAccount is
     {
         HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
 
-        uint256 postExecHooksLength = 0;
-        uint256 preExecHooksLength = hooks.preHooks.length();
-
-        // Over-allocate on length, but not all of this may get filled up.
-        postHooksToRun = new PostExecToRun[](preExecHooksLength + hooks.postOnlyHooks.length());
-        for (uint256 i = 0; i < preExecHooksLength;) {
-            FunctionReference preExecHook = _toFunctionReference(hooks.preHooks.at(i));
-
-            if (preExecHook.isEmptyOrMagicValue()) {
-                if (preExecHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
-                    revert AlwaysDenyRule();
-                }
-                // Function reference cannot be 0. If _RUNTIME_VALIDATION_ALWAYS_ALLOW, revert since it's an
-                // invalid configuration.
-                revert InvalidConfiguration();
-            }
-
-            (address plugin, uint8 functionId) = preExecHook.unpack();
-            bytes memory preExecHookReturnData;
-            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
-                bytes memory returnData
-            ) {
-                preExecHookReturnData = returnData;
-            } catch (bytes memory revertReason) {
-                revert PreExecHookReverted(plugin, functionId, revertReason);
-            }
-
-            // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook =
-                getAccountStorage().selectorData[selector].executionHooks.associatedPostHooks[preExecHook];
-            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-                postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
-                postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
-                unchecked {
-                    ++postExecHooksLength;
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Add post-only hooks to the end of the array
-        uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
-        for (uint256 i = 0; i < postOnlyHooksLength;) {
-            postHooksToRun[postExecHooksLength].postExecHook = _toFunctionReference(hooks.postOnlyHooks.at(i));
-            unchecked {
-                ++postExecHooksLength;
-                ++i;
-            }
-        }
+        return _doPreHooks(hooks, data);
     }
 
     function _doPrePermittedCallHooks(bytes24 permittedCallKey, bytes calldata data)
@@ -545,6 +494,13 @@ contract UpgradeableModularAccount is
     {
         HookGroup storage hooks = getAccountStorage().permittedCalls[permittedCallKey].permittedCallHooks;
 
+        return _doPreHooks(hooks, data);
+    }
+
+    function _doPreHooks(HookGroup storage hooks, bytes calldata data)
+        internal
+        returns (PostExecToRun[] memory postHooksToRun)
+    {
         uint256 postExecHooksLength = 0;
         uint256 preExecHooksLength = hooks.preHooks.length();
         // Over-allocate on length, but not all of this may get filled up.
@@ -572,9 +528,7 @@ contract UpgradeableModularAccount is
             }
 
             // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook = getAccountStorage().permittedCalls[permittedCallKey]
-                .permittedCallHooks
-                .associatedPostHooks[preExecHook];
+            FunctionReference postExecHook = hooks.associatedPostHooks[preExecHook];
             if (FunctionReference.unwrap(postExecHook) != 0) {
                 postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
                 postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;

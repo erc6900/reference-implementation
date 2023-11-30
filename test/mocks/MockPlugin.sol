@@ -39,7 +39,7 @@ contract MockPlugin is ERC165 {
         pure
         returns (function() internal pure returns (PluginManifest memory) fnOut)
     {
-        assembly {
+        assembly ("memory-safe") {
             fnOut := fnIn
         }
     }
@@ -82,7 +82,8 @@ contract MockPlugin is ERC165 {
                 || msg.sig == IPlugin.preExecutionHook.selector
         ) {
             // return 0 for userOp/runtimeVal case, return bytes("") for preExecutionHook case
-            assembly {
+            assembly ("memory-safe") {
+                mstore(0, 0)
                 return(0x00, 0x20)
             }
         }
