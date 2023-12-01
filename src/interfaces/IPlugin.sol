@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+
 import {IPluginManager} from "./IPluginManager.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
@@ -53,12 +54,13 @@ struct ManifestExternalCallPermission {
     bytes4[] selectors;
 }
 
-struct ManifestExecutionFunction {
-    bytes4 selector;
-    string[] permissions;
+struct SelectorPermission {
+    bytes4 functionSelector;
+    string permissionDescription;
 }
 
-struct PluginManifest {
+/// @dev A struct holding fields to describe the plugin in a purely view context. Intended for front end clients.
+struct PluginMetadata {
     // A human-readable name of the plugin.
     string name;
     // The version of the plugin, following the semantic versioning scheme.
@@ -66,6 +68,13 @@ struct PluginManifest {
     // The author field SHOULD be a username representing the identity of the user or organization
     // that created this plugin.
     string author;
+    // String desciptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
+    // functions implemented by this plugin.
+    SelectorPermission[] permissionDescriptors;
+}
+
+/// @dev A struct describing how the plugin should be installed on a modular account.
+struct PluginManifest {
     // List of ERC-165 interfaceIds to add to account to support introspection checks.
     bytes4[] interfaceIds;
     // If this plugin depends on other plugins' validation functions and/or hooks, the interface IDs of
@@ -73,12 +82,13 @@ struct PluginManifest {
     // members of `ManifestFunction` structs used in the manifest.
     bytes4[] dependencyInterfaceIds;
     // Execution functions defined in this plugin to be installed on the MSCA.
-    ManifestExecutionFunction[] executionFunctions;
-    // Native functions or execution functions already installed on the MSCA that this plugin will be
-    // able to call.
+    bytes4[] executionFunctions;
+    // Plugin execution functions already installed on the MSCA that this plugin will be able to call.
     bytes4[] permittedExecutionSelectors;
-    // External contract calls that this plugin will be able to make.
-    bool permitAnyExternalContract;
+    // Boolean to indicate whether the plugin can call any external contract addresses.
+    bool permitAnyExternalAddress;
+    // Boolean to indicate whether the plugin needs access to spend native tokens of the account.
+    bool canSpendNativeToken;
     ManifestExternalCallPermission[] permittedExternalCalls;
     ManifestAssociatedFunction[] userOpValidationFunctions;
     ManifestAssociatedFunction[] runtimeValidationFunctions;
@@ -187,4 +197,9 @@ interface IPlugin {
     /// @dev This manifest MUST stay constant over time.
     /// @return A manifest describing the contents and intended configuration of the plugin.
     function pluginManifest() external pure returns (PluginManifest memory);
+
+    /// @notice Describe the metadata of the plugin.
+    /// @dev This metadata MUST stay constant over time.
+    /// @return A metadata struct describing the plugin.
+    function pluginMetadata() external pure returns (PluginMetadata memory);
 }

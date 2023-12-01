@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {BaseModularAccount} from "../../src/account/BaseModularAccount.sol";
+import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 
@@ -22,8 +20,9 @@ import {
     BadHookMagicValue_RuntimeValidationFunction_Plugin,
     BadHookMagicValue_PostExecHook_Plugin
 } from "../mocks/plugins/ManifestValidityMocks.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract ManifestValidityTest is Test {
+contract ManifestValidityTest is OptimizedTest {
     EntryPoint public entryPoint; // Just to be able to construct the factory
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
@@ -32,7 +31,7 @@ contract ManifestValidityTest is Test {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = new SingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
@@ -47,7 +46,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -65,7 +64,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -83,7 +82,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -99,7 +98,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -115,7 +114,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -132,7 +131,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -149,7 +148,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
@@ -165,7 +164,7 @@ contract ManifestValidityTest is Test {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        vm.expectRevert(abi.encodeWithSelector(BaseModularAccount.InvalidPluginManifest.selector));
+        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,

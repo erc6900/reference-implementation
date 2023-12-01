@@ -8,12 +8,14 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
+
 /**
  * @title MSCAFactoryFixture
  * @dev a factory that initializes UpgradeableModularAccounts with a single plugin, SingleOwnerPlugin
  * intended for unit tests and local development, not for production.
  */
-contract MSCAFactoryFixture {
+contract MSCAFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
     SingleOwnerPlugin public singleOwnerPlugin;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
@@ -28,7 +30,7 @@ contract MSCAFactoryFixture {
 
     constructor(IEntryPoint _entryPoint, SingleOwnerPlugin _singleOwnerPlugin) {
         entryPoint = _entryPoint;
-        accountImplementation = new UpgradeableModularAccount(_entryPoint);
+        accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );

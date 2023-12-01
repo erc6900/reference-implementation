@@ -9,7 +9,7 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
-    ManifestExecutionFunction
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
@@ -118,12 +118,8 @@ contract ComprehensivePlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.name = NAME;
-        manifest.version = VERSION;
-        manifest.author = AUTHOR;
-
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         ManifestFunction memory fooUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
@@ -246,5 +242,13 @@ contract ComprehensivePlugin is BasePlugin {
         });
 
         return manifest;
+    }
+
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+        return metadata;
     }
 }

@@ -7,13 +7,12 @@ import {
     ManifestAssociatedFunction,
     ManifestExternalCallPermission,
     ManifestExecutionHook,
-    PluginManifest,
-    ManifestExecutionFunction
+    PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 import {FunctionReference} from "../../../src/libraries/FunctionReferenceLib.sol";
 
 import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
@@ -25,7 +24,7 @@ address constant counter1 = 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f;
 address constant counter2 = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
 address constant counter3 = 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a;
 
-contract EFPCallerPlugin is BasePlugin {
+contract EFPCallerPlugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -33,29 +32,18 @@ contract EFPCallerPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](11);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.useEFPPermissionAllowed.selector, new string[](0));
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction(this.useEFPPermissionNotAllowed.selector, new string[](0));
-        manifest.executionFunctions[2] =
-            ManifestExecutionFunction(this.setNumberCounter1.selector, new string[](0));
-        manifest.executionFunctions[3] =
-            ManifestExecutionFunction(this.getNumberCounter1.selector, new string[](0));
-        manifest.executionFunctions[4] =
-            ManifestExecutionFunction(this.incrementCounter1.selector, new string[](0));
-        manifest.executionFunctions[5] =
-            ManifestExecutionFunction(this.setNumberCounter2.selector, new string[](0));
-        manifest.executionFunctions[6] =
-            ManifestExecutionFunction(this.getNumberCounter2.selector, new string[](0));
-        manifest.executionFunctions[7] =
-            ManifestExecutionFunction(this.incrementCounter2.selector, new string[](0));
-        manifest.executionFunctions[8] =
-            ManifestExecutionFunction(this.setNumberCounter3.selector, new string[](0));
-        manifest.executionFunctions[9] =
-            ManifestExecutionFunction(this.getNumberCounter3.selector, new string[](0));
-        manifest.executionFunctions[10] =
-            ManifestExecutionFunction(this.incrementCounter3.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](11);
+        manifest.executionFunctions[0] = this.useEFPPermissionAllowed.selector;
+        manifest.executionFunctions[1] = this.useEFPPermissionNotAllowed.selector;
+        manifest.executionFunctions[2] = this.setNumberCounter1.selector;
+        manifest.executionFunctions[3] = this.getNumberCounter1.selector;
+        manifest.executionFunctions[4] = this.incrementCounter1.selector;
+        manifest.executionFunctions[5] = this.setNumberCounter2.selector;
+        manifest.executionFunctions[6] = this.getNumberCounter2.selector;
+        manifest.executionFunctions[7] = this.incrementCounter2.selector;
+        manifest.executionFunctions[8] = this.setNumberCounter3.selector;
+        manifest.executionFunctions[9] = this.getNumberCounter3.selector;
+        manifest.executionFunctions[10] = this.incrementCounter3.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](11);
 
@@ -67,7 +55,7 @@ contract EFPCallerPlugin is BasePlugin {
 
         for (uint256 i = 0; i < manifest.executionFunctions.length; i++) {
             manifest.runtimeValidationFunctions[i] = ManifestAssociatedFunction({
-                executionSelector: manifest.executionFunctions[i].selector,
+                executionSelector: manifest.executionFunctions[i],
                 associatedFunction: alwaysAllowValidationFunction
             });
         }
@@ -182,7 +170,7 @@ contract EFPCallerPlugin is BasePlugin {
     }
 }
 
-contract EFPCallerPluginAnyExternal is BasePlugin {
+contract EFPCallerPluginAnyExternal is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -190,9 +178,8 @@ contract EFPCallerPluginAnyExternal is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.passthroughExecute.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.passthroughExecute.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -204,7 +191,7 @@ contract EFPCallerPluginAnyExternal is BasePlugin {
             })
         });
 
-        manifest.permitAnyExternalContract = true;
+        manifest.permitAnyExternalAddress = true;
 
         return manifest;
     }
@@ -219,7 +206,7 @@ contract EFPCallerPluginAnyExternal is BasePlugin {
 }
 
 // Create pre and post permitted call hooks for calling ResultCreatorPlugin.foo via `executeFromPlugin`
-contract EFPPermittedCallHookPlugin is BasePlugin {
+contract EFPPermittedCallHookPlugin is BaseTestPlugin {
     bool public preExecHookCalled;
     bool public postExecHookCalled;
 
@@ -242,8 +229,8 @@ contract EFPPermittedCallHookPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.performEFPCall.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.performEFPCall.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -282,7 +269,7 @@ contract EFPPermittedCallHookPlugin is BasePlugin {
 }
 
 // Creates pre and post permitted call hooks for `executeFromPluginExternal`
-contract EFPExternalPermittedCallHookPlugin is BasePlugin {
+contract EFPExternalPermittedCallHookPlugin is BaseTestPlugin {
     bool public preExecHookCalled;
     bool public postExecHookCalled;
 
@@ -305,8 +292,8 @@ contract EFPExternalPermittedCallHookPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.performIncrement.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.performIncrement.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -333,7 +320,7 @@ contract EFPExternalPermittedCallHookPlugin is BasePlugin {
             })
         });
 
-        manifest.permitAnyExternalContract = true;
+        manifest.permitAnyExternalAddress = true;
 
         return manifest;
     }

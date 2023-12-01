@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPlugin, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 
 /// @title Base contract for plugins
@@ -152,6 +152,11 @@ abstract contract BasePlugin is ERC165, IPlugin {
     function pluginManifest() external pure virtual returns (PluginManifest memory) {
         revert NotImplemented();
     }
+
+    /// @notice Describe the metadata of the plugin.
+    /// @dev This metadata MUST stay constant over time.
+    /// @return A metadata struct describing the plugin.
+    function pluginMetadata() external pure virtual returns (PluginMetadata memory);
 
     /// @dev Returns true if this contract implements the interface defined by
     /// `interfaceId`. See the corresponding

@@ -7,16 +7,15 @@ import {
     ManifestAssociatedFunction,
     ManifestExecutionHook,
     ManifestExternalCallPermission,
-    PluginManifest,
-    ManifestExecutionFunction
+    PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 import {FunctionReference} from "../../../src/libraries/FunctionReferenceLib.sol";
 
-contract BadValidationMagicValue_UserOp_Plugin is BasePlugin {
+contract BadValidationMagicValue_UserOp_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -28,8 +27,8 @@ contract BadValidationMagicValue_UserOp_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
@@ -46,7 +45,7 @@ contract BadValidationMagicValue_UserOp_Plugin is BasePlugin {
     }
 }
 
-contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BasePlugin {
+contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -58,8 +57,8 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -72,7 +71,6 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BasePlugin {
         });
 
         manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](1);
-
         // Illegal assignment: validation always allow only usable on runtime validation functions
         manifest.preRuntimeValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
@@ -87,7 +85,7 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BasePlugin {
     }
 }
 
-contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BasePlugin {
+contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -99,8 +97,8 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
@@ -113,7 +111,6 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BasePlugin {
         });
 
         manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](1);
-
         // Illegal assignment: validation always allow only usable on runtime validation functions
         manifest.preUserOpValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
@@ -128,7 +125,7 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BasePlugin {
     }
 }
 
-contract BadValidationMagicValue_PreExecHook_Plugin is BasePlugin {
+contract BadValidationMagicValue_PreExecHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -140,8 +137,8 @@ contract BadValidationMagicValue_PreExecHook_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.executionHooks = new ManifestExecutionHook[](1);
 
@@ -164,7 +161,7 @@ contract BadValidationMagicValue_PreExecHook_Plugin is BasePlugin {
     }
 }
 
-contract BadValidationMagicValue_PostExecHook_Plugin is BasePlugin {
+contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -176,11 +173,10 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.executionHooks = new ManifestExecutionHook[](1);
-
         // Illegal assignment: validation always allow only usable on runtime validation functions
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
@@ -200,7 +196,7 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BasePlugin {
     }
 }
 
-contract BadHookMagicValue_UserOpValidationFunction_Plugin is BasePlugin {
+contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -212,8 +208,8 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
@@ -229,7 +225,7 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BasePlugin {
     }
 }
 
-contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BasePlugin {
+contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -241,8 +237,8 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
@@ -258,7 +254,7 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BasePlugin {
     }
 }
 
-contract BadHookMagicValue_PostExecHook_Plugin is BasePlugin {
+contract BadHookMagicValue_PostExecHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -270,11 +266,10 @@ contract BadHookMagicValue_PostExecHook_Plugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.executionHooks = new ManifestExecutionHook[](1);
-
         // Illegal assignment: hook always deny only usable on runtime validation functions
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,

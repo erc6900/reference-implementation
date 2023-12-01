@@ -3,9 +3,10 @@ pragma solidity ^0.8.19;
 
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
+/// @title Plugin Manager Interface
 interface IPluginManager {
-    // Pre/post exec hooks added by the user to limit the scope a plugin has
-    // These hooks are injected at plugin install time
+    /// @dev Pre/post exec hooks added by the user to limit the scope of a plugin. These hooks are injected at
+    /// plugin install time
     struct InjectedHook {
         // The plugin that provides the hook
         address providingPlugin;
@@ -21,8 +22,15 @@ interface IPluginManager {
         uint8 postExecHookFunctionId;
     }
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
-    event PluginUninstalled(address indexed plugin, bytes32 manifestHash, bool onUninstallSucceeded);
+    /// @dev Note that we strip hookApplyData from InjectedHooks in this event for gas savings
+    event PluginInstalled(
+        address indexed plugin,
+        bytes32 manifestHash,
+        FunctionReference[] dependencies,
+        InjectedHook[] injectedHooks
+    );
+
+    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
 
     /// @notice Install a plugin to the modular account.
     /// @param plugin The plugin to install.
@@ -40,6 +48,7 @@ interface IPluginManager {
     ) external;
 
     /// @notice Uninstall a plugin from the modular account.
+    /// @dev Uninstalling owner plugins outside of a replace operation via executeBatch risks losing the account!
     /// @param plugin The plugin to uninstall.
     /// @param config An optional, implementation-specific field that accounts may use to ensure consistency
     /// guarantees.
