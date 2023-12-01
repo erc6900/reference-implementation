@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -31,6 +32,7 @@ contract UpgradeableModularAccount is
     PluginManagerInternals,
     UUPSUpgradeable
 {
+    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     struct PostExecToRun {
@@ -363,22 +365,23 @@ contract UpgradeableModularAccount is
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
-        if (userOpValidationFunction == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+        if (userOpValidationFunction.isEmpty()) {
             revert UserOpValidationFunctionMissing(selector);
         }
 
         uint256 currentValidationData;
 
         // Do preUserOpValidation hooks
-        EnumerableSet.Bytes32Set storage preUserOpValidationHooks =
+        EnumerableMap.Bytes32ToUintMap storage preUserOpValidationHooks =
             getAccountStorage().selectorData[selector].preUserOpValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength;) {
-            // FunctionReference preUserOpValidationHook = preUserOpValidationHooks[i];
+            (bytes32 key,) = preUserOpValidationHooks.at(i);
+            FunctionReference preUserOpValidationHook = _toFunctionReference(key);
 
-            if (!_toFunctionReference(preUserOpValidationHooks.at(i)).isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = _toFunctionReference(preUserOpValidationHooks.at(i)).unpack();
+            if (!preUserOpValidationHook.isEmptyOrMagicValue()) {
+                (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
                 try IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash) returns (
                     uint256 returnData
                 ) {
@@ -432,12 +435,13 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
         FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].runtimeValidation;
         // run all preRuntimeValidation hooks
-        EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
+        EnumerableMap.Bytes32ToUintMap storage preRuntimeValidationHooks =
             getAccountStorage().selectorData[msg.sig].preRuntimeValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength;) {
-            FunctionReference preRuntimeValidationHook = _toFunctionReference(preRuntimeValidationHooks.at(i));
+            (bytes32 key,) = preRuntimeValidationHooks.at(i);
+            FunctionReference preRuntimeValidationHook = _toFunctionReference(key);
 
             if (!preRuntimeValidationHook.isEmptyOrMagicValue()) {
                 (address plugin, uint8 functionId) = preRuntimeValidationHook.unpack();
@@ -469,7 +473,7 @@ contract UpgradeableModularAccount is
                     revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
                 }
             } else {
-                if (runtimeValidationFunction == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+                if (runtimeValidationFunction.isEmpty()) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
                 } else if (runtimeValidationFunction == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
                     revert InvalidConfiguration();
@@ -501,40 +505,60 @@ contract UpgradeableModularAccount is
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
-        uint256 postExecHooksLength = 0;
         uint256 preExecHooksLength = hooks.preHooks.length();
-        // Over-allocate on length, but not all of this may get filled up.
-        postHooksToRun = new PostExecToRun[](preExecHooksLength + hooks.postOnlyHooks.length());
+        uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
+        uint256 maxPostExecHooksLength = postOnlyHooksLength;
+
+        // There can only be as many associated post hooks to run as there are pre hooks.
         for (uint256 i = 0; i < preExecHooksLength;) {
-            FunctionReference preExecHook = _toFunctionReference(hooks.preHooks.at(i));
+            (, uint256 count) = hooks.preHooks.at(i);
+            unchecked {
+                maxPostExecHooksLength += (count + 1);
+                ++i;
+            }
+        }
+
+        // Overallocate on length - not all of this may get filled up. We set the correct length later.
+        postHooksToRun = new PostExecToRun[](maxPostExecHooksLength);
+        uint256 actualPostHooksToRunLength;
+
+        // Copy post-only hooks to the array.
+        for (uint256 i = 0; i < postOnlyHooksLength;) {
+            (bytes32 key,) = hooks.postOnlyHooks.at(i);
+            postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
+            unchecked {
+                ++actualPostHooksToRunLength;
+                ++i;
+            }
+        }
+
+        // Then run the pre hooks and copy the associated post hooks (along with their pre hook's return data) to
+        // the array.
+        for (uint256 i = 0; i < preExecHooksLength;) {
+            (bytes32 key,) = hooks.preHooks.at(i);
+            FunctionReference preExecHook = _toFunctionReference(key);
 
             if (preExecHook.isEmptyOrMagicValue()) {
-                if (preExecHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
-                    revert AlwaysDenyRule();
-                }
-                // Function reference cannot be 0. If RUNTIME_VALIDATION_BYPASS, revert since it's an invalid
-                // configuration.
-                revert InvalidConfiguration();
+                // The function reference must be PRE_HOOK_ALWAYS_DENY in this case, because zero and any other
+                // magic value is unassignable here.
+                revert AlwaysDenyRule();
             }
 
-            (address plugin, uint8 functionId) = preExecHook.unpack();
-            bytes memory preExecHookReturnData;
-            try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
-                bytes memory returnData
-            ) {
-                preExecHookReturnData = returnData;
-            } catch (bytes memory revertReason) {
-                revert PreExecHookReverted(plugin, functionId, revertReason);
-            }
+            uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
+            if (associatedPostExecHooksLength > 0) {
+                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
+                    (key,) = hooks.associatedPostHooks[preExecHook].at(j);
+                    postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
+                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData =
+                        _runPreExecHook(preExecHook, data);
 
-            // Check to see if there is a postExec hook set for this preExec hook
-            FunctionReference postExecHook = hooks.associatedPostHooks[preExecHook];
-            if (FunctionReference.unwrap(postExecHook) != 0) {
-                postHooksToRun[postExecHooksLength].postExecHook = postExecHook;
-                postHooksToRun[postExecHooksLength].preExecHookReturnData = preExecHookReturnData;
-                unchecked {
-                    ++postExecHooksLength;
+                    unchecked {
+                        ++actualPostHooksToRunLength;
+                        ++j;
+                    }
                 }
+            } else {
+                _runPreExecHook(preExecHook, data);
             }
 
             unchecked {
@@ -542,36 +566,40 @@ contract UpgradeableModularAccount is
             }
         }
 
-        // Copy post-only hooks to the end of the array
-        uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
-        for (uint256 i = 0; i < postOnlyHooksLength;) {
-            postHooksToRun[postExecHooksLength].postExecHook = _toFunctionReference(hooks.postOnlyHooks.at(i));
-            unchecked {
-                ++postExecHooksLength;
-                ++i;
-            }
+        // Trim the post hook array to the actual length, since we may have overallocated.
+        assembly ("memory-safe") {
+            mstore(postHooksToRun, actualPostHooksToRunLength)
         }
     }
 
+    function _runPreExecHook(FunctionReference preExecHook, bytes calldata data)
+        internal
+        returns (bytes memory preExecHookReturnData)
+    {
+        (address plugin, uint8 functionId) = preExecHook.unpack();
+        try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
+            bytes memory returnData
+        ) {
+            preExecHookReturnData = returnData;
+        } catch (bytes memory revertReason) {
+            revert PreExecHookReverted(plugin, functionId, revertReason);
+        }
+    }
+
+    /// @dev Associated post hooks are run in reverse order of their pre hooks.
     function _doCachedPostExecHooks(PostExecToRun[] memory postHooksToRun) internal {
         uint256 postHooksToRunLength = postHooksToRun.length;
-        for (uint256 i = 0; i < postHooksToRunLength;) {
-            PostExecToRun memory postHookToRun = postHooksToRun[i];
-            FunctionReference postExecHook = postHookToRun.postExecHook;
-            if (postExecHook == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-                // Reached the end of runnable postExec hooks, stop.
-                // Array may be over-allocated.
-                return;
+        for (uint256 i = postHooksToRunLength; i > 0;) {
+            unchecked {
+                --i;
             }
+
+            PostExecToRun memory postHookToRun = postHooksToRun[i];
             (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
             try IPlugin(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
                 revert PostExecHookReverted(plugin, functionId, revertReason);
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
@@ -52,10 +53,10 @@ struct PermittedExternalCallData {
 
 // Represets a set of pre- and post- hooks. Used to store both execution hooks and permitted call hooks.
 struct HookGroup {
-    EnumerableSet.Bytes32Set preHooks;
+    EnumerableMap.Bytes32ToUintMap preHooks;
     // bytes21 key = pre hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostHooks;
-    EnumerableSet.Bytes32Set postOnlyHooks;
+    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
+    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
 }
 
 // Represents data associated with a specifc function selector.
@@ -66,8 +67,8 @@ struct SelectorData {
     FunctionReference userOpValidation;
     FunctionReference runtimeValidation;
     // The pre validation hooks for this function selector.
-    EnumerableSet.Bytes32Set preUserOpValidationHooks;
-    EnumerableSet.Bytes32Set preRuntimeValidationHooks;
+    EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
+    EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;
     // The execution hooks for this function selector.
     HookGroup executionHooks;
 }
@@ -100,15 +101,21 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
 }
 
 // Helper function to get all elements of a set into memory.
-using EnumerableSet for EnumerableSet.Bytes32Set;
+using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
 
-function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
+function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
     view
     returns (FunctionReference[] memory)
 {
-    FunctionReference[] memory result = new FunctionReference[](set.length());
-    for (uint256 i = 0; i < set.length(); i++) {
-        result[i] = FunctionReference.wrap(bytes21(set.at(i)));
+    uint256 length = map.length();
+    FunctionReference[] memory result = new FunctionReference[](length);
+    for (uint256 i = 0; i < length;) {
+        (bytes32 key,) = map.at(i);
+        result[i] = FunctionReference.wrap(bytes21(key));
+
+        unchecked {
+            ++i;
+        }
     }
     return result;
 }

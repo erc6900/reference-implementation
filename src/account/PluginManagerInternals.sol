@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
@@ -27,13 +28,11 @@ import {
 } from "../interfaces/IPlugin.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
-    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     error ArrayLengthMismatch();
-    error ExecuteFromPluginAlreadySet(bytes4 selector, address plugin);
     error ExecutionFunctionAlreadySet(bytes4 selector);
-    error ExecutionHookAlreadySet(bytes4 selector, FunctionReference hook);
     error InvalidDependenciesProvided();
     error InvalidPluginManifest();
     error MissingPluginDependency(address dependency);
@@ -41,19 +40,16 @@ abstract contract PluginManagerInternals is IPluginManager {
     error NullPlugin();
     error PluginAlreadyInstalled(address plugin);
     error PluginDependencyViolation(address plugin);
-    error PermittedCallHookAlreadySet(bytes4 selector, address plugin, FunctionReference hook);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
-    error PreRuntimeValidationHookAlreadySet(bytes4 selector, FunctionReference hook);
-    error PreUserOpValidationHookAlreadySet(bytes4 selector, FunctionReference hook);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error PluginApplyHookCallbackFailed(address providingPlugin, bytes revertReason);
     error PluginUnapplyHookCallbackFailed(address providingPlugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
-        if (functionReference == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+        if (functionReference.isEmpty()) {
             revert NullFunctionReference();
         }
         _;
@@ -90,7 +86,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.userOpValidation != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+        if (!_selectorData.userOpValidation.isEmpty()) {
             revert UserOpValidationFunctionAlreadySet(selector, validationFunction);
         }
 
@@ -112,7 +108,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.runtimeValidation != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+        if (!_selectorData.runtimeValidation.isEmpty()) {
             revert RuntimeValidationFunctionAlreadySet(selector, validationFunction);
         }
 
@@ -133,7 +129,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _addHooks(_selectorData.executionHooks, selector, preExecHook, postExecHook);
+        _addHooks(_selectorData.executionHooks, preExecHook, postExecHook);
     }
 
     function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
@@ -170,7 +166,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
         PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
 
-        _addHooks(_permittedCalldata.permittedCallHooks, selector, preExecHook, postExecHook);
+        _addHooks(_permittedCalldata.permittedCallHooks, preExecHook, postExecHook);
     }
 
     function _removePermittedCallHooks(
@@ -185,48 +181,39 @@ abstract contract PluginManagerInternals is IPluginManager {
         _removeHooks(_permittedCallData.permittedCallHooks, preExecHook, postExecHook);
     }
 
-    function _addHooks(
-        HookGroup storage hooks,
-        bytes4 selector,
-        FunctionReference preExecHook,
-        FunctionReference postExecHook
-    ) internal {
-        if (preExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            // add pre or pre/post pair of exec hooks
-            if (!hooks.preHooks.add(_toSetValue(preExecHook))) {
-                revert ExecutionHookAlreadySet(selector, preExecHook);
-            }
+    function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        if (!preExecHook.isEmpty()) {
+            _addOrIncrement(hooks.preHooks, _toSetValue(preExecHook));
 
-            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-                hooks.associatedPostHooks[preExecHook] = postExecHook;
+            if (!postExecHook.isEmpty()) {
+                _addOrIncrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
-            if (postExecHook == FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
+            if (postExecHook.isEmpty()) {
                 // both pre and post hooks cannot be null
                 revert NullFunctionReference();
             }
 
-            hooks.postOnlyHooks.add(_toSetValue(postExecHook));
+            _addOrIncrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
         }
     }
 
     function _removeHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
     {
-        if (preExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-            // remove pre or pre/post pair of exec hooks
+        if (!preExecHook.isEmpty()) {
+            _removeOrDecrement(hooks.preHooks, _toSetValue(preExecHook));
 
-            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            hooks.preHooks.remove(_toSetValue(preExecHook));
-
-            if (postExecHook != FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE) {
-                hooks.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+            if (!postExecHook.isEmpty()) {
+                _removeOrDecrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
-            // THe case where both pre and post hooks are null was checked during installation.
+            // The case where both pre and post hooks are null was checked during installation.
 
             // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            hooks.postOnlyHooks.remove(_toSetValue(postExecHook));
+            _removeOrDecrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
         }
     }
 
@@ -234,13 +221,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preUserOpValidationHook)
     {
-        if (
-            !getAccountStorage().selectorData[selector].preUserOpValidationHooks.add(
-                _toSetValue(preUserOpValidationHook)
-            )
-        ) {
-            revert PreUserOpValidationHookAlreadySet(selector, preUserOpValidationHook);
-        }
+        _addOrIncrement(
+            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
+            _toSetValue(preUserOpValidationHook)
+        );
     }
 
     function _removePreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
@@ -248,7 +232,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         notNullFunction(preUserOpValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        getAccountStorage().selectorData[selector].preUserOpValidationHooks.remove(
+        _removeOrDecrement(
+            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
             _toSetValue(preUserOpValidationHook)
         );
     }
@@ -257,13 +242,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preRuntimeValidationHook)
     {
-        if (
-            !getAccountStorage().selectorData[selector].preRuntimeValidationHooks.add(
-                _toSetValue(preRuntimeValidationHook)
-            )
-        ) {
-            revert PreRuntimeValidationHookAlreadySet(selector, preRuntimeValidationHook);
-        }
+        _addOrIncrement(
+            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
+            _toSetValue(preRuntimeValidationHook)
+        );
     }
 
     function _removePreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
@@ -271,7 +253,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         notNullFunction(preRuntimeValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        getAccountStorage().selectorData[selector].preRuntimeValidationHooks.remove(
+        _removeOrDecrement(
+            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
             _toSetValue(preRuntimeValidationHook)
         );
     }
@@ -853,6 +836,25 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
+    }
+
+    function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
+        (bool success, uint256 value) = map.tryGet(key);
+        map.set(key, success ? value + 1 : 0);
+    }
+
+    /// @return True if the key was removed or its value was decremented, false if the key was not found.
+    function _removeOrDecrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal returns (bool) {
+        (bool success, uint256 value) = map.tryGet(key);
+        if (!success) {
+            return false;
+        }
+        if (value == 0) {
+            map.remove(key);
+        } else {
+            map.set(key, value - 1);
+        }
+        return true;
     }
 
     function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {
