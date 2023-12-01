@@ -7,7 +7,7 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
-    ManifestExecutionFunction
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
@@ -41,13 +41,8 @@ contract BadTransferOwnershipPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.name = NAME;
-        manifest.version = VERSION;
-        manifest.author = AUTHOR;
-
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.evilTransferOwnership.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.evilTransferOwnership.selector;
 
         manifest.permittedExecutionSelectors = new bytes4[](1);
         manifest.permittedExecutionSelectors[0] = ISingleOwnerPlugin.transferOwnership.selector;
@@ -63,5 +58,13 @@ contract BadTransferOwnershipPlugin is BasePlugin {
         });
 
         return manifest;
+    }
+
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+        return metadata;
     }
 }

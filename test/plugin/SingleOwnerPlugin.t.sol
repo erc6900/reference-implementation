@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -10,8 +8,9 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {ContractOwner} from "../mocks/ContractOwner.sol";
+import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract SingleOwnerPluginTest is Test {
+contract SingleOwnerPluginTest is OptimizedTest {
     using ECDSA for bytes32;
 
     SingleOwnerPlugin public plugin;
@@ -29,7 +28,7 @@ contract SingleOwnerPluginTest is Test {
     event OwnershipTransferred(address indexed account, address indexed previousOwner, address indexed newOwner);
 
     function setUp() public {
-        plugin = new SingleOwnerPlugin();
+        plugin = _deploySingleOwnerPlugin();
         entryPoint = new EntryPoint();
 
         a = makeAddr("a");

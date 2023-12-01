@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
@@ -10,6 +11,9 @@ bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c40149916
 
 struct PluginData {
     bool anyExternalExecPermitted;
+    // boolean to indicate if the plugin can spend native tokens, if any of the execution function can spend
+    // native tokens, a plugin is considered to be able to spend native tokens of the accounts
+    bool canSpendNativeToken;
     bytes32 manifestHash;
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
@@ -17,7 +21,7 @@ struct PluginData {
     StoredInjectedHook[] injectedHooks;
 }
 
-// A version of IPluginManager. InjectedHook used to track injected hooks in storage.
+// A version of IPluginManager.InjectedHook used to track injected hooks in storage.
 // Omits the hookApplyData field, which is not needed for storage, and flattens the struct.
 struct StoredInjectedHook {
     // The plugin that provides the hook
@@ -34,9 +38,7 @@ struct StoredInjectedHook {
 // to interact with another plugin installed on the account.
 struct PermittedCallData {
     bool callPermitted;
-    EnumerableSet.Bytes32Set prePermittedCallHooks;
-    // bytes21 key = pre exec hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostPermittedCallHooks;
+    HookGroup permittedCallHooks;
 }
 
 // Represents data associated with a plugin's permission to use `executeFromPluginExternal`
@@ -49,6 +51,14 @@ struct PermittedExternalCallData {
     mapping(bytes4 => bool) permittedSelectors;
 }
 
+// Represets a set of pre- and post- hooks. Used to store both execution hooks and permitted call hooks.
+struct HookGroup {
+    EnumerableMap.Bytes32ToUintMap preHooks;
+    // bytes21 key = pre hook function reference
+    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
+    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
+}
+
 // Represents data associated with a specifc function selector.
 struct SelectorData {
     // The plugin that implements this execution function.
@@ -57,12 +67,10 @@ struct SelectorData {
     FunctionReference userOpValidation;
     FunctionReference runtimeValidation;
     // The pre validation hooks for this function selector.
-    EnumerableSet.Bytes32Set preUserOpValidationHooks;
-    EnumerableSet.Bytes32Set preRuntimeValidationHooks;
+    EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
+    EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;
     // The execution hooks for this function selector.
-    EnumerableSet.Bytes32Set preExecHooks;
-    // bytes21 key = pre exec hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostExecHooks;
+    HookGroup executionHooks;
 }
 
 struct AccountStorage {
@@ -83,7 +91,7 @@ struct AccountStorage {
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
-    assembly {
+    assembly ("memory-safe") {
         _storage.slot := _ACCOUNT_STORAGE_SLOT
     }
 }
@@ -93,15 +101,21 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
 }
 
 // Helper function to get all elements of a set into memory.
-using EnumerableSet for EnumerableSet.Bytes32Set;
+using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
 
-function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
+function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
     view
     returns (FunctionReference[] memory)
 {
-    FunctionReference[] memory result = new FunctionReference[](set.length());
-    for (uint256 i = 0; i < set.length(); i++) {
-        result[i] = FunctionReference.wrap(bytes21(set.at(i)));
+    uint256 length = map.length();
+    FunctionReference[] memory result = new FunctionReference[](length);
+    for (uint256 i = 0; i < length;) {
+        (bytes32 key,) = map.at(i);
+        result[i] = FunctionReference.wrap(bytes21(key));
+
+        unchecked {
+            ++i;
+        }
     }
     return result;
 }

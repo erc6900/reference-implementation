@@ -7,12 +7,11 @@ import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
-    PluginManifest,
-    ManifestExecutionFunction
+    PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 
-abstract contract MockBaseUserOpValidationPlugin is BasePlugin {
+abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
     enum FunctionId {
         USER_OP_VALIDATION,
         PRE_USER_OP_VALIDATION_HOOK_1,
@@ -76,8 +75,8 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.foo.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.foo.selector;
 
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
@@ -114,8 +113,8 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.bar.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.bar.selector;
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
@@ -166,8 +165,8 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] = ManifestExecutionFunction(this.baz.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.baz.selector;
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
