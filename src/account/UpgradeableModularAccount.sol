@@ -522,6 +522,18 @@ contract UpgradeableModularAccount is
         postHooksToRun = new PostExecToRun[](maxPostExecHooksLength);
         uint256 actualPostHooksToRunLength;
 
+        // Copy post-only hooks to the array.
+        for (uint256 i = 0; i < postOnlyHooksLength;) {
+            (bytes32 key,) = hooks.postOnlyHooks.at(i);
+            postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
+            unchecked {
+                ++actualPostHooksToRunLength;
+                ++i;
+            }
+        }
+
+        // Then run the pre hooks and copy the associated post hooks (along with their pre hook's return data) to
+        // the array.
         for (uint256 i = 0; i < preExecHooksLength;) {
             (bytes32 key,) = hooks.preHooks.at(i);
             FunctionReference preExecHook = _toFunctionReference(key);
@@ -554,16 +566,6 @@ contract UpgradeableModularAccount is
             }
         }
 
-        // Copy post-only hooks to the end of the array
-        for (uint256 i = 0; i < postOnlyHooksLength;) {
-            (bytes32 key,) = hooks.postOnlyHooks.at(i);
-            postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
-            unchecked {
-                ++actualPostHooksToRunLength;
-                ++i;
-            }
-        }
-
         // Trim the post hook array to the actual length, since we may have overallocated.
         assembly ("memory-safe") {
             mstore(postHooksToRun, actualPostHooksToRunLength)
@@ -584,19 +586,20 @@ contract UpgradeableModularAccount is
         }
     }
 
+    /// @dev Associated post hooks are run in reverse order of their pre hooks.
     function _doCachedPostExecHooks(PostExecToRun[] memory postHooksToRun) internal {
         uint256 postHooksToRunLength = postHooksToRun.length;
-        for (uint256 i = 0; i < postHooksToRunLength;) {
+        for (uint256 i = postHooksToRunLength; i > 0;) {
+            unchecked {
+                --i;
+            }
+
             PostExecToRun memory postHookToRun = postHooksToRun[i];
             (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
             try IPlugin(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
                 revert PostExecHookReverted(plugin, functionId, revertReason);
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }
