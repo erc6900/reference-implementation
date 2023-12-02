@@ -6,7 +6,8 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
-    ManifestExecutionFunction,
+    PluginMetadata,
+    SelectorPermission,
     ManifestExternalCallPermission
 } from "../../interfaces/IPlugin.sol";
 import {BasePlugin} from "../BasePlugin.sol";
@@ -66,16 +67,8 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.name = NAME;
-        manifest.version = VERSION;
-        manifest.author = AUTHOR;
-
-        string[] memory ownerPermissions = new string[](1);
-        ownerPermissions[0] = "Allow Token Operation By Session Key";
-
-        manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.transferFromSessionKey.selector, ownerPermissions);
+        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions[0] = this.transferFromSessionKey.selector;
 
         ManifestFunction memory tempOwnerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
@@ -119,6 +112,26 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         });
 
         return manifest;
+    }
+
+    /// @inheritdoc BasePlugin
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+
+        // Permission strings
+        string memory sessionKeyTransferPermission = "Allow Token Transfer Operation By Session Key";
+
+        // Permission descriptions
+        metadata.permissionDescriptors = new SelectorPermission[](1);
+        metadata.permissionDescriptors[0] = SelectorPermission({
+            functionSelector: this.transferFromSessionKey.selector,
+            permissionDescription: sessionKeyTransferPermission
+        });
+
+        return metadata;
     }
 
     // ┏━━━━━━━━━━━━━━━┓

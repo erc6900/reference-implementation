@@ -9,8 +9,8 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
-    ManifestExecutionFunction,
-    ManifestExternalCallPermission
+    PluginMetadata,
+    SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {BasePlugin} from "../BasePlugin.sol";
 import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
@@ -126,20 +126,10 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.name = NAME;
-        manifest.version = VERSION;
-        manifest.author = AUTHOR;
-
-        string[] memory ownerPermissions = new string[](1);
-        ownerPermissions[0] = "Allow Temporary Ownership";
-
-        manifest.executionFunctions = new ManifestExecutionFunction[](3);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction(this.addTemporaryOwner.selector, ownerPermissions);
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction(this.removeTemporaryOwner.selector, ownerPermissions);
-        manifest.executionFunctions[2] =
-            ManifestExecutionFunction(this.getSessionDuration.selector, new string[](0));
+        manifest.executionFunctions = new bytes4[](3);
+        manifest.executionFunctions[0] = this.addTemporaryOwner.selector;
+        manifest.executionFunctions[1] = this.removeTemporaryOwner.selector;
+        manifest.executionFunctions[2] = this.getSessionDuration.selector;
 
         ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
@@ -186,6 +176,30 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         manifest.dependencyInterfaceIds[1] = type(ISingleOwnerPlugin).interfaceId;
 
         return manifest;
+    }
+
+    /// @inheritdoc BasePlugin
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = NAME;
+        metadata.version = VERSION;
+        metadata.author = AUTHOR;
+
+        // Permission strings
+        string memory modifySessionKeyPermission = "Modify Session Key";
+
+        // Permission descriptions
+        metadata.permissionDescriptors = new SelectorPermission[](2);
+        metadata.permissionDescriptors[0] = SelectorPermission({
+            functionSelector: this.addTemporaryOwner.selector,
+            permissionDescription: modifySessionKeyPermission
+        });
+        metadata.permissionDescriptors[1] = SelectorPermission({
+            functionSelector: this.removeTemporaryOwner.selector,
+            permissionDescription: modifySessionKeyPermission
+        });
+
+        return metadata;
     }
 
     // ┏━━━━━━━━━━━━━━━┓
