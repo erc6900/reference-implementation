@@ -18,7 +18,7 @@ import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
-import {PluginManagerInternals} from "./PluginManagerInternals.sol";
+import {PluginManager} from "./PluginManager.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 
 contract UpgradeableModularAccount is
@@ -29,7 +29,7 @@ contract UpgradeableModularAccount is
     IERC165,
     IPluginExecutor,
     IStandardExecutor,
-    PluginManagerInternals,
+    PluginManager,
     UUPSUpgradeable
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;

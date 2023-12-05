@@ -27,7 +27,7 @@ import {
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 
-abstract contract PluginManagerInternals is IPluginManager {
+abstract contract PluginManager is IPluginManager {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
 
