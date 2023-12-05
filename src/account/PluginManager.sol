@@ -27,9 +27,11 @@ import {
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 
-abstract contract PluginManagerInternals is IPluginManager {
+contract PluginManager {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
+
+    address private immutable _SELF;
 
     error ArrayLengthMismatch();
     error ExecutionFunctionAlreadySet(bytes4 selector);
@@ -38,6 +40,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     error MissingPluginDependency(address dependency);
     error NullFunctionReference();
     error NullPlugin();
+    error OnlyDelegate();
     error PluginAlreadyInstalled(address plugin);
     error PluginDependencyViolation(address plugin);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
@@ -47,6 +50,17 @@ abstract contract PluginManagerInternals is IPluginManager {
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error PluginApplyHookCallbackFailed(address providingPlugin, bytes revertReason);
     error PluginUnapplyHookCallbackFailed(address providingPlugin, bytes revertReason);
+
+    // Re-declare events from IPluginManager, since solidity doesn't support importing events from interfaces.
+
+    event PluginInstalled(
+        address indexed plugin,
+        bytes32 manifestHash,
+        FunctionReference[] dependencies,
+        IPluginManager.InjectedHook[] injectedHooks
+    );
+
+    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {
@@ -62,210 +76,24 @@ abstract contract PluginManagerInternals is IPluginManager {
         _;
     }
 
-    // Storage update operations
-
-    function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(plugin) {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (_selectorData.plugin != address(0)) {
-            revert ExecutionFunctionAlreadySet(selector);
+    modifier onlyDelegate() {
+        if (address(this) == _SELF) {
+            revert OnlyDelegate();
         }
-
-        _selectorData.plugin = plugin;
+        _;
     }
 
-    function _removeExecutionFunction(bytes4 selector) internal {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _selectorData.plugin = address(0);
+    constructor() {
+        _SELF = address(this);
     }
 
-    function _addUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (!_selectorData.userOpValidation.isEmpty()) {
-            revert UserOpValidationFunctionAlreadySet(selector, validationFunction);
-        }
-
-        _selectorData.userOpValidation = validationFunction;
-    }
-
-    function _removeUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _selectorData.userOpValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
-    }
-
-    function _addRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (!_selectorData.runtimeValidation.isEmpty()) {
-            revert RuntimeValidationFunctionAlreadySet(selector, validationFunction);
-        }
-
-        _selectorData.runtimeValidation = validationFunction;
-    }
-
-    function _removeRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _selectorData.runtimeValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
-    }
-
-    function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _addHooks(_selectorData.executionHooks, preExecHook, postExecHook);
-    }
-
-    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
-    }
-
-    function _enableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-
-        // If there are duplicates, this will just enable the flag again. This is not a problem, since the boolean
-        // will be set to false twice during uninstall, which is fine.
-        accountStorage.permittedCalls[key].callPermitted = true;
-    }
-
-    function _disableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-        accountStorage.permittedCalls[key].callPermitted = false;
-    }
-
-    function _addPermittedCallHooks(
-        bytes4 selector,
-        address plugin,
-        FunctionReference preExecHook,
-        FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) {
-        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
-
-        _addHooks(_permittedCalldata.permittedCallHooks, preExecHook, postExecHook);
-    }
-
-    function _removePermittedCallHooks(
-        bytes4 selector,
-        address plugin,
-        FunctionReference preExecHook,
-        FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) {
-        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCallData = getAccountStorage().permittedCalls[permittedCallKey];
-
-        _removeHooks(_permittedCallData.permittedCallHooks, preExecHook, postExecHook);
-    }
-
-    function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        if (!preExecHook.isEmpty()) {
-            _addOrIncrement(hooks.preHooks, _toSetValue(preExecHook));
-
-            if (!postExecHook.isEmpty()) {
-                _addOrIncrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
-            }
-        } else {
-            if (postExecHook.isEmpty()) {
-                // both pre and post hooks cannot be null
-                revert NullFunctionReference();
-            }
-
-            _addOrIncrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
-        }
-    }
-
-    function _removeHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        if (!preExecHook.isEmpty()) {
-            _removeOrDecrement(hooks.preHooks, _toSetValue(preExecHook));
-
-            if (!postExecHook.isEmpty()) {
-                _removeOrDecrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
-            }
-        } else {
-            // The case where both pre and post hooks are null was checked during installation.
-
-            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            _removeOrDecrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
-        }
-    }
-
-    function _addPreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
-        internal
-        notNullFunction(preUserOpValidationHook)
-    {
-        _addOrIncrement(
-            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
-            _toSetValue(preUserOpValidationHook)
-        );
-    }
-
-    function _removePreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
-        internal
-        notNullFunction(preUserOpValidationHook)
-    {
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _removeOrDecrement(
-            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
-            _toSetValue(preUserOpValidationHook)
-        );
-    }
-
-    function _addPreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
-        internal
-        notNullFunction(preRuntimeValidationHook)
-    {
-        _addOrIncrement(
-            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
-            _toSetValue(preRuntimeValidationHook)
-        );
-    }
-
-    function _removePreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
-        internal
-        notNullFunction(preRuntimeValidationHook)
-    {
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _removeOrDecrement(
-            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
-            _toSetValue(preRuntimeValidationHook)
-        );
-    }
-
-    function _installPlugin(
+    function installPlugin(
         address plugin,
         bytes32 manifestHash,
         bytes memory pluginInitData,
         FunctionReference[] memory dependencies,
-        InjectedHook[] memory injectedHooks
-    ) internal {
+        IPluginManager.InjectedHook[] memory injectedHooks
+    ) external onlyDelegate {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check if the plugin exists.
@@ -384,7 +212,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         for (uint256 i = 0; i < length;) {
-            InjectedHook memory hook = injectedHooks[i];
+            IPluginManager.InjectedHook memory hook = injectedHooks[i];
             _storage.pluginData[plugin].injectedHooks[i] = StoredInjectedHook({
                 providingPlugin: hook.providingPlugin,
                 selector: hook.selector,
@@ -536,7 +364,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = injectedHooks.length;
 
         for (uint256 i = 0; i < length;) {
-            InjectedHook memory hook = injectedHooks[i];
+            IPluginManager.InjectedHook memory hook = injectedHooks[i];
             // not inlined in function call to avoid stack too deep error
             bytes memory onHookApplyData = injectedHooks[i].hookApplyData;
             /* solhint-disable no-empty-blocks */
@@ -560,12 +388,12 @@ abstract contract PluginManagerInternals is IPluginManager {
         emit PluginInstalled(plugin, manifestHash, dependencies, injectedHooks);
     }
 
-    function _uninstallPlugin(
+    function uninstallPlugin(
         address plugin,
         PluginManifest memory manifest,
         bytes memory uninstallData,
         bytes[] calldata hookUnapplyData
-    ) internal {
+    ) external onlyDelegate {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check if the plugin exists.
@@ -808,7 +636,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             /* solhint-disable no-empty-blocks */
             try IPlugin(hook.providingPlugin).onHookUnapply(
                 plugin,
-                InjectedHooksInfo({
+                IPluginManager.InjectedHooksInfo({
                     preExecHookFunctionId: hook.preExecHookFunctionId,
                     isPostHookUsed: hook.isPostHookUsed,
                     postExecHookFunctionId: hook.postExecHookFunctionId
@@ -836,6 +664,203 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
+    }
+
+    // Storage update operations
+
+    function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(plugin) {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        if (_selectorData.plugin != address(0)) {
+            revert ExecutionFunctionAlreadySet(selector);
+        }
+
+        _selectorData.plugin = plugin;
+    }
+
+    function _removeExecutionFunction(bytes4 selector) internal {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        _selectorData.plugin = address(0);
+    }
+
+    function _addUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
+        internal
+        notNullFunction(validationFunction)
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        if (!_selectorData.userOpValidation.isEmpty()) {
+            revert UserOpValidationFunctionAlreadySet(selector, validationFunction);
+        }
+
+        _selectorData.userOpValidation = validationFunction;
+    }
+
+    function _removeUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
+        internal
+        notNullFunction(validationFunction)
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        _selectorData.userOpValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+    }
+
+    function _addRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
+        internal
+        notNullFunction(validationFunction)
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        if (!_selectorData.runtimeValidation.isEmpty()) {
+            revert RuntimeValidationFunctionAlreadySet(selector, validationFunction);
+        }
+
+        _selectorData.runtimeValidation = validationFunction;
+    }
+
+    function _removeRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
+        internal
+        notNullFunction(validationFunction)
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        _selectorData.runtimeValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+    }
+
+    function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        _addHooks(_selectorData.executionHooks, preExecHook, postExecHook);
+    }
+
+    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
+        _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
+    }
+
+    function _enableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
+        internal
+    {
+        bytes24 key = getPermittedCallKey(plugin, selector);
+
+        // If there are duplicates, this will just enable the flag again. This is not a problem, since the boolean
+        // will be set to false twice during uninstall, which is fine.
+        accountStorage.permittedCalls[key].callPermitted = true;
+    }
+
+    function _disableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
+        internal
+    {
+        bytes24 key = getPermittedCallKey(plugin, selector);
+        accountStorage.permittedCalls[key].callPermitted = false;
+    }
+
+    function _addPermittedCallHooks(
+        bytes4 selector,
+        address plugin,
+        FunctionReference preExecHook,
+        FunctionReference postExecHook
+    ) internal notNullPlugin(plugin) {
+        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
+        PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
+
+        _addHooks(_permittedCalldata.permittedCallHooks, preExecHook, postExecHook);
+    }
+
+    function _removePermittedCallHooks(
+        bytes4 selector,
+        address plugin,
+        FunctionReference preExecHook,
+        FunctionReference postExecHook
+    ) internal notNullPlugin(plugin) {
+        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
+        PermittedCallData storage _permittedCallData = getAccountStorage().permittedCalls[permittedCallKey];
+
+        _removeHooks(_permittedCallData.permittedCallHooks, preExecHook, postExecHook);
+    }
+
+    function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        if (!preExecHook.isEmpty()) {
+            _addOrIncrement(hooks.preHooks, _toSetValue(preExecHook));
+
+            if (!postExecHook.isEmpty()) {
+                _addOrIncrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+            }
+        } else {
+            if (postExecHook.isEmpty()) {
+                // both pre and post hooks cannot be null
+                revert NullFunctionReference();
+            }
+
+            _addOrIncrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
+        }
+    }
+
+    function _removeHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
+        internal
+    {
+        if (!preExecHook.isEmpty()) {
+            _removeOrDecrement(hooks.preHooks, _toSetValue(preExecHook));
+
+            if (!postExecHook.isEmpty()) {
+                _removeOrDecrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+            }
+        } else {
+            // The case where both pre and post hooks are null was checked during installation.
+
+            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+            _removeOrDecrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
+        }
+    }
+
+    function _addPreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+        internal
+        notNullFunction(preUserOpValidationHook)
+    {
+        _addOrIncrement(
+            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
+            _toSetValue(preUserOpValidationHook)
+        );
+    }
+
+    function _removePreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+        internal
+        notNullFunction(preUserOpValidationHook)
+    {
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        _removeOrDecrement(
+            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
+            _toSetValue(preUserOpValidationHook)
+        );
+    }
+
+    function _addPreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
+        internal
+        notNullFunction(preRuntimeValidationHook)
+    {
+        _addOrIncrement(
+            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
+            _toSetValue(preRuntimeValidationHook)
+        );
+    }
+
+    function _removePreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
+        internal
+        notNullFunction(preRuntimeValidationHook)
+    {
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        _removeOrDecrement(
+            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
+            _toSetValue(preRuntimeValidationHook)
+        );
     }
 
     function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
