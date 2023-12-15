@@ -37,7 +37,7 @@ struct PermittedExternalCallData {
     mapping(bytes4 => bool) permittedSelectors;
 }
 
-// Represets a set of pre- and post- hooks. Used to store both execution hooks and permitted call hooks.
+// Represets a set of pre- and post- hooks.
 struct HookGroup {
     EnumerableMap.Bytes32ToUintMap preHooks;
     // bytes21 key = pre hook function reference
