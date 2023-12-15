@@ -8,7 +8,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {
     AccountStorage,
     getAccountStorage,
-    getPermittedCallKey,
     HookGroup,
     toFunctionReferenceArray
 } from "./AccountStorage.sol";

@@ -9,7 +9,6 @@ import {
     AccountStorage,
     getAccountStorage,
     SelectorData,
-    PermittedCallData,
     getPermittedCallKey,
     HookGroup,
     PermittedExternalCallData
@@ -44,8 +43,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginNotInstalled(address plugin);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
-    error PluginApplyHookCallbackFailed(address providingPlugin, bytes revertReason);
-    error PluginUnapplyHookCallbackFailed(address providingPlugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {

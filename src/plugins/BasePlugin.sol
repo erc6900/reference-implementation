@@ -5,7 +5,6 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import {IPlugin, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
 
 /// @title Base contract for plugins
 /// @dev Implements ERC-165 to support IPlugin's interface, which is a requirement
