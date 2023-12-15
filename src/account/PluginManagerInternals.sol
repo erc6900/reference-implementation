@@ -12,8 +12,7 @@ import {
     PermittedCallData,
     getPermittedCallKey,
     HookGroup,
-    PermittedExternalCallData,
-    StoredInjectedHook
+    PermittedExternalCallData
 } from "./AccountStorage.sol";
 import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
@@ -157,30 +156,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         accountStorage.permittedCalls[key].callPermitted = false;
     }
 
-    function _addPermittedCallHooks(
-        bytes4 selector,
-        address plugin,
-        FunctionReference preExecHook,
-        FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) {
-        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCalldata = getAccountStorage().permittedCalls[permittedCallKey];
-
-        _addHooks(_permittedCalldata.permittedCallHooks, preExecHook, postExecHook);
-    }
-
-    function _removePermittedCallHooks(
-        bytes4 selector,
-        address plugin,
-        FunctionReference preExecHook,
-        FunctionReference postExecHook
-    ) internal notNullPlugin(plugin) {
-        bytes24 permittedCallKey = getPermittedCallKey(plugin, selector);
-        PermittedCallData storage _permittedCallData = getAccountStorage().permittedCalls[permittedCallKey];
-
-        _removeHooks(_permittedCallData.permittedCallHooks, preExecHook, postExecHook);
-    }
-
     function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
     {
@@ -263,8 +238,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         address plugin,
         bytes32 manifestHash,
         bytes memory pluginInitData,
-        FunctionReference[] memory dependencies,
-        InjectedHook[] memory injectedHooks
+        FunctionReference[] memory dependencies
     ) internal {
         AccountStorage storage _storage = getAccountStorage();
 
@@ -376,44 +350,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        length = injectedHooks.length;
-        // manually set arr length
-        StoredInjectedHook[] storage optionalHooksLengthArr = _storage.pluginData[plugin].injectedHooks;
-        assembly ("memory-safe") {
-            sstore(optionalHooksLengthArr.slot, length)
-        }
-
-        for (uint256 i = 0; i < length;) {
-            InjectedHook memory hook = injectedHooks[i];
-            _storage.pluginData[plugin].injectedHooks[i] = StoredInjectedHook({
-                providingPlugin: hook.providingPlugin,
-                selector: hook.selector,
-                preExecHookFunctionId: hook.injectedHooksInfo.preExecHookFunctionId,
-                isPostHookUsed: hook.injectedHooksInfo.isPostHookUsed,
-                postExecHookFunctionId: hook.injectedHooksInfo.postExecHookFunctionId
-            });
-
-            // Increment the dependent count for the plugin providing the hook.
-            _storage.pluginData[hook.providingPlugin].dependentCount += 1;
-
-            if (!_storage.plugins.contains(hook.providingPlugin)) {
-                revert MissingPluginDependency(hook.providingPlugin);
-            }
-
-            _addPermittedCallHooks(
-                hook.selector,
-                plugin,
-                FunctionReferenceLib.pack(hook.providingPlugin, hook.injectedHooksInfo.preExecHookFunctionId),
-                hook.injectedHooksInfo.isPostHookUsed
-                    ? FunctionReferenceLib.pack(hook.providingPlugin, hook.injectedHooksInfo.postExecHookFunctionId)
-                    : FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
         length = manifest.userOpValidationFunctions.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mv = manifest.userOpValidationFunctions[i];
@@ -500,51 +436,9 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        length = manifest.permittedCallHooks.length;
-        for (uint256 i = 0; i < length;) {
-            _addPermittedCallHooks(
-                manifest.permittedCallHooks[i].executionSelector,
-                plugin,
-                _resolveManifestFunction(
-                    manifest.permittedCallHooks[i].preExecHook,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                ),
-                _resolveManifestFunction(
-                    manifest.permittedCallHooks[i].postExecHook,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.NONE
-                )
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
         length = manifest.interfaceIds.length;
         for (uint256 i = 0; i < length;) {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
-            unchecked {
-                ++i;
-            }
-        }
-
-        // call onHookApply after all setup, but before calling plugin onInstall
-        length = injectedHooks.length;
-
-        for (uint256 i = 0; i < length;) {
-            InjectedHook memory hook = injectedHooks[i];
-            // not inlined in function call to avoid stack too deep error
-            bytes memory onHookApplyData = injectedHooks[i].hookApplyData;
-            /* solhint-disable no-empty-blocks */
-            try IPlugin(hook.providingPlugin).onHookApply(plugin, hook.injectedHooksInfo, onHookApplyData) {}
-            catch (bytes memory revertReason) {
-                revert PluginApplyHookCallbackFailed(hook.providingPlugin, revertReason);
-            }
-            /* solhint-enable no-empty-blocks */
             unchecked {
                 ++i;
             }
@@ -557,15 +451,12 @@ abstract contract PluginManagerInternals is IPluginManager {
             revert PluginInstallCallbackFailed(plugin, revertReason);
         }
 
-        emit PluginInstalled(plugin, manifestHash, dependencies, injectedHooks);
+        emit PluginInstalled(plugin, manifestHash, dependencies);
     }
 
-    function _uninstallPlugin(
-        address plugin,
-        PluginManifest memory manifest,
-        bytes memory uninstallData,
-        bytes[] calldata hookUnapplyData
-    ) internal {
+    function _uninstallPlugin(address plugin, PluginManifest memory manifest, bytes memory uninstallData)
+        internal
+    {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check if the plugin exists.
@@ -601,30 +492,6 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
         // If any expected components are missing, revert.
-
-        length = manifest.permittedCallHooks.length;
-        for (uint256 i = 0; i < length;) {
-            _removePermittedCallHooks(
-                manifest.permittedCallHooks[i].executionSelector,
-                plugin,
-                _resolveManifestFunction(
-                    manifest.permittedCallHooks[i].preExecHook,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                ),
-                _resolveManifestFunction(
-                    manifest.permittedCallHooks[i].postExecHook,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.NONE
-                )
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length;) {
@@ -749,27 +616,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        length = _storage.pluginData[plugin].injectedHooks.length;
-        for (uint256 i = 0; i < length;) {
-            StoredInjectedHook memory hook = _storage.pluginData[plugin].injectedHooks[i];
-
-            // Decrement the dependent count for the plugin providing the hook.
-            _storage.pluginData[hook.providingPlugin].dependentCount -= 1;
-
-            _removePermittedCallHooks(
-                hook.selector,
-                plugin,
-                FunctionReferenceLib.pack(hook.providingPlugin, hook.preExecHookFunctionId),
-                hook.isPostHookUsed
-                    ? FunctionReferenceLib.pack(hook.providingPlugin, hook.postExecHookFunctionId)
-                    : FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
             _disableExecFromPlugin(manifest.permittedExecutionSelectors[i], plugin, _storage);
@@ -791,34 +637,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = manifest.interfaceIds.length;
         for (uint256 i = 0; i < length;) {
             _storage.supportedIfaces[manifest.interfaceIds[i]] -= 1;
-            unchecked {
-                ++i;
-            }
-        }
-
-        length = _storage.pluginData[plugin].injectedHooks.length;
-        bool hasUnapplyHookData = hookUnapplyData.length != 0;
-        if (hasUnapplyHookData && hookUnapplyData.length != length) {
-            revert ArrayLengthMismatch();
-        }
-
-        for (uint256 i = 0; i < length;) {
-            StoredInjectedHook memory hook = _storage.pluginData[plugin].injectedHooks[i];
-
-            /* solhint-disable no-empty-blocks */
-            try IPlugin(hook.providingPlugin).onHookUnapply(
-                plugin,
-                InjectedHooksInfo({
-                    preExecHookFunctionId: hook.preExecHookFunctionId,
-                    isPostHookUsed: hook.isPostHookUsed,
-                    postExecHookFunctionId: hook.postExecHookFunctionId
-                }),
-                hasUnapplyHookData ? hookUnapplyData[i] : bytes("")
-            ) {} catch (bytes memory revertReason) {
-                revert PluginUnapplyHookCallbackFailed(hook.providingPlugin, revertReason);
-            }
-            /* solhint-enable no-empty-blocks */
-
             unchecked {
                 ++i;
             }

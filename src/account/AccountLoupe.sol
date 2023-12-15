@@ -54,16 +54,6 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPermittedCallHooks(address callingPlugin, bytes4 selector)
-        external
-        view
-        returns (ExecutionHooks[] memory execHooks)
-    {
-        bytes24 key = getPermittedCallKey(callingPlugin, selector);
-        execHooks = _getHooks(getAccountStorage().permittedCalls[key].permittedCallHooks);
-    }
-
-    /// @inheritdoc IAccountLoupe
     function getPreValidationHooks(bytes4 selector)
         external
         view
