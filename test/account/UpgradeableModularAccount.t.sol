@@ -14,7 +14,6 @@ import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
-import {IPluginExecutor} from "../../src/interfaces/IPluginExecutor.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";

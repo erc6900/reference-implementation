@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {
     IPlugin,
     ManifestAssociatedFunctionType,

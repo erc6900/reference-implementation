@@ -3,8 +3,6 @@ pragma solidity ^0.8.19;
 
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
-import {IPluginManager} from "./IPluginManager.sol";
-
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
 // so annotating here to prevent that.
 // forgefmt: disable-start

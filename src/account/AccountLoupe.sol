@@ -11,7 +11,6 @@ import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
     AccountStorage,
     getAccountStorage,
-    getPermittedCallKey,
     HookGroup,
     toFunctionReferenceArray
 } from "../libraries/AccountStorage.sol";
