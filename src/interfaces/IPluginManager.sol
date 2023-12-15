@@ -5,7 +5,6 @@ import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 
 /// @title Plugin Manager Interface
 interface IPluginManager {
-    /// @dev Note that we strip hookApplyData from InjectedHooks in this event for gas savings
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
 
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
