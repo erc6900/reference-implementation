@@ -95,7 +95,6 @@ struct PluginManifest {
     ManifestAssociatedFunction[] preUserOpValidationHooks;
     ManifestAssociatedFunction[] preRuntimeValidationHooks;
     ManifestExecutionHook[] executionHooks;
-    ManifestExecutionHook[] permittedCallHooks;
 }
 
 interface IPlugin {
@@ -170,28 +169,6 @@ interface IPlugin {
     /// more than one.
     /// @param preExecHookData The context returned by its associated pre execution hook.
     function postExecutionHook(uint8 functionId, bytes calldata preExecHookData) external;
-
-    /// @notice A hook that runs when a hook this plugin owns is installed onto another plugin
-    /// @dev Optional, use to implement any required setup logic
-    /// @param pluginAppliedOn The plugin that the hook is being applied on
-    /// @param injectedHooksInfo Contains pre/post exec hook information
-    /// @param data Any optional data for setup
-    function onHookApply(
-        address pluginAppliedOn,
-        IPluginManager.InjectedHooksInfo calldata injectedHooksInfo,
-        bytes calldata data
-    ) external;
-
-    /// @notice A hook that runs when a hook this plugin owns is unapplied from another plugin
-    /// @dev Optional, use to implement any required unapplied logic
-    /// @param pluginAppliedOn The plugin that the hook was applied on
-    /// @param injectedHooksInfo Contains pre/post exec hook information
-    /// @param data Any optional data for the unapplied call
-    function onHookUnapply(
-        address pluginAppliedOn,
-        IPluginManager.InjectedHooksInfo calldata injectedHooksInfo,
-        bytes calldata data
-    ) external;
 
     /// @notice Describe the contents and intended configuration of the plugin.
     /// @dev This manifest MUST stay constant over time.
