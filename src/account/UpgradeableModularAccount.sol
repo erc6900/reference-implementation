@@ -99,12 +99,9 @@ contract UpgradeableModularAccount is
         }
 
         FunctionReference[] memory emptyDependencies = new FunctionReference[](0);
-        IPluginManager.InjectedHook[] memory emptyInjectedHooks = new IPluginManager.InjectedHook[](0);
 
         for (uint256 i = 0; i < length;) {
-            _installPlugin(
-                plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies, emptyInjectedHooks
-            );
+            _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies);
 
             unchecked {
                 ++i;
@@ -190,9 +187,6 @@ contract UpgradeableModularAccount is
             revert ExecFromPluginNotPermitted(callingPlugin, selector);
         }
 
-        PostExecToRun[] memory postPermittedCallHooks =
-            _doPrePermittedCallHooks(getPermittedCallKey(callingPlugin, selector), data);
-
         address execFunctionPlugin = _storage.selectorData[selector].plugin;
 
         if (execFunctionPlugin == address(0)) {
@@ -210,7 +204,6 @@ contract UpgradeableModularAccount is
         }
 
         _doCachedPostExecHooks(postExecHooks);
-        _doCachedPostExecHooks(postPermittedCallHooks);
 
         return returnData;
     }
@@ -251,12 +244,6 @@ contract UpgradeableModularAccount is
             revert ExecFromPluginExternalNotPermitted(msg.sender, target, value, data);
         }
 
-        // Run any pre plugin exec specific to this caller and the `executeFromPluginExternal` selector
-
-        PostExecToRun[] memory postPermittedCallHooks = _doPrePermittedCallHooks(
-            getPermittedCallKey(msg.sender, IPluginExecutor.executeFromPluginExternal.selector), msg.data
-        );
-
         // Run any pre exec hooks for this selector
         PostExecToRun[] memory postExecHooks =
             _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
@@ -267,9 +254,6 @@ contract UpgradeableModularAccount is
         // Run any post exec hooks for this selector
         _doCachedPostExecHooks(postExecHooks);
 
-        // Run any post exec hooks specific to this caller and the `executeFromPluginExternal` selector
-        _doCachedPostExecHooks(postPermittedCallHooks);
-
         return returnData;
     }
 
@@ -278,19 +262,17 @@ contract UpgradeableModularAccount is
         address plugin,
         bytes32 manifestHash,
         bytes calldata pluginInitData,
-        FunctionReference[] calldata dependencies,
-        InjectedHook[] calldata injectedHooks
+        FunctionReference[] calldata dependencies
     ) external override wrapNativeFunction {
-        _installPlugin(plugin, manifestHash, pluginInitData, dependencies, injectedHooks);
+        _installPlugin(plugin, manifestHash, pluginInitData, dependencies);
     }
 
     /// @inheritdoc IPluginManager
-    function uninstallPlugin(
-        address plugin,
-        bytes calldata config,
-        bytes calldata pluginUninstallData,
-        bytes[] calldata hookUnapplyData
-    ) external override wrapNativeFunction {
+    function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
+        external
+        override
+        wrapNativeFunction
+    {
         PluginManifest memory manifest;
 
         if (config.length > 0) {
@@ -299,7 +281,7 @@ contract UpgradeableModularAccount is
             manifest = IPlugin(plugin).pluginManifest();
         }
 
-        _uninstallPlugin(plugin, manifest, pluginUninstallData, hookUnapplyData);
+        _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 
     /// @notice ERC165 introspection
@@ -488,15 +470,6 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory postHooksToRun)
     {
         HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
-
-        return _doPreHooks(hooks, data);
-    }
-
-    function _doPrePermittedCallHooks(bytes24 permittedCallKey, bytes calldata data)
-        internal
-        returns (PostExecToRun[] memory postHooksToRun)
-    {
-        HookGroup storage hooks = getAccountStorage().permittedCalls[permittedCallKey].permittedCallHooks;
 
         return _doPreHooks(hooks, data);
     }

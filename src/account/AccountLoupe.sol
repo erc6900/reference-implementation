@@ -11,7 +11,6 @@ import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
     AccountStorage,
     getAccountStorage,
-    getPermittedCallKey,
     HookGroup,
     toFunctionReferenceArray
 } from "../libraries/AccountStorage.sol";
@@ -51,16 +50,6 @@ abstract contract AccountLoupe is IAccountLoupe {
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
         execHooks = _getHooks(getAccountStorage().selectorData[selector].executionHooks);
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getPermittedCallHooks(address callingPlugin, bytes4 selector)
-        external
-        view
-        returns (ExecutionHooks[] memory execHooks)
-    {
-        bytes24 key = getPermittedCallKey(callingPlugin, selector);
-        execHooks = _getHooks(getAccountStorage().permittedCalls[key].permittedCallHooks);
     }
 
     /// @inheritdoc IAccountLoupe

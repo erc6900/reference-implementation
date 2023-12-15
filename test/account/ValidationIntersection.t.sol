@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
@@ -49,22 +48,19 @@ contract ValidationIntersectionTest is OptimizedTest {
             plugin: address(noHookPlugin),
             manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
         account1.installPlugin({
             plugin: address(oneHookPlugin),
             manifestHash: keccak256(abi.encode(oneHookPlugin.pluginManifest())),
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
         account1.installPlugin({
             plugin: address(twoHookPlugin),
             manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
         vm.stopPrank();
     }
