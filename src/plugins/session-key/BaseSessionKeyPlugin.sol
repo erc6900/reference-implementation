@@ -115,7 +115,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
                 if (block.timestamp < _after || block.timestamp > _until) {
                     revert WrongTimeRangeForSession();
                 }
-                revert NotAuthorized();
+                return;
             }
         }
         revert NotImplemented();
