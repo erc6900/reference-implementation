@@ -23,7 +23,6 @@ import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 /// transferFrom function. It allows for session key owners to access MSCA
 /// with `transferFromSessionKey` function, which calls `executeFromPluginExternal`
 /// function in PluginExecutor contract.
-///
 /// The target ERC20 contract and the selector for transferFrom function are hardcoded
 /// in this plugin, since the pluginManifest function requires the information of
 /// permitted external calls not to be changed in the future. For other child session

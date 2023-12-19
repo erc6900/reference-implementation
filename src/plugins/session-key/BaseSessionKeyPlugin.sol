@@ -29,7 +29,6 @@ import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
 /// runtime, with its own validation functions.
 /// Also, it has a dependency on SingleOwnerPlugin, to make sure that only the owner of
 /// the MSCA can add or remove session keys.
-
 contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     using ECDSA for bytes32;
 
@@ -89,8 +88,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         override
         returns (uint256)
     {
-        (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
+            (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             bytes4 selector = bytes4(userOp.callData[0:4]);
             bytes memory duration = _sessionInfo[userOp.sender][signer][selector];
             if (duration.length != 0) {
@@ -99,7 +98,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
                 return _packValidationData(false, _until, _after);
             }
         }
-        revert NotImplemented();
+        return _packValidationData(true, 0, 0);
     }
 
     /// @inheritdoc BasePlugin
@@ -116,7 +115,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
                 if (block.timestamp < _after || block.timestamp > _until) {
                     revert WrongTimeRangeForSession();
                 }
-                return;
+                revert NotAuthorized();
             }
         }
         revert NotImplemented();
