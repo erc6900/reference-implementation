@@ -16,6 +16,7 @@ import {BasePlugin} from "../BasePlugin.sol";
 import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
 import {ISingleOwnerPlugin} from "../owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
+import {PluginStorageLib} from "./libraries/PluginStorageLib.sol";
 
 /// @title Base Session Key Plugin
 /// @author Decipher ERC-6900 Team
@@ -31,12 +32,13 @@ import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
 /// the MSCA can add or remove session keys.
 contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     using ECDSA for bytes32;
+    using PluginStorageLib for address;
 
     string public constant NAME = "Base Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
-    mapping(address => mapping(address => mapping(bytes4 => bytes))) internal _sessionInfo;
+    uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
@@ -47,15 +49,48 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         if (_until <= _after) {
             revert WrongTimeRangeForSession();
         }
+        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
         bytes memory sessionInfo = abi.encodePacked(_after, _until);
-        _sessionInfo[msg.sender][tempOwner][allowedSelector] = sessionInfo;
+        address(msg.sender).writeBytesChecked(key, sessionInfo);
         emit TemporaryOwnerAdded(msg.sender, tempOwner, allowedSelector, _after, _until);
     }
 
     /// @inheritdoc ISessionKeyPlugin
     function removeTemporaryOwner(address tempOwner, bytes4 allowedSelector) external {
-        delete _sessionInfo[msg.sender][tempOwner][allowedSelector];
+        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
+        bytes memory emptyBytes = new bytes(0);
+        address(msg.sender).writeBytesChecked(key, emptyBytes);
         emit TemporaryOwnerRemoved(msg.sender, tempOwner, allowedSelector);
+    }
+
+    /// @inheritdoc ISessionKeyPlugin
+    function addTemporaryOwnerBatch(
+        address[] calldata tempOwners,
+        bytes4[] calldata allowedSelectors,
+        uint48[] calldata _afters,
+        uint48[] calldata _untils
+    ) external {
+        for (uint256 i = 0; i < tempOwners.length; i++) {
+            if (_untils[i] <= _afters[i]) {
+                revert WrongTimeRangeForSession();
+            }
+            bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
+            bytes memory sessionInfo = abi.encodePacked(_afters[i], _untils[i]);
+            address(msg.sender).writeBytesChecked(key, sessionInfo);
+        }
+        emit TemporaryOwnersAdded(msg.sender, tempOwners, allowedSelectors, _afters, _untils);
+    }
+
+    function removeTemporaryOwnerBatch(
+        address[] calldata tempOwners,
+        bytes4[] calldata allowedSelectors
+    ) external {
+        bytes memory emptyBytes = abi.encodePacked(uint96(1));
+        for (uint256 i = 0; i < tempOwners.length; i++) {
+            bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
+            address(msg.sender).writeBytesChecked(key, emptyBytes);
+        }
+        emit TemporaryOwnersRemoved(msg.sender, tempOwners, allowedSelectors);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -68,7 +103,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         view
         returns (uint48 _after, uint48 _until)
     {
-        (_after, _until) = _decode(_sessionInfo[account][tempOwner][allowedSelector]);
+        bytes memory timeRange = address(account).readBytesChecked(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        (_after, _until) = _decode(timeRange);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -91,14 +127,17 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
             (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             bytes4 selector = bytes4(userOp.callData[0:4]);
-            bytes memory duration = _sessionInfo[userOp.sender][signer][selector];
+            bytes32 key = keccak256(abi.encodePacked(signer, selector));
+            bytes memory duration = address(userOp.sender).readBytesChecked(key);
             if (duration.length != 0) {
                 (uint48 _after, uint48 _until) = _decode(duration);
                 // first parameter of _packValidationData is sigFailed, which should be false
                 return _packValidationData(false, _until, _after);
+            } else {
+                return _SIG_VALIDATION_FAILED;
             }
         }
-        return _packValidationData(true, 0, 0);
+        revert NotImplemented();
     }
 
     /// @inheritdoc BasePlugin
@@ -109,13 +148,16 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     {
         if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)) {
             bytes4 selector = bytes4(data[0:4]);
-            bytes memory duration = _sessionInfo[msg.sender][sender][selector];
+            bytes32 key = keccak256(abi.encodePacked(sender, selector));
+            bytes memory duration = address(msg.sender).readBytesChecked(key);
             if (duration.length != 0) {
                 (uint48 _after, uint48 _until) = _decode(duration);
                 if (block.timestamp < _after || block.timestamp > _until) {
                     revert WrongTimeRangeForSession();
                 }
                 return;
+            } else {
+                revert NotAuthorized();
             }
         }
         revert NotImplemented();
@@ -125,23 +167,33 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](3);
+        manifest.executionFunctions = new bytes4[](5);
         manifest.executionFunctions[0] = this.addTemporaryOwner.selector;
         manifest.executionFunctions[1] = this.removeTemporaryOwner.selector;
-        manifest.executionFunctions[2] = this.getSessionDuration.selector;
+        manifest.executionFunctions[2] = this.addTemporaryOwnerBatch.selector;
+        manifest.executionFunctions[3] = this.removeTemporaryOwnerBatch.selector;
+        manifest.executionFunctions[4] = this.getSessionDuration.selector;
 
         ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Used as first index.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](2);
+        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](4);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.addTemporaryOwner.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: this.removeTemporaryOwner.selector,
+            associatedFunction: ownerUserOpValidationFunction
+        });
+        manifest.userOpValidationFunctions[2] = ManifestAssociatedFunction({
+            executionSelector: this.addTemporaryOwnerBatch.selector,
+            associatedFunction: ownerUserOpValidationFunction
+        });
+        manifest.userOpValidationFunctions[3] = ManifestAssociatedFunction({
+            executionSelector: this.removeTemporaryOwnerBatch.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
 
@@ -156,7 +208,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
             dependencyIndex: 0 // Unused.
         });
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](3);
+        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](5);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.addTemporaryOwner.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
@@ -166,6 +218,14 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[2] = ManifestAssociatedFunction({
+            executionSelector: this.addTemporaryOwnerBatch.selector,
+            associatedFunction: ownerOrSelfRuntimeValidationFunction
+        });
+        manifest.runtimeValidationFunctions[3] = ManifestAssociatedFunction({
+            executionSelector: this.removeTemporaryOwnerBatch.selector,
+            associatedFunction: ownerOrSelfRuntimeValidationFunction
+        });
+        manifest.runtimeValidationFunctions[4] = ManifestAssociatedFunction({
             executionSelector: this.getSessionDuration.selector,
             associatedFunction: alwaysAllowFunction
         });

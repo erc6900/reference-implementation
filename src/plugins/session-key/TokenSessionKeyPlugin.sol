@@ -57,7 +57,7 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function onInstall(bytes calldata data) external override {}
+    function onInstall(bytes calldata data) external override {}  
 
     /// @inheritdoc BasePlugin
     function onUninstall(bytes calldata) external override {}
@@ -100,8 +100,10 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
             }
         }
 
-        bytes4[] memory permittedExecutionSelectors = new bytes4[](1);
+        bytes4[] memory permittedExecutionSelectors = new bytes4[](3);
         permittedExecutionSelectors[0] = TRANSFERFROM_SELECTOR;
+        permittedExecutionSelectors[1] = ISessionKeyPlugin.addTemporaryOwnerBatch.selector;
+        permittedExecutionSelectors[2] = ISessionKeyPlugin.removeTemporaryOwnerBatch.selector;
 
         manifest.permittedExternalCalls = new ManifestExternalCallPermission[](1);
         manifest.permittedExternalCalls[0] = ManifestExternalCallPermission({
