@@ -7,7 +7,6 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {BasePlugin} from "../../src/plugins/BasePlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {BaseSessionKeyPlugin} from "../../src/plugins/session-key/BaseSessionKeyPlugin.sol";
