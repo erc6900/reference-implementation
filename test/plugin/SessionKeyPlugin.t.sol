@@ -44,6 +44,8 @@ contract SessionKeyPluginTest is Test {
     address public tempOwner;
     uint256 public tempOwnerKey;
 
+    address public target;
+
     address payable public beneficiary;
 
     uint256 public constant CALL_GAS_LIMIT = 150000;
@@ -79,6 +81,7 @@ contract SessionKeyPluginTest is Test {
         (owner, ownerKey) = makeAddrAndKey("owner");
         (maliciousOwner,) = makeAddrAndKey("maliciousOwner");
         (tempOwner, tempOwnerKey) = makeAddrAndKey("tempOwner");
+        target = makeAddr("target");
 
         beneficiary = payable(makeAddr("beneficiary"));
         vm.deal(beneficiary, 1 wei);
@@ -146,23 +149,23 @@ contract SessionKeyPluginTest is Test {
         UserOperation[] memory userOps = new UserOperation[](1);
 
         (, UserOperation memory userOp) =
-            _constructUserOp(address(mockERC20), address(account), beneficiary, 1 ether);
+            _constructUserOp(address(mockERC20), address(account), target, 1 ether);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
 
         assertEq(mockERC20.balanceOf(address(account)), 0);
-        assertEq(mockERC20.balanceOf(beneficiary), 1 ether);
+        assertEq(mockERC20.balanceOf(target), 1 ether);
     }
 
     function test_sessionKey_runtime() public {
         vm.prank(address(tempOwner));
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
-            address(mockERC20), address(account), beneficiary, 1 ether
+            address(mockERC20), address(account), target, 1 ether
         );
 
         assertEq(mockERC20.balanceOf(address(account)), 0);
-        assertEq(mockERC20.balanceOf(beneficiary), 1 ether);
+        assertEq(mockERC20.balanceOf(target), 1 ether);
     }
 
     function test_sessionKey_removeTempOwner() public {
@@ -182,7 +185,7 @@ contract SessionKeyPluginTest is Test {
         // Check if tempOwner can still send user operations
         vm.startPrank(address(tempOwner));
 
-        bytes memory revertReason = abi.encodeWithSelector(BasePlugin.NotImplemented.selector);
+        bytes memory revertReason = abi.encodeWithSelector(ISessionKeyPlugin.NotAuthorized.selector);
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
@@ -192,20 +195,20 @@ contract SessionKeyPluginTest is Test {
             )
         );
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
-            address(mockERC20), address(account), beneficiary, 1 ether
+            address(mockERC20), address(account), target, 1 ether
         );
     }
 
     function test_sessionKey_invalidContractFails() public {
         address wrongERC20Contract = makeAddr("wrongERC20Contract");
         (bytes32 userOpHash, UserOperation memory userOp) =
-            _constructUserOp(address(wrongERC20Contract), address(account), beneficiary, 1 ether);
+            _constructUserOp(address(wrongERC20Contract), address(account), target, 1 ether);
 
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
         bytes memory revertCallData = abi.encodeWithSelector(
-            tokenSessionKeyPlugin.TRANSFERFROM_SELECTOR(), address(account), beneficiary, 1 ether
+            tokenSessionKeyPlugin.TRANSFERFROM_SELECTOR(), address(account), target, 1 ether
         );
         bytes memory revertReason = abi.encodeWithSelector(
             UpgradeableModularAccount.ExecFromPluginExternalNotPermitted.selector,
@@ -222,7 +225,7 @@ contract SessionKeyPluginTest is Test {
 
     function test_sessionKey_unregisteredTempOwnerFails() public {
         vm.prank(address(maliciousOwner));
-        bytes memory revertReason = abi.encodeWithSelector(BasePlugin.NotImplemented.selector);
+        bytes memory revertReason = abi.encodeWithSelector(ISessionKeyPlugin.NotAuthorized.selector);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -233,7 +236,7 @@ contract SessionKeyPluginTest is Test {
             )
         );
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
-            address(mockERC20), address(account), beneficiary, 1 ether
+            address(mockERC20), address(account), target, 1 ether
         );
     }
 
@@ -254,7 +257,7 @@ contract SessionKeyPluginTest is Test {
             )
         );
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
-            address(mockERC20), address(account), beneficiary, 1 ether
+            address(mockERC20), address(account), target, 1 ether
         );
     }
 
