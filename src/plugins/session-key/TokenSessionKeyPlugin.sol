@@ -57,10 +57,32 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function onInstall(bytes calldata data) external override {}  
+    function onInstall(bytes calldata data) external override {
+        if (data.length != 0) {
+            // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
+            (bool success, bytes memory returnData) = address(msg.sender).call(
+                abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
+            if (!success) {
+                assembly ("memory-safe") {
+                    revert(add(returnData, 32), mload(returnData))
+                }
+            }
+        }
+    }  
 
     /// @inheritdoc BasePlugin
-    function onUninstall(bytes calldata) external override {}
+    function onUninstall(bytes calldata data) external override {
+        if (data.length != 0) {
+            // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
+            (bool success, bytes memory returnData) = address(msg.sender).call(
+                abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
+            if (!success) {
+                assembly ("memory-safe") {
+                    revert(add(returnData, 32), mload(returnData))
+                }
+            }
+        }
+    }
 
     /// @inheritdoc BasePlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
@@ -96,20 +118,22 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         for (uint256 i = 0; i < manifest.dependencyInterfaceIds.length;) {
             manifest.dependencyInterfaceIds[i] = type(ISessionKeyPlugin).interfaceId;
             unchecked {
-                i++;
+                ++i;
             }
         }
 
-        bytes4[] memory permittedExecutionSelectors = new bytes4[](3);
-        permittedExecutionSelectors[0] = TRANSFERFROM_SELECTOR;
-        permittedExecutionSelectors[1] = ISessionKeyPlugin.addTemporaryOwnerBatch.selector;
-        permittedExecutionSelectors[2] = ISessionKeyPlugin.removeTemporaryOwnerBatch.selector;
+        manifest.permittedExecutionSelectors = new bytes4[](2);
+        manifest.permittedExecutionSelectors[0] = ISessionKeyPlugin.addTemporaryOwnerBatch.selector;
+        manifest.permittedExecutionSelectors[1] = ISessionKeyPlugin.removeTemporaryOwnerBatch.selector;
+
+        bytes4[] memory permittedExternalSelectors = new bytes4[](1);
+        permittedExternalSelectors[0] = TRANSFERFROM_SELECTOR;
 
         manifest.permittedExternalCalls = new ManifestExternalCallPermission[](1);
         manifest.permittedExternalCalls[0] = ManifestExternalCallPermission({
             externalAddress: TARGET_ERC20_CONTRACT,
             permitAnySelector: false,
-            selectors: permittedExecutionSelectors
+            selectors: permittedExternalSelectors
         });
 
         return manifest;
@@ -121,16 +145,6 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         metadata.name = NAME;
         metadata.version = VERSION;
         metadata.author = AUTHOR;
-
-        // Permission strings
-        string memory sessionKeyTransferPermission = "Allow Token Transfer Operation By Session Key";
-
-        // Permission descriptions
-        metadata.permissionDescriptors = new SelectorPermission[](1);
-        metadata.permissionDescriptors[0] = SelectorPermission({
-            functionSelector: this.transferFromSessionKey.selector,
-            permissionDescription: sessionKeyTransferPermission
-        });
 
         return metadata;
     }

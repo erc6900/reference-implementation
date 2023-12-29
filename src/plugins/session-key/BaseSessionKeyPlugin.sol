@@ -85,7 +85,7 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         address[] calldata tempOwners,
         bytes4[] calldata allowedSelectors
     ) external {
-        bytes memory emptyBytes = abi.encodePacked(uint96(1));
+        bytes memory emptyBytes = new bytes(0);
         for (uint256 i = 0; i < tempOwners.length; i++) {
             bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
             address(msg.sender).writeBytesChecked(key, emptyBytes);
@@ -248,13 +248,21 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         string memory modifySessionKeyPermission = "Modify Session Key";
 
         // Permission descriptions
-        metadata.permissionDescriptors = new SelectorPermission[](2);
+        metadata.permissionDescriptors = new SelectorPermission[](4);
         metadata.permissionDescriptors[0] = SelectorPermission({
             functionSelector: this.addTemporaryOwner.selector,
             permissionDescription: modifySessionKeyPermission
         });
         metadata.permissionDescriptors[1] = SelectorPermission({
             functionSelector: this.removeTemporaryOwner.selector,
+            permissionDescription: modifySessionKeyPermission
+        });
+        metadata.permissionDescriptors[2] = SelectorPermission({
+            functionSelector: this.addTemporaryOwnerBatch.selector,
+            permissionDescription: modifySessionKeyPermission
+        });
+        metadata.permissionDescriptors[3] = SelectorPermission({
+            functionSelector: this.removeTemporaryOwnerBatch.selector,
             permissionDescription: modifySessionKeyPermission
         });
 

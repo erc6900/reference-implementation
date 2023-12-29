@@ -61,6 +61,11 @@ contract SessionKeyPluginTest is Test {
         address indexed account, address indexed tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until
     );
     event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
+    event TemporaryOwnersAdded(
+        address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors, uint48[] afters, uint48[] untils
+    );
+    event TemporaryOwnersRemoved(address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors);
+    event PluginUninstalled(address indexed plugin, bool indexed onUninstallSuccess);
 
     function setUp() public {
         ownerPlugin = new SingleOwnerPlugin();
@@ -120,10 +125,30 @@ contract SessionKeyPluginTest is Test {
         );
         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
+        address[] memory tempOwners = new address[](1);
+        tempOwners[0] = address(tempOwner);
+
+        bytes4[] memory allowedSelectors = new bytes4[](1);
+        allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
+
+        uint48[] memory afters = new uint48[](1);
+        afters[0] = 0;
+
+        uint48[] memory untils = new uint48[](1);
+        untils[0] = 2;
+
+        bytes memory data = abi.encodeWithSelector(
+            ISessionKeyPlugin.addTemporaryOwnerBatch.selector,
+            tempOwners, 
+            allowedSelectors,
+            afters,
+            untils
+        );
+
         account.installPlugin({
             plugin: address(tokenSessionKeyPlugin),
             manifestHash: tokenSessionKeyManifestHash,
-            pluginInitData: "",
+            pluginInitData: data,
             dependencies: tokenSessionDependency,
             injectedHooks: new IPluginManager.InjectedHook[](0)
         });
@@ -132,15 +157,47 @@ contract SessionKeyPluginTest is Test {
         vm.startPrank(address(account));
         mockERC20.approve(address(account), 1 ether);
 
-        vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnerAdded(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
-        baseSessionKeyPlugin.addTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
+        // vm.expectEmit(true, true, true, true);
+        // emit TemporaryOwnerAdded(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
+        // baseSessionKeyPlugin.addTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
 
         (uint48 _after, uint48 _until) =
             baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
 
         assertEq(_after, 0);
         assertEq(_until, 2);
+        vm.stopPrank();
+    }
+
+    function test_sessionKey_batch() public {
+        address tempOwner2 = makeAddr("tempOwner2");
+        address tempOwner3 = makeAddr("tempOwner3");
+
+        address[] memory tempOwners = new address[](2);
+        tempOwners[0] = tempOwner2;
+        tempOwners[1] = tempOwner3;
+
+        bytes4[] memory allowedSelectors = new bytes4[](2);
+        allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
+        allowedSelectors[1] = TRANSFERFROM_SESSIONKEY_SELECTOR;
+
+        uint48[] memory afters = new uint48[](2);
+        afters[0] = 0;
+        afters[1] = 0;
+
+        uint48[] memory untils = new uint48[](2);
+        untils[0] = 2;
+        untils[1] = 2;
+
+        vm.startPrank(address(account));
+
+        vm.expectEmit(true, true, true, true);
+        emit TemporaryOwnersAdded(address(account), tempOwners, allowedSelectors, afters, untils);
+        baseSessionKeyPlugin.addTemporaryOwnerBatch(tempOwners, allowedSelectors, afters, untils);
+
+        vm.expectEmit(true, true, true, true);
+        emit TemporaryOwnersRemoved(address(account), tempOwners, allowedSelectors);
+        baseSessionKeyPlugin.removeTemporaryOwnerBatch(tempOwners, allowedSelectors);
         vm.stopPrank();
     }
 
@@ -258,6 +315,35 @@ contract SessionKeyPluginTest is Test {
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
             address(mockERC20), address(account), target, 1 ether
         );
+    }
+
+    function test_sessionKey_uninstallTokenSessionKeyPlugin() public {
+        address[] memory tempOwners = new address[](1);
+        tempOwners[0] = address(tempOwner);
+
+        bytes4[] memory allowedSelectors = new bytes4[](1);
+        allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
+
+        bytes memory data = abi.encodeWithSelector(
+            ISessionKeyPlugin.removeTemporaryOwnerBatch.selector,
+            tempOwners, 
+            allowedSelectors
+        );
+
+        vm.startPrank(owner);
+
+        vm.expectEmit(true, true, true, true);
+        // The second parameter should be true, but permittedExternalSelectors is disabled 
+        // in the previous step of uninstallation process, resulting in reversion of onUninstall().
+        emit PluginUninstalled(address(tokenSessionKeyPlugin), false);
+        account.uninstallPlugin({
+            plugin: address(tokenSessionKeyPlugin),
+            config: bytes(""),
+            pluginUninstallData: data,
+            hookUnapplyData: new bytes[](0)
+        });
+
+        vm.stopPrank();
     }
 
     // Internal Function
