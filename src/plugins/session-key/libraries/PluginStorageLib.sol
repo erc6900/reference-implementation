@@ -3,7 +3,8 @@ pragma solidity ^0.8.19;
 
 /// @title Plugin Storage Library for ERC-4337 Address-associated Storage
 /// @author Adam Egyed
-/// @notice This library treats storage available to associated addresses as one big global mapping of (bytes32 => bytes).
+/// @notice This library treats storage available to associated addresses as one big global mapping of (bytes32 =>
+/// bytes).
 ///
 /// THIS IS HIGHLY EXPERIMENTAL AND NOT READY FOR PRODUCTION USE.
 ///
@@ -12,7 +13,6 @@ pragma solidity ^0.8.19;
 /// While you can use `abi.encode` and `abi.decode`, this is not recommended because it will result in
 /// extraneous data being stored in storage, which will unreasonably increase gas costs.
 library PluginStorageLib {
-
     /// @notice Writes a bytes array to storage using a key and an associated address.
     /// @notice This function will write the length of the bytes array to storage.
     /// @param addr The address associated with the storage

@@ -32,7 +32,11 @@ interface ISessionKeyPlugin {
     /// @param _afters The times after which the owners are valid.
     /// @param _untils The times until which the owners are valid.
     event TemporaryOwnersAdded(
-        address indexed account, address[] indexed tempOwners, bytes4[] selectors, uint48[] _afters, uint48[] _untils
+        address indexed account,
+        address[] indexed tempOwners,
+        bytes4[] selectors,
+        uint48[] _afters,
+        uint48[] _untils
     );
 
     /// @notice This event is emitted when temporary owners are removed from the account.
@@ -79,7 +83,8 @@ interface ISessionKeyPlugin {
     /// only be called from an account.
     /// @param tempOwners The addresses of the temporary owners.
     /// @param allowedSelectors The selectors of the functions that the temporary owners are allowed to call.
-    function removeTemporaryOwnerBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors) external;
+    function removeTemporaryOwnerBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors)
+        external;
 
     /// @notice Get Session data for a given account and temporary owner.
     /// @param account The account to get session data for.

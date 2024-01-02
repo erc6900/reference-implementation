@@ -81,10 +81,9 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         emit TemporaryOwnersAdded(msg.sender, tempOwners, allowedSelectors, _afters, _untils);
     }
 
-    function removeTemporaryOwnerBatch(
-        address[] calldata tempOwners,
-        bytes4[] calldata allowedSelectors
-    ) external {
+    function removeTemporaryOwnerBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors)
+        external
+    {
         bytes memory emptyBytes = new bytes(0);
         for (uint256 i = 0; i < tempOwners.length; i++) {
             bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
@@ -103,7 +102,8 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         view
         returns (uint48 _after, uint48 _until)
     {
-        bytes memory timeRange = address(account).readBytesChecked(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        bytes memory timeRange =
+            address(account).readBytesChecked(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
         (_after, _until) = _decode(timeRange);
     }
 

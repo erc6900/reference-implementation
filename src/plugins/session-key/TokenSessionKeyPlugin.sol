@@ -60,22 +60,22 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     function onInstall(bytes calldata data) external override {
         if (data.length != 0) {
             // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
-            (bool success, bytes memory returnData) = address(msg.sender).call(
-                abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
+            (bool success, bytes memory returnData) =
+                address(msg.sender).call(abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
             if (!success) {
                 assembly ("memory-safe") {
                     revert(add(returnData, 32), mload(returnData))
                 }
             }
         }
-    }  
+    }
 
     /// @inheritdoc BasePlugin
     function onUninstall(bytes calldata data) external override {
         if (data.length != 0) {
             // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
-            (bool success, bytes memory returnData) = address(msg.sender).call(
-                abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
+            (bool success, bytes memory returnData) =
+                address(msg.sender).call(abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
             if (!success) {
                 assembly ("memory-safe") {
                     revert(add(returnData, 32), mload(returnData))

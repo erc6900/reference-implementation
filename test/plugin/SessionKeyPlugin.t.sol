@@ -62,7 +62,11 @@ contract SessionKeyPluginTest is Test {
     );
     event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
     event TemporaryOwnersAdded(
-        address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors, uint48[] afters, uint48[] untils
+        address indexed account,
+        address[] indexed tempOwners,
+        bytes4[] allowedSelectors,
+        uint48[] afters,
+        uint48[] untils
     );
     event TemporaryOwnersRemoved(address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors);
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSuccess);
@@ -138,11 +142,7 @@ contract SessionKeyPluginTest is Test {
         untils[0] = 2;
 
         bytes memory data = abi.encodeWithSelector(
-            ISessionKeyPlugin.addTemporaryOwnerBatch.selector,
-            tempOwners, 
-            allowedSelectors,
-            afters,
-            untils
+            ISessionKeyPlugin.addTemporaryOwnerBatch.selector, tempOwners, allowedSelectors, afters, untils
         );
 
         account.installPlugin({
@@ -204,8 +204,7 @@ contract SessionKeyPluginTest is Test {
     function test_sessionKey_userOp() public {
         UserOperation[] memory userOps = new UserOperation[](1);
 
-        (, UserOperation memory userOp) =
-            _constructUserOp(address(mockERC20), address(account), target, 1 ether);
+        (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), target, 1 ether);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
@@ -325,15 +324,13 @@ contract SessionKeyPluginTest is Test {
         allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
 
         bytes memory data = abi.encodeWithSelector(
-            ISessionKeyPlugin.removeTemporaryOwnerBatch.selector,
-            tempOwners, 
-            allowedSelectors
+            ISessionKeyPlugin.removeTemporaryOwnerBatch.selector, tempOwners, allowedSelectors
         );
 
         vm.startPrank(owner);
 
         vm.expectEmit(true, true, true, true);
-        // The second parameter should be true, but permittedExternalSelectors is disabled 
+        // The second parameter should be true, but permittedExternalSelectors is disabled
         // in the previous step of uninstallation process, resulting in reversion of onUninstall().
         emit PluginUninstalled(address(tokenSessionKeyPlugin), false);
         account.uninstallPlugin({
