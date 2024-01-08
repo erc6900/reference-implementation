@@ -47,6 +47,7 @@ interface ISessionKeyPlugin {
 
     error NotAuthorized();
     error WrongTimeRangeForSession();
+    error WrongDataLength();
 
     /// @notice Add a temporary owner to the account.
     /// @dev This function is installed on the account as part of plugin installation, and should

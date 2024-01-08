@@ -7,25 +7,25 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
-import {BaseSessionKeyPlugin} from "../../src/plugins/session-key/BaseSessionKeyPlugin.sol";
-import {ISessionKeyPlugin} from "../../src/plugins/session-key/interfaces/ISessionKeyPlugin.sol";
-import {TokenSessionKeyPlugin} from "../../src/plugins/session-key/TokenSessionKeyPlugin.sol";
-import {ITokenSessionKeyPlugin} from "../../src/plugins/session-key/interfaces/ITokenSessionKeyPlugin.sol";
+import {SingleOwnerPlugin} from "../../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
+import {ModularSessionKeyPlugin} from "../../../src/samples/plugins/ModularSessionKeyPlugin.sol";
+import {ISessionKeyPlugin} from "../../../src/samples/plugins/interfaces/ISessionKeyPlugin.sol";
+import {TokenSessionKeyPlugin} from "../../../src/samples/plugins/TokenSessionKeyPlugin.sol";
+import {ITokenSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/ITokenSessionKeyPlugin.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/libraries/FunctionReferenceLib.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
+import {UpgradeableModularAccount} from "../../../src/account/UpgradeableModularAccount.sol";
+import {MSCAFactoryFixture} from "../../mocks/MSCAFactoryFixture.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../../src/libraries/FunctionReferenceLib.sol";
+import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
+import {MockERC20} from "../../mocks/MockERC20.sol";
 
-contract SessionKeyPluginTest is Test {
+contract ModularSessionKeyPluginTest is Test {
     using ECDSA for bytes32;
     using FunctionReferenceLib for address;
 
     SingleOwnerPlugin public ownerPlugin;
-    BaseSessionKeyPlugin public baseSessionKeyPlugin;
+    ModularSessionKeyPlugin public modularSessionKeyPlugin;
     TokenSessionKeyPlugin public tokenSessionKeyPlugin;
     EntryPoint public entryPoint;
     MSCAFactoryFixture public factory;
@@ -73,7 +73,7 @@ contract SessionKeyPluginTest is Test {
 
     function setUp() public {
         ownerPlugin = new SingleOwnerPlugin();
-        baseSessionKeyPlugin = new BaseSessionKeyPlugin();
+        modularSessionKeyPlugin = new ModularSessionKeyPlugin();
         tokenSessionKeyPlugin = new TokenSessionKeyPlugin();
 
         entryPoint = new EntryPoint();
@@ -104,30 +104,13 @@ contract SessionKeyPluginTest is Test {
         vm.deal(address(account), 1 ether);
 
         vm.startPrank(owner);
-        FunctionReference[] memory baseSessionDependency = new FunctionReference[](2);
-        baseSessionDependency[0] =
+        FunctionReference[] memory modularSessionDependency = new FunctionReference[](2);
+        modularSessionDependency[0] =
             address(ownerPlugin).pack(uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER));
-        baseSessionDependency[1] =
+        modularSessionDependency[1] =
             address(ownerPlugin).pack(uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF));
 
-        bytes32 baseSessionKeyManifestHash = keccak256(abi.encode(baseSessionKeyPlugin.pluginManifest()));
-
-        account.installPlugin({
-            plugin: address(baseSessionKeyPlugin),
-            manifestHash: baseSessionKeyManifestHash,
-            pluginInitData: "",
-            dependencies: baseSessionDependency,
-            injectedHooks: new IPluginManager.InjectedHook[](0)
-        });
-
-        FunctionReference[] memory tokenSessionDependency = new FunctionReference[](2);
-        tokenSessionDependency[0] = address(baseSessionKeyPlugin).pack(
-            uint8(ISessionKeyPlugin.FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)
-        );
-        tokenSessionDependency[1] = address(baseSessionKeyPlugin).pack(
-            uint8(ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)
-        );
-        bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
+        bytes32 modularSessionKeyManifestHash = keccak256(abi.encode(modularSessionKeyPlugin.pluginManifest()));
 
         address[] memory tempOwners = new address[](1);
         tempOwners[0] = address(tempOwner);
@@ -141,14 +124,29 @@ contract SessionKeyPluginTest is Test {
         uint48[] memory untils = new uint48[](1);
         untils[0] = 2;
 
-        bytes memory data = abi.encodeWithSelector(
-            ISessionKeyPlugin.addTemporaryOwnerBatch.selector, tempOwners, allowedSelectors, afters, untils
+        bytes memory data = abi.encode(tempOwners, allowedSelectors, afters, untils);
+
+        account.installPlugin({
+            plugin: address(modularSessionKeyPlugin),
+            manifestHash: modularSessionKeyManifestHash,
+            pluginInitData: data,
+            dependencies: modularSessionDependency,
+            injectedHooks: new IPluginManager.InjectedHook[](0)
+        });
+
+        FunctionReference[] memory tokenSessionDependency = new FunctionReference[](2);
+        tokenSessionDependency[0] = address(modularSessionKeyPlugin).pack(
+            uint8(ISessionKeyPlugin.FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)
         );
+        tokenSessionDependency[1] = address(modularSessionKeyPlugin).pack(
+            uint8(ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)
+        );
+        bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
         account.installPlugin({
             plugin: address(tokenSessionKeyPlugin),
             manifestHash: tokenSessionKeyManifestHash,
-            pluginInitData: data,
+            pluginInitData: "",
             dependencies: tokenSessionDependency,
             injectedHooks: new IPluginManager.InjectedHook[](0)
         });
@@ -157,12 +155,9 @@ contract SessionKeyPluginTest is Test {
         vm.startPrank(address(account));
         mockERC20.approve(address(account), 1 ether);
 
-        // vm.expectEmit(true, true, true, true);
-        // emit TemporaryOwnerAdded(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
-        // baseSessionKeyPlugin.addTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR, 0, 2);
-
-        (uint48 _after, uint48 _until) =
-            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        (uint48 _after, uint48 _until) = modularSessionKeyPlugin.getSessionDuration(
+            address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR
+        );
 
         assertEq(_after, 0);
         assertEq(_until, 2);
@@ -193,11 +188,11 @@ contract SessionKeyPluginTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit TemporaryOwnersAdded(address(account), tempOwners, allowedSelectors, afters, untils);
-        baseSessionKeyPlugin.addTemporaryOwnerBatch(tempOwners, allowedSelectors, afters, untils);
+        modularSessionKeyPlugin.addTemporaryOwnerBatch(tempOwners, allowedSelectors, afters, untils);
 
         vm.expectEmit(true, true, true, true);
         emit TemporaryOwnersRemoved(address(account), tempOwners, allowedSelectors);
-        baseSessionKeyPlugin.removeTemporaryOwnerBatch(tempOwners, allowedSelectors);
+        modularSessionKeyPlugin.removeTemporaryOwnerBatch(tempOwners, allowedSelectors);
         vm.stopPrank();
     }
 
@@ -228,12 +223,13 @@ contract SessionKeyPluginTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit TemporaryOwnerRemoved(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
-        baseSessionKeyPlugin.removeTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        modularSessionKeyPlugin.removeTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
 
         vm.stopPrank();
 
-        (uint48 _after, uint48 _until) =
-            baseSessionKeyPlugin.getSessionDuration(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        (uint48 _after, uint48 _until) = modularSessionKeyPlugin.getSessionDuration(
+            address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR
+        );
         assertEq(_after, 0);
         assertEq(_until, 0);
 
@@ -244,7 +240,7 @@ contract SessionKeyPluginTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
-                address(baseSessionKeyPlugin),
+                address(modularSessionKeyPlugin),
                 ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
@@ -285,7 +281,7 @@ contract SessionKeyPluginTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
-                address(baseSessionKeyPlugin),
+                address(modularSessionKeyPlugin),
                 ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
@@ -306,7 +302,7 @@ contract SessionKeyPluginTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
-                address(baseSessionKeyPlugin),
+                address(modularSessionKeyPlugin),
                 ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
@@ -316,25 +312,32 @@ contract SessionKeyPluginTest is Test {
         );
     }
 
-    function test_sessionKey_uninstallTokenSessionKeyPlugin() public {
+    function test_sessionKey_uninstallModularSessionKeyPlugin() public {
         address[] memory tempOwners = new address[](1);
         tempOwners[0] = address(tempOwner);
 
         bytes4[] memory allowedSelectors = new bytes4[](1);
         allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
 
-        bytes memory data = abi.encodeWithSelector(
-            ISessionKeyPlugin.removeTemporaryOwnerBatch.selector, tempOwners, allowedSelectors
-        );
+        bytes memory data =
+            abi.encode(tempOwners, allowedSelectors);
 
         vm.startPrank(owner);
 
         vm.expectEmit(true, true, true, true);
-        // The second parameter should be true, but permittedExternalSelectors is disabled
-        // in the previous step of uninstallation process, resulting in reversion of onUninstall().
-        emit PluginUninstalled(address(tokenSessionKeyPlugin), false);
+
+        emit PluginUninstalled(address(tokenSessionKeyPlugin), true);
         account.uninstallPlugin({
             plugin: address(tokenSessionKeyPlugin),
+            config: bytes(""),
+            pluginUninstallData: "",
+            hookUnapplyData: new bytes[](0)
+        });
+
+        vm.expectEmit(true, true, true, true);
+        emit PluginUninstalled(address(modularSessionKeyPlugin), true);
+        account.uninstallPlugin({
+            plugin: address(modularSessionKeyPlugin),
             config: bytes(""),
             pluginUninstallData: data,
             hookUnapplyData: new bytes[](0)

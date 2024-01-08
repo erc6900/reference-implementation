@@ -10,15 +10,15 @@ import {
     SelectorPermission,
     ManifestExternalCallPermission
 } from "../../interfaces/IPlugin.sol";
-import {BasePlugin} from "../BasePlugin.sol";
-import {BaseSessionKeyPlugin} from "./BaseSessionKeyPlugin.sol";
+import {BasePlugin} from "../../plugins/BasePlugin.sol";
+import {ModularSessionKeyPlugin} from "./ModularSessionKeyPlugin.sol";
 import {ITokenSessionKeyPlugin} from "./interfaces/ITokenSessionKeyPlugin.sol";
 import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
 import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 
 /// @title Token Session Key Plugin
 /// @author Decipher ERC-6900 Team
-/// @notice This plugin acts as a 'child plugin' for BaseSessionKeyPlugin.
+/// @notice This plugin acts as a 'child plugin' for ModularSessionKeyPlugin.
 /// It implements the logic for session keys that are allowed to call ERC20
 /// transferFrom function. It allows for session key owners to access MSCA
 /// with `transferFromSessionKey` function, which calls `executeFromPluginExternal`
@@ -57,32 +57,10 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function onInstall(bytes calldata data) external override {
-        if (data.length != 0) {
-            // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
-            (bool success, bytes memory returnData) =
-                address(msg.sender).call(abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
-            if (!success) {
-                assembly ("memory-safe") {
-                    revert(add(returnData, 32), mload(returnData))
-                }
-            }
-        }
-    }
+    function onInstall(bytes calldata data) external override {}
 
     /// @inheritdoc BasePlugin
-    function onUninstall(bytes calldata data) external override {
-        if (data.length != 0) {
-            // Call to removeTemporaryOwnerBatch function in BaseSessionKeyPlugin
-            (bool success, bytes memory returnData) =
-                address(msg.sender).call(abi.encodeWithSelector(IPluginExecutor.executeFromPlugin.selector, data));
-            if (!success) {
-                assembly ("memory-safe") {
-                    revert(add(returnData, 32), mload(returnData))
-                }
-            }
-        }
-    }
+    function onUninstall(bytes calldata data) external override {}
 
     /// @inheritdoc BasePlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
@@ -121,10 +99,6 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
                 ++i;
             }
         }
-
-        manifest.permittedExecutionSelectors = new bytes4[](2);
-        manifest.permittedExecutionSelectors[0] = ISessionKeyPlugin.addTemporaryOwnerBatch.selector;
-        manifest.permittedExecutionSelectors[1] = ISessionKeyPlugin.removeTemporaryOwnerBatch.selector;
 
         bytes4[] memory permittedExternalSelectors = new bytes4[](1);
         permittedExternalSelectors[0] = TRANSFERFROM_SELECTOR;

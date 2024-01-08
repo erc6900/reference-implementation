@@ -12,17 +12,17 @@ import {
     PluginMetadata,
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
-import {BasePlugin} from "../BasePlugin.sol";
+import {BasePlugin} from "../../plugins/BasePlugin.sol";
 import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
-import {ISingleOwnerPlugin} from "../owner/ISingleOwnerPlugin.sol";
-import {SingleOwnerPlugin} from "../owner/SingleOwnerPlugin.sol";
+import {ISingleOwnerPlugin} from "../../plugins/owner/ISingleOwnerPlugin.sol";
+import {SingleOwnerPlugin} from "../../plugins/owner/SingleOwnerPlugin.sol";
 import {PluginStorageLib} from "./libraries/PluginStorageLib.sol";
 
-/// @title Base Session Key Plugin
+/// @title Modular Session Key Plugin
 /// @author Decipher ERC-6900 Team
 /// @notice This plugin allows some designated EOA or smart contract to temporarily
 /// own a modular account.
-/// This base session key plugin acts as a 'parent plugin' for all specific session
+/// This modular session key plugin acts as a 'parent plugin' for all specific session
 /// keys. Using dependency, this plugin can be thought as a parent contract that stores
 /// session key duration information, and validation functions for session keys. All
 /// logics for session keys will be implemented in child plugins.
@@ -30,11 +30,11 @@ import {PluginStorageLib} from "./libraries/PluginStorageLib.sol";
 /// runtime, with its own validation functions.
 /// Also, it has a dependency on SingleOwnerPlugin, to make sure that only the owner of
 /// the MSCA can add or remove session keys.
-contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
+contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     using ECDSA for bytes32;
     using PluginStorageLib for address;
 
-    string public constant NAME = "Base Session Key Plugin";
+    string public constant NAME = "Modular Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
@@ -46,20 +46,13 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
 
     /// @inheritdoc ISessionKeyPlugin
     function addTemporaryOwner(address tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until) external {
-        if (_until <= _after) {
-            revert WrongTimeRangeForSession();
-        }
-        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
-        bytes memory sessionInfo = abi.encodePacked(_after, _until);
-        address(msg.sender).writeBytesChecked(key, sessionInfo);
+        _addTemporaryOwner(msg.sender, tempOwner, allowedSelector, _after, _until);
         emit TemporaryOwnerAdded(msg.sender, tempOwner, allowedSelector, _after, _until);
     }
 
     /// @inheritdoc ISessionKeyPlugin
     function removeTemporaryOwner(address tempOwner, bytes4 allowedSelector) external {
-        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
-        bytes memory emptyBytes = new bytes(0);
-        address(msg.sender).writeBytesChecked(key, emptyBytes);
+        _removeTemporaryOwner(msg.sender, tempOwner, allowedSelector);
         emit TemporaryOwnerRemoved(msg.sender, tempOwner, allowedSelector);
     }
 
@@ -70,13 +63,14 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         uint48[] calldata _afters,
         uint48[] calldata _untils
     ) external {
+        if (
+            tempOwners.length != allowedSelectors.length || tempOwners.length != _afters.length
+                || tempOwners.length != _untils.length
+        ) {
+            revert WrongDataLength();
+        }
         for (uint256 i = 0; i < tempOwners.length; i++) {
-            if (_untils[i] <= _afters[i]) {
-                revert WrongTimeRangeForSession();
-            }
-            bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
-            bytes memory sessionInfo = abi.encodePacked(_afters[i], _untils[i]);
-            address(msg.sender).writeBytesChecked(key, sessionInfo);
+            _addTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i], _afters[i], _untils[i]);
         }
         emit TemporaryOwnersAdded(msg.sender, tempOwners, allowedSelectors, _afters, _untils);
     }
@@ -84,10 +78,11 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     function removeTemporaryOwnerBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors)
         external
     {
-        bytes memory emptyBytes = new bytes(0);
+        if (tempOwners.length != allowedSelectors.length) {
+            revert WrongDataLength();
+        }
         for (uint256 i = 0; i < tempOwners.length; i++) {
-            bytes32 key = keccak256(abi.encodePacked(tempOwners[i], allowedSelectors[i]));
-            address(msg.sender).writeBytesChecked(key, emptyBytes);
+            _removeTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i]);
         }
         emit TemporaryOwnersRemoved(msg.sender, tempOwners, allowedSelectors);
     }
@@ -112,10 +107,39 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function onInstall(bytes calldata data) external override {}
+    function onInstall(bytes calldata data) external override {
+        if (data.length != 0) {
+            (
+                address[] memory tempOwners,
+                bytes4[] memory allowedSelectors,
+                uint48[] memory _afters,
+                uint48[] memory _untils
+            ) = abi.decode(data, (address[], bytes4[], uint48[], uint48[]));
+            if (
+                tempOwners.length != allowedSelectors.length || tempOwners.length != _afters.length
+                    || tempOwners.length != _untils.length
+            ) {
+                revert WrongDataLength();
+            }
+            for (uint256 i = 0; i < tempOwners.length; i++) {
+                _addTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i], _afters[i], _untils[i]);
+            }
+        }
+    }
 
     /// @inheritdoc BasePlugin
-    function onUninstall(bytes calldata) external override {}
+    function onUninstall(bytes calldata data) external override {
+        if (data.length != 0) {
+            (address[] memory tempOwners, bytes4[] memory allowedSelectors) =
+                abi.decode(data, (address[], bytes4[]));
+            if (tempOwners.length != allowedSelectors.length) {
+                revert WrongDataLength();
+            }
+            for (uint256 i = 0; i < tempOwners.length; i++) {
+                _removeTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i]);
+            }
+        }
+    }
 
     /// @inheritdoc BasePlugin
     function userOpValidationFunction(uint8 functionId, UserOperation calldata userOp, bytes32 userOpHash)
@@ -244,28 +268,6 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         metadata.version = VERSION;
         metadata.author = AUTHOR;
 
-        // Permission strings
-        string memory modifySessionKeyPermission = "Modify Session Key";
-
-        // Permission descriptions
-        metadata.permissionDescriptors = new SelectorPermission[](4);
-        metadata.permissionDescriptors[0] = SelectorPermission({
-            functionSelector: this.addTemporaryOwner.selector,
-            permissionDescription: modifySessionKeyPermission
-        });
-        metadata.permissionDescriptors[1] = SelectorPermission({
-            functionSelector: this.removeTemporaryOwner.selector,
-            permissionDescription: modifySessionKeyPermission
-        });
-        metadata.permissionDescriptors[2] = SelectorPermission({
-            functionSelector: this.addTemporaryOwnerBatch.selector,
-            permissionDescription: modifySessionKeyPermission
-        });
-        metadata.permissionDescriptors[3] = SelectorPermission({
-            functionSelector: this.removeTemporaryOwnerBatch.selector,
-            permissionDescription: modifySessionKeyPermission
-        });
-
         return metadata;
     }
 
@@ -281,6 +283,27 @@ contract BaseSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+    function _addTemporaryOwner(
+        address account,
+        address tempOwner,
+        bytes4 allowedSelector,
+        uint48 _after,
+        uint48 _until
+    ) internal {
+        if (_until <= _after) {
+            revert WrongTimeRangeForSession();
+        }
+        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
+        bytes memory sessionInfo = abi.encodePacked(_after, _until);
+        address(account).writeBytesChecked(key, sessionInfo);
+    }
+
+    function _removeTemporaryOwner(address account, address tempOwner, bytes4 allowedSelector) internal {
+        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
+        bytes memory emptyBytes = new bytes(0);
+        address(account).writeBytesChecked(key, emptyBytes);
+    }
 
     function _decode(bytes memory _data) internal pure returns (uint48 _after, uint48 _until) {
         assembly {
