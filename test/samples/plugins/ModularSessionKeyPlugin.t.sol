@@ -319,8 +319,7 @@ contract ModularSessionKeyPluginTest is Test {
         bytes4[] memory allowedSelectors = new bytes4[](1);
         allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
 
-        bytes memory data =
-            abi.encode(tempOwners, allowedSelectors);
+        bytes memory data = abi.encode(tempOwners, allowedSelectors);
 
         vm.startPrank(owner);
 
