@@ -18,7 +18,7 @@ import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
-import {PluginManagerInternals} from "./PluginManagerInternals.sol";
+import {PluginManager} from "./PluginManager.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 
 contract UpgradeableModularAccount is
@@ -29,7 +29,7 @@ contract UpgradeableModularAccount is
     IERC165,
     IPluginExecutor,
     IStandardExecutor,
-    PluginManagerInternals,
+    IPluginManager,
     UUPSUpgradeable
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
@@ -41,6 +41,7 @@ contract UpgradeableModularAccount is
     }
 
     IEntryPoint private immutable _ENTRY_POINT;
+    PluginManager private immutable _PLUGIN_MANAGER;
 
     // As per the EIP-165 spec, no interface should ever match 0xffffffff
     bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
@@ -49,6 +50,7 @@ contract UpgradeableModularAccount is
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
     error AlwaysDenyRule();
+    error ArrayLengthMismatch();
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
@@ -75,8 +77,9 @@ contract UpgradeableModularAccount is
         _doCachedPostExecHooks(postExecHooks);
     }
 
-    constructor(IEntryPoint anEntryPoint) {
+    constructor(IEntryPoint anEntryPoint, PluginManager aPluginManager) {
         _ENTRY_POINT = anEntryPoint;
+        _PLUGIN_MANAGER = aPluginManager;
         _disableInitializers();
     }
 
@@ -279,7 +282,7 @@ contract UpgradeableModularAccount is
         bytes32 manifestHash,
         bytes calldata pluginInitData,
         FunctionReference[] calldata dependencies,
-        InjectedHook[] calldata injectedHooks
+        IPluginManager.InjectedHook[] calldata injectedHooks
     ) external override wrapNativeFunction {
         _installPlugin(plugin, manifestHash, pluginInitData, dependencies, injectedHooks);
     }
@@ -299,7 +302,15 @@ contract UpgradeableModularAccount is
             manifest = IPlugin(plugin).pluginManifest();
         }
 
-        _uninstallPlugin(plugin, manifest, pluginUninstallData, hookUnapplyData);
+        // Perform the action through the plugin manager contract.
+        bytes memory data =
+            abi.encodeCall(PluginManager.uninstallPlugin, (plugin, manifest, pluginUninstallData, hookUnapplyData));
+        (bool success, bytes memory returndata) = address(_PLUGIN_MANAGER).delegatecall(data);
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
     }
 
     /// @notice ERC165 introspection
@@ -606,4 +617,26 @@ contract UpgradeableModularAccount is
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    function _toFunctionReference(bytes32 setValue) internal pure returns (FunctionReference) {
+        return FunctionReference.wrap(bytes21(setValue));
+    }
+
+    function _installPlugin(
+        address plugin,
+        bytes32 manifestHash,
+        bytes memory pluginInitData,
+        FunctionReference[] memory dependencies,
+        InjectedHook[] memory injectedHooks
+    ) internal {
+        bytes memory data = abi.encodeCall(
+            PluginManager.installPlugin, (plugin, manifestHash, pluginInitData, dependencies, injectedHooks)
+        );
+        (bool success, bytes memory returndata) = address(_PLUGIN_MANAGER).delegatecall(data);
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
+    }
 }
