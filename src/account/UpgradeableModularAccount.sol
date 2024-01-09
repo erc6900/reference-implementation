@@ -302,7 +302,15 @@ contract UpgradeableModularAccount is
             manifest = IPlugin(plugin).pluginManifest();
         }
 
-        _uninstallPlugin(plugin, manifest, pluginUninstallData, hookUnapplyData);
+        // Perform the action through the plugin manager contract.
+        bytes memory data =
+            abi.encodeCall(PluginManager.uninstallPlugin, (plugin, manifest, pluginUninstallData, hookUnapplyData));
+        (bool success, bytes memory returndata) = address(_PLUGIN_MANAGER).delegatecall(data);
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
     }
 
     /// @notice ERC165 introspection
@@ -624,22 +632,6 @@ contract UpgradeableModularAccount is
         bytes memory data = abi.encodeCall(
             PluginManager.installPlugin, (plugin, manifestHash, pluginInitData, dependencies, injectedHooks)
         );
-        (bool success, bytes memory returndata) = address(_PLUGIN_MANAGER).delegatecall(data);
-        if (!success) {
-            assembly ("memory-safe") {
-                revert(add(returndata, 32), mload(returndata))
-            }
-        }
-    }
-
-    function _uninstallPlugin(
-        address plugin,
-        PluginManifest memory manifest,
-        bytes memory uninstallData,
-        bytes[] calldata hookUnapplyData
-    ) internal {
-        bytes memory data =
-            abi.encodeCall(PluginManager.uninstallPlugin, (plugin, manifest, uninstallData, hookUnapplyData));
         (bool success, bytes memory returndata) = address(_PLUGIN_MANAGER).delegatecall(data);
         if (!success) {
             assembly ("memory-safe") {
