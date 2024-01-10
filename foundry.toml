@@ -6,8 +6,8 @@ test = 'test'
 libs = ['lib']
 out = 'out'
 optimizer = true
-optimizer_runs = 10_000
-ignored_error_codes = [3628]
+optimizer_runs = 200
+ignored_error_codes = []
 fs_permissions = [
   { access = "read", path = "./out-optimized" }
 ]

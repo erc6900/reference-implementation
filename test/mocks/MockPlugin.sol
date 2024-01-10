@@ -73,6 +73,8 @@ contract MockPlugin is ERC165 {
         return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    receive() external payable {}
+
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
         emit ReceivedCall(msg.data, msg.value);
