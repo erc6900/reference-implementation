@@ -11,7 +11,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "../libraries/AccountStorage.sol";
+import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";

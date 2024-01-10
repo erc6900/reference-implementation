@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-import {AccountStorage, getAccountStorage} from "../libraries/AccountStorage.sol";
+import {AccountStorage, getAccountStorage} from "./AccountStorage.sol";
 
 abstract contract AccountStorageInitializable {
     error AlreadyInitialized();
