@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
+import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 
 /// @title Plugin Manager Interface
 interface IPluginManager {

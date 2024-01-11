@@ -15,7 +15,7 @@ import {
     PermittedExternalCallData,
     StoredInjectedHook
 } from "./AccountStorage.sol";
-import {FunctionReference, FunctionReferenceLib} from "../libraries/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {
     IPlugin,

@@ -12,10 +12,10 @@ import {
     HookGroup,
     toFunctionReferenceArray
 } from "./AccountStorage.sol";
+import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
