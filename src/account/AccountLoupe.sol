@@ -5,16 +5,16 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
-import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
     AccountStorage,
     getAccountStorage,
     getPermittedCallKey,
     HookGroup,
     toFunctionReferenceArray
-} from "../libraries/AccountStorage.sol";
+} from "./AccountStorage.sol";
+import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
+import {IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {FunctionReference} from "../libraries/FunctionReferenceLib.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
