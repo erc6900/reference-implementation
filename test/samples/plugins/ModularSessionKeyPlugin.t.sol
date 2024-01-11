@@ -184,16 +184,23 @@ contract ModularSessionKeyPluginTest is Test {
         untils[0] = 2;
         untils[1] = 2;
 
-        vm.startPrank(address(account));
-
         vm.expectEmit(true, true, true, true);
         emit TemporaryOwnersAdded(address(account), tempOwners, allowedSelectors, afters, untils);
+        vm.prank(address(account));
         modularSessionKeyPlugin.addTemporaryOwnerBatch(tempOwners, allowedSelectors, afters, untils);
+
+        vm.prank(tempOwner3);
+        TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
+            address(mockERC20), address(account), target, 1 ether
+        );
+
+        assertEq(mockERC20.balanceOf(address(account)), 0);
+        assertEq(mockERC20.balanceOf(target), 1 ether);
 
         vm.expectEmit(true, true, true, true);
         emit TemporaryOwnersRemoved(address(account), tempOwners, allowedSelectors);
+        vm.prank(address(account));
         modularSessionKeyPlugin.removeTemporaryOwnerBatch(tempOwners, allowedSelectors);
-        vm.stopPrank();
     }
 
     function test_sessionKey_userOp() public {

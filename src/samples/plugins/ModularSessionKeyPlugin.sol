@@ -16,7 +16,7 @@ import {BasePlugin} from "../../plugins/BasePlugin.sol";
 import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
 import {ISingleOwnerPlugin} from "../../plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../plugins/owner/SingleOwnerPlugin.sol";
-import {PluginStorageLib} from "./libraries/PluginStorageLib.sol";
+import {PluginStorageLib, StoragePointer} from "../../libraries/PluginStorageLib.sol";
 
 /// @title Modular Session Key Plugin
 /// @author Decipher ERC-6900 Team
@@ -33,12 +33,18 @@ import {PluginStorageLib} from "./libraries/PluginStorageLib.sol";
 contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     using ECDSA for bytes32;
     using PluginStorageLib for address;
+    using PluginStorageLib for bytes;
 
     string public constant NAME = "Modular Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
+    struct SessionInfo {
+        uint48 _after;
+        uint48 _until;
+    }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
@@ -97,9 +103,11 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         view
         returns (uint48 _after, uint48 _until)
     {
-        bytes memory timeRange =
-            address(account).readBytesChecked(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
-        (_after, _until) = _decode(timeRange);
+        bytes memory key = account.allocateAssociatedStorageKey(0, 1);
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
+        _after = sessionInfo._after;
+        _until = sessionInfo._until;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -151,11 +159,13 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
             (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             bytes4 selector = bytes4(userOp.callData[0:4]);
-            bytes32 key = keccak256(abi.encodePacked(signer, selector));
-            bytes memory duration = address(userOp.sender).readBytesChecked(key);
-            if (duration.length != 0) {
-                (uint48 _after, uint48 _until) = _decode(duration);
-                // first parameter of _packValidationData is sigFailed, which should be false
+            bytes memory key = userOp.sender.allocateAssociatedStorageKey(0, 1);
+            StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(signer, selector)));
+            SessionInfo storage duration = _castPtrToStruct(ptr);
+            uint48 _after = duration._after;
+            uint48 _until = duration._until;
+
+            if (_until != 0) {
                 return _packValidationData(false, _until, _after);
             } else {
                 return _SIG_VALIDATION_FAILED;
@@ -172,10 +182,13 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     {
         if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)) {
             bytes4 selector = bytes4(data[0:4]);
-            bytes32 key = keccak256(abi.encodePacked(sender, selector));
-            bytes memory duration = address(msg.sender).readBytesChecked(key);
-            if (duration.length != 0) {
-                (uint48 _after, uint48 _until) = _decode(duration);
+            bytes memory key = address(msg.sender).allocateAssociatedStorageKey(0, 1);
+            StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
+            SessionInfo storage duration = _castPtrToStruct(ptr);
+            uint48 _after = duration._after;
+            uint48 _until = duration._until;
+
+            if (_until != 0) {
                 if (block.timestamp < _after || block.timestamp > _until) {
                     revert WrongTimeRangeForSession();
                 }
@@ -294,21 +307,24 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         if (_until <= _after) {
             revert WrongTimeRangeForSession();
         }
-        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
-        bytes memory sessionInfo = abi.encodePacked(_after, _until);
-        address(account).writeBytesChecked(key, sessionInfo);
+        bytes memory key = account.allocateAssociatedStorageKey(0, 1);
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
+        sessionInfo._after = _after;
+        sessionInfo._until = _until;
     }
 
     function _removeTemporaryOwner(address account, address tempOwner, bytes4 allowedSelector) internal {
-        bytes32 key = keccak256(abi.encodePacked(tempOwner, allowedSelector));
-        bytes memory emptyBytes = new bytes(0);
-        address(account).writeBytesChecked(key, emptyBytes);
+        bytes memory key = account.allocateAssociatedStorageKey(0, 1);
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
+        sessionInfo._after = 0;
+        sessionInfo._until = 0;
     }
 
-    function _decode(bytes memory _data) internal pure returns (uint48 _after, uint48 _until) {
-        assembly {
-            _after := mload(add(_data, 0x06))
-            _until := mload(add(_data, 0x0C))
+    function _castPtrToStruct(StoragePointer ptr) internal pure returns (SessionInfo storage val) {
+        assembly ("memory-safe") {
+            val.slot := ptr
         }
     }
 
