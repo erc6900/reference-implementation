@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {FunctionReference} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -12,8 +13,8 @@ import {
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
+
 import {BaseTestPlugin} from "./BaseTestPlugin.sol";
-import {FunctionReference} from "../../../src/libraries/FunctionReferenceLib.sol";
 
 contract BadValidationMagicValue_UserOp_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
