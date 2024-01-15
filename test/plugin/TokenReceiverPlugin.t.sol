@@ -8,10 +8,10 @@ import {ERC721PresetMinterPauserAutoId} from
 import {IERC777Recipient} from "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
-import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
+import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
+import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {MockERC777} from "../mocks/MockERC777.sol";

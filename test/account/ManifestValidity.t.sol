@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
+import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {FunctionReference} from "../../src/libraries/FunctionReferenceLib.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
