@@ -5,12 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {
-    AccountStorage,
-    getAccountStorage,
-    HookGroup,
-    toFunctionReferenceArray
-} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, HookGroup, toFunctionReferenceArray} from "./AccountStorage.sol";
 import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
