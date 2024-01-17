@@ -838,6 +838,347 @@ abstract contract PluginManagerInternals is IPluginManager {
         emit PluginUninstalled(plugin, onUninstallSuccess);
     }
 
+    function _replacePlugin(
+        address oldPlugin,
+        address newPlugin,
+        bytes32 newManifestHash,
+        bytes[] calldata hookUnapplyData
+    ) internal {
+        AccountStorage storage _storage = getAccountStorage();
+
+        // Check if the old plugin exists.
+        if (!_storage.plugins.contains(oldPlugin)) {
+            revert PluginNotInstalled(oldPlugin);
+        }
+
+        // Check manifest hash.
+        PluginManifest memory newManifest = IPlugin(newPlugin).pluginManifest();
+        if (!_isValidPluginManifest(newManifest, newManifestHash)) {
+            revert InvalidPluginManifest();
+        }
+
+        // Check that the dependencies match the manifest.
+        FunctionReference[] memory dependencies = _storage.pluginData[oldPlugin].dependencies;
+        if (dependencies.length != newManifest.dependencyInterfaceIds.length) {
+            revert InvalidDependenciesProvided();
+        }
+
+        uint256 length = dependencies.length;
+        for (uint256 i = 0; i < length;) {
+            // Check the dependency interface id over the address of the dependency.
+            (address dependencyAddr,) = dependencies[i].unpack();
+
+            // Check that the dependency is installed.
+            if (!_storage.plugins.contains(dependencyAddr)) {
+                revert MissingPluginDependency(dependencyAddr);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Replace the plugin metadata to the account
+        _storage.pluginData[oldPlugin].manifestHash = bytes32(0);
+        _storage.pluginData[oldPlugin].dependencies = new FunctionReference[](0);
+        _storage.pluginData[newPlugin].manifestHash = newManifestHash;
+        _storage.pluginData[newPlugin].dependencies = dependencies;
+
+        // Update components according to the manifest.
+        // All conflicts should revert.
+
+        // Mark whether or not this plugin may spend native token amounts
+        if (newManifest.canSpendNativeToken) {
+            _storage.pluginData[newPlugin].canSpendNativeToken = true;
+        }
+
+        length = newManifest.executionFunctions.length;
+        for (uint256 i = 0; i < length;) {
+            _setExecutionFunction(newManifest.executionFunctions[i], newPlugin);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.permittedExecutionSelectors.length;
+        for (uint256 i = 0; i < length;) {
+            _disableExecFromPlugin(newManifest.permittedExecutionSelectors[i], oldPlugin, _storage);
+            _enableExecFromPlugin(newManifest.permittedExecutionSelectors[i], newPlugin, _storage);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Add the permitted external calls to the account.
+        if (newManifest.permitAnyExternalAddress) {
+            // @TODO: Do we need this?
+            _storage.pluginData[oldPlugin].anyExternalExecPermitted = false;
+            _storage.pluginData[newPlugin].anyExternalExecPermitted = true;
+        } else {
+            // Only store the specific permitted external calls if "permit any" flag was not set.
+            length = newManifest.permittedExternalCalls.length;
+            for (uint256 i = 0; i < length;) {
+                _removePermittedCallHooks(
+                    newManifest.permittedCallHooks[i].executionSelector,
+                    oldPlugin,
+                    _resolveManifestFunction(
+                        newManifest.permittedCallHooks[i].preExecHook,
+                        oldPlugin,
+                        dependencies,
+                        ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    ),
+                    _resolveManifestFunction(
+                        newManifest.permittedCallHooks[i].postExecHook,
+                        oldPlugin,
+                        dependencies,
+                        ManifestAssociatedFunctionType.NONE
+                    )
+                );
+                ManifestExternalCallPermission memory externalCallPermission =
+                    newManifest.permittedExternalCalls[i];
+
+                PermittedExternalCallData storage permittedExternalCallData =
+                    _storage.permittedExternalCalls[IPlugin(newPlugin)][externalCallPermission.externalAddress];
+
+                permittedExternalCallData.addressPermitted = true;
+
+                if (externalCallPermission.permitAnySelector) {
+                    permittedExternalCallData.anySelectorPermitted = true;
+                } else {
+                    uint256 externalContractSelectorsLength = externalCallPermission.selectors.length;
+                    for (uint256 j = 0; j < externalContractSelectorsLength;) {
+                        permittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+
+                        unchecked {
+                            ++j;
+                        }
+                    }
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+
+        // Does this really works?
+        length = _storage.pluginData[oldPlugin].injectedHooks.length;
+        for (uint256 i = 0; i < length;) {
+            StoredInjectedHook memory hook = _storage.pluginData[oldPlugin].injectedHooks[i];
+
+            _removePermittedCallHooks(
+                hook.selector,
+                oldPlugin,
+                FunctionReferenceLib.pack(hook.providingPlugin, hook.preExecHookFunctionId),
+                hook.isPostHookUsed
+                    ? FunctionReferenceLib.pack(hook.providingPlugin, hook.postExecHookFunctionId)
+                    : FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE
+            );
+
+            _addPermittedCallHooks(
+                hook.selector,
+                newPlugin,
+                FunctionReferenceLib.pack(hook.providingPlugin, hook.preExecHookFunctionId),
+                hook.isPostHookUsed
+                    ? FunctionReferenceLib.pack(hook.providingPlugin, hook.postExecHookFunctionId)
+                    : FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.userOpValidationFunctions.length;
+        for (uint256 i = 0; i < length;) {
+            ManifestAssociatedFunction memory mv = newManifest.userOpValidationFunctions[i];
+            _removeUserOpValidationFunction(
+                mv.executionSelector,
+                _resolveManifestFunction(
+                    mv.associatedFunction, oldPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            _addUserOpValidationFunction(
+                mv.executionSelector,
+                _resolveManifestFunction(
+                    mv.associatedFunction, newPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.runtimeValidationFunctions.length;
+        for (uint256 i = 0; i < length;) {
+            ManifestAssociatedFunction memory mv = newManifest.runtimeValidationFunctions[i];
+            _removeRuntimeValidationFunction(
+                mv.executionSelector,
+                _resolveManifestFunction(
+                    mv.associatedFunction,
+                    oldPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                )
+            );
+
+            _addRuntimeValidationFunction(
+                mv.executionSelector,
+                _resolveManifestFunction(
+                    mv.associatedFunction,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.preUserOpValidationHooks.length;
+        for (uint256 i = 0; i < length;) {
+            ManifestAssociatedFunction memory mh = newManifest.preUserOpValidationHooks[i];
+            _removePreUserOpValidationHook(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.associatedFunction,
+                    oldPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                )
+            );
+
+            _addPreUserOpValidationHook(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.associatedFunction,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.preRuntimeValidationHooks.length;
+        for (uint256 i = 0; i < length;) {
+            ManifestAssociatedFunction memory mh = newManifest.preRuntimeValidationHooks[i];
+            _removePreRuntimeValidationHook(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.associatedFunction,
+                    oldPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                )
+            );
+
+            _addPreRuntimeValidationHook(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.associatedFunction,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.executionHooks.length;
+        for (uint256 i = 0; i < length;) {
+            ManifestExecutionHook memory mh = newManifest.executionHooks[i];
+            _removeExecHooks(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.preExecHook, oldPlugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                ),
+                _resolveManifestFunction(
+                    mh.postExecHook, oldPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            _addExecHooks(
+                mh.executionSelector,
+                _resolveManifestFunction(
+                    mh.preExecHook, newPlugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                ),
+                _resolveManifestFunction(
+                    mh.postExecHook, newPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = newManifest.permittedCallHooks.length;
+        for (uint256 i = 0; i < length;) {
+            _removePermittedCallHooks(
+                newManifest.permittedCallHooks[i].executionSelector,
+                oldPlugin,
+                _resolveManifestFunction(
+                    newManifest.permittedCallHooks[i].preExecHook,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                ),
+                _resolveManifestFunction(
+                    newManifest.permittedCallHooks[i].postExecHook,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            _addPermittedCallHooks(
+                newManifest.permittedCallHooks[i].executionSelector,
+                oldPlugin,
+                _resolveManifestFunction(
+                    newManifest.permittedCallHooks[i].preExecHook,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                ),
+                _resolveManifestFunction(
+                    newManifest.permittedCallHooks[i].postExecHook,
+                    newPlugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.NONE
+                )
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        length = _storage.pluginData[oldPlugin].injectedHooks.length;
+        bool hasUnapplyHookData = hookUnapplyData.length != 0;
+        if (hasUnapplyHookData && hookUnapplyData.length != length) {
+            revert ArrayLengthMismatch();
+        }
+
+        // @TODO: Data migration for injected hooks
+
+        delete _storage.pluginData[oldPlugin];
+
+        // @TODO: Data migration & Emit events
+    }
+
     function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
         (bool success, uint256 value) = map.tryGet(key);
         map.set(key, success ? value + 1 : 0);

@@ -62,4 +62,11 @@ interface IPluginManager {
         bytes calldata pluginUninstallData,
         bytes[] calldata hookUnapplyData
     ) external;
+
+    function replacePlugin(
+        address oldPlugin,
+        address newPlugin,
+        bytes32 manifestHash,
+        bytes[] calldata hookUnapplyData
+    ) external;
 }

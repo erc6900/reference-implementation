@@ -302,6 +302,16 @@ contract UpgradeableModularAccount is
         _uninstallPlugin(plugin, manifest, pluginUninstallData, hookUnapplyData);
     }
 
+    // Should we check versions here?
+    function replacePlugin(
+        address oldPlugin,
+        address newPlugin,
+        bytes32 manifestHash,
+        bytes[] calldata hookUnapplyData
+    ) external override wrapNativeFunction {
+        _replacePlugin(oldPlugin, newPlugin, manifestHash, hookUnapplyData);
+    }
+
     /// @notice ERC165 introspection
     /// @dev returns true for `IERC165.interfaceId` and false for `0xFFFFFFFF`
     /// @param interfaceId interface id to check against
