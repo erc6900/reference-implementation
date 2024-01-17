@@ -7,18 +7,12 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {Counter} from "../mocks/Counter.sol";
 import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
-import {
-    EFPCallerPlugin,
-    EFPCallerPluginAnyExternal,
-    EFPPermittedCallHookPlugin,
-    EFPExternalPermittedCallHookPlugin
-} from "../mocks/plugins/ExecFromPluginPermissionsMocks.sol";
+import {EFPCallerPlugin, EFPCallerPluginAnyExternal} from "../mocks/plugins/ExecFromPluginPermissionsMocks.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract ExecuteFromPluginPermissionsTest is OptimizedTest {
@@ -34,8 +28,6 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
 
     EFPCallerPlugin public efpCallerPlugin;
     EFPCallerPluginAnyExternal public efpCallerPluginAnyExternal;
-    EFPPermittedCallHookPlugin public efpPermittedCallHookPlugin;
-    EFPExternalPermittedCallHookPlugin public efpExternalPermittedCallHookPlugin;
 
     function setUp() public {
         // Initialize the interaction targets
@@ -52,8 +44,6 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
         // Initialize the EFP caller plugins, which will attempt to use the permissions system to authorize calls.
         efpCallerPlugin = new EFPCallerPlugin();
         efpCallerPluginAnyExternal = new EFPCallerPluginAnyExternal();
-        efpPermittedCallHookPlugin = new EFPPermittedCallHookPlugin();
-        efpExternalPermittedCallHookPlugin = new EFPExternalPermittedCallHookPlugin();
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
         // solidity semantics
@@ -65,8 +55,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
         // Add the EFP caller plugin to the account
         bytes32 efpCallerManifestHash = keccak256(abi.encode(efpCallerPlugin.pluginManifest()));
@@ -74,8 +63,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(efpCallerPlugin),
             manifestHash: efpCallerManifestHash,
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
 
         // Add the EFP caller plugin with any external permissions to the account
@@ -85,30 +73,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(efpCallerPluginAnyExternal),
             manifestHash: efpCallerAnyExternalManifestHash,
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
-        });
-
-        // Add the EFP caller plugin with permitted call hooks to the account
-        bytes32 efpPermittedCallHookManifestHash =
-            keccak256(abi.encode(efpPermittedCallHookPlugin.pluginManifest()));
-        account.installPlugin({
-            plugin: address(efpPermittedCallHookPlugin),
-            manifestHash: efpPermittedCallHookManifestHash,
-            pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
-        });
-
-        // Add the EFP caller plugin with an external permitted call hook to the account
-        bytes32 efpExternalPermittedCallHookManifestHash =
-            keccak256(abi.encode(efpExternalPermittedCallHookPlugin.pluginManifest()));
-        account.installPlugin({
-            plugin: address(efpExternalPermittedCallHookPlugin),
-            manifestHash: efpExternalPermittedCallHookManifestHash,
-            pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
     }
 
@@ -253,35 +218,6 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             address(counter2), 0, abi.encodePacked(bytes4(keccak256("number()")))
         );
         retrievedNumber = abi.decode(result, (uint256));
-        assertEq(retrievedNumber, 18);
-    }
-
-    function test_executeFromPlugin_PermittedCallHooks() public {
-        assertFalse(efpPermittedCallHookPlugin.preExecHookCalled());
-        assertFalse(efpPermittedCallHookPlugin.postExecHookCalled());
-
-        bytes memory result = EFPPermittedCallHookPlugin(address(account)).performEFPCall();
-
-        bytes32 actual = abi.decode(result, (bytes32));
-
-        assertEq(actual, keccak256("bar"));
-
-        assertTrue(efpPermittedCallHookPlugin.preExecHookCalled());
-        assertTrue(efpPermittedCallHookPlugin.postExecHookCalled());
-    }
-
-    function test_executeFromPluginExternal_PermittedCallHooks() public {
-        counter1.setNumber(17);
-
-        assertFalse(efpExternalPermittedCallHookPlugin.preExecHookCalled());
-        assertFalse(efpExternalPermittedCallHookPlugin.postExecHookCalled());
-
-        EFPExternalPermittedCallHookPlugin(address(account)).performIncrement();
-
-        assertTrue(efpExternalPermittedCallHookPlugin.preExecHookCalled());
-        assertTrue(efpExternalPermittedCallHookPlugin.postExecHookCalled());
-
-        uint256 retrievedNumber = counter1.number();
         assertEq(retrievedNumber, 18);
     }
 }

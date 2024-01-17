@@ -4,9 +4,6 @@ pragma solidity ^0.8.19;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {
     IPlugin,
     ManifestAssociatedFunctionType,
@@ -16,6 +13,8 @@ import {
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -44,13 +43,7 @@ contract AccountExecHooksTest is OptimizedTest {
     PluginManifest public m1;
     PluginManifest public m2;
 
-    /// @dev Note that we strip hookApplyData from InjectedHooks in this event for gas savings
-    event PluginInstalled(
-        address indexed plugin,
-        bytes32 manifestHash,
-        FunctionReference[] dependencies,
-        IPluginManager.InjectedHook[] injectedHooks
-    );
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     // emitted by MockPlugin
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -427,16 +420,13 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(
-            address(mockPlugin1), manifestHash1, new FunctionReference[](0), new IPluginManager.InjectedHook[](0)
-        );
+        emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
 
         account.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
             pluginInitData: bytes(""),
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
     }
 
@@ -461,16 +451,13 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(
-            address(mockPlugin2), manifestHash2, dependencies, new IPluginManager.InjectedHook[](0)
-        );
+        emit PluginInstalled(address(mockPlugin2), manifestHash2, dependencies);
 
         account.installPlugin({
             plugin: address(mockPlugin2),
             manifestHash: manifestHash2,
             pluginInitData: bytes(""),
-            dependencies: dependencies,
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: dependencies
         });
     }
 
@@ -480,6 +467,6 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
 
-        account.uninstallPlugin(address(plugin), bytes(""), bytes(""), new bytes[](0));
+        account.uninstallPlugin(address(plugin), bytes(""), bytes(""));
     }
 }
