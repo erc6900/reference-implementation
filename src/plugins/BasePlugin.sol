@@ -5,7 +5,6 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import {IPlugin, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
 
 /// @title Base contract for plugins
 /// @dev Implements ERC-165 to support IPlugin's interface, which is a requirement
@@ -118,32 +117,6 @@ abstract contract BasePlugin is ERC165, IPlugin {
     function postExecutionHook(uint8 functionId, bytes calldata preExecHookData) external virtual {
         (functionId, preExecHookData);
         revert NotImplemented();
-    }
-
-    /// @notice A hook that runs when a hook this plugin owns is installed onto another plugin
-    /// @dev Optional, use to implement any required setup logic
-    /// @param pluginAppliedOn The plugin that the hook is being applied on
-    /// @param injectedHooksInfo Contains pre/post exec hook information
-    /// @param data Any optional data for setup
-    function onHookApply(
-        address pluginAppliedOn,
-        IPluginManager.InjectedHooksInfo calldata injectedHooksInfo,
-        bytes calldata data
-    ) external virtual {
-        (pluginAppliedOn, injectedHooksInfo, data);
-    }
-
-    /// @notice A hook that runs when a hook this plugin owns is unapplied from another plugin
-    /// @dev Optional, use to implement any required unapplied logic
-    /// @param pluginAppliedOn The plugin that the hook was applied on
-    /// @param injectedHooksInfo Contains pre/post exec hook information
-    /// @param data Any optional data for the unapplied call
-    function onHookUnapply(
-        address pluginAppliedOn,
-        IPluginManager.InjectedHooksInfo calldata injectedHooksInfo,
-        bytes calldata data
-    ) external virtual {
-        (pluginAppliedOn, injectedHooksInfo, data);
     }
 
     /// @notice Describe the contents and intended configuration of the plugin.

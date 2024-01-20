@@ -5,7 +5,6 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
@@ -48,8 +47,7 @@ contract AccountReturnDataTest is OptimizedTest {
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
         // Add the result consumer plugin to the account
         bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
@@ -57,8 +55,7 @@ contract AccountReturnDataTest is OptimizedTest {
             plugin: address(resultConsumerPlugin),
             manifestHash: resultConsumerManifestHash,
             pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: new FunctionReference[](0)
         });
     }
 

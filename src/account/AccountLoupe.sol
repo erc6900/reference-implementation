@@ -5,13 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {
-    AccountStorage,
-    getAccountStorage,
-    getPermittedCallKey,
-    HookGroup,
-    toFunctionReferenceArray
-} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, HookGroup, toFunctionReferenceArray} from "./AccountStorage.sol";
 import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
@@ -51,16 +45,6 @@ abstract contract AccountLoupe is IAccountLoupe {
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
         execHooks = _getHooks(getAccountStorage().selectorData[selector].executionHooks);
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getPermittedCallHooks(address callingPlugin, bytes4 selector)
-        external
-        view
-        returns (ExecutionHooks[] memory execHooks)
-    {
-        bytes24 key = getPermittedCallKey(callingPlugin, selector);
-        execHooks = _getHooks(getAccountStorage().permittedCalls[key].permittedCallHooks);
     }
 
     /// @inheritdoc IAccountLoupe
