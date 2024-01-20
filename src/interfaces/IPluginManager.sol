@@ -30,4 +30,6 @@ interface IPluginManager {
     /// @param pluginUninstallData Optional data to be decoded and used by the plugin to clear plugin data for the
     /// modular account.
     function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData) external;
+
+    function replacePlugin(address oldPlugin, address newPlugin, bytes calldata config) external;
 }

@@ -284,6 +284,23 @@ contract UpgradeableModularAccount is
         _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 
+    /// @inheritdoc IPluginManager
+    function replacePlugin(address oldPlugin, address newPlugin, bytes calldata config)
+        external
+        override
+        wrapNativeFunction
+    {
+        PluginManifest memory manifest;
+
+        if (config.length > 0) {
+            manifest = abi.decode(config, (PluginManifest));
+        } else {
+            manifest = IPlugin(newPlugin).pluginManifest();
+        }
+
+        _replacePlugin(oldPlugin, newPlugin, manifest);
+    }
+
     /// @notice ERC165 introspection
     /// @dev returns true for `IERC165.interfaceId` and false for `0xFFFFFFFF`
     /// @param interfaceId interface id to check against
