@@ -16,7 +16,7 @@ import {ITokenSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/IT
 
 import {UpgradeableModularAccount} from "../../../src/account/UpgradeableModularAccount.sol";
 import {MSCAFactoryFixture} from "../../mocks/MSCAFactoryFixture.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../../src/libraries/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 
@@ -130,8 +130,7 @@ contract ModularSessionKeyPluginTest is Test {
             plugin: address(modularSessionKeyPlugin),
             manifestHash: modularSessionKeyManifestHash,
             pluginInitData: data,
-            dependencies: modularSessionDependency,
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: modularSessionDependency
         });
 
         FunctionReference[] memory tokenSessionDependency = new FunctionReference[](2);
@@ -147,8 +146,7 @@ contract ModularSessionKeyPluginTest is Test {
             plugin: address(tokenSessionKeyPlugin),
             manifestHash: tokenSessionKeyManifestHash,
             pluginInitData: "",
-            dependencies: tokenSessionDependency,
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            dependencies: tokenSessionDependency
         });
         vm.stopPrank();
 
@@ -336,8 +334,7 @@ contract ModularSessionKeyPluginTest is Test {
         account.uninstallPlugin({
             plugin: address(tokenSessionKeyPlugin),
             config: bytes(""),
-            pluginUninstallData: "",
-            hookUnapplyData: new bytes[](0)
+            pluginUninstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
@@ -345,8 +342,7 @@ contract ModularSessionKeyPluginTest is Test {
         account.uninstallPlugin({
             plugin: address(modularSessionKeyPlugin),
             config: bytes(""),
-            pluginUninstallData: data,
-            hookUnapplyData: new bytes[](0)
+            pluginUninstallData: data
         });
 
         vm.stopPrank();
