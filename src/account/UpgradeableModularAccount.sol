@@ -470,14 +470,6 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory postHooksToRun)
     {
         HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
-
-        return _doPreHooks(hooks, data);
-    }
-
-    function _doPreHooks(HookGroup storage hooks, bytes calldata data)
-        internal
-        returns (PostExecToRun[] memory postHooksToRun)
-    {
         uint256 preExecHooksLength = hooks.preHooks.length();
         uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
         uint256 maxPostExecHooksLength = postOnlyHooksLength;
@@ -517,21 +509,20 @@ contract UpgradeableModularAccount is
                 revert AlwaysDenyRule();
             }
 
+            bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
+
             uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
                 for (uint256 j = 0; j < associatedPostExecHooksLength;) {
                     (key,) = hooks.associatedPostHooks[preExecHook].at(j);
                     postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
-                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData =
-                        _runPreExecHook(preExecHook, data);
+                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
                     unchecked {
                         ++actualPostHooksToRunLength;
                         ++j;
                     }
                 }
-            } else {
-                _runPreExecHook(preExecHook, data);
             }
 
             unchecked {
