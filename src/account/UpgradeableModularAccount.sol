@@ -262,10 +262,10 @@ contract UpgradeableModularAccount is
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
-        bytes calldata pluginInitData,
+        bytes calldata pluginInstallData,
         FunctionReference[] calldata dependencies
     ) external override wrapNativeFunction {
-        _installPlugin(plugin, manifestHash, pluginInitData, dependencies);
+        _installPlugin(plugin, manifestHash, pluginInstallData, dependencies);
     }
 
     /// @inheritdoc IPluginManager

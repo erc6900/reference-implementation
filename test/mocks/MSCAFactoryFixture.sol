@@ -57,13 +57,13 @@ contract MSCAFactoryFixture is OptimizedTest {
             plugins[0] = address(singleOwnerPlugin);
             bytes32[] memory pluginManifestHashes = new bytes32[](1);
             pluginManifestHashes[0] = keccak256(abi.encode(singleOwnerPlugin.pluginManifest()));
-            bytes[] memory pluginInitData = new bytes[](1);
-            pluginInitData[0] = abi.encode(owner);
+            bytes[] memory pluginInstallData = new bytes[](1);
+            pluginInstallData[0] = abi.encode(owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
-            UpgradeableModularAccount(payable(addr)).initialize(plugins, pluginManifestHashes, pluginInitData);
+            UpgradeableModularAccount(payable(addr)).initialize(plugins, pluginManifestHashes, pluginInstallData);
         }
 
         return UpgradeableModularAccount(payable(addr));
