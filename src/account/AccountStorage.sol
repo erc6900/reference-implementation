@@ -21,12 +21,6 @@ struct PluginData {
     uint256 dependentCount;
 }
 
-// Represents data associated with a plugin's permission to use `executeFromPlugin`
-// to interact with another plugin installed on the account.
-struct PermittedCallData {
-    bool callPermitted;
-}
-
 // Represents data associated with a plugin's permission to use `executeFromPluginExternal`
 // to interact with contracts and addresses external to the account and its plugins.
 struct PermittedExternalCallData {
@@ -69,7 +63,7 @@ struct AccountStorage {
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     // bytes24 key = address(calling plugin) || bytes4(selector of execution function)
-    mapping(bytes24 => PermittedCallData) permittedCalls;
+    mapping(bytes24 => bool) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection

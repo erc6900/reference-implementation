@@ -183,7 +183,7 @@ contract UpgradeableModularAccount is
 
         AccountStorage storage _storage = getAccountStorage();
 
-        if (!_storage.permittedCalls[execFromPluginKey].callPermitted) {
+        if (!_storage.callPermitted[execFromPluginKey]) {
             revert ExecFromPluginNotPermitted(callingPlugin, selector);
         }
 
