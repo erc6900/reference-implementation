@@ -136,23 +136,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
     }
 
-    function _enableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-
-        // If there are duplicates, this will just enable the flag again. This is not a problem, since the boolean
-        // will be set to false twice during uninstall, which is fine.
-        accountStorage.permittedCalls[key].callPermitted = true;
-    }
-
-    function _disableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-        accountStorage.permittedCalls[key].callPermitted = false;
-    }
-
     function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
     {
@@ -306,7 +289,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         // Add installed plugin and selectors this plugin can call
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _enableExecFromPlugin(manifest.permittedExecutionSelectors[i], plugin, _storage);
+            // If there are duplicates, this will just enable the flag again. This is not a problem, since the
+            // boolean will be set to false twice during uninstall, which is fine.
+            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = true;
 
             unchecked {
                 ++i;
@@ -619,7 +604,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _disableExecFromPlugin(manifest.permittedExecutionSelectors[i], plugin, _storage);
+            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = false;
 
             unchecked {
                 ++i;
