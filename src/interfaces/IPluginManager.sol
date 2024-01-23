@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
+type FunctionReference is bytes21;
 
 /// @title Plugin Manager Interface
 interface IPluginManager {
