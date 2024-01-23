@@ -44,30 +44,7 @@ abstract contract AccountLoupe is IAccountLoupe {
 
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
-        execHooks = _getHooks(getAccountStorage().selectorData[selector].executionHooks);
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getPreValidationHooks(bytes4 selector)
-        external
-        view
-        returns (
-            FunctionReference[] memory preUserOpValidationHooks,
-            FunctionReference[] memory preRuntimeValidationHooks
-        )
-    {
-        preUserOpValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preUserOpValidationHooks);
-        preRuntimeValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preRuntimeValidationHooks);
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
-        pluginAddresses = getAccountStorage().plugins.values();
-    }
-
-    function _getHooks(HookGroup storage hooks) internal view returns (ExecutionHooks[] memory execHooks) {
+        HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
         uint256 preExecHooksLength = hooks.preHooks.length();
         uint256 postOnlyExecHooksLength = hooks.postOnlyHooks.length();
         uint256 maxExecHooksLength = postOnlyExecHooksLength;
@@ -128,5 +105,25 @@ abstract contract AccountLoupe is IAccountLoupe {
         assembly ("memory-safe") {
             mstore(execHooks, actualExecHooksLength)
         }
+    }
+
+    /// @inheritdoc IAccountLoupe
+    function getPreValidationHooks(bytes4 selector)
+        external
+        view
+        returns (
+            FunctionReference[] memory preUserOpValidationHooks,
+            FunctionReference[] memory preRuntimeValidationHooks
+        )
+    {
+        preUserOpValidationHooks =
+            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preUserOpValidationHooks);
+        preRuntimeValidationHooks =
+            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preRuntimeValidationHooks);
+    }
+
+    /// @inheritdoc IAccountLoupe
+    function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
+        pluginAddresses = getAccountStorage().plugins.values();
     }
 }
