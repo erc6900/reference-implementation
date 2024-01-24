@@ -54,7 +54,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
         account.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
         // Add the EFP caller plugin to the account
@@ -62,7 +62,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
         account.installPlugin({
             plugin: address(efpCallerPlugin),
             manifestHash: efpCallerManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
 
@@ -72,7 +72,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
         account.installPlugin({
             plugin: address(efpCallerPluginAnyExternal),
             manifestHash: efpCallerAnyExternalManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }

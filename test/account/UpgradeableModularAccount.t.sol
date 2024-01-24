@@ -269,7 +269,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInitData: abi.encode(uint48(1 days)),
+            pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
 
@@ -292,7 +292,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(mockPluginWithBadPermittedExec),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -304,7 +304,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
-            pluginInitData: abi.encode(uint48(1 days)),
+            pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
     }
@@ -319,7 +319,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(badPlugin),
             manifestHash: bytes32(0),
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -331,7 +331,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInitData: abi.encode(uint48(1 days)),
+            pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
 
@@ -343,7 +343,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInitData: abi.encode(uint48(1 days)),
+            pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
     }
@@ -356,7 +356,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
 
@@ -377,7 +377,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
 
@@ -402,7 +402,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
 
@@ -430,7 +430,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
 
