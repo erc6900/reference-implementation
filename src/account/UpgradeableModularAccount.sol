@@ -365,13 +365,7 @@ contract UpgradeableModularAccount is
 
             if (!preUserOpValidationHook.isEmptyOrMagicValue()) {
                 (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
-                try IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash) returns (
-                    uint256 returnData
-                ) {
-                    currentValidationData = returnData;
-                } catch {
-                    currentValidationData = SIG_VALIDATION_FAILED;
-                }
+                currentValidationData = IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
 
                 if (uint160(currentValidationData) > 1) {
                     // If the aggregator is not 0 or 1, it is an unexpected value
@@ -392,13 +386,8 @@ contract UpgradeableModularAccount is
         {
             if (!userOpValidationFunction.isEmptyOrMagicValue()) {
                 (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-                try IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash) returns (
-                    uint256 returnData
-                ) {
-                    currentValidationData = returnData;
-                } catch {
-                    currentValidationData = SIG_VALIDATION_FAILED;
-                }
+                currentValidationData = IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
+
                 if (preUserOpValidationHooksLength != 0) {
                     // If we have other validation data we need to coalesce with
                     validationData = _coalesceValidation(validationData, currentValidationData);
