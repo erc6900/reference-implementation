@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -19,12 +19,6 @@ struct PluginData {
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
     uint256 dependentCount;
-}
-
-// Represents data associated with a plugin's permission to use `executeFromPlugin`
-// to interact with another plugin installed on the account.
-struct PermittedCallData {
-    bool callPermitted;
 }
 
 // Represents data associated with a plugin's permission to use `executeFromPluginExternal`
@@ -69,7 +63,7 @@ struct AccountStorage {
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     // bytes24 key = address(calling plugin) || bytes4(selector of execution function)
-    mapping(bytes24 => PermittedCallData) permittedCalls;
+    mapping(bytes24 => bool) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection

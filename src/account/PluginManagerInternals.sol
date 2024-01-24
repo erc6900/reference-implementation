@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    getPermittedCallKey,
-    HookGroup,
-    PermittedExternalCallData
-} from "./AccountStorage.sol";
-import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
+import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
@@ -24,10 +15,20 @@ import {
     ManifestExternalCallPermission,
     PluginManifest
 } from "../interfaces/IPlugin.sol";
+import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {
+    AccountStorage,
+    getAccountStorage,
+    SelectorData,
+    getPermittedCallKey,
+    HookGroup,
+    PermittedExternalCallData
+} from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using FunctionReferenceLib for FunctionReference;
 
     error ArrayLengthMismatch();
     error ExecutionFunctionAlreadySet(bytes4 selector);
@@ -134,23 +135,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
-    }
-
-    function _enableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-
-        // If there are duplicates, this will just enable the flag again. This is not a problem, since the boolean
-        // will be set to false twice during uninstall, which is fine.
-        accountStorage.permittedCalls[key].callPermitted = true;
-    }
-
-    function _disableExecFromPlugin(bytes4 selector, address plugin, AccountStorage storage accountStorage)
-        internal
-    {
-        bytes24 key = getPermittedCallKey(plugin, selector);
-        accountStorage.permittedCalls[key].callPermitted = false;
     }
 
     function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
@@ -288,7 +272,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         _storage.pluginData[plugin].dependencies = dependencies;
 
         // Update components according to the manifest.
-        // All conflicts should revert.
 
         // Mark whether or not this plugin may spend native token amounts
         if (manifest.canSpendNativeToken) {
@@ -307,7 +290,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         // Add installed plugin and selectors this plugin can call
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _enableExecFromPlugin(manifest.permittedExecutionSelectors[i], plugin, _storage);
+            // If there are duplicates, this will just enable the flag again. This is not a problem, since the
+            // boolean will be set to false twice during uninstall, which is fine.
+            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = true;
 
             unchecked {
                 ++i;
@@ -380,6 +365,9 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
+        // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
+        FunctionReference[] memory emptyDependencies;
+
         length = manifest.preUserOpValidationHooks.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mh = manifest.preUserOpValidationHooks[i];
@@ -388,7 +376,7 @@ abstract contract PluginManagerInternals is IPluginManager {
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     plugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -406,7 +394,7 @@ abstract contract PluginManagerInternals is IPluginManager {
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     plugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -421,10 +409,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, plugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 ),
                 _resolveManifestFunction(
-                    mh.postExecHook, plugin, dependencies, ManifestAssociatedFunctionType.NONE
+                    mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
 
@@ -488,7 +476,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
-        // If any expected components are missing, revert.
+
+        // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
+        FunctionReference[] memory emptyDependencies;
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length;) {
@@ -496,10 +486,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, plugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 ),
                 _resolveManifestFunction(
-                    mh.postExecHook, plugin, dependencies, ManifestAssociatedFunctionType.NONE
+                    mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
 
@@ -516,7 +506,7 @@ abstract contract PluginManagerInternals is IPluginManager {
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     plugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -534,7 +524,7 @@ abstract contract PluginManagerInternals is IPluginManager {
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     plugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -615,7 +605,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _disableExecFromPlugin(manifest.permittedExecutionSelectors[i], plugin, _storage);
+            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = false;
 
             unchecked {
                 ++i;
@@ -698,6 +688,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         if (manifestFunction.functionType == ManifestAssociatedFunctionType.SELF) {
             return FunctionReferenceLib.pack(plugin, manifestFunction.functionId);
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.DEPENDENCY) {
+            if (manifestFunction.dependencyIndex >= dependencies.length) {
+                revert InvalidPluginManifest();
+            }
             return dependencies[manifestFunction.dependencyIndex];
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW)
         {
