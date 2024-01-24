@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    getPermittedCallKey,
-    HookGroup,
-    PermittedExternalCallData
-} from "./AccountStorage.sol";
-import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
+import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
@@ -24,10 +15,20 @@ import {
     ManifestExternalCallPermission,
     PluginManifest
 } from "../interfaces/IPlugin.sol";
+import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {
+    AccountStorage,
+    getAccountStorage,
+    SelectorData,
+    getPermittedCallKey,
+    HookGroup,
+    PermittedExternalCallData
+} from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using FunctionReferenceLib for FunctionReference;
 
     error ArrayLengthMismatch();
     error ExecutionFunctionAlreadySet(bytes4 selector);

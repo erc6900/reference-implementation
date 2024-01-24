@@ -2,24 +2,24 @@
 pragma solidity ^0.8.19;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
+import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
+import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
-import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
-import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
-import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
-import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -34,6 +34,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using FunctionReferenceLib for FunctionReference;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -437,7 +438,7 @@ contract UpgradeableModularAccount is
                     ++i;
                 }
             } else {
-                if (preRuntimeValidationHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
+                if (preRuntimeValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                     revert AlwaysDenyRule();
                 }
                 // Function reference cannot be 0 or _RUNTIME_VALIDATION_ALWAYS_ALLOW.
@@ -457,7 +458,7 @@ contract UpgradeableModularAccount is
             } else {
                 if (runtimeValidationFunction.isEmpty()) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
-                } else if (runtimeValidationFunction == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
+                } else if (runtimeValidationFunction.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                     revert InvalidConfiguration();
                 }
                 // If _RUNTIME_VALIDATION_ALWAYS_ALLOW, just let the function finish.
