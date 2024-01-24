@@ -14,7 +14,7 @@ enum ManifestAssociatedFunctionType {
     // Function belongs to an external plugin provided as a dependency during plugin installation.
     DEPENDENCY,
     // Resolves to a magic value to always bypass runtime validation for a given function.
-    // This is only assignable on runtime validation functions. If it were to be used on a user op validationFunction,
+    // This is only assignable on runtime validation functions. If it were to be used on a user op validation function,
     // it would risk burning gas from the account. When used as a hook in any hook location, it is equivalent to not
     // setting a hook and is therefore disallowed.
     RUNTIME_VALIDATION_ALWAYS_ALLOW,
