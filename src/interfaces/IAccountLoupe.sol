@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
+import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector
