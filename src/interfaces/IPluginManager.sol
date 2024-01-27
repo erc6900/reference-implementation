@@ -8,6 +8,8 @@ interface IPluginManager {
 
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSucceeded);
 
+    event PluginReplaced(address indexed oldPlugin, address indexed newPlugin, bool indexed onReplaceSucceeded);
+
     /// @notice Install a plugin to the modular account.
     /// @param plugin The plugin to install.
     /// @param manifestHash The hash of the plugin manifest.

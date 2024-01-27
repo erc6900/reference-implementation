@@ -49,6 +49,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
+    event PluginReplaced(address indexed oldPlugin, address indexed newPlugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
@@ -419,6 +420,33 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(plugin));
+    }
+
+    function test_replacePlugin_default() public {
+        vm.startPrank(owner2);
+
+        ComprehensivePlugin replacedPlugin = new ComprehensivePlugin();
+        ComprehensivePlugin replacingPlugin = new ComprehensivePlugin();
+        bytes memory serializedManifest = abi.encode(replacingPlugin.pluginManifest());
+        bytes32 manifestHash = keccak256(serializedManifest);
+        IPluginManager(account2).installPlugin({
+            plugin: address(replacedPlugin),
+            manifestHash: manifestHash,
+            pluginInstallData: "",
+            dependencies: new FunctionReference[](0)
+        });
+
+        vm.expectEmit(true, true, true, true);
+        emit PluginReplaced(address(replacedPlugin), address(replacingPlugin), true);
+        IPluginManager(account2).replacePlugin({
+            oldPlugin: address(replacedPlugin),
+            newPlugin: address(replacingPlugin),
+            newManifestHash: manifestHash
+        });
+        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
+        assertEq(plugins.length, 2);
+        assertEq(plugins[0], address(singleOwnerPlugin));
+        assertEq(plugins[1], address(replacingPlugin));
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {

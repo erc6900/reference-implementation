@@ -648,8 +648,13 @@ abstract contract PluginManagerInternals is IPluginManager {
         PluginManifest memory oldManifest = IPlugin(oldPlugin).pluginManifest();
 
         // Check if the old plugin exists.
-        if (!_storage.plugins.contains(oldPlugin)) {
+        if (!_storage.plugins.remove(oldPlugin)) {
             revert PluginNotInstalled(oldPlugin);
+        }
+
+        // Check if the plugin exists.
+        if (!_storage.plugins.add(newPlugin)) {
+            revert PluginAlreadyInstalled(newPlugin);
         }
 
         // Check manifest hash.
@@ -680,6 +685,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         uint256 length = newManifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
+            _removeExecutionFunction(oldManifest.executionFunctions[i]);
             _setExecutionFunction(newManifest.executionFunctions[i], newPlugin);
 
             unchecked {
@@ -878,11 +884,12 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        // @TODO: Data migration for injected hooks
-
         delete _storage.pluginData[oldPlugin];
 
-        // @TODO: Data migration & Emit events
+        // @TODO: Apply Data migration
+
+        // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
+        emit PluginReplaced(oldPlugin, newPlugin, true);
     }
 
     function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
