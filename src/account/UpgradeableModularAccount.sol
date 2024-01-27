@@ -84,7 +84,7 @@ contract UpgradeableModularAccount is
     // EXTERNAL FUNCTIONS
 
     /// @notice Initializes the account with a set of plugins
-    /// @dev No dependencies or hooks can be injected with this installation
+    /// @dev No dependencies may be provided with this installation.
     /// @param plugins The plugins to install
     /// @param manifestHashes The manifest hashes of the plugins to install
     /// @param pluginInstallDatas The plugin install datas of the plugins to install
@@ -262,10 +262,10 @@ contract UpgradeableModularAccount is
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
-        bytes calldata pluginInitData,
+        bytes calldata pluginInstallData,
         FunctionReference[] calldata dependencies
     ) external override wrapNativeFunction {
-        _installPlugin(plugin, manifestHash, pluginInitData, dependencies);
+        _installPlugin(plugin, manifestHash, pluginInstallData, dependencies);
     }
 
     /// @inheritdoc IPluginManager

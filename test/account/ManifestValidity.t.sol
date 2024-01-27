@@ -50,7 +50,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -67,7 +67,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -84,7 +84,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -99,7 +99,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -114,7 +114,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -130,7 +130,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -146,7 +146,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
@@ -161,7 +161,7 @@ contract ManifestValidityTest is OptimizedTest {
         account.installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }
