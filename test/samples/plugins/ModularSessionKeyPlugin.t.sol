@@ -130,7 +130,7 @@ contract ModularSessionKeyPluginTest is Test {
         account.installPlugin({
             plugin: address(modularSessionKeyPlugin),
             manifestHash: modularSessionKeyManifestHash,
-            pluginInitData: data,
+            pluginInstallData: data,
             dependencies: modularSessionDependency
         });
 
@@ -148,7 +148,7 @@ contract ModularSessionKeyPluginTest is Test {
         account.installPlugin({
             plugin: address(tokenSessionKeyPlugin),
             manifestHash: tokenSessionKeyManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: tokenSessionDependency
         });
         vm.stopPrank();
