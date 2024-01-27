@@ -218,7 +218,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _installPlugin(
         address plugin,
         bytes32 manifestHash,
-        bytes memory pluginInitData,
+        bytes memory pluginInstallData,
         FunctionReference[] memory dependencies
     ) internal {
         AccountStorage storage _storage = getAccountStorage();
@@ -431,7 +431,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Initialize the plugin storage for the account.
         // solhint-disable-next-line no-empty-blocks
-        try IPlugin(plugin).onInstall(pluginInitData) {}
+        try IPlugin(plugin).onInstall(pluginInstallData) {}
         catch (bytes memory revertReason) {
             revert PluginInstallCallbackFailed(plugin, revertReason);
         }

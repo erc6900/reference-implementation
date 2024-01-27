@@ -46,7 +46,7 @@ contract AccountReturnDataTest is OptimizedTest {
         account.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
         // Add the result consumer plugin to the account
@@ -54,7 +54,7 @@ contract AccountReturnDataTest is OptimizedTest {
         account.installPlugin({
             plugin: address(resultConsumerPlugin),
             manifestHash: resultConsumerManifestHash,
-            pluginInitData: "",
+            pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
     }

@@ -7,28 +7,28 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 // so annotating here to prevent that.
 // forgefmt: disable-start
 enum ManifestAssociatedFunctionType {
-    /// @notice Function is not defined.
+    // Function is not defined.
     NONE,
-    /// @notice Function belongs to this plugin.
+    // Function belongs to this plugin.
     SELF,
-    /// @notice Function belongs to an external plugin provided as a dependency during plugin installation.
+    // Function belongs to an external plugin provided as a dependency during plugin installation.
     DEPENDENCY,
-    /// @notice Resolves to a magic value to always bypass runtime validation for a given function.
-    /// This is only assignable on runtime validation functions. If it were to be used on a user op validationFunction,
-    /// it would risk burning gas from the account. When used as a hook in any hook location, it is equivalent to not
-    /// setting a hook and is therefore disallowed.
+    // Resolves to a magic value to always bypass runtime validation for a given function.
+    // This is only assignable on runtime validation functions. If it were to be used on a user op validation function,
+    // it would risk burning gas from the account. When used as a hook in any hook location, it is equivalent to not
+    // setting a hook and is therefore disallowed.
     RUNTIME_VALIDATION_ALWAYS_ALLOW,
-    /// @notice Resolves to a magic value to always fail in a hook for a given function.
-    /// This is only assignable to pre hooks (pre validation and pre execution). It should not be used on
-    /// validation functions themselves, because this is equivalent to leaving the validation functions unset.
-    /// It should not be used in post-exec hooks, because if it is known to always revert, that should happen
-    /// as early as possible to save gas.
+    // Resolves to a magic value to always fail in a hook for a given function.
+    // This is only assignable to pre hooks (pre validation and pre execution). It should not be used on
+    // validation functions themselves, because this is equivalent to leaving the validation functions unset.
+    // It should not be used in post-exec hooks, because if it is known to always revert, that should happen
+    // as early as possible to save gas.
     PRE_HOOK_ALWAYS_DENY
 }
 // forgefmt: disable-end
 
-// For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address
-// of the function at `dependencies[dependencyIndex]` during the call to `installPlugin(config)`.
+/// @dev For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address
+/// of the function at `dependencies[dependencyIndex]` during the call to `installPlugin(config)`.
 struct ManifestFunction {
     ManifestAssociatedFunctionType functionType;
     uint8 functionId;
@@ -73,19 +73,21 @@ struct PluginMetadata {
 
 /// @dev A struct describing how the plugin should be installed on a modular account.
 struct PluginManifest {
-    // List of ERC-165 interfaceIds to add to account to support introspection checks.
+    // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
+    // IPlugin's interface ID.
     bytes4[] interfaceIds;
-    // If this plugin depends on other plugins' validation functions and/or hooks, the interface IDs of
-    // those plugins MUST be provided here, with its position in the array matching the `dependencyIndex`
-    // members of `ManifestFunction` structs used in the manifest.
+    // If this plugin depends on other plugins' validation functions, the interface IDs of those plugins MUST be
+    // provided here, with its position in the array matching the `dependencyIndex` members of `ManifestFunction`
+    // structs used in the manifest.
     bytes4[] dependencyInterfaceIds;
     // Execution functions defined in this plugin to be installed on the MSCA.
     bytes4[] executionFunctions;
     // Plugin execution functions already installed on the MSCA that this plugin will be able to call.
     bytes4[] permittedExecutionSelectors;
-    // Boolean to indicate whether the plugin can call any external contract addresses.
+    // Boolean to indicate whether the plugin can call any external address.
     bool permitAnyExternalAddress;
-    // Boolean to indicate whether the plugin needs access to spend native tokens of the account.
+    // Boolean to indicate whether the plugin needs access to spend native tokens of the account. If false, the
+    // plugin MUST still be able to spend up to the balance that it sends to the account in the same call.
     bool canSpendNativeToken;
     ManifestExternalCallPermission[] permittedExternalCalls;
     ManifestAssociatedFunction[] userOpValidationFunctions;
