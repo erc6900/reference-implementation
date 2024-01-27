@@ -13,7 +13,7 @@ import {
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {BasePlugin} from "../../plugins/BasePlugin.sol";
-import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
+import {IModularSessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
 import {ISingleOwnerPlugin} from "../../plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../plugins/owner/SingleOwnerPlugin.sol";
 import {PluginStorageLib, StoragePointer} from "../../libraries/PluginStorageLib.sol";
@@ -21,7 +21,8 @@ import {PluginStorageLib, StoragePointer} from "../../libraries/PluginStorageLib
 /// @title Modular Session Key Plugin
 /// @author Decipher ERC-6900 Team
 /// @notice This plugin allows some designated EOA or smart contract to temporarily
-/// own a modular account.
+/// own a modular account. Note that this plugin is ONLY for demonstrating the purpose
+/// of the functionalities of ERC-6900, and MUST not be used at the production level.
 /// This modular session key plugin acts as a 'parent plugin' for all specific session
 /// keys. Using dependency, this plugin can be thought as a parent contract that stores
 /// session key duration information, and validation functions for session keys. All
@@ -30,7 +31,7 @@ import {PluginStorageLib, StoragePointer} from "../../libraries/PluginStorageLib
 /// runtime, with its own validation functions.
 /// Also, it has a dependency on SingleOwnerPlugin, to make sure that only the owner of
 /// the MSCA can add or remove session keys.
-contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
+contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     using ECDSA for bytes32;
     using PluginStorageLib for address;
     using PluginStorageLib for bytes;
@@ -42,72 +43,70 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     struct SessionInfo {
-        uint48 _after;
-        uint48 _until;
+        uint48 validAfter;
+        uint48 validUntil;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISessionKeyPlugin
-    function addTemporaryOwner(address tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until) external {
-        _addTemporaryOwner(msg.sender, tempOwner, allowedSelector, _after, _until);
-        emit TemporaryOwnerAdded(msg.sender, tempOwner, allowedSelector, _after, _until);
+    /// @inheritdoc IModularSessionKeyPlugin
+    function addSessionKey(address tempOwner, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil) external {
+        _addSessionKey(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
+        emit SessionKeyAdded(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
     }
 
-    /// @inheritdoc ISessionKeyPlugin
-    function removeTemporaryOwner(address tempOwner, bytes4 allowedSelector) external {
-        _removeTemporaryOwner(msg.sender, tempOwner, allowedSelector);
-        emit TemporaryOwnerRemoved(msg.sender, tempOwner, allowedSelector);
+    /// @inheritdoc IModularSessionKeyPlugin
+    function removeSessionKey(address tempOwner, bytes4 allowedSelector) external {
+        _removeSessionKey(msg.sender, tempOwner, allowedSelector);
+        emit SessionKeyRemoved(msg.sender, tempOwner, allowedSelector);
     }
 
-    /// @inheritdoc ISessionKeyPlugin
-    function addTemporaryOwnerBatch(
+    /// @inheritdoc IModularSessionKeyPlugin
+    function addSessionKeyBatch(
         address[] calldata tempOwners,
         bytes4[] calldata allowedSelectors,
-        uint48[] calldata _afters,
-        uint48[] calldata _untils
+        uint48[] calldata validAfters,
+        uint48[] calldata validUntils
     ) external {
         if (
-            tempOwners.length != allowedSelectors.length || tempOwners.length != _afters.length
-                || tempOwners.length != _untils.length
+            tempOwners.length != allowedSelectors.length || tempOwners.length != validAfters.length
+                || tempOwners.length != validUntils.length
         ) {
             revert WrongDataLength();
         }
         for (uint256 i = 0; i < tempOwners.length; i++) {
-            _addTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i], _afters[i], _untils[i]);
+            _addSessionKey(msg.sender, tempOwners[i], allowedSelectors[i], validAfters[i], validUntils[i]);
         }
-        emit TemporaryOwnersAdded(msg.sender, tempOwners, allowedSelectors, _afters, _untils);
+        emit SessionKeysAdded(msg.sender, tempOwners, allowedSelectors, validAfters, validUntils);
     }
 
-    function removeTemporaryOwnerBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors)
-        external
-    {
+    function removeSessionKeyBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors) external {
         if (tempOwners.length != allowedSelectors.length) {
             revert WrongDataLength();
         }
         for (uint256 i = 0; i < tempOwners.length; i++) {
-            _removeTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i]);
+            _removeSessionKey(msg.sender, tempOwners[i], allowedSelectors[i]);
         }
-        emit TemporaryOwnersRemoved(msg.sender, tempOwners, allowedSelectors);
+        emit SessionKeysRemoved(msg.sender, tempOwners, allowedSelectors);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISessionKeyPlugin
+    /// @inheritdoc IModularSessionKeyPlugin
     function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector)
         external
         view
-        returns (uint48 _after, uint48 _until)
+        returns (uint48 _validAfter, uint48 _validUntil)
     {
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
-        _after = sessionInfo._after;
-        _until = sessionInfo._until;
+        _validAfter = sessionInfo.validAfter;
+        _validUntil = sessionInfo.validUntil;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -120,17 +119,17 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
             (
                 address[] memory tempOwners,
                 bytes4[] memory allowedSelectors,
-                uint48[] memory _afters,
-                uint48[] memory _untils
+                uint48[] memory validAfters,
+                uint48[] memory validUntils
             ) = abi.decode(data, (address[], bytes4[], uint48[], uint48[]));
             if (
-                tempOwners.length != allowedSelectors.length || tempOwners.length != _afters.length
-                    || tempOwners.length != _untils.length
+                tempOwners.length != allowedSelectors.length || tempOwners.length != validAfters.length
+                    || tempOwners.length != validUntils.length
             ) {
                 revert WrongDataLength();
             }
             for (uint256 i = 0; i < tempOwners.length; i++) {
-                _addTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i], _afters[i], _untils[i]);
+                _addSessionKey(msg.sender, tempOwners[i], allowedSelectors[i], validAfters[i], validUntils[i]);
             }
         }
     }
@@ -144,7 +143,7 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
                 revert WrongDataLength();
             }
             for (uint256 i = 0; i < tempOwners.length; i++) {
-                _removeTemporaryOwner(msg.sender, tempOwners[i], allowedSelectors[i]);
+                _removeSessionKey(msg.sender, tempOwners[i], allowedSelectors[i]);
             }
         }
     }
@@ -157,19 +156,18 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         returns (uint256)
     {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
-            (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
+            (address signer,) = userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
             bytes4 selector = bytes4(userOp.callData[0:4]);
             bytes memory key = userOp.sender.allocateAssociatedStorageKey(0, 1);
             StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(signer, selector)));
             SessionInfo storage duration = _castPtrToStruct(ptr);
-            uint48 _after = duration._after;
-            uint48 _until = duration._until;
+            uint48 validAfter = duration.validAfter;
+            uint48 validUntil = duration.validUntil;
 
-            if (_until != 0) {
-                return _packValidationData(false, _until, _after);
-            } else {
-                return _SIG_VALIDATION_FAILED;
+            if (validUntil != 0) {
+                return _packValidationData(false, validUntil, validAfter);
             }
+            return _SIG_VALIDATION_FAILED;
         }
         revert NotImplemented();
     }
@@ -185,11 +183,11 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
             bytes memory key = address(msg.sender).allocateAssociatedStorageKey(0, 1);
             StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
             SessionInfo storage duration = _castPtrToStruct(ptr);
-            uint48 _after = duration._after;
-            uint48 _until = duration._until;
+            uint48 validAfter = duration.validAfter;
+            uint48 validUntil = duration.validUntil;
 
-            if (_until != 0) {
-                if (block.timestamp < _after || block.timestamp > _until) {
+            if (validUntil != 0) {
+                if (block.timestamp < validAfter || block.timestamp > validUntil) {
                     revert WrongTimeRangeForSession();
                 }
                 return;
@@ -205,10 +203,10 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new bytes4[](5);
-        manifest.executionFunctions[0] = this.addTemporaryOwner.selector;
-        manifest.executionFunctions[1] = this.removeTemporaryOwner.selector;
-        manifest.executionFunctions[2] = this.addTemporaryOwnerBatch.selector;
-        manifest.executionFunctions[3] = this.removeTemporaryOwnerBatch.selector;
+        manifest.executionFunctions[0] = this.addSessionKey.selector;
+        manifest.executionFunctions[1] = this.removeSessionKey.selector;
+        manifest.executionFunctions[2] = this.addSessionKeyBatch.selector;
+        manifest.executionFunctions[3] = this.removeSessionKeyBatch.selector;
         manifest.executionFunctions[4] = this.getSessionDuration.selector;
 
         ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
@@ -218,19 +216,19 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
         });
         manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](4);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.addTemporaryOwner.selector,
+            executionSelector: this.addSessionKey.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.removeTemporaryOwner.selector,
+            executionSelector: this.removeSessionKey.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: this.addTemporaryOwnerBatch.selector,
+            executionSelector: this.addSessionKeyBatch.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: this.removeTemporaryOwnerBatch.selector,
+            executionSelector: this.removeSessionKeyBatch.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
 
@@ -247,19 +245,19 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
 
         manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](5);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.addTemporaryOwner.selector,
+            executionSelector: this.addSessionKey.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.removeTemporaryOwner.selector,
+            executionSelector: this.removeSessionKey.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: this.addTemporaryOwnerBatch.selector,
+            executionSelector: this.addSessionKeyBatch.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: this.removeTemporaryOwnerBatch.selector,
+            executionSelector: this.removeSessionKeyBatch.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[4] = ManifestAssociatedFunction({
@@ -290,36 +288,32 @@ contract ModularSessionKeyPlugin is BasePlugin, ISessionKeyPlugin {
 
     /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
-        return interfaceId == type(ISessionKeyPlugin).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IModularSessionKeyPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function _addTemporaryOwner(
-        address account,
-        address tempOwner,
-        bytes4 allowedSelector,
-        uint48 _after,
-        uint48 _until
-    ) internal {
-        if (_until <= _after) {
+    function _addSessionKey(address account, address tempOwner, bytes4 allowedSelector, uint48 _validAfter, uint48 _validUntil)
+        internal
+    {
+        if (_validUntil <= _validAfter) {
             revert WrongTimeRangeForSession();
         }
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
-        sessionInfo._after = _after;
-        sessionInfo._until = _until;
+        sessionInfo.validAfter = _validAfter;
+        sessionInfo.validUntil = _validUntil;
     }
 
-    function _removeTemporaryOwner(address account, address tempOwner, bytes4 allowedSelector) internal {
+    function _removeSessionKey(address account, address tempOwner, bytes4 allowedSelector) internal {
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
-        sessionInfo._after = 0;
-        sessionInfo._until = 0;
+        sessionInfo.validAfter = 0;
+        sessionInfo.validUntil = 0;
     }
 
     function _castPtrToStruct(StoragePointer ptr) internal pure returns (SessionInfo storage val) {

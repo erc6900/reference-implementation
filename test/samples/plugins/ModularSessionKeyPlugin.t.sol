@@ -10,7 +10,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SingleOwnerPlugin} from "../../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {ModularSessionKeyPlugin} from "../../../src/samples/plugins/ModularSessionKeyPlugin.sol";
-import {ISessionKeyPlugin} from "../../../src/samples/plugins/interfaces/ISessionKeyPlugin.sol";
+import {IModularSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/ISessionKeyPlugin.sol";
 import {TokenSessionKeyPlugin} from "../../../src/samples/plugins/TokenSessionKeyPlugin.sol";
 import {ITokenSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/ITokenSessionKeyPlugin.sol";
 
@@ -22,7 +22,6 @@ import {MockERC20} from "../../mocks/MockERC20.sol";
 
 contract ModularSessionKeyPluginTest is Test {
     using ECDSA for bytes32;
-    using FunctionReferenceLib for address;
 
     SingleOwnerPlugin public ownerPlugin;
     ModularSessionKeyPlugin public modularSessionKeyPlugin;
@@ -57,18 +56,18 @@ contract ModularSessionKeyPluginTest is Test {
     event UserOperationRevertReason(
         bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
     );
-    event TemporaryOwnerAdded(
+    event SessionKeyAdded(
         address indexed account, address indexed tempOwner, bytes4 allowedSelector, uint48 _after, uint48 _until
     );
-    event TemporaryOwnerRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
-    event TemporaryOwnersAdded(
+    event SessionKeyRemoved(address indexed account, address indexed tempOwner, bytes4 allowedSelector);
+    event SessionKeysAdded(
         address indexed account,
         address[] indexed tempOwners,
         bytes4[] allowedSelectors,
         uint48[] afters,
         uint48[] untils
     );
-    event TemporaryOwnersRemoved(address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors);
+    event SessionKeysRemoved(address indexed account, address[] indexed tempOwners, bytes4[] allowedSelectors);
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSuccess);
 
     function setUp() public {
@@ -106,9 +105,9 @@ contract ModularSessionKeyPluginTest is Test {
         vm.startPrank(owner);
         FunctionReference[] memory modularSessionDependency = new FunctionReference[](2);
         modularSessionDependency[0] =
-            address(ownerPlugin).pack(uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER));
+            FunctionReferenceLib.pack(address(ownerPlugin), (uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER)));
         modularSessionDependency[1] =
-            address(ownerPlugin).pack(uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF));
+            FunctionReferenceLib.pack(address(ownerPlugin), (uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF)));
 
         bytes32 modularSessionKeyManifestHash = keccak256(abi.encode(modularSessionKeyPlugin.pluginManifest()));
 
@@ -134,11 +133,13 @@ contract ModularSessionKeyPluginTest is Test {
         });
 
         FunctionReference[] memory tokenSessionDependency = new FunctionReference[](2);
-        tokenSessionDependency[0] = address(modularSessionKeyPlugin).pack(
-            uint8(ISessionKeyPlugin.FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)
+        tokenSessionDependency[0] = FunctionReferenceLib.pack(
+            address(modularSessionKeyPlugin),
+            uint8(IModularSessionKeyPlugin.FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)
         );
-        tokenSessionDependency[1] = address(modularSessionKeyPlugin).pack(
-            uint8(ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)
+        tokenSessionDependency[1] = FunctionReferenceLib.pack(
+            address(modularSessionKeyPlugin),
+            uint8(IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)
         );
         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
@@ -183,9 +184,9 @@ contract ModularSessionKeyPluginTest is Test {
         untils[1] = 2;
 
         vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnersAdded(address(account), tempOwners, allowedSelectors, afters, untils);
+        emit SessionKeysAdded(address(account), tempOwners, allowedSelectors, afters, untils);
         vm.prank(address(account));
-        modularSessionKeyPlugin.addTemporaryOwnerBatch(tempOwners, allowedSelectors, afters, untils);
+        modularSessionKeyPlugin.addSessionKeyBatch(tempOwners, allowedSelectors, afters, untils);
 
         vm.prank(tempOwner3);
         TokenSessionKeyPlugin(address(account)).transferFromSessionKey(
@@ -196,9 +197,9 @@ contract ModularSessionKeyPluginTest is Test {
         assertEq(mockERC20.balanceOf(target), 1 ether);
 
         vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnersRemoved(address(account), tempOwners, allowedSelectors);
+        emit SessionKeysRemoved(address(account), tempOwners, allowedSelectors);
         vm.prank(address(account));
-        modularSessionKeyPlugin.removeTemporaryOwnerBatch(tempOwners, allowedSelectors);
+        modularSessionKeyPlugin.removeSessionKeyBatch(tempOwners, allowedSelectors);
     }
 
     function test_sessionKey_userOp() public {
@@ -227,8 +228,8 @@ contract ModularSessionKeyPluginTest is Test {
         vm.startPrank(address(account));
 
         vm.expectEmit(true, true, true, true);
-        emit TemporaryOwnerRemoved(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
-        modularSessionKeyPlugin.removeTemporaryOwner(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        emit SessionKeyRemoved(address(account), tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
+        modularSessionKeyPlugin.removeSessionKey(tempOwner, TRANSFERFROM_SESSIONKEY_SELECTOR);
 
         vm.stopPrank();
 
@@ -241,12 +242,12 @@ contract ModularSessionKeyPluginTest is Test {
         // Check if tempOwner can still send user operations
         vm.startPrank(address(tempOwner));
 
-        bytes memory revertReason = abi.encodeWithSelector(ISessionKeyPlugin.NotAuthorized.selector);
+        bytes memory revertReason = abi.encodeWithSelector(IModularSessionKeyPlugin.NotAuthorized.selector);
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -281,13 +282,13 @@ contract ModularSessionKeyPluginTest is Test {
 
     function test_sessionKey_unregisteredTempOwnerFails() public {
         vm.prank(address(maliciousOwner));
-        bytes memory revertReason = abi.encodeWithSelector(ISessionKeyPlugin.NotAuthorized.selector);
+        bytes memory revertReason = abi.encodeWithSelector(IModularSessionKeyPlugin.NotAuthorized.selector);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -302,13 +303,13 @@ contract ModularSessionKeyPluginTest is Test {
 
         vm.startPrank(address(tempOwner));
 
-        bytes memory revertReason = abi.encodeWithSelector(ISessionKeyPlugin.WrongTimeRangeForSession.selector);
+        bytes memory revertReason = abi.encodeWithSelector(IModularSessionKeyPlugin.WrongTimeRangeForSession.selector);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );

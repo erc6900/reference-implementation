@@ -13,7 +13,7 @@ import {
 import {BasePlugin} from "../../plugins/BasePlugin.sol";
 import {ModularSessionKeyPlugin} from "./ModularSessionKeyPlugin.sol";
 import {ITokenSessionKeyPlugin} from "./interfaces/ITokenSessionKeyPlugin.sol";
-import {ISessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
+import {IModularSessionKeyPlugin} from "./interfaces/ISessionKeyPlugin.sol";
 import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 
 /// @title Token Session Key Plugin
@@ -71,7 +71,7 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
 
         ManifestFunction memory tempOwnerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-            functionId: uint8(ISessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER),
+            functionId: 0, // Unused
             dependencyIndex: 0 // Used as first index
         });
         ManifestFunction memory tempOwnerRuntimeValidationFunction = ManifestFunction({
@@ -94,7 +94,7 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
 
         manifest.dependencyInterfaceIds = new bytes4[](2);
         for (uint256 i = 0; i < manifest.dependencyInterfaceIds.length;) {
-            manifest.dependencyInterfaceIds[i] = type(ISessionKeyPlugin).interfaceId;
+            manifest.dependencyInterfaceIds[i] = type(IModularSessionKeyPlugin).interfaceId;
             unchecked {
                 ++i;
             }
