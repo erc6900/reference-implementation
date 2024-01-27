@@ -704,8 +704,10 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = newManifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])] = false;
-            _storage.callPermitted[getPermittedCallKey(newPlugin, newManifest.permittedExecutionSelectors[i])] = true;
+            _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])] =
+                false;
+            _storage.callPermitted[getPermittedCallKey(newPlugin, newManifest.permittedExecutionSelectors[i])] =
+                true;
 
             unchecked {
                 ++i;
