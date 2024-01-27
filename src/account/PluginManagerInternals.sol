@@ -643,7 +643,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         emit PluginUninstalled(plugin, onUninstallSuccess);
     }
 
-    function _replacePlugin(address oldPlugin, address newPlugin, PluginManifest memory newManifest) internal {
+    function _replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash) internal {
         AccountStorage storage _storage = getAccountStorage();
         PluginManifest memory oldManifest = IPlugin(oldPlugin).pluginManifest();
 
@@ -653,7 +653,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Check manifest hash.
-        bytes32 newManifestHash = _storage.pluginData[newPlugin].manifestHash;
+        PluginManifest memory newManifest = IPlugin(newPlugin).pluginManifest();
         if (!_isValidPluginManifest(newManifest, newManifestHash)) {
             revert InvalidPluginManifest();
         }
@@ -662,21 +662,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         FunctionReference[] memory dependencies = _storage.pluginData[oldPlugin].dependencies;
         if (dependencies.length != newManifest.dependencyInterfaceIds.length) {
             revert InvalidDependenciesProvided();
-        }
-
-        uint256 length = dependencies.length;
-        for (uint256 i = 0; i < length;) {
-            // Check the dependency interface id over the address of the dependency.
-            (address dependencyAddr,) = dependencies[i].unpack();
-
-            // Check that the dependency is installed.
-            if (!_storage.plugins.contains(dependencyAddr)) {
-                revert MissingPluginDependency(dependencyAddr);
-            }
-
-            unchecked {
-                ++i;
-            }
         }
 
         // Replace the plugin metadata to the account
@@ -693,7 +678,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.pluginData[newPlugin].canSpendNativeToken = true;
         }
 
-        length = newManifest.executionFunctions.length;
+        uint256 length = newManifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
             _setExecutionFunction(newManifest.executionFunctions[i], newPlugin);
 
@@ -715,9 +700,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Add the permitted external calls to the account.
-        // @TODO: Does we need to allow the case if the permitAnyExternalAddress flags are different?
         if (newManifest.permitAnyExternalAddress) {
-            // @TODO: Do we need this?
             _storage.pluginData[oldPlugin].anyExternalExecPermitted = false;
             _storage.pluginData[newPlugin].anyExternalExecPermitted = true;
         } else {
@@ -738,7 +721,6 @@ abstract contract PluginManagerInternals is IPluginManager {
                 oldPermittedExternalCallData.addressPermitted = false;
                 newPermittedExternalCallData.addressPermitted = true;
 
-                //@TODO: Should we consider the case if the permitAnySelector flags are different
                 if (newExternalCallPermission.permitAnySelector) {
                     oldPermittedExternalCallData.anySelectorPermitted = false;
                     newPermittedExternalCallData.anySelectorPermitted = true;

@@ -31,5 +31,5 @@ interface IPluginManager {
     /// modular account.
     function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData) external;
 
-    function replacePlugin(address oldPlugin, address newPlugin, bytes calldata config) external;
+    function replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash) external;
 }

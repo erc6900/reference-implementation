@@ -286,20 +286,12 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
-    function replacePlugin(address oldPlugin, address newPlugin, bytes calldata config)
+    function replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash)
         external
         override
         wrapNativeFunction
     {
-        PluginManifest memory manifest;
-
-        if (config.length > 0) {
-            manifest = abi.decode(config, (PluginManifest));
-        } else {
-            manifest = IPlugin(newPlugin).pluginManifest();
-        }
-
-        _replacePlugin(oldPlugin, newPlugin, manifest);
+        _replacePlugin(oldPlugin, newPlugin, newManifestHash);
     }
 
     /// @notice ERC165 introspection
