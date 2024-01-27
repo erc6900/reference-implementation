@@ -52,7 +52,9 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc IModularSessionKeyPlugin
-    function addSessionKey(address tempOwner, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil) external {
+    function addSessionKey(address tempOwner, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil)
+        external
+    {
         _addSessionKey(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
         emit SessionKeyAdded(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
     }
@@ -295,9 +297,13 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function _addSessionKey(address account, address tempOwner, bytes4 allowedSelector, uint48 _validAfter, uint48 _validUntil)
-        internal
-    {
+    function _addSessionKey(
+        address account,
+        address tempOwner,
+        bytes4 allowedSelector,
+        uint48 _validAfter,
+        uint48 _validUntil
+    ) internal {
         if (_validUntil <= _validAfter) {
             revert WrongTimeRangeForSession();
         }
