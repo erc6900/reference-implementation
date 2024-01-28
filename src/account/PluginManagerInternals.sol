@@ -886,7 +886,18 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         delete _storage.pluginData[oldPlugin];
 
-        // @TODO: Apply Data migration
+        // Retrieve data from the old plugin for migration
+        bytes memory migrationData = IPlugin(oldPlugin).getDataForMigration();
+
+        // Pass the migration data to the new plugin
+        IPlugin(newPlugin).onReplaceForNewPlugin(migrationData);
+
+        // Call the old plugin's clean-up function
+        IPlugin(oldPlugin).onReplacePluginForOldPlugin();
+
+		delete _storage.pluginData[oldPlugin];
+
+        emit replacePlugin(oldPlugin, newPlugin);
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
         emit PluginReplaced(oldPlugin, newPlugin, true);
