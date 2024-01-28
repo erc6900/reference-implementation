@@ -893,11 +893,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         IPlugin(newPlugin).onReplaceForNewPlugin(migrationData);
 
         // Call the old plugin's clean-up function
-        IPlugin(oldPlugin).onReplacePluginForOldPlugin();
+        IPlugin(oldPlugin).onReplaceForOldPlugin();
 
 		delete _storage.pluginData[oldPlugin];
 
-        emit replacePlugin(oldPlugin, newPlugin);
+        emit PluginReplaced(oldPlugin, newPlugin, true);
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
         emit PluginReplaced(oldPlugin, newPlugin, true);
