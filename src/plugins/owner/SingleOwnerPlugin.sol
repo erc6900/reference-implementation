@@ -256,7 +256,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             return abi.encode(_owner);
     }
 
-
     /// @inheritdoc BasePlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;

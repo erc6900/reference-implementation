@@ -44,6 +44,8 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginNotInstalled(address plugin);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
+    error onReplaceForNewPluginFailed(address plugin, bytes revertReason);
+    error onReplaceForOldPluginFailed(address plugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {
@@ -890,12 +892,16 @@ abstract contract PluginManagerInternals is IPluginManager {
         bytes memory migrationData = IPlugin(oldPlugin).getDataForMigration();
 
         // Pass the migration data to the new plugin
-        IPlugin(newPlugin).onReplaceForNewPlugin(migrationData);
+        try IPlugin(newPlugin).onReplaceForNewPlugin(migrationData) {} 
+        catch (bytes memory revertReason){
+            revert onReplaceForNewPluginFailed(newPlugin, revertReason);
+        }
 
         // Call the old plugin's clean-up function
-        IPlugin(oldPlugin).onReplaceForOldPlugin();
-
-		delete _storage.pluginData[oldPlugin];
+        try IPlugin(oldPlugin).onReplaceForOldPlugin() {} 
+        catch (bytes memory revertReason){
+            revert onReplaceForOldPluginFailed(oldPlugin, revertReason);
+        }
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
         emit PluginReplaced(oldPlugin, newPlugin, true);
