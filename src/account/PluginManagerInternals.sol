@@ -714,38 +714,35 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        // Add the permitted external calls to the account.
+        // Update the permitted external calls of the account.
         if (newManifest.permitAnyExternalAddress) {
             _storage.pluginData[oldPlugin].anyExternalExecPermitted = false;
             _storage.pluginData[newPlugin].anyExternalExecPermitted = true;
         } else {
-            // Only store the specific permitted external calls if "permit any" flag was not set.
+            // Only update the specific permitted external calls if "permit any" flag was not set.
             length = newManifest.permittedExternalCalls.length;
             for (uint256 i = 0; i < length;) {
-                ManifestExternalCallPermission memory oldExternalCallPermission =
-                    oldManifest.permittedExternalCalls[i];
-                ManifestExternalCallPermission memory newExternalCallPermission =
+                ManifestExternalCallPermission memory externalCallPermission =
                     newManifest.permittedExternalCalls[i];
 
                 PermittedExternalCallData storage oldPermittedExternalCallData =
-                    _storage.permittedExternalCalls[IPlugin(oldPlugin)][newExternalCallPermission.externalAddress];
+                    _storage.permittedExternalCalls[IPlugin(oldPlugin)][externalCallPermission.externalAddress];
 
                 PermittedExternalCallData storage newPermittedExternalCallData =
-                    _storage.permittedExternalCalls[IPlugin(newPlugin)][newExternalCallPermission.externalAddress];
+                    _storage.permittedExternalCalls[IPlugin(newPlugin)][externalCallPermission.externalAddress];
 
                 oldPermittedExternalCallData.addressPermitted = false;
                 newPermittedExternalCallData.addressPermitted = true;
 
-                if (newExternalCallPermission.permitAnySelector) {
+                if (externalCallPermission.permitAnySelector) {
                     oldPermittedExternalCallData.anySelectorPermitted = false;
                     newPermittedExternalCallData.anySelectorPermitted = true;
                 } else {
-                    uint256 externalContractSelectorsLength = newExternalCallPermission.selectors.length;
+                    uint256 externalContractSelectorsLength = externalCallPermission.selectors.length;
                     for (uint256 j = 0; j < externalContractSelectorsLength;) {
-                        oldPermittedExternalCallData.permittedSelectors[oldExternalCallPermission.selectors[j]] =
+                        oldPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
                             false;
-                        newPermittedExternalCallData.permittedSelectors[newExternalCallPermission.selectors[j]] =
-                            true;
+                        newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
 
                         unchecked {
                             ++j;
