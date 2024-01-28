@@ -179,4 +179,13 @@ interface IPlugin {
     /// @dev This metadata MUST stay constant over time.
     /// @return A metadata struct describing the plugin.
     function pluginMetadata() external pure returns (PluginMetadata memory);
+
+    // Function to export data for migration
+    function getDataForMigration() external view returns (bytes memory);
+
+    // Function to delete plugin data
+    function onReplaceForOldPlugin(bytes memory migrationData) external;
+    
+    // Function to initialize plugin with migrated data
+    function onReplaceForNewPlugin(bytes memory migrationData) external;
 }
