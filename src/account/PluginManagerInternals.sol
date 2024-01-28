@@ -897,8 +897,6 @@ abstract contract PluginManagerInternals is IPluginManager {
 
 		delete _storage.pluginData[oldPlugin];
 
-        emit PluginReplaced(oldPlugin, newPlugin, true);
-
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
         emit PluginReplaced(oldPlugin, newPlugin, true);
     }

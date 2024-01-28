@@ -31,6 +31,20 @@ abstract contract BasePlugin is ERC165, IPlugin {
         revert NotImplemented();
     }
 
+    function onReplaceForNewPlugin(bytes calldata data) external virtual{
+        (data);
+        revert NotImplemented();
+    }
+
+    function onReplaceForOldPlugin() external virtual{
+        revert NotImplemented();
+    }
+
+    function getDataForMigration() external virtual view returns (bytes memory){
+        revert NotImplemented();
+    }
+
+
     /// @notice Run the pre user operation validation hook specified by the `functionId`.
     /// @dev Pre user operation validation hooks MUST NOT return an authorizer value other than 0 or 1.
     /// @param functionId An identifier that routes the call to different internal implementations, should there be

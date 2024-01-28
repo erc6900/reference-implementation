@@ -240,6 +240,24 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     }
 
     /// @inheritdoc BasePlugin
+    function onReplaceForOldPlugin()external override {
+        _owners[msg.sender] = address(0);
+    }
+
+    /// @inheritdoc BasePlugin
+    function onReplaceForNewPlugin(bytes calldata data) external override {
+        address newOwner = abi.decode(data, (address));
+        _owners[msg.sender] = newOwner;
+    }
+
+    /// @inheritdoc BasePlugin
+    function getDataForMigration() external view override returns (bytes memory){
+            address _owner = _owners[msg.sender];
+            return abi.encode(_owner);
+    }
+
+
+    /// @inheritdoc BasePlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
         metadata.name = NAME;
