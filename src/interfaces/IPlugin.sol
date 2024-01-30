@@ -99,6 +99,11 @@ struct PluginManifest {
 }
 
 interface IPlugin {
+    /// @notice Retrieves the address of the VersionRegistry contract associated with this plugin.
+    /// @dev This function can be used by external contracts to verify the VersionRegistry. 
+    /// @return The address of the VersionRegistry contract.
+    function getVersionRegistry() external view returns (address);
+
     /// @notice Initialize plugin data for the modular account.
     /// @dev Called by the modular account during `installPlugin`.
     /// @param data Optional bytes array to be decoded and used by the plugin to setup initial plugin data for the

@@ -51,6 +51,9 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
     mapping(address => address) internal _owners;
 
+    constructor(address _versionRegistryAddress) BasePlugin(_versionRegistryAddress) 
+    {}
+
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
