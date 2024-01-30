@@ -18,8 +18,10 @@ import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
+import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
+import {BasePlugin} from "../plugins/BasePlugin.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -309,6 +311,21 @@ contract UpgradeableModularAccount is
         bytes32 manifestHash,
         bytes[] calldata hookUnapplyData
     ) external override wrapNativeFunction {
+        address oldPluginRegistry = BasePlugin(oldPlugin).getVersionRegistry();
+        address newPluginRegistry = BasePlugin(newPlugin).getVersionRegistry();
+
+        require(oldPluginRegistry == newPluginRegistry, "Plugins use different VersionRegistries");
+
+        IVersionRegistry.Version memory oldVersion = IVersionRegistry(oldPluginRegistry).getPluginVersion(oldPlugin);
+        IVersionRegistry.Version memory newVersion = IVersionRegistry(newPluginRegistry).getPluginVersion(newPlugin);
+
+        require(
+            oldVersion.major == newVersion.major && 
+            oldVersion.minor == newVersion.minor && 
+            newVersion.patch > oldVersion.patch,
+            "New plugin is not a patch-level upgrade"
+        );
+
         _replacePlugin(oldPlugin, newPlugin, manifestHash, hookUnapplyData);
     }
 
