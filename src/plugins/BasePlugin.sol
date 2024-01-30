@@ -40,20 +40,20 @@ abstract contract BasePlugin is ERC165, IPlugin {
         revert NotImplemented();
     }
 
+    /// @notice Cleans up the plugin data when the plugin is being replaced.
+    /// @dev This function is called during the plugin replacement process to allow the current (old) plugin
+    /// to clean up its data or state before being replaced. For the SingleOwnerPlugin, this might involve
+    /// resetting ownership information.
+    function onReplaceForOldPlugin() external virtual {
+        revert NotImplemented();
+    }
+
     /// @notice Initialize new plugin with migrated data.
     /// @dev Called during the plugin replacement process. This function initializes the state of the new plugin
     /// with the data provided. For SingleOwnerPlugin, it sets the new owner based on the migrated data.
     /// @param data Migrationdata from old plugin, exported form getDataForMigration() function.
     function onReplaceForNewPlugin(bytes calldata data) external virtual {
         (data);
-        revert NotImplemented();
-    }
-
-    /// @notice Cleans up the plugin data when the plugin is being replaced.
-    /// @dev This function is called during the plugin replacement process to allow the current (old) plugin
-    /// to clean up its data or state before being replaced. For the SingleOwnerPlugin, this might involve
-    /// resetting ownership information.
-    function onReplaceForOldPlugin() external virtual {
         revert NotImplemented();
     }
 
