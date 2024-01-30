@@ -8,6 +8,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
@@ -22,6 +23,7 @@ contract ValidationIntersectionTest is OptimizedTest {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     EntryPoint public entryPoint;
+    VersionRegistry public versionRegistry;
 
     address public owner1;
     uint256 public owner1Key;
@@ -32,17 +34,18 @@ contract ValidationIntersectionTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
+        versionRegistry = new VersionRegistry();
         owner1 = makeAddr("owner1");
 
-        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin();
+        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
         MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 1 ether);
 
-        noHookPlugin = new MockUserOpValidationPlugin();
-        oneHookPlugin = new MockUserOpValidation1HookPlugin();
-        twoHookPlugin = new MockUserOpValidation2HookPlugin();
+        noHookPlugin = new MockUserOpValidationPlugin(address(versionRegistry));
+        oneHookPlugin = new MockUserOpValidation1HookPlugin(address(versionRegistry));
+        twoHookPlugin = new MockUserOpValidation2HookPlugin(address(versionRegistry));
 
         vm.startPrank(address(owner1));
         account1.installPlugin({

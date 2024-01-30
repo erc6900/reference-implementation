@@ -25,6 +25,9 @@ address constant counter2 = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
 address constant counter3 = 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a;
 
 contract EFPCallerPlugin is BaseTestPlugin {
+    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
+    {}
+
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -171,6 +174,9 @@ contract EFPCallerPlugin is BaseTestPlugin {
 }
 
 contract EFPCallerPluginAnyExternal is BaseTestPlugin {
+    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
+    {}
+
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -209,6 +215,9 @@ contract EFPCallerPluginAnyExternal is BaseTestPlugin {
 contract EFPPermittedCallHookPlugin is BaseTestPlugin {
     bool public preExecHookCalled;
     bool public postExecHookCalled;
+
+    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
+    {}
 
     function preExecutionHook(uint8, address, uint256, bytes calldata) external override returns (bytes memory) {
         preExecHookCalled = true;
@@ -272,6 +281,9 @@ contract EFPPermittedCallHookPlugin is BaseTestPlugin {
 contract EFPExternalPermittedCallHookPlugin is BaseTestPlugin {
     bool public preExecHookCalled;
     bool public postExecHookCalled;
+
+    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
+    {}
 
     function onInstall(bytes calldata) external override {}
 

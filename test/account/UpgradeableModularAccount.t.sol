@@ -17,6 +17,7 @@ import {IPluginExecutor} from "../../src/interfaces/IPluginExecutor.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -28,6 +29,9 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     using ECDSA for bytes32;
 
     EntryPoint public entryPoint;
+    VersionRegistry public singleOwnerVersionRegistry;
+    VersionRegistry public tokenReceiverVersionRegistry;
+    VersionRegistry public comprehensiveVersionRegistry;
     address payable public beneficiary;
     SingleOwnerPlugin public singleOwnerPlugin;
     TokenReceiverPlugin public tokenReceiverPlugin;
@@ -64,12 +68,15 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
+        singleOwnerVersionRegistry = new VersionRegistry();
+        tokenReceiverVersionRegistry = new VersionRegistry();
+        comprehensiveVersionRegistry = new VersionRegistry();
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
         vm.deal(beneficiary, 1 wei);
 
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
-        tokenReceiverPlugin = _deployTokenReceiverPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin(singleOwnerVersionRegistry);
+        tokenReceiverPlugin = _deployTokenReceiverPlugin(tokenReceiverVersionRegistry);
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Compute counterfactual address
@@ -373,7 +380,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_default() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
+        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
@@ -399,7 +406,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_manifestParameter() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
+        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
         IPluginManager(account2).installPlugin({
@@ -426,7 +433,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_invalidManifestFails() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
+        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
         IPluginManager(account2).installPlugin({

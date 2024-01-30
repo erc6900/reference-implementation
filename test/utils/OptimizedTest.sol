@@ -8,6 +8,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
 /// the source contracts (excluding the test suite) via IR, and using the resulting bytecode within the tests
@@ -44,15 +45,31 @@ abstract contract OptimizedTest is Test {
             : new UpgradeableModularAccount(entryPoint);
     }
 
-    function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
-        return _isOptimizedTest()
-            ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
-            : new SingleOwnerPlugin();
+    function _deploySingleOwnerPlugin(VersionRegistry versionRegistry) internal returns (SingleOwnerPlugin) {
+        SingleOwnerPlugin singleOwnerPlugin;
+
+        if (_isOptimizedTest()) {
+            singleOwnerPlugin = SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"));
+        } else {
+            singleOwnerPlugin = new SingleOwnerPlugin(address(versionRegistry));
+        }
+
+        versionRegistry.registerPlugin(address(singleOwnerPlugin), 1, 0, 0);
+
+        return singleOwnerPlugin;
     }
 
-    function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
-        return _isOptimizedTest()
-            ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
-            : new TokenReceiverPlugin();
+    function _deployTokenReceiverPlugin(VersionRegistry versionRegistry) internal returns (TokenReceiverPlugin) {
+        TokenReceiverPlugin tokenReceiverPlugin;
+
+        if (_isOptimizedTest()) {
+            tokenReceiverPlugin = TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"));
+        } else {
+            tokenReceiverPlugin = new TokenReceiverPlugin(address(versionRegistry));
+        }
+
+        versionRegistry.registerPlugin(address(tokenReceiverPlugin), 1, 0, 0);
+
+        return tokenReceiverPlugin;
     }
 }

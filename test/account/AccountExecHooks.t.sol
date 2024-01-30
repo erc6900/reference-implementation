@@ -16,6 +16,7 @@ import {
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -25,6 +26,7 @@ contract AccountExecHooksTest is OptimizedTest {
     using ECDSA for bytes32;
 
     EntryPoint public entryPoint;
+    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
 
@@ -57,7 +59,8 @@ contract AccountExecHooksTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
+        versionRegistry = new VersionRegistry();
+        singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular

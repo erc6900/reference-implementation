@@ -7,12 +7,14 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract SingleOwnerPluginTest is OptimizedTest {
     using ECDSA for bytes32;
 
+    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public plugin;
     EntryPoint public entryPoint;
 
@@ -28,7 +30,8 @@ contract SingleOwnerPluginTest is OptimizedTest {
     event OwnershipTransferred(address indexed account, address indexed previousOwner, address indexed newOwner);
 
     function setUp() public {
-        plugin = _deploySingleOwnerPlugin();
+        versionRegistry = new VersionRegistry();
+        plugin = _deploySingleOwnerPlugin(versionRegistry);
         entryPoint = new EntryPoint();
 
         a = makeAddr("a");

@@ -8,6 +8,7 @@ import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {
     RegularResultContract,
@@ -20,6 +21,7 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 // Tests all the different ways that return data can be read from plugins through an account
 contract AccountReturnDataTest is OptimizedTest {
     EntryPoint public entryPoint; // Just to be able to construct the factory
+    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
 
@@ -31,12 +33,13 @@ contract AccountReturnDataTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
+        versionRegistry = new VersionRegistry();
+        singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         regularResultContract = new RegularResultContract();
-        resultCreatorPlugin = new ResultCreatorPlugin();
-        resultConsumerPlugin = new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract);
+        resultCreatorPlugin = new ResultCreatorPlugin(address(versionRegistry));
+        resultConsumerPlugin = new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract, address(versionRegistry));
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
         // solidity semantics

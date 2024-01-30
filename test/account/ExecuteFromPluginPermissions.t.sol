@@ -9,6 +9,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {Counter} from "../mocks/Counter.sol";
@@ -28,6 +29,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
     ResultCreatorPlugin public resultCreatorPlugin;
 
     EntryPoint public entryPoint; // Just to be able to construct the factory
+    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
     UpgradeableModularAccount public account;
@@ -42,18 +44,19 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
         counter1 = new Counter();
         counter2 = new Counter();
         counter3 = new Counter();
-        resultCreatorPlugin = new ResultCreatorPlugin();
+        versionRegistry = new VersionRegistry();
+        resultCreatorPlugin = new ResultCreatorPlugin(address(versionRegistry));
 
         // Initialize the contracts needed to use the account.
         entryPoint = new EntryPoint();
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
+        singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Initialize the EFP caller plugins, which will attempt to use the permissions system to authorize calls.
-        efpCallerPlugin = new EFPCallerPlugin();
-        efpCallerPluginAnyExternal = new EFPCallerPluginAnyExternal();
-        efpPermittedCallHookPlugin = new EFPPermittedCallHookPlugin();
-        efpExternalPermittedCallHookPlugin = new EFPExternalPermittedCallHookPlugin();
+        efpCallerPlugin = new EFPCallerPlugin(address(versionRegistry));
+        efpCallerPluginAnyExternal = new EFPCallerPluginAnyExternal(address(versionRegistry));
+        efpPermittedCallHookPlugin = new EFPPermittedCallHookPlugin(address(versionRegistry));
+        efpExternalPermittedCallHookPlugin = new EFPExternalPermittedCallHookPlugin(address(versionRegistry));
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
         // solidity semantics

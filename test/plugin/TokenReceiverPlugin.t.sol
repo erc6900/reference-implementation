@@ -12,6 +12,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {MockERC777} from "../mocks/MockERC777.sol";
@@ -20,6 +21,8 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     UpgradeableModularAccount public acct;
+    VersionRegistry public singleOwnerVersionRegistry;
+    VersionRegistry public tokenReceiverVersionRegistry;
     TokenReceiverPlugin public plugin;
 
     ERC721PresetMinterPauserAutoId public t0;
@@ -37,10 +40,12 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     uint256 internal constant _BATCH_TOKEN_IDS = 5;
 
     function setUp() public {
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
+        singleOwnerVersionRegistry = new VersionRegistry();
+        tokenReceiverVersionRegistry = new VersionRegistry();
+        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin(singleOwnerVersionRegistry));
 
         acct = factory.createAccount(address(this), 0);
-        plugin = _deployTokenReceiverPlugin();
+        plugin = _deployTokenReceiverPlugin(tokenReceiverVersionRegistry);
 
         t0 = new ERC721PresetMinterPauserAutoId("t0", "t0", "");
         t0.mint(address(this));
