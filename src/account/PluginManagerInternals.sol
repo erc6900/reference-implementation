@@ -892,16 +892,16 @@ abstract contract PluginManagerInternals is IPluginManager {
         bytes memory migrationData = IPlugin(oldPlugin).getDataForMigration();
 
         // Call the old plugin's clean-up function
+        bool onReplaceOldSuccess = true;
         try IPlugin(oldPlugin).onReplaceForOldPlugin() {}
-        catch (bytes memory revertReason) {
-            revert onReplaceForOldPluginFailed(oldPlugin, revertReason);
+        catch {
+            onReplaceOldSuccess = false;
         }
 
         // Pass the migration data to the new plugin
-        bool onReplaceOldSuccess = true;
         try IPlugin(newPlugin).onReplaceForNewPlugin(migrationData) {}
-        catch {
-            onReplaceOldSuccess = false;
+        catch (bytes memory revertReason) {
+            revert onReplaceForNewPluginFailed(newPlugin, revertReason);
         }
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
