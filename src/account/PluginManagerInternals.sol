@@ -45,7 +45,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error onReplaceForNewPluginFailed(address plugin, bytes revertReason);
-    error onReplaceForOldPluginFailed(address plugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {
