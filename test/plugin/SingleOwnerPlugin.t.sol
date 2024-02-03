@@ -31,7 +31,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
 
     function setUp() public {
         versionRegistry = new VersionRegistry();
-        plugin = _deploySingleOwnerPlugin(versionRegistry);
+        plugin = _deploySingleOwnerPlugin();
         entryPoint = new EntryPoint();
 
         a = makeAddr("a");

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {IVersionRegistry} from "./IVersionRegistry.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
 // so annotating here to prevent that.
@@ -89,6 +90,8 @@ struct PluginManifest {
     // Boolean to indicate whether the plugin needs access to spend native tokens of the account. If false, the
     // plugin MUST still be able to spend up to the balance that it sends to the account in the same call.
     bool canSpendNativeToken;
+    // address of version registry for this plugin, which is used in replacePlugin operation.
+    address versionRegistry;
     ManifestExternalCallPermission[] permittedExternalCalls;
     ManifestAssociatedFunction[] userOpValidationFunctions;
     ManifestAssociatedFunction[] runtimeValidationFunctions;
@@ -99,7 +102,7 @@ struct PluginManifest {
 
 interface IPlugin {
     /// @notice Retrieves the address of the VersionRegistry contract associated with this plugin.
-    /// @dev This function can be used by external contracts to verify the VersionRegistry. 
+    /// @dev This function can be used by external contracts to verify the VersionRegistry.
     /// @return The address of the VersionRegistry contract.
     function getVersionRegistry() external view returns (address);
 

@@ -51,9 +51,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
     mapping(address => address) internal _owners;
 
-    constructor(address _versionRegistryAddress) BasePlugin(_versionRegistryAddress) 
-    {}
-
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -148,7 +145,9 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         manifest.executionFunctions[1] = this.isValidSignature.selector;
         manifest.executionFunctions[2] = this.owner.selector;
 
-        ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
+        manifest.versionRegistry = BASE_PLUGIN_REGISTRY;
+
+    ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
             functionId: uint8(FunctionId.USER_OP_VALIDATION_OWNER),
             dependencyIndex: 0 // Unused.

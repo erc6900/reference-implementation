@@ -5,9 +5,6 @@ import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 import {PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
 
 contract BaseTestPlugin is BasePlugin {
-    constructor(address _versionRegistryAddress) BasePlugin(_versionRegistryAddress) 
-    {}
-
     // Don't need to implement this in each context
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         revert NotImplemented();

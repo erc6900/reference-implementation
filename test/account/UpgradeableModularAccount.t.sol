@@ -65,8 +65,8 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         beneficiary = payable(makeAddr("beneficiary"));
         vm.deal(beneficiary, 1 wei);
 
-        singleOwnerPlugin = _deploySingleOwnerPlugin(singleOwnerVersionRegistry);
-        tokenReceiverPlugin = _deployTokenReceiverPlugin(tokenReceiverVersionRegistry);
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
+        tokenReceiverPlugin = _deployTokenReceiverPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         // Compute counterfactual address
@@ -359,7 +359,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_default() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
+        ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
             plugin: address(plugin),
@@ -379,7 +379,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_manifestParameter() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
+        ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
         IPluginManager(account2).installPlugin({
@@ -404,7 +404,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_uninstallPlugin_invalidManifestFails() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin(address(comprehensiveVersionRegistry));
+        ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
         IPluginManager(account2).installPlugin({
@@ -432,27 +432,26 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     function test_replacePlugin_default() public {
         vm.startPrank(owner2);
 
-        ComprehensivePlugin replacedPlugin = new ComprehensivePlugin();
-        ComprehensivePlugin replacingPlugin = new ComprehensivePlugin();
-        bytes memory serializedManifest = abi.encode(replacingPlugin.pluginManifest());
-        bytes32 manifestHash = keccak256(serializedManifest);
+        SingleOwnerPlugin replacingPlugin = new SingleOwnerPlugin();
+        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
-            plugin: address(replacedPlugin),
+            plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInstallData: "",
+            pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
 
+        bytes32 newManifestHash = keccak256(abi.encode(replacingPlugin.pluginManifest()));
         vm.expectEmit(true, true, true, true);
-        emit PluginReplaced(address(replacedPlugin), address(replacingPlugin), true);
+        emit PluginReplaced(address(singleOwnerPlugin), address(replacingPlugin), true);
         IPluginManager(account2).replacePlugin({
-            oldPlugin: address(replacedPlugin),
+            oldPlugin: address(singleOwnerPlugin),
             newPlugin: address(replacingPlugin),
-            newManifestHash: manifestHash
+            newManifestHash: newManifestHash
         });
         address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
-        assertEq(plugins[0], address(singleOwnerPlugin));
+        assertEq(plugins[0], address(tokenReceiverPlugin));
         assertEq(plugins[1], address(replacingPlugin));
     }
 

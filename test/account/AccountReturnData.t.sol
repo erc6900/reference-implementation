@@ -33,12 +33,13 @@ contract AccountReturnDataTest is OptimizedTest {
     function setUp() public {
         entryPoint = new EntryPoint();
         versionRegistry = new VersionRegistry();
-        singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         regularResultContract = new RegularResultContract();
-        resultCreatorPlugin = new ResultCreatorPlugin(address(versionRegistry));
-        resultConsumerPlugin = new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract, address(versionRegistry));
+        resultCreatorPlugin = new ResultCreatorPlugin();
+        resultConsumerPlugin =
+            new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract);
 
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
         // solidity semantics

@@ -1,20 +1,13 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-interface IVersionRegistry {
-    struct Version {
-        uint8 major;
-        uint8 minor;
-        uint8 patch;
-    }
+import {Version} from "../helpers/VersionDecoder.sol";
 
+interface IVersionRegistry {
     /// @notice Register a new plugin version in the registry.
     /// @dev This function can be restricted to only be callable by the contract owner or a specific role.
     /// @param plugin The address of the plugin to register.
-    /// @param major The major version number.
-    /// @param minor The minor version number.
-    /// @param patch The patch version number.
-    function registerPlugin(address plugin, uint8 major, uint8 minor, uint8 patch) external;
+    function registerPlugin(address plugin) external;
 
     /// @notice Retrieve the version information of a given plugin.
     /// @param plugin The address of the plugin whose version information is being queried.

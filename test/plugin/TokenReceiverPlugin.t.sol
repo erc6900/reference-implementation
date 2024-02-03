@@ -41,10 +41,11 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     function setUp() public {
         singleOwnerVersionRegistry = new VersionRegistry();
         tokenReceiverVersionRegistry = new VersionRegistry();
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin(singleOwnerVersionRegistry));
+        MSCAFactoryFixture factory =
+            new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
 
         acct = factory.createAccount(address(this), 0);
-        plugin = _deployTokenReceiverPlugin(tokenReceiverVersionRegistry);
+        plugin = _deployTokenReceiverPlugin();
 
         t0 = new ERC721PresetMinterPauserAutoId("t0", "t0", "");
         t0.mint(address(this));

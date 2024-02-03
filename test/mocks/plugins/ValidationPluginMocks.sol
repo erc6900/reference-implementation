@@ -22,9 +22,6 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
     uint256 internal _preUserOpValidationHook1Data;
     uint256 internal _preUserOpValidationHook2Data;
 
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -61,9 +58,6 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
 }
 
 contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
-    constructor(address _versionRegistryAddress) MockBaseUserOpValidationPlugin(_versionRegistryAddress) 
-    {}
-
     function setValidationData(uint256 userOpValidationFunctionData) external {
         _userOpValidationFunctionData = userOpValidationFunctionData;
     }
@@ -99,9 +93,6 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
 }
 
 contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
-    constructor(address _versionRegistryAddress) MockBaseUserOpValidationPlugin(_versionRegistryAddress) 
-    {}
-
     function setValidationData(uint256 userOpValidationFunctionData, uint256 preUserOpValidationHook1Data)
         external
     {
@@ -151,9 +142,6 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
 }
 
 contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
-    constructor(address _versionRegistryAddress) MockBaseUserOpValidationPlugin(_versionRegistryAddress) 
-    {}
-
     function setValidationData(
         uint256 userOpValidationFunctionData,
         uint256 preUserOpValidationHook1Data,

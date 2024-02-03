@@ -9,6 +9,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
+import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
 /// the source contracts (excluding the test suite) via IR, and using the resulting bytecode within the tests
@@ -20,6 +21,9 @@ import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 ///
 /// To bypass this behavior for coverage or debugging, use the "default" profile.
 abstract contract OptimizedTest is Test {
+    address internal constant BASE_PLUGIN_REGISTRY = 0x3Ce0Cbb4B0A4accCc21fC7a208d9b661d7039258;
+    bytes4 private constant REGISTER_PLUGIN_SELECTOR = bytes4(keccak256(bytes('registerPlugin(address)')));
+
     function _isOptimizedTest() internal returns (bool) {
         string memory profile = vm.envOr("FOUNDRY_PROFILE", string("default"));
         return _isStringEq(profile, "optimized-test-deep") || _isStringEq(profile, "optimized-test");
@@ -45,30 +49,36 @@ abstract contract OptimizedTest is Test {
             : new UpgradeableModularAccount(entryPoint);
     }
 
-    function _deploySingleOwnerPlugin(VersionRegistry versionRegistry) internal returns (SingleOwnerPlugin) {
+    function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
         SingleOwnerPlugin singleOwnerPlugin;
+        VersionRegistry _versionRegistry = new VersionRegistry();
+        vm.etch(BASE_PLUGIN_REGISTRY, address(_versionRegistry).code);
 
         if (_isOptimizedTest()) {
-            singleOwnerPlugin = SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"));
+            singleOwnerPlugin =
+                SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"));
         } else {
-            singleOwnerPlugin = new SingleOwnerPlugin(address(versionRegistry));
+            singleOwnerPlugin = new SingleOwnerPlugin();
         }
 
-        versionRegistry.registerPlugin(address(singleOwnerPlugin), 1, 0, 0);
+        address versionRegistry = singleOwnerPlugin.pluginManifest().versionRegistry;
+        versionRegistry.call(abi.encodeWithSelector(REGISTER_PLUGIN_SELECTOR, address(singleOwnerPlugin), 1, 0, 0));
 
         return singleOwnerPlugin;
     }
 
-    function _deployTokenReceiverPlugin(VersionRegistry versionRegistry) internal returns (TokenReceiverPlugin) {
+    function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
         TokenReceiverPlugin tokenReceiverPlugin;
 
         if (_isOptimizedTest()) {
-            tokenReceiverPlugin = TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"));
+            tokenReceiverPlugin =
+                TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"));
         } else {
-            tokenReceiverPlugin = new TokenReceiverPlugin(address(versionRegistry));
+            tokenReceiverPlugin = new TokenReceiverPlugin();
         }
 
-        versionRegistry.registerPlugin(address(tokenReceiverPlugin), 1, 0, 0);
+        address versionRegistry = tokenReceiverPlugin.pluginManifest().versionRegistry;
+        versionRegistry.call(abi.encodeWithSelector(REGISTER_PLUGIN_SELECTOR, address(tokenReceiverPlugin), 1, 0, 0));
 
         return tokenReceiverPlugin;
     }

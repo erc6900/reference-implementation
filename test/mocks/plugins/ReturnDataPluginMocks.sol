@@ -26,9 +26,6 @@ contract RegularResultContract {
 }
 
 contract ResultCreatorPlugin is BaseTestPlugin {
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -66,7 +63,10 @@ contract ResultConsumerPlugin is BaseTestPlugin {
     ResultCreatorPlugin public immutable resultCreator;
     RegularResultContract public immutable regularResultContract;
 
-    constructor(ResultCreatorPlugin _resultCreator, RegularResultContract _regularResultContract, address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) {
+    constructor(
+        ResultCreatorPlugin _resultCreator,
+        RegularResultContract _regularResultContract
+    ) BaseTestPlugin() {
         resultCreator = _resultCreator;
         regularResultContract = _regularResultContract;
     }

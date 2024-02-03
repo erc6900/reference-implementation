@@ -36,15 +36,15 @@ contract ValidationIntersectionTest is OptimizedTest {
         versionRegistry = new VersionRegistry();
         owner1 = makeAddr("owner1");
 
-        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
+        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin();
         MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 1 ether);
 
-        noHookPlugin = new MockUserOpValidationPlugin(address(versionRegistry));
-        oneHookPlugin = new MockUserOpValidation1HookPlugin(address(versionRegistry));
-        twoHookPlugin = new MockUserOpValidation2HookPlugin(address(versionRegistry));
+        noHookPlugin = new MockUserOpValidationPlugin();
+        oneHookPlugin = new MockUserOpValidation1HookPlugin();
+        twoHookPlugin = new MockUserOpValidation2HookPlugin();
 
         vm.startPrank(address(owner1));
         account1.installPlugin({

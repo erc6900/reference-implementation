@@ -42,9 +42,9 @@ contract AccountLoupeTest is OptimizedTest {
         entryPoint = new EntryPoint();
 
         versionRegistry = new VersionRegistry();
-        singleOwnerPlugin = _deploySingleOwnerPlugin(versionRegistry);
+        singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
-        comprehensivePlugin = new ComprehensivePlugin(address(versionRegistry));
+        comprehensivePlugin = new ComprehensivePlugin();
 
         account1 = factory.createAccount(address(this), 0);
 

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
+import {Version, decodeVersion} from "../helpers/VersionDecoder.sol";
+import {IPlugin} from "../interfaces/IPlugin.sol";
+
 /// @title VersionRegistry for plugins
 /// @notice This contract serves as a registry for version information of various plugins.
-contract VersionRegistry {
-    struct Version {
-        uint8 major;
-        uint8 minor;
-        uint8 patch;
-    }
+contract VersionRegistry is IVersionRegistry {
 
     /// @dev Mapping from plugin address to its version information.
     mapping(address => Version) private pluginVersions;
@@ -28,19 +27,18 @@ contract VersionRegistry {
         _;
     }
 
-    /// @notice Registers a plugin with its version information.
-    /// @dev This function can be called by the contract owner or authorized entity only.
-    /// @param plugin The address of the plugin to be registered.
-    /// @param major The major version number of the plugin.
-    /// @param minor The minor version number of the plugin.
-    /// @param patch The patch version number of the plugin.
-    function registerPlugin(address plugin, uint8 major, uint8 minor, uint8 patch) external onlyOwner {
-        Version memory newVersion = Version(major, minor, patch);
+    /// @inheritdoc IVersionRegistry
+    function registerPlugin(address plugin) external onlyOwner {
+        string memory versionString = IPlugin(plugin).pluginMetadata().version;
+        Version memory newVersion = decodeVersion(versionString);
 
         require(
-            (newVersion.major > latestVersion.major) ||
-            (newVersion.major == latestVersion.major && newVersion.minor > latestVersion.minor) ||
-            (newVersion.major == latestVersion.major && newVersion.minor == latestVersion.minor && newVersion.patch > latestVersion.patch),
+            (newVersion.major > latestVersion.major)
+                || (newVersion.major == latestVersion.major && newVersion.minor > latestVersion.minor)
+                || (
+                    newVersion.major == latestVersion.major && newVersion.minor == latestVersion.minor
+                        && newVersion.patch > latestVersion.patch
+                ),
             "VersionRegistry: New version must be higher than the current latest version"
         );
 
@@ -48,21 +46,20 @@ contract VersionRegistry {
         latestVersion = newVersion;
     }
 
-    /// @notice Retrieves the version information of a registered plugin.
-    /// @param plugin The address of the plugin whose version information is being queried.
-    /// @return The version information of the specified plugin.
+    /// @inheritdoc IVersionRegistry
     function getPluginVersion(address plugin) external view returns (Version memory) {
         return pluginVersions[plugin];
     }
 
-    /// @notice Checks if there is a newer version available for a plugin.
-    /// @param plugin The address of the plugin.
-    /// @return isNewVersionAvailable A boolean indicating whether a newer version is available.
+    /// @inheritdoc IVersionRegistry
     function isNewVersionAvailable(address plugin) external view returns (bool) {
         Version memory pluginVersion = pluginVersions[plugin];
 
-        return (latestVersion.major > pluginVersion.major) || 
-               (latestVersion.major == pluginVersion.major && latestVersion.minor > pluginVersion.minor) || 
-               (latestVersion.major == pluginVersion.major && latestVersion.minor == pluginVersion.minor && latestVersion.patch > pluginVersion.patch);
+        return (latestVersion.major > pluginVersion.major)
+            || (latestVersion.major == pluginVersion.major && latestVersion.minor > pluginVersion.minor)
+            || (
+                latestVersion.major == pluginVersion.major && latestVersion.minor == pluginVersion.minor
+                    && latestVersion.patch > pluginVersion.patch
+            );
     }
 }

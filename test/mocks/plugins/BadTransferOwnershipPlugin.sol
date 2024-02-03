@@ -20,9 +20,6 @@ contract BadTransferOwnershipPlugin is BasePlugin {
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
 
-    constructor(address _versionRegistryAddress) BasePlugin(_versionRegistryAddress) 
-    {}
-
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
