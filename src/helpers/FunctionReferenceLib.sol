@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-type FunctionReference is bytes21;
-
-using {eq as ==, notEq as !=} for FunctionReference global;
-using FunctionReferenceLib for FunctionReference global;
+import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 library FunctionReferenceLib {
     // Empty or unset function reference.
@@ -26,18 +23,18 @@ library FunctionReferenceLib {
     }
 
     function isEmpty(FunctionReference fr) internal pure returns (bool) {
-        return fr == _EMPTY_FUNCTION_REFERENCE;
+        return FunctionReference.unwrap(fr) == bytes21(0);
     }
 
     function isEmptyOrMagicValue(FunctionReference fr) internal pure returns (bool) {
         return FunctionReference.unwrap(fr) <= bytes21(uint168(2));
     }
-}
 
-function eq(FunctionReference a, FunctionReference b) pure returns (bool) {
-    return FunctionReference.unwrap(a) == FunctionReference.unwrap(b);
-}
+    function eq(FunctionReference a, FunctionReference b) internal pure returns (bool) {
+        return FunctionReference.unwrap(a) == FunctionReference.unwrap(b);
+    }
 
-function notEq(FunctionReference a, FunctionReference b) pure returns (bool) {
-    return FunctionReference.unwrap(a) != FunctionReference.unwrap(b);
+    function notEq(FunctionReference a, FunctionReference b) internal pure returns (bool) {
+        return FunctionReference.unwrap(a) != FunctionReference.unwrap(b);
+    }
 }

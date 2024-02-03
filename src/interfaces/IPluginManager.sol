@@ -1,50 +1,27 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
+type FunctionReference is bytes21;
 
-/// @title Plugin Manager Interface
 interface IPluginManager {
-    /// @dev Pre/post exec hooks added by the user to limit the scope of a plugin. These hooks are injected at
-    /// plugin install time
-    struct InjectedHook {
-        // The plugin that provides the hook
-        address providingPlugin;
-        // Either a plugin-defined execution function, or the native function executeFromPluginExternal
-        bytes4 selector;
-        InjectedHooksInfo injectedHooksInfo;
-        bytes hookApplyData;
-    }
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
 
-    struct InjectedHooksInfo {
-        uint8 preExecHookFunctionId;
-        bool isPostHookUsed;
-        uint8 postExecHookFunctionId;
-    }
+    event PluginUninstalled(address indexed plugin, bool indexed onUninstallSucceeded);
 
-    /// @dev Note that we strip hookApplyData from InjectedHooks in this event for gas savings
-    event PluginInstalled(
-        address indexed plugin,
-        bytes32 manifestHash,
-        FunctionReference[] dependencies,
-        InjectedHook[] injectedHooks
-    );
-
-    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
+    event PluginReplaced(address indexed oldPlugin, address indexed newPlugin, bool indexed onReplaceSucceeded);
 
     /// @notice Install a plugin to the modular account.
     /// @param plugin The plugin to install.
     /// @param manifestHash The hash of the plugin manifest.
-    /// @param pluginInitData Optional data to be decoded and used by the plugin to setup initial plugin data for
-    /// the modular account.
-    /// @param dependencies The dependencies of the plugin, as described in the manifest.
-    /// @param injectedHooks Optional hooks to be injected over permitted calls this plugin may make.
+    /// @param pluginInstallData Optional data to be decoded and used by the plugin to setup initial plugin data
+    /// for the modular account.
+    /// @param dependencies The dependencies of the plugin, as described in the manifest. Each FunctionReference
+    /// MUST be composed of an installed plugin's address and a function ID of its validation function.
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
-        bytes calldata pluginInitData,
-        FunctionReference[] calldata dependencies,
-        InjectedHook[] calldata injectedHooks
+        bytes calldata pluginInstallData,
+        FunctionReference[] calldata dependencies
     ) external;
 
     /// @notice Uninstall a plugin from the modular account.
@@ -54,19 +31,7 @@ interface IPluginManager {
     /// guarantees.
     /// @param pluginUninstallData Optional data to be decoded and used by the plugin to clear plugin data for the
     /// modular account.
-    /// @param hookUnapplyData Optional data to be decoded and used by the plugin to clear injected hooks for the
-    /// modular account.
-    function uninstallPlugin(
-        address plugin,
-        bytes calldata config,
-        bytes calldata pluginUninstallData,
-        bytes[] calldata hookUnapplyData
-    ) external;
+    function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData) external;
 
-    function replacePlugin(
-        address oldPlugin,
-        address newPlugin,
-        bytes32 manifestHash,
-        bytes[] calldata hookUnapplyData
-    ) external;
+    function replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash) external;
 }

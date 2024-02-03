@@ -6,7 +6,6 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
@@ -51,23 +50,20 @@ contract ValidationIntersectionTest is OptimizedTest {
         account1.installPlugin({
             plugin: address(noHookPlugin),
             manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),
-            pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            pluginInstallData: "",
+            dependencies: new FunctionReference[](0)
         });
         account1.installPlugin({
             plugin: address(oneHookPlugin),
             manifestHash: keccak256(abi.encode(oneHookPlugin.pluginManifest())),
-            pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            pluginInstallData: "",
+            dependencies: new FunctionReference[](0)
         });
         account1.installPlugin({
             plugin: address(twoHookPlugin),
             manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
-            pluginInitData: "",
-            dependencies: new FunctionReference[](0),
-            injectedHooks: new IPluginManager.InjectedHook[](0)
+            pluginInstallData: "",
+            dependencies: new FunctionReference[](0)
         });
         vm.stopPrank();
     }

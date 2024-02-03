@@ -2,26 +2,24 @@
 pragma solidity ^0.8.19;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
+import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
+import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
-import {FunctionReference, FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
-import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
-import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
-import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
-import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
-import {BasePlugin} from "../plugins/BasePlugin.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -36,6 +34,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using FunctionReferenceLib for FunctionReference;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -85,7 +84,7 @@ contract UpgradeableModularAccount is
     // EXTERNAL FUNCTIONS
 
     /// @notice Initializes the account with a set of plugins
-    /// @dev No dependencies or hooks can be injected with this installation
+    /// @dev No dependencies may be provided with this installation.
     /// @param plugins The plugins to install
     /// @param manifestHashes The manifest hashes of the plugins to install
     /// @param pluginInstallDatas The plugin install datas of the plugins to install
@@ -101,12 +100,9 @@ contract UpgradeableModularAccount is
         }
 
         FunctionReference[] memory emptyDependencies = new FunctionReference[](0);
-        IPluginManager.InjectedHook[] memory emptyInjectedHooks = new IPluginManager.InjectedHook[](0);
 
         for (uint256 i = 0; i < length;) {
-            _installPlugin(
-                plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies, emptyInjectedHooks
-            );
+            _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies);
 
             unchecked {
                 ++i;
@@ -188,12 +184,9 @@ contract UpgradeableModularAccount is
 
         AccountStorage storage _storage = getAccountStorage();
 
-        if (!_storage.permittedCalls[execFromPluginKey].callPermitted) {
+        if (!_storage.callPermitted[execFromPluginKey]) {
             revert ExecFromPluginNotPermitted(callingPlugin, selector);
         }
-
-        PostExecToRun[] memory postPermittedCallHooks =
-            _doPrePermittedCallHooks(getPermittedCallKey(callingPlugin, selector), data);
 
         address execFunctionPlugin = _storage.selectorData[selector].plugin;
 
@@ -212,7 +205,6 @@ contract UpgradeableModularAccount is
         }
 
         _doCachedPostExecHooks(postExecHooks);
-        _doCachedPostExecHooks(postPermittedCallHooks);
 
         return returnData;
     }
@@ -253,12 +245,6 @@ contract UpgradeableModularAccount is
             revert ExecFromPluginExternalNotPermitted(msg.sender, target, value, data);
         }
 
-        // Run any pre plugin exec specific to this caller and the `executeFromPluginExternal` selector
-
-        PostExecToRun[] memory postPermittedCallHooks = _doPrePermittedCallHooks(
-            getPermittedCallKey(msg.sender, IPluginExecutor.executeFromPluginExternal.selector), msg.data
-        );
-
         // Run any pre exec hooks for this selector
         PostExecToRun[] memory postExecHooks =
             _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
@@ -269,9 +255,6 @@ contract UpgradeableModularAccount is
         // Run any post exec hooks for this selector
         _doCachedPostExecHooks(postExecHooks);
 
-        // Run any post exec hooks specific to this caller and the `executeFromPluginExternal` selector
-        _doCachedPostExecHooks(postPermittedCallHooks);
-
         return returnData;
     }
 
@@ -279,20 +262,18 @@ contract UpgradeableModularAccount is
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
-        bytes calldata pluginInitData,
-        FunctionReference[] calldata dependencies,
-        InjectedHook[] calldata injectedHooks
+        bytes calldata pluginInstallData,
+        FunctionReference[] calldata dependencies
     ) external override wrapNativeFunction {
-        _installPlugin(plugin, manifestHash, pluginInitData, dependencies, injectedHooks);
+        _installPlugin(plugin, manifestHash, pluginInstallData, dependencies);
     }
 
     /// @inheritdoc IPluginManager
-    function uninstallPlugin(
-        address plugin,
-        bytes calldata config,
-        bytes calldata pluginUninstallData,
-        bytes[] calldata hookUnapplyData
-    ) external override wrapNativeFunction {
+    function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
+        external
+        override
+        wrapNativeFunction
+    {
         PluginManifest memory manifest;
 
         if (config.length > 0) {
@@ -301,32 +282,16 @@ contract UpgradeableModularAccount is
             manifest = IPlugin(plugin).pluginManifest();
         }
 
-        _uninstallPlugin(plugin, manifest, pluginUninstallData, hookUnapplyData);
+        _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 
-    // Should we check versions here?
-    function replacePlugin(
-        address oldPlugin,
-        address newPlugin,
-        bytes32 manifestHash,
-        bytes[] calldata hookUnapplyData
-    ) external override wrapNativeFunction {
-        address oldPluginRegistry = BasePlugin(oldPlugin).getVersionRegistry();
-        address newPluginRegistry = BasePlugin(newPlugin).getVersionRegistry();
-
-        require(oldPluginRegistry == newPluginRegistry, "Plugins use different VersionRegistries");
-
-        IVersionRegistry.Version memory oldVersion = IVersionRegistry(oldPluginRegistry).getPluginVersion(oldPlugin);
-        IVersionRegistry.Version memory newVersion = IVersionRegistry(newPluginRegistry).getPluginVersion(newPlugin);
-
-        require(
-            oldVersion.major == newVersion.major && 
-            oldVersion.minor == newVersion.minor && 
-            newVersion.patch > oldVersion.patch,
-            "New plugin is not a patch-level upgrade"
-        );
-
-        _replacePlugin(oldPlugin, newPlugin, manifestHash, hookUnapplyData);
+    /// @inheritdoc IPluginManager
+    function replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash)
+        external
+        override
+        wrapNativeFunction
+    {
+        _replacePlugin(oldPlugin, newPlugin, newManifestHash);
     }
 
     /// @notice ERC165 introspection
@@ -482,7 +447,7 @@ contract UpgradeableModularAccount is
                     ++i;
                 }
             } else {
-                if (preRuntimeValidationHook == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
+                if (preRuntimeValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                     revert AlwaysDenyRule();
                 }
                 // Function reference cannot be 0 or _RUNTIME_VALIDATION_ALWAYS_ALLOW.
@@ -502,7 +467,7 @@ contract UpgradeableModularAccount is
             } else {
                 if (runtimeValidationFunction.isEmpty()) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
-                } else if (runtimeValidationFunction == FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY) {
+                } else if (runtimeValidationFunction.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                     revert InvalidConfiguration();
                 }
                 // If _RUNTIME_VALIDATION_ALWAYS_ALLOW, just let the function finish.
@@ -515,23 +480,6 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory postHooksToRun)
     {
         HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
-
-        return _doPreHooks(hooks, data);
-    }
-
-    function _doPrePermittedCallHooks(bytes24 permittedCallKey, bytes calldata data)
-        internal
-        returns (PostExecToRun[] memory postHooksToRun)
-    {
-        HookGroup storage hooks = getAccountStorage().permittedCalls[permittedCallKey].permittedCallHooks;
-
-        return _doPreHooks(hooks, data);
-    }
-
-    function _doPreHooks(HookGroup storage hooks, bytes calldata data)
-        internal
-        returns (PostExecToRun[] memory postHooksToRun)
-    {
         uint256 preExecHooksLength = hooks.preHooks.length();
         uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
         uint256 maxPostExecHooksLength = postOnlyHooksLength;
@@ -571,21 +519,20 @@ contract UpgradeableModularAccount is
                 revert AlwaysDenyRule();
             }
 
+            bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
+
             uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
                 for (uint256 j = 0; j < associatedPostExecHooksLength;) {
                     (key,) = hooks.associatedPostHooks[preExecHook].at(j);
                     postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
-                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData =
-                        _runPreExecHook(preExecHook, data);
+                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
                     unchecked {
                         ++actualPostHooksToRunLength;
                         ++j;
                     }
                 }
-            } else {
-                _runPreExecHook(preExecHook, data);
             }
 
             unchecked {

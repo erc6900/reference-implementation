@@ -49,13 +49,7 @@ contract AccountLoupeTest is OptimizedTest {
         account1 = factory.createAccount(address(this), 0);
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
-        account1.installPlugin(
-            address(comprehensivePlugin),
-            manifestHash,
-            "",
-            new FunctionReference[](0),
-            new IPluginManager.InjectedHook[](0)
-        );
+        account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
 
         ownerUserOpValidation = FunctionReferenceLib.pack(
             address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER)
@@ -173,31 +167,6 @@ contract AccountLoupeTest is OptimizedTest {
         );
     }
 
-    function test_pluginLoupe_getPermittedCallHooks() public {
-        IAccountLoupe.ExecutionHooks[] memory hooks =
-            account1.getPermittedCallHooks(address(comprehensivePlugin), comprehensivePlugin.foo.selector);
-
-        assertEq(hooks.length, 1);
-        assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_PERMITTED_CALL_EXECUTION_HOOK)
-                )
-            )
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.POST_PERMITTED_CALL_EXECUTION_HOOK)
-                )
-            )
-        );
-    }
-
     function test_pluginLoupe_getHooks_multiple() public {
         // Add a second set of execution hooks to the account, and validate that it can return all hooks applied
         // over the function.
@@ -219,29 +188,10 @@ contract AccountLoupeTest is OptimizedTest {
             })
         });
 
-        mockPluginManifest.permittedCallHooks = new ManifestExecutionHook[](2);
-        // Copy over the same hooks from executionHooks.
-        mockPluginManifest.permittedCallHooks[0] = mockPluginManifest.executionHooks[0];
-        mockPluginManifest.permittedCallHooks[1] = ManifestExecutionHook({
-            executionSelector: ComprehensivePlugin.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 1,
-                dependencyIndex: 0
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 1,
-                dependencyIndex: 0
-            })
-        });
-
         MockPlugin mockPlugin = new MockPlugin(mockPluginManifest);
         bytes32 manifestHash = keccak256(abi.encode(mockPlugin.pluginManifest()));
 
-        account1.installPlugin(
-            address(mockPlugin), manifestHash, "", new FunctionReference[](0), new IPluginManager.InjectedHook[](0)
-        );
+        account1.installPlugin(address(mockPlugin), manifestHash, "", new FunctionReference[](0));
 
         // Assert that the returned execution hooks are what is expected
 
@@ -271,28 +221,6 @@ contract AccountLoupeTest is OptimizedTest {
         assertEq(
             FunctionReference.unwrap(hooks[1].postExecHook),
             FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
-        );
-
-        // Assert that the returned permitted call hooks are what is expected
-
-        hooks = account1.getPermittedCallHooks(address(mockPlugin), comprehensivePlugin.foo.selector);
-
-        assertEq(hooks.length, 2);
-        assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[1].preExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(1)))
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[1].postExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(1)))
         );
     }
 

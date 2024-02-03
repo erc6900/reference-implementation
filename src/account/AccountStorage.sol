@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {FunctionReference} from "../helpers/FunctionReferenceLib.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -19,27 +19,6 @@ struct PluginData {
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
     uint256 dependentCount;
-    StoredInjectedHook[] injectedHooks;
-}
-
-// A version of IPluginManager.InjectedHook used to track injected hooks in storage.
-// Omits the hookApplyData field, which is not needed for storage, and flattens the struct.
-struct StoredInjectedHook {
-    // The plugin that provides the hook
-    address providingPlugin;
-    // Either a plugin-defined execution function, or the native function executeFromPluginExternal
-    bytes4 selector;
-    // Contents of the InjectedHooksInfo struct
-    uint8 preExecHookFunctionId;
-    bool isPostHookUsed;
-    uint8 postExecHookFunctionId;
-}
-
-// Represents data associated with a plugin's permission to use `executeFromPlugin`
-// to interact with another plugin installed on the account.
-struct PermittedCallData {
-    bool callPermitted;
-    HookGroup permittedCallHooks;
 }
 
 // Represents data associated with a plugin's permission to use `executeFromPluginExternal`
@@ -52,7 +31,7 @@ struct PermittedExternalCallData {
     mapping(bytes4 => bool) permittedSelectors;
 }
 
-// Represets a set of pre- and post- hooks. Used to store both execution hooks and permitted call hooks.
+// Represets a set of pre- and post- hooks.
 struct HookGroup {
     EnumerableMap.Bytes32ToUintMap preHooks;
     // bytes21 key = pre hook function reference
@@ -84,7 +63,7 @@ struct AccountStorage {
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     // bytes24 key = address(calling plugin) || bytes4(selector of execution function)
-    mapping(bytes24 => PermittedCallData) permittedCalls;
+    mapping(bytes24 => bool) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection

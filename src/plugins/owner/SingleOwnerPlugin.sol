@@ -153,7 +153,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             functionId: uint8(FunctionId.USER_OP_VALIDATION_OWNER),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](7);
+        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](8);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
             associatedFunction: ownerUserOpValidationFunction
@@ -175,10 +175,14 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[5] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeTo.selector,
+            executionSelector: IPluginManager.replacePlugin.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
         manifest.userOpValidationFunctions[6] = ManifestAssociatedFunction({
+            executionSelector: UUPSUpgradeable.upgradeTo.selector,
+            associatedFunction: ownerUserOpValidationFunction
+        });
+        manifest.userOpValidationFunctions[7] = ManifestAssociatedFunction({
             executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
             associatedFunction: ownerUserOpValidationFunction
         });
@@ -193,7 +197,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](9);
+        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](10);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
@@ -219,14 +223,18 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[6] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeTo.selector,
+            executionSelector: IPluginManager.replacePlugin.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[7] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
+            executionSelector: UUPSUpgradeable.upgradeTo.selector,
             associatedFunction: ownerOrSelfRuntimeValidationFunction
         });
         manifest.runtimeValidationFunctions[8] = ManifestAssociatedFunction({
+            executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
+            associatedFunction: ownerOrSelfRuntimeValidationFunction
+        });
+        manifest.runtimeValidationFunctions[9] = ManifestAssociatedFunction({
             executionSelector: this.isValidSignature.selector,
             associatedFunction: alwaysAllowFunction
         });

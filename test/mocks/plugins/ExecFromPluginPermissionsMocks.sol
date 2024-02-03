@@ -25,9 +25,6 @@ address constant counter2 = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
 address constant counter3 = 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a;
 
 contract EFPCallerPlugin is BaseTestPlugin {
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -174,9 +171,6 @@ contract EFPCallerPlugin is BaseTestPlugin {
 }
 
 contract EFPCallerPluginAnyExternal is BaseTestPlugin {
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -208,138 +202,5 @@ contract EFPCallerPluginAnyExternal is BaseTestPlugin {
         returns (bytes memory)
     {
         return IPluginExecutor(msg.sender).executeFromPluginExternal(target, value, data);
-    }
-}
-
-// Create pre and post permitted call hooks for calling ResultCreatorPlugin.foo via `executeFromPlugin`
-contract EFPPermittedCallHookPlugin is BaseTestPlugin {
-    bool public preExecHookCalled;
-    bool public postExecHookCalled;
-
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
-    function preExecutionHook(uint8, address, uint256, bytes calldata) external override returns (bytes memory) {
-        preExecHookCalled = true;
-        return "context for post exec hook";
-    }
-
-    function postExecutionHook(uint8, bytes calldata preExecHookData) external override {
-        require(
-            keccak256(preExecHookData) == keccak256("context for post exec hook"), "Invalid pre exec hook data"
-        );
-        postExecHookCalled = true;
-    }
-
-    function onInstall(bytes calldata) external override {}
-
-    function onUninstall(bytes calldata) external override {}
-
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.performEFPCall.selector;
-
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.performEFPCall.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        manifest.permittedCallHooks = new ManifestExecutionHook[](1);
-        manifest.permittedCallHooks[0] = ManifestExecutionHook({
-            executionSelector: ResultCreatorPlugin.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        manifest.permittedExecutionSelectors = new bytes4[](1);
-        manifest.permittedExecutionSelectors[0] = ResultCreatorPlugin.foo.selector;
-
-        return manifest;
-    }
-
-    function performEFPCall() external returns (bytes memory) {
-        return IPluginExecutor(msg.sender).executeFromPlugin(abi.encodeCall(ResultCreatorPlugin.foo, ()));
-    }
-}
-
-// Creates pre and post permitted call hooks for `executeFromPluginExternal`
-contract EFPExternalPermittedCallHookPlugin is BaseTestPlugin {
-    bool public preExecHookCalled;
-    bool public postExecHookCalled;
-
-    constructor(address _versionRegistryAddress) BaseTestPlugin(_versionRegistryAddress) 
-    {}
-
-    function onInstall(bytes calldata) external override {}
-
-    function onUninstall(bytes calldata) external override {}
-
-    function preExecutionHook(uint8, address, uint256, bytes calldata) external override returns (bytes memory) {
-        preExecHookCalled = true;
-        return "context for post exec hook";
-    }
-
-    function postExecutionHook(uint8, bytes calldata preExecHookData) external override {
-        require(
-            keccak256(preExecHookData) == keccak256("context for post exec hook"), "Invalid pre exec hook data"
-        );
-        postExecHookCalled = true;
-    }
-
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.performIncrement.selector;
-
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.performIncrement.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        manifest.permittedCallHooks = new ManifestExecutionHook[](1);
-        manifest.permittedCallHooks[0] = ManifestExecutionHook({
-            executionSelector: IPluginExecutor.executeFromPluginExternal.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        manifest.permitAnyExternalAddress = true;
-
-        return manifest;
-    }
-
-    function performIncrement() external {
-        IPluginExecutor(msg.sender).executeFromPluginExternal(
-            counter1, 0, abi.encodeWithSelector(Counter.increment.selector)
-        );
     }
 }

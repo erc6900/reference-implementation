@@ -229,21 +229,6 @@ contract ComprehensivePlugin is BasePlugin {
             })
         });
 
-        manifest.permittedCallHooks = new ManifestExecutionHook[](1);
-        manifest.permittedCallHooks[0] = ManifestExecutionHook({
-            executionSelector: this.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_PERMITTED_CALL_EXECUTION_HOOK),
-                dependencyIndex: 0 // Unused.
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.POST_PERMITTED_CALL_EXECUTION_HOOK),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-
         return manifest;
     }
 
