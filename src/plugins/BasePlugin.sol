@@ -36,7 +36,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
     /// It should return all the necessary state information of the plugin in a serialized format.
     /// In the case of SingleOwnerPlugin, it returns the owner's address.
     /// @return bytes Migration data to migrate from old plugin to new plugin
-    function getDataForMigration() external view virtual returns (bytes memory) {
+    function getDataForReplacement() external view virtual returns (bytes memory) {
         revert NotImplemented();
     }
 

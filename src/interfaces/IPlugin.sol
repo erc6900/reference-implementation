@@ -185,7 +185,7 @@ interface IPlugin {
     /// It should return all the necessary state information of the plugin in a serialized format.
     /// In the case of SingleOwnerPlugin, it returns the owner's address.
     /// @return bytes Migration data to migrate from old plugin to new plugin
-    function getDataForMigration() external view returns (bytes memory);
+    function getDataForReplacement() external view returns (bytes memory);
 
     /// @notice Cleans up the plugin data when the plugin is being replaced.
     /// @dev This function is called during the plugin replacement process to allow the current (old) plugin
