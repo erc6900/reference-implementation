@@ -17,7 +17,6 @@ import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
@@ -26,7 +25,6 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract AccountLoupeTest is OptimizedTest {
     EntryPoint public entryPoint;
-    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
     ComprehensivePlugin public comprehensivePlugin;
@@ -41,7 +39,6 @@ contract AccountLoupeTest is OptimizedTest {
     function setUp() public {
         entryPoint = new EntryPoint();
 
-        versionRegistry = new VersionRegistry();
         singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
         comprehensivePlugin = new ComprehensivePlugin();

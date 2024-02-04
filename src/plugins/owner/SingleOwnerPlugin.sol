@@ -147,7 +147,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
         manifest.versionRegistry = BASE_PLUGIN_REGISTRY;
 
-    ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
+        ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
             functionId: uint8(FunctionId.USER_OP_VALIDATION_OWNER),
             dependencyIndex: 0 // Unused.

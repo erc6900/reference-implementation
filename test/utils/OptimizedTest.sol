@@ -22,7 +22,7 @@ import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 /// To bypass this behavior for coverage or debugging, use the "default" profile.
 abstract contract OptimizedTest is Test {
     address internal constant BASE_PLUGIN_REGISTRY = 0x3Ce0Cbb4B0A4accCc21fC7a208d9b661d7039258;
-    bytes4 private constant REGISTER_PLUGIN_SELECTOR = bytes4(keccak256(bytes('registerPlugin(address)')));
+    bytes4 private constant REGISTER_PLUGIN_SELECTOR = bytes4(keccak256(bytes("registerPlugin(address)")));
 
     function _isOptimizedTest() internal returns (bool) {
         string memory profile = vm.envOr("FOUNDRY_PROFILE", string("default"));
@@ -78,7 +78,9 @@ abstract contract OptimizedTest is Test {
         }
 
         address versionRegistry = tokenReceiverPlugin.pluginManifest().versionRegistry;
-        versionRegistry.call(abi.encodeWithSelector(REGISTER_PLUGIN_SELECTOR, address(tokenReceiverPlugin), 1, 0, 0));
+        versionRegistry.call(
+            abi.encodeWithSelector(REGISTER_PLUGIN_SELECTOR, address(tokenReceiverPlugin), 1, 0, 0)
+        );
 
         return tokenReceiverPlugin;
     }

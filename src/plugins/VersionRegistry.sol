@@ -8,7 +8,6 @@ import {IPlugin} from "../interfaces/IPlugin.sol";
 /// @title VersionRegistry for plugins
 /// @notice This contract serves as a registry for version information of various plugins.
 contract VersionRegistry is IVersionRegistry {
-
     /// @dev Mapping from plugin address to its version information.
     mapping(address => Version) private pluginVersions;
     Version private latestVersion;

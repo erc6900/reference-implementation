@@ -11,7 +11,6 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
-import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {MockERC777} from "../mocks/MockERC777.sol";
@@ -20,8 +19,6 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     UpgradeableModularAccount public acct;
-    VersionRegistry public singleOwnerVersionRegistry;
-    VersionRegistry public tokenReceiverVersionRegistry;
     TokenReceiverPlugin public plugin;
 
     ERC721PresetMinterPauserAutoId public t0;
@@ -39,10 +36,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     uint256 internal constant _BATCH_TOKEN_IDS = 5;
 
     function setUp() public {
-        singleOwnerVersionRegistry = new VersionRegistry();
-        tokenReceiverVersionRegistry = new VersionRegistry();
-        MSCAFactoryFixture factory =
-            new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
+        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
 
         acct = factory.createAccount(address(this), 0);
         plugin = _deployTokenReceiverPlugin();

@@ -7,7 +7,6 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
@@ -22,7 +21,6 @@ contract ValidationIntersectionTest is OptimizedTest {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     EntryPoint public entryPoint;
-    VersionRegistry public versionRegistry;
 
     address public owner1;
     uint256 public owner1Key;
@@ -33,7 +31,6 @@ contract ValidationIntersectionTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        versionRegistry = new VersionRegistry();
         owner1 = makeAddr("owner1");
 
         SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin();

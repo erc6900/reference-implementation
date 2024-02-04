@@ -17,11 +17,11 @@ function decodeVersion(string memory versionString) pure returns (Version memory
     // Convert the versionString to bytes for manipulation
     bytes memory versionBytes = bytes(versionString);
 
-    for(uint256 i = 0; i < versionBytes.length; i++) {
-        if(versionBytes[i] == 0x2E) {
-            if(dotCount == 0) {
+    for (uint256 i = 0; i < versionBytes.length; i++) {
+        if (versionBytes[i] == 0x2E) {
+            if (dotCount == 0) {
                 major = _parseUint256(versionBytes, lastIndex, i);
-            } else if(dotCount == 1) {
+            } else if (dotCount == 1) {
                 minor = _parseUint256(versionBytes, lastIndex, i);
             }
             lastIndex = i + 1;
@@ -37,11 +37,10 @@ function decodeVersion(string memory versionString) pure returns (Version memory
 
 function _parseUint256(bytes memory b, uint256 start, uint256 end) pure returns (uint256) {
     uint256 result = 0;
-    for(uint256 i = start; i < end; i++) {
+    for (uint256 i = start; i < end; i++) {
         // Ensure the character is a digit
         require(b[i] >= 0x30 && b[i] <= 0x39, "Non-digit characters present");
         result = result * 10 + (uint256(uint8(b[i])) - 0x30);
     }
     return result;
 }
-

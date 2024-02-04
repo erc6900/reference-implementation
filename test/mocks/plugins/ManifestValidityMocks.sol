@@ -47,7 +47,6 @@ contract BadValidationMagicValue_UserOp_Plugin is BaseTestPlugin {
 }
 
 contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -88,7 +87,6 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlug
 }
 
 contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -129,7 +127,6 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugi
 }
 
 contract BadValidationMagicValue_PreExecHook_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -166,7 +163,6 @@ contract BadValidationMagicValue_PreExecHook_Plugin is BaseTestPlugin {
 }
 
 contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -202,7 +198,6 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
 }
 
 contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -232,7 +227,6 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
 }
 
 contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -262,7 +256,6 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
 }
 
 contract BadHookMagicValue_PostExecHook_Plugin is BaseTestPlugin {
-
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}

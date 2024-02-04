@@ -8,7 +8,6 @@ import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.s
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {VersionRegistry} from "../../src/plugins/VersionRegistry.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
@@ -25,7 +24,6 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract ManifestValidityTest is OptimizedTest {
     EntryPoint public entryPoint; // Just to be able to construct the factory
-    VersionRegistry public versionRegistry;
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
 
@@ -33,7 +31,6 @@ contract ManifestValidityTest is OptimizedTest {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        versionRegistry = new VersionRegistry();
         singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
 
@@ -45,8 +42,7 @@ contract ManifestValidityTest is OptimizedTest {
     // Tests that the plugin manager rejects a plugin with a user op validationFunction set to "validation always
     // allow"
     function test_ManifestValidity_invalid_ValidationAlwaysAllow_UserOpValidationFunction() public {
-        BadValidationMagicValue_UserOp_Plugin plugin =
-            new BadValidationMagicValue_UserOp_Plugin();
+        BadValidationMagicValue_UserOp_Plugin plugin = new BadValidationMagicValue_UserOp_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
@@ -95,8 +91,7 @@ contract ManifestValidityTest is OptimizedTest {
 
     // Tests that the plugin manager rejects a plugin with a pre-execution hook set to "validation always allow"
     function test_ManifestValidity_invalid_ValidationAlwaysAllow_PreExecHook() public {
-        BadValidationMagicValue_PreExecHook_Plugin plugin =
-            new BadValidationMagicValue_PreExecHook_Plugin();
+        BadValidationMagicValue_PreExecHook_Plugin plugin = new BadValidationMagicValue_PreExecHook_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
@@ -111,8 +106,7 @@ contract ManifestValidityTest is OptimizedTest {
 
     // Tests that the plugin manager rejects a plugin with a post-execution hook set to "validation always allow"
     function test_ManifestValidity_invalid_ValidationAlwaysAllow_PostExecHook() public {
-        BadValidationMagicValue_PostExecHook_Plugin plugin =
-            new BadValidationMagicValue_PostExecHook_Plugin();
+        BadValidationMagicValue_PostExecHook_Plugin plugin = new BadValidationMagicValue_PostExecHook_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
@@ -159,8 +153,7 @@ contract ManifestValidityTest is OptimizedTest {
 
     // Tests that the plugin manager rejects a plugin with a post-execution hook set to "hook always deny"
     function test_ManifestValidity_invalid_HookAlwaysDeny_PostExecHook() public {
-        BadHookMagicValue_PostExecHook_Plugin plugin =
-            new BadHookMagicValue_PostExecHook_Plugin();
+        BadHookMagicValue_PostExecHook_Plugin plugin = new BadHookMagicValue_PostExecHook_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
