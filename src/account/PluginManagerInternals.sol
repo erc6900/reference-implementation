@@ -904,7 +904,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
-        emit PluginReplaced(oldPlugin, newPlugin, true);
+        emit PluginReplaced(oldPlugin, newPlugin, onReplaceOldSuccess);
     }
 
     function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
