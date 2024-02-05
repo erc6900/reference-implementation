@@ -59,4 +59,16 @@ contract VersionRegistry is IVersionRegistry {
                     && latestVersion.patch > pluginVersion.patch
             );
     }
+
+    /// @inheritdoc IVersionRegistry
+    function isPluginCompatible(address oldPlugin, address newPlugin) external view returns (bool) {
+        Version memory oldPluginVersion = pluginVersions[oldPlugin];
+        Version memory newPluginVersion = pluginVersions[newPlugin];
+
+        return (
+            oldPluginVersion.major == newPluginVersion.major && 
+            oldPluginVersion.minor == newPluginVersion.minor && 
+            oldPluginVersion.patch != newPluginVersion.patch
+            );
+    }
 }

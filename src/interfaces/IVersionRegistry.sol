@@ -18,4 +18,10 @@ interface IVersionRegistry {
     /// @param plugin The address of the plugin.
     /// @return isNewVersionAvailable A boolean indicating whether a newer version is available.
     function isNewVersionAvailable(address plugin) external view returns (bool);
+
+    /// @notice Determines if a new plugin is a compatible patch-level upgrade of an old plugin.
+    /// @param oldPlugin The address of the existing plugin.
+    /// @param newPlugin The address of the new plugin being considered for upgrade.
+    /// @return True if the new plugin is a compatible patch-level upgrade of the old plugin, otherwise false.
+    function isPluginCompatible(address oldPlugin, address newPlugin) external view returns (bool);
 }
