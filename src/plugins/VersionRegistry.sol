@@ -31,15 +31,13 @@ contract VersionRegistry is IVersionRegistry {
         string memory versionString = IPlugin(plugin).pluginMetadata().version;
         Version memory newVersion = decodeVersion(versionString);
 
-        require(
-            (newVersion.major > latestVersion.major)
-                || (newVersion.major == latestVersion.major && newVersion.minor > latestVersion.minor)
-                || (
-                    newVersion.major == latestVersion.major && newVersion.minor == latestVersion.minor
-                        && newVersion.patch > latestVersion.patch
-                ),
-            "VersionRegistry: New version must be higher than the current latest version"
-        );
+        if (
+            (newVersion.major < latestVersion.major)
+            || (newVersion.major == latestVersion.major && newVersion.minor < latestVersion.minor)
+            || (newVersion.major == latestVersion.major && newVersion.minor == latestVersion.minor && newVersion.patch < latestVersion.patch)
+        ) {
+            revert("VersionRegistry: New version must be higher than the current latest version");
+        }
 
         pluginVersions[plugin] = newVersion;
         latestVersion = newVersion;
