@@ -8,12 +8,16 @@ import {IPlugin} from "../interfaces/IPlugin.sol";
 /// @title VersionRegistry for plugins
 /// @notice This contract serves as a registry for version information of various plugins.
 contract VersionRegistry is IVersionRegistry {
-    /// @dev Mapping from plugin address to its version information.
-    mapping(address => Version) private pluginVersions;
     Version private latestVersion;
 
     /// @dev Address of the contract owner or authorized entity for version management.
     address private owner;
+
+    /// @dev Mapping from plugin address to its version information.
+    mapping(address => Version) private pluginVersions;
+
+    error NotCalledByOwner();
+    error InvalidVersion();
 
     /// @notice Constructor sets the initial owner of the contract.
     constructor() {
@@ -22,7 +26,9 @@ contract VersionRegistry is IVersionRegistry {
 
     /// @notice Modifier to restrict certain functions to the contract owner only.
     modifier onlyOwner() {
-        require(msg.sender == owner, "VersionRegistry: Caller is not the plugin owner");
+        if (msg.sender != owner) {
+            revert NotCalledByOwner();
+        }
         _;
     }
 
@@ -33,10 +39,9 @@ contract VersionRegistry is IVersionRegistry {
 
         if (
             (newVersion.major < latestVersion.major)
-            || (newVersion.major == latestVersion.major && newVersion.minor < latestVersion.minor)
-            || (newVersion.major == latestVersion.major && newVersion.minor == latestVersion.minor && newVersion.patch < latestVersion.patch)
+                || (newVersion.major == latestVersion.major && newVersion.minor < latestVersion.minor)
         ) {
-            revert("VersionRegistry: New version must be higher than the current latest version");
+            revert InvalidVersion();
         }
 
         pluginVersions[plugin] = newVersion;
@@ -48,7 +53,9 @@ contract VersionRegistry is IVersionRegistry {
         return pluginVersions[plugin];
     }
 
-    /// @inheritdoc IVersionRegistry
+    /// @notice Checks if there is a newer version available for a plugin.
+    /// @param plugin The address of the plugin.
+    /// @return isNewVersionAvailable A boolean indicating whether a newer version is available.
     function isNewVersionAvailable(address plugin) external view returns (bool) {
         Version memory pluginVersion = pluginVersions[plugin];
 
@@ -66,9 +73,8 @@ contract VersionRegistry is IVersionRegistry {
         Version memory newPluginVersion = pluginVersions[newPlugin];
 
         return (
-            oldPluginVersion.major == newPluginVersion.major && 
-            oldPluginVersion.minor == newPluginVersion.minor && 
-            oldPluginVersion.patch != newPluginVersion.patch
-            );
+            oldPluginVersion.major == newPluginVersion.major && oldPluginVersion.minor == newPluginVersion.minor
+                && oldPluginVersion.patch != newPluginVersion.patch
+        );
     }
 }

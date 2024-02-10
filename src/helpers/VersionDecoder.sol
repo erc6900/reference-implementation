@@ -7,6 +7,8 @@ struct Version {
     uint256 patch;
 }
 
+error NonDigitChar();
+
 function decodeVersion(string memory versionString) pure returns (Version memory) {
     uint256 major;
     uint256 minor;
@@ -39,7 +41,9 @@ function _parseUint256(bytes memory b, uint256 start, uint256 end) pure returns 
     uint256 result = 0;
     for (uint256 i = start; i < end; i++) {
         // Ensure the character is a digit
-        require(b[i] >= 0x30 && b[i] <= 0x39, "Non-digit characters present");
+        if (b[i] < 0x30 || b[i] > 0x39) {
+            revert NonDigitChar();
+        }
         result = result * 10 + (uint256(uint8(b[i])) - 0x30);
     }
     return result;
