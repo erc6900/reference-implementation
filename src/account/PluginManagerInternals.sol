@@ -653,7 +653,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         // Check if new plugin is a compatible patch-level upgrade of an old plugin.
         if (!versionRegistry.isPluginCompatible(oldPlugin, newPlugin)) {
             revert IncompatiblePluginVersion(oldPlugin, newPlugin);
-        } 
+        }
 
         // Check if the old plugin exists.
         if (!_storage.plugins.remove(oldPlugin)) {
