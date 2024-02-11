@@ -17,7 +17,7 @@ import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
-import {SimpleVersionRegistry} from "../../src/plugins/SimpleVersionRegistry.sol";
+import {SimpleVersionRegistry} from "../../src/plugins/registry/SimpleVersionRegistry.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";

@@ -3,14 +3,15 @@ pragma solidity ^0.8.19;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
-import {Version, decodeVersion} from "../helpers/VersionDecoder.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
+import {IVersionRegistry} from "../../interfaces/IVersionRegistry.sol";
+import {Version, decodeVersion} from "../../helpers/VersionDecoder.sol";
+import {IPlugin} from "../../interfaces/IPlugin.sol";
 
 /// @title SimpleVersionRegistry.sol for plugins
 /// @notice This contract serves as a registry for version information of various plugins.
 contract SimpleVersionRegistry is IVersionRegistry, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
+
     /// @dev Address of the contract owner or authorized entity for version management.
     address private owner;
 
