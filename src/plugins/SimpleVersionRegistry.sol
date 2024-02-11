@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
 import {Version, decodeVersion} from "../helpers/VersionDecoder.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
@@ -9,11 +10,12 @@ import {IPlugin} from "../interfaces/IPlugin.sol";
 /// @title SimpleVersionRegistry.sol for plugins
 /// @notice This contract serves as a registry for version information of various plugins.
 contract SimpleVersionRegistry is IVersionRegistry, Initializable {
+    using EnumerableSet for EnumerableSet.AddressSet;
     /// @dev Address of the contract owner or authorized entity for version management.
     address private owner;
 
     /// @dev Mapping to check the compatibility between plugins.
-    mapping(bytes32 nameHash => address[] compatibleVersions) internal pluginsGroup;
+    mapping(bytes32 nameHash => EnumerableSet.AddressSet compatibleVersions) internal pluginsGroup;
 
     /// @notice Event for plugin registration
     /// @param plugin Address of the plugin that is registered
@@ -41,11 +43,11 @@ contract SimpleVersionRegistry is IVersionRegistry, Initializable {
     /// @inheritdoc IVersionRegistry
     function registerPlugin(address plugin) external onlyOwner {
         bytes32 nameHash = keccak256(abi.encode(IPlugin(plugin).pluginMetadata().name));
-        address[] memory pluginGroup = pluginsGroup[nameHash];
+        EnumerableSet.AddressSet storage pluginGroup = pluginsGroup[nameHash];
 
-        if (pluginGroup.length != 0) {
+        if (pluginGroup.length() != 0) {
             // Get the version of the first registered plugin
-            address firstPlugin = pluginGroup[0];
+            address firstPlugin = pluginGroup.at(0);
             Version memory originalVersion = getPluginVersion(firstPlugin);
             Version memory version = getPluginVersion(plugin);
             if (
@@ -60,7 +62,7 @@ contract SimpleVersionRegistry is IVersionRegistry, Initializable {
             }
         }
 
-        pluginsGroup[nameHash].push(plugin);
+        pluginGroup.add(plugin);
 
         emit PluginRegistered(plugin);
     }
@@ -74,18 +76,7 @@ contract SimpleVersionRegistry is IVersionRegistry, Initializable {
     /// @inheritdoc IVersionRegistry
     function isPluginCompatible(address oldPlugin, address newPlugin) external view returns (bool isCompatible) {
         bytes32 nameHash = keccak256(abi.encode(IPlugin(oldPlugin).pluginMetadata().name));
-
-        address[] memory pluginsToCheck = pluginsGroup[nameHash];
-        for (uint256 i; i < pluginsToCheck.length;) {
-            if (newPlugin == pluginsToCheck[i]) {
-                isCompatible = true;
-                break;
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
+        isCompatible = pluginsGroup[nameHash].contains(newPlugin);
 
         return isCompatible;
     }
