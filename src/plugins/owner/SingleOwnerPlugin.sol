@@ -103,6 +103,23 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     }
 
     /// @inheritdoc BasePlugin
+    function onReplaceForOldPlugin() external override {
+        _owners[msg.sender] = address(0);
+    }
+
+    /// @inheritdoc BasePlugin
+    function onReplaceForNewPlugin(bytes calldata data) external override {
+        address newOwner = abi.decode(data, (address));
+        _owners[msg.sender] = newOwner;
+    }
+
+    /// @inheritdoc BasePlugin
+    function getDataForReplacement() external view override returns (bytes memory) {
+        address _owner = _owners[msg.sender];
+        return abi.encode(_owner);
+    }
+
+    /// @inheritdoc BasePlugin
     function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
         external
         view
@@ -239,23 +256,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         });
 
         return manifest;
-    }
-
-    /// @inheritdoc BasePlugin
-    function onReplaceForOldPlugin() external override {
-        _owners[msg.sender] = address(0);
-    }
-
-    /// @inheritdoc BasePlugin
-    function onReplaceForNewPlugin(bytes calldata data) external override {
-        address newOwner = abi.decode(data, (address));
-        _owners[msg.sender] = newOwner;
-    }
-
-    /// @inheritdoc BasePlugin
-    function getDataForReplacement() external view override returns (bytes memory) {
-        address _owner = _owners[msg.sender];
-        return abi.encode(_owner);
     }
 
     /// @inheritdoc BasePlugin
