@@ -69,7 +69,7 @@ contract SimpleVersionRegistry is IVersionRegistry, Initializable {
     }
 
     /// @inheritdoc IVersionRegistry
-    function getPluginVersion(address plugin) public view returns (Version memory) {
+    function getPluginVersion(address plugin) public pure returns (Version memory) {
         string memory versionString = IPlugin(plugin).pluginMetadata().version;
         return decodeVersion(versionString);
     }
