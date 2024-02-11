@@ -16,6 +16,7 @@ import {
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IVersionRegistry} from "../interfaces/IVersionRegistry.sol";
 import {
     AccountStorage,
     getAccountStorage,
@@ -44,6 +45,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginNotInstalled(address plugin);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
+    error IncompatiblePluginVersion(address oldPlugin, address newPlugin);
     error onReplaceForNewPluginFailed(address plugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
@@ -647,6 +649,12 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash) internal {
         AccountStorage storage _storage = getAccountStorage();
         PluginManifest memory oldManifest = IPlugin(oldPlugin).pluginManifest();
+        IVersionRegistry versionRegistry = IVersionRegistry(oldManifest.versionRegistry);
+
+        // Check if new plugin is a compatible patch-level upgrade of an old plugin.
+        if (!versionRegistry.isPluginCompatible(oldPlugin, newPlugin)) {
+            revert IncompatiblePluginVersion(oldPlugin, newPlugin);
+        }
 
         // Check if the old plugin exists.
         if (!_storage.plugins.remove(oldPlugin)) {

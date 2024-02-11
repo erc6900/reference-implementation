@@ -13,14 +13,17 @@ import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
+import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {SimpleVersionRegistry} from "../../src/plugins/SimpleVersionRegistry.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
+import {ReplacingSingleOwnerPlugin} from "../mocks/plugins/ReplacingSingleOwnerPlugin.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract UpgradeableModularAccountTest is OptimizedTest {
@@ -29,8 +32,10 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     EntryPoint public entryPoint;
     address payable public beneficiary;
     SingleOwnerPlugin public singleOwnerPlugin;
+    ReplacingSingleOwnerPlugin public replacingSingleOwnerPlugin;
     TokenReceiverPlugin public tokenReceiverPlugin;
     MSCAFactoryFixture public factory;
+    SimpleVersionRegistry public versionRegistry;
 
     address public owner1;
     uint256 public owner1Key;
@@ -46,6 +51,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
+    address internal constant BASE_PLUGIN_REGISTRY = 0x3Ce0Cbb4B0A4accCc21fC7a208d9b661d7039258;
 
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
@@ -59,8 +65,16 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         vm.deal(beneficiary, 1 wei);
 
         singleOwnerPlugin = _deploySingleOwnerPlugin();
+        replacingSingleOwnerPlugin = new ReplacingSingleOwnerPlugin();
         tokenReceiverPlugin = _deployTokenReceiverPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
+
+        // Initialize VersionRegistry
+        vm.etch(BASE_PLUGIN_REGISTRY, address(new SimpleVersionRegistry()).code);
+        versionRegistry = SimpleVersionRegistry(BASE_PLUGIN_REGISTRY);
+        versionRegistry.initialize();
+        versionRegistry.registerPlugin(address(singleOwnerPlugin));
+        versionRegistry.registerPlugin(address(replacingSingleOwnerPlugin));
 
         // Compute counterfactual address
         account1 = UpgradeableModularAccount(payable(factory.getAddress(owner1, 0)));
@@ -423,9 +437,8 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_replacePlugin_default() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner2)
 
-        SingleOwnerPlugin replacingPlugin = new SingleOwnerPlugin();
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
@@ -434,18 +447,18 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             dependencies: new FunctionReference[](0)
         });
 
-        bytes32 newManifestHash = keccak256(abi.encode(replacingPlugin.pluginManifest()));
+        bytes32 newManifestHash = keccak256(abi.encode(replacingSingleOwnerPlugin.pluginManifest()));
         vm.expectEmit(true, true, true, true);
-        emit PluginReplaced(address(singleOwnerPlugin), address(replacingPlugin), true);
+        emit PluginReplaced(address(singleOwnerPlugin), address(replacingSingleOwnerPlugin), true);
         IPluginManager(account2).replacePlugin({
             oldPlugin: address(singleOwnerPlugin),
-            newPlugin: address(replacingPlugin),
+            newPlugin: address(replacingSingleOwnerPlugin),
             newManifestHash: newManifestHash
         });
         address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(tokenReceiverPlugin));
-        assertEq(plugins[1], address(replacingPlugin));
+        assertEq(plugins[1], address(replacingSingleOwnerPlugin));
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {

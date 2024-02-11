@@ -7,7 +7,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {IPluginManager} from "../../interfaces/IPluginManager.sol";
+import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -15,10 +15,10 @@ import {
     PluginManifest,
     PluginMetadata,
     SelectorPermission
-} from "../../interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {BasePlugin} from "../BasePlugin.sol";
-import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
+} from "../../../src/interfaces/IPlugin.sol";
+import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 /// @title Single Owner Plugin
 /// @author ERC-6900 Authors
@@ -36,11 +36,11 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
+contract ReplacingSingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     using ECDSA for bytes32;
 
     string public constant NAME = "Single Owner Plugin";
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
     string public constant AUTHOR = "ERC-6900 Authors";
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
@@ -239,23 +239,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         });
 
         return manifest;
-    }
-
-    /// @inheritdoc BasePlugin
-    function onReplaceForOldPlugin() external override {
-        _owners[msg.sender] = address(0);
-    }
-
-    /// @inheritdoc BasePlugin
-    function onReplaceForNewPlugin(bytes calldata data) external override {
-        address newOwner = abi.decode(data, (address));
-        _owners[msg.sender] = newOwner;
-    }
-
-    /// @inheritdoc BasePlugin
-    function getDataForReplacement() external view override returns (bytes memory) {
-        address _owner = _owners[msg.sender];
-        return abi.encode(_owner);
     }
 
     /// @inheritdoc BasePlugin

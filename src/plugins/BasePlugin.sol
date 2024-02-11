@@ -13,6 +13,9 @@ import {IPlugin, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol
 abstract contract BasePlugin is ERC165, IPlugin {
     error NotImplemented();
 
+    /// address(bytes20(keccak256(abi.encode('BASE_VERSION_REGISTRY'))))
+    address internal constant BASE_PLUGIN_REGISTRY = 0x3Ce0Cbb4B0A4accCc21fC7a208d9b661d7039258;
+
     /// @notice Initialize plugin data for the modular account.
     /// @dev Called by the modular account during `installPlugin`.
     /// @param data Optional bytes array to be decoded and used by the plugin to setup initial plugin data for the

@@ -63,7 +63,9 @@ contract ResultConsumerPlugin is BaseTestPlugin {
     ResultCreatorPlugin public immutable resultCreator;
     RegularResultContract public immutable regularResultContract;
 
-    constructor(ResultCreatorPlugin _resultCreator, RegularResultContract _regularResultContract) {
+    constructor(ResultCreatorPlugin _resultCreator, RegularResultContract _regularResultContract)
+        BaseTestPlugin()
+    {
         resultCreator = _resultCreator;
         regularResultContract = _regularResultContract;
     }

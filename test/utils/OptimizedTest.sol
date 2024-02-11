@@ -8,6 +8,8 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {SimpleVersionRegistry} from "../../src/plugins/SimpleVersionRegistry.sol";
+import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
 /// the source contracts (excluding the test suite) via IR, and using the resulting bytecode within the tests
@@ -45,14 +47,28 @@ abstract contract OptimizedTest is Test {
     }
 
     function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
-        return _isOptimizedTest()
-            ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
-            : new SingleOwnerPlugin();
+        SingleOwnerPlugin singleOwnerPlugin;
+
+        if (_isOptimizedTest()) {
+            singleOwnerPlugin =
+                SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"));
+        } else {
+            singleOwnerPlugin = new SingleOwnerPlugin();
+        }
+
+        return singleOwnerPlugin;
     }
 
     function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
-        return _isOptimizedTest()
-            ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
-            : new TokenReceiverPlugin();
+        TokenReceiverPlugin tokenReceiverPlugin;
+
+        if (_isOptimizedTest()) {
+            tokenReceiverPlugin =
+                TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"));
+        } else {
+            tokenReceiverPlugin = new TokenReceiverPlugin();
+        }
+
+        return tokenReceiverPlugin;
     }
 }
