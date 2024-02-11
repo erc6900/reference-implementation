@@ -179,4 +179,23 @@ interface IPlugin {
     /// @dev This metadata MUST stay constant over time.
     /// @return A metadata struct describing the plugin.
     function pluginMetadata() external pure returns (PluginMetadata memory);
+
+    /// @notice Retrieves data for migrating from the old plugin to a new plugin.
+    /// @dev Called by the plugin manager during the plugin replacement process.
+    /// It should return all the necessary state information of the plugin in a serialized format.
+    /// In the case of SingleOwnerPlugin, it returns the owner's address.
+    /// @return bytes Migration data to migrate from old plugin to new plugin
+    function getDataForReplacement() external view returns (bytes memory);
+
+    /// @notice Cleans up the plugin data when the plugin is being replaced.
+    /// @dev This function is called during the plugin replacement process to allow the current (old) plugin
+    /// to clean up its data or state before being replaced. For the SingleOwnerPlugin, this might involve
+    /// resetting ownership information.
+    function onReplaceForOldPlugin() external;
+
+    /// @notice Initialize new plugin with migrated data.
+    /// @dev Called during the plugin replacement process. This function initializes the state of the new plugin
+    /// with the data provided. For SingleOwnerPlugin, it sets the new owner based on the migrated data.
+    /// @param migrationData Migrationdata from old plugin, exported form getDataForMigration() function.
+    function onReplaceForNewPlugin(bytes memory migrationData) external;
 }

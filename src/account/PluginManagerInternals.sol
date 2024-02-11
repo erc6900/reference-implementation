@@ -44,6 +44,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginNotInstalled(address plugin);
     error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
+    error onReplaceForNewPluginFailed(address plugin, bytes revertReason);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {
@@ -886,10 +887,24 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         delete _storage.pluginData[oldPlugin];
 
-        // @TODO: Apply Data migration
+        // Retrieve data from the old plugin for migration
+        bytes memory migrationData = IPlugin(oldPlugin).getDataForMigration();
+
+        // Call the old plugin's clean-up function
+        bool onReplaceOldSuccess = true;
+        try IPlugin(oldPlugin).onReplaceForOldPlugin() {}
+        catch {
+            onReplaceOldSuccess = false;
+        }
+
+        // Pass the migration data to the new plugin
+        try IPlugin(newPlugin).onReplaceForNewPlugin(migrationData) {}
+        catch (bytes memory revertReason) {
+            revert onReplaceForNewPluginFailed(newPlugin, revertReason);
+        }
 
         // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
-        emit PluginReplaced(oldPlugin, newPlugin, true);
+        emit PluginReplaced(oldPlugin, newPlugin, onReplaceOldSuccess);
     }
 
     function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
