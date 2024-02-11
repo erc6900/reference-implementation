@@ -437,7 +437,8 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_replacePlugin_default() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner2)
+
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
