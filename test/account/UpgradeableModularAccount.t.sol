@@ -477,6 +477,22 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         //@TODO: Add replacePlugin test for SingleOwnerPlugin
     }
 
+    function test_replacePlugin_SingleOwner() public {
+        vm.startPrank(owner2);
+
+        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
+        IPluginManager(account2).installPlugin({
+            plugin: address(tokenReceiverPlugin),
+            manifestHash: manifestHash,
+            pluginInstallData: abi.encode(uint48(1 days)),
+            dependencies: new FunctionReference[](0)
+        });
+
+        SingleOwnerPlugin newSingleOwnerPlugin = _deploySingleOwnerPlugin();
+        bytes32 newManifestHash = keccak256(abi.encode(newSingleOwnerPlugin.pluginManifest()));
+        //@TODO: Add replacePlugin test for SingleOwnerPlugin
+    }
+
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
         vm.startPrank(owner2);
 
