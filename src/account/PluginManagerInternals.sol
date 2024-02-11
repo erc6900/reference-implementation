@@ -893,7 +893,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         delete _storage.pluginData[oldPlugin];
 
         // Retrieve data from the old plugin for migration
-        bytes memory migrationData = IPlugin(oldPlugin).getDataForMigration();
+        bytes memory migrationData = IPlugin(oldPlugin).getDataForReplacement();
 
         // Call the old plugin's clean-up function
         bool onReplaceOldSuccess = true;
