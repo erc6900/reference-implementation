@@ -193,9 +193,8 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
                     revert WrongTimeRangeForSession();
                 }
                 return;
-            } else {
-                revert NotAuthorized();
             }
+            revert NotAuthorized();
         }
         revert NotImplemented();
     }
@@ -204,12 +203,11 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](5);
+        manifest.executionFunctions = new bytes4[](4);
         manifest.executionFunctions[0] = this.addSessionKey.selector;
         manifest.executionFunctions[1] = this.removeSessionKey.selector;
         manifest.executionFunctions[2] = this.addSessionKeyBatch.selector;
         manifest.executionFunctions[3] = this.removeSessionKeyBatch.selector;
-        manifest.executionFunctions[4] = this.getSessionDuration.selector;
 
         ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,

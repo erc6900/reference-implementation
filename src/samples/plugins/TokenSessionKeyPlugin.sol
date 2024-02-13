@@ -28,7 +28,6 @@ import {IPluginExecutor} from "../../interfaces/IPluginExecutor.sol";
 /// permitted external calls not to be changed in the future. For other child session
 /// key plugins, there can be a set of permitted external calls according to the
 /// specific needs.
-
 contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
     string public constant NAME = "Token Session Key Plugin";
     string public constant VERSION = "1.0.0";
