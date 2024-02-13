@@ -129,8 +129,11 @@ contract ReplacingComprehensivePlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
+        manifest.executionFunctions = new bytes4[](2);
         manifest.executionFunctions[0] = this.foo.selector;
+        manifest.executionFunctions[1] = this.bar.selector;
+
+        manifest.versionRegistry = BASE_PLUGIN_REGISTRY;
 
         ManifestFunction memory fooUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
@@ -157,7 +160,7 @@ contract ReplacingComprehensivePlugin is BasePlugin {
             executionSelector: this.foo.selector,
             associatedFunction: fooRuntimeValidationFunction
         });
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: this.bar.selector,
             associatedFunction: fooRuntimeValidationFunction
         });
@@ -212,7 +215,6 @@ contract ReplacingComprehensivePlugin is BasePlugin {
             })
         });
 
-
         manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](6);
         manifest.preRuntimeValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
@@ -249,18 +251,18 @@ contract ReplacingComprehensivePlugin is BasePlugin {
         manifest.preRuntimeValidationHooks[4] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1),
-            dependencyIndex: 0 // Unused.
-        })
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1),
+                dependencyIndex: 0 // Unused.
+            })
         });
         manifest.preRuntimeValidationHooks[5] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2),
-            dependencyIndex: 0 // Unused.
-        })
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2),
+                dependencyIndex: 0 // Unused.
+            })
         });
 
         manifest.executionHooks = new ManifestExecutionHook[](2);
@@ -280,15 +282,15 @@ contract ReplacingComprehensivePlugin is BasePlugin {
         manifest.executionHooks[1] = ManifestExecutionHook({
             executionSelector: this.bar.selector,
             preExecHook: ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
-            dependencyIndex: 0 // Unused.
-        }),
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
+                dependencyIndex: 0 // Unused.
+            }),
             postExecHook: ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
-            dependencyIndex: 0 // Unused.
-        })
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
+                dependencyIndex: 0 // Unused.
+            })
         });
 
         return manifest;

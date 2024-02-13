@@ -129,6 +129,8 @@ contract ComprehensivePlugin is BasePlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
+        manifest.versionRegistry = BASE_PLUGIN_REGISTRY;
+
         ManifestFunction memory fooUserOpValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
