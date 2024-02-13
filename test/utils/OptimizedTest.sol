@@ -45,28 +45,14 @@ abstract contract OptimizedTest is Test {
     }
 
     function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
-        SingleOwnerPlugin singleOwnerPlugin;
-
-        if (_isOptimizedTest()) {
-            singleOwnerPlugin =
-                SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"));
-        } else {
-            singleOwnerPlugin = new SingleOwnerPlugin();
-        }
-
-        return singleOwnerPlugin;
+        return _isOptimizedTest()
+            ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
+            : new SingleOwnerPlugin();
     }
 
     function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
-        TokenReceiverPlugin tokenReceiverPlugin;
-
-        if (_isOptimizedTest()) {
-            tokenReceiverPlugin =
-                TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"));
-        } else {
-            tokenReceiverPlugin = new TokenReceiverPlugin();
-        }
-
-        return tokenReceiverPlugin;
+        return _isOptimizedTest()
+            ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
+            : new TokenReceiverPlugin();
     }
 }
