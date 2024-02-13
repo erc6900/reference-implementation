@@ -711,8 +711,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = newManifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
             if (i < oldManifest.permittedExecutionSelectors.length) {
-                _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])] =
-                    false;
+                _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])]
+                = false;
             }
             _storage.callPermitted[getPermittedCallKey(newPlugin, newManifest.permittedExecutionSelectors[i])] =
                 true;
@@ -751,7 +751,8 @@ abstract contract PluginManagerInternals is IPluginManager {
                         for (uint256 j = 0; j < oldExternalContractSelectorsLength;) {
                             oldPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
                                 false;
-                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
+                                true;
 
                             unchecked {
                                 ++j;
@@ -764,7 +765,8 @@ abstract contract PluginManagerInternals is IPluginManager {
                     } else {
                         uint256 newExternalContractSelectorsLength = externalCallPermission.selectors.length;
                         for (uint256 j = 0; j < newExternalContractSelectorsLength;) {
-                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
+                                true;
 
                             unchecked {
                                 ++j;
@@ -903,7 +905,10 @@ abstract contract PluginManagerInternals is IPluginManager {
                 _removeExecHooks(
                     mh.executionSelector,
                     _resolveManifestFunction(
-                        mh.preExecHook, oldPlugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                        mh.preExecHook,
+                        oldPlugin,
+                        emptyDependencies,
+                        ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                     ),
                     _resolveManifestFunction(
                         mh.postExecHook, oldPlugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
@@ -914,7 +919,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, newPlugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook,
+                    newPlugin,
+                    emptyDependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 ),
                 _resolveManifestFunction(
                     mh.postExecHook, newPlugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
