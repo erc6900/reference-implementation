@@ -649,11 +649,15 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _replacePlugin(address oldPlugin, address newPlugin, bytes32 newManifestHash) internal {
         AccountStorage storage _storage = getAccountStorage();
         PluginManifest memory oldManifest = IPlugin(oldPlugin).pluginManifest();
-        IVersionRegistry versionRegistry = IVersionRegistry(oldManifest.versionRegistry);
 
-        // Check if new plugin is a compatible patch-level upgrade of an old plugin.
-        if (!versionRegistry.isPluginCompatible(oldPlugin, newPlugin)) {
-            revert IncompatiblePluginVersion(oldPlugin, newPlugin);
+        // To avoid Stack Too Deep
+        {
+            IVersionRegistry versionRegistry = IVersionRegistry(oldManifest.versionRegistry);
+
+            // Check if new plugin is a compatible patch-level upgrade of an old plugin.
+            if (!versionRegistry.isPluginCompatible(oldPlugin, newPlugin)) {
+                revert IncompatiblePluginVersion(oldPlugin, newPlugin);
+            }
         }
 
         // Check if the old plugin exists.
@@ -694,7 +698,9 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         uint256 length = newManifest.executionFunctions.length;
         for (uint256 i = 0; i < length;) {
-            _removeExecutionFunction(oldManifest.executionFunctions[i]);
+            if (i < oldManifest.executionFunctions.length) {
+                _removeExecutionFunction(oldManifest.executionFunctions[i]);
+            }
             _setExecutionFunction(newManifest.executionFunctions[i], newPlugin);
 
             unchecked {
@@ -704,8 +710,10 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = newManifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length;) {
-            _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])] =
-                false;
+            if (i < oldManifest.permittedExecutionSelectors.length) {
+                _storage.callPermitted[getPermittedCallKey(oldPlugin, oldManifest.permittedExecutionSelectors[i])] =
+                    false;
+            }
             _storage.callPermitted[getPermittedCallKey(newPlugin, newManifest.permittedExecutionSelectors[i])] =
                 true;
 
@@ -724,28 +732,43 @@ abstract contract PluginManagerInternals is IPluginManager {
             for (uint256 i = 0; i < length;) {
                 ManifestExternalCallPermission memory externalCallPermission =
                     newManifest.permittedExternalCalls[i];
-
-                PermittedExternalCallData storage oldPermittedExternalCallData =
-                    _storage.permittedExternalCalls[IPlugin(oldPlugin)][externalCallPermission.externalAddress];
-
                 PermittedExternalCallData storage newPermittedExternalCallData =
                     _storage.permittedExternalCalls[IPlugin(newPlugin)][externalCallPermission.externalAddress];
 
-                oldPermittedExternalCallData.addressPermitted = false;
                 newPermittedExternalCallData.addressPermitted = true;
 
-                if (externalCallPermission.permitAnySelector) {
-                    oldPermittedExternalCallData.anySelectorPermitted = false;
-                    newPermittedExternalCallData.anySelectorPermitted = true;
-                } else {
-                    uint256 externalContractSelectorsLength = externalCallPermission.selectors.length;
-                    for (uint256 j = 0; j < externalContractSelectorsLength;) {
-                        oldPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
-                            false;
-                        newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+                if (i < oldManifest.permittedExternalCalls.length) {
+                    PermittedExternalCallData storage oldPermittedExternalCallData =
+                        _storage.permittedExternalCalls[IPlugin(oldPlugin)][externalCallPermission.externalAddress];
 
-                        unchecked {
-                            ++j;
+                    oldPermittedExternalCallData.addressPermitted = false;
+
+                    if (externalCallPermission.permitAnySelector) {
+                        oldPermittedExternalCallData.anySelectorPermitted = false;
+                        newPermittedExternalCallData.anySelectorPermitted = true;
+                    } else {
+                        uint256 oldExternalContractSelectorsLength = externalCallPermission.selectors.length;
+                        for (uint256 j = 0; j < oldExternalContractSelectorsLength;) {
+                            oldPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] =
+                                false;
+                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+
+                            unchecked {
+                                ++j;
+                            }
+                        }
+                    }
+                } else {
+                    if (externalCallPermission.permitAnySelector) {
+                        newPermittedExternalCallData.anySelectorPermitted = true;
+                    } else {
+                        uint256 newExternalContractSelectorsLength = externalCallPermission.selectors.length;
+                        for (uint256 j = 0; j < newExternalContractSelectorsLength;) {
+                            newPermittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
+
+                            unchecked {
+                                ++j;
+                            }
                         }
                     }
                 }
@@ -759,12 +782,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = newManifest.userOpValidationFunctions.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mv = newManifest.userOpValidationFunctions[i];
-            _removeUserOpValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction, oldPlugin, dependencies, ManifestAssociatedFunctionType.NONE
-                )
-            );
+            if (i < oldManifest.userOpValidationFunctions.length) {
+                _removeUserOpValidationFunction(
+                    mv.executionSelector,
+                    _resolveManifestFunction(
+                        mv.associatedFunction, oldPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                    )
+                );
+            }
 
             _addUserOpValidationFunction(
                 mv.executionSelector,
@@ -781,15 +806,17 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = newManifest.runtimeValidationFunctions.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mv = newManifest.runtimeValidationFunctions[i];
-            _removeRuntimeValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction,
-                    oldPlugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
-                )
-            );
+            if (i < oldManifest.runtimeValidationFunctions.length) {
+                _removeRuntimeValidationFunction(
+                    mv.executionSelector,
+                    _resolveManifestFunction(
+                        mv.associatedFunction,
+                        oldPlugin,
+                        dependencies,
+                        ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                    )
+                );
+            }
 
             _addRuntimeValidationFunction(
                 mv.executionSelector,
@@ -806,25 +833,30 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
+        // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
+        FunctionReference[] memory emptyDependencies;
+
         length = newManifest.preUserOpValidationHooks.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mh = newManifest.preUserOpValidationHooks[i];
-            _removePreUserOpValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    oldPlugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
+            if (i < oldManifest.preUserOpValidationHooks.length) {
+                _removePreUserOpValidationHook(
+                    mh.executionSelector,
+                    _resolveManifestFunction(
+                        mh.associatedFunction,
+                        oldPlugin,
+                        emptyDependencies,
+                        ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    )
+                );
+            }
 
             _addPreUserOpValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     newPlugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -837,22 +869,24 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = newManifest.preRuntimeValidationHooks.length;
         for (uint256 i = 0; i < length;) {
             ManifestAssociatedFunction memory mh = newManifest.preRuntimeValidationHooks[i];
-            _removePreRuntimeValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    oldPlugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
+            if (i < oldManifest.preRuntimeValidationHooks.length) {
+                _removePreRuntimeValidationHook(
+                    mh.executionSelector,
+                    _resolveManifestFunction(
+                        mh.associatedFunction,
+                        oldPlugin,
+                        emptyDependencies,
+                        ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    )
+                );
+            }
 
             _addPreRuntimeValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
                     mh.associatedFunction,
                     newPlugin,
-                    dependencies,
+                    emptyDependencies,
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
@@ -865,23 +899,25 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = newManifest.executionHooks.length;
         for (uint256 i = 0; i < length;) {
             ManifestExecutionHook memory mh = newManifest.executionHooks[i];
-            _removeExecHooks(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.preExecHook, oldPlugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                ),
-                _resolveManifestFunction(
-                    mh.postExecHook, oldPlugin, dependencies, ManifestAssociatedFunctionType.NONE
-                )
-            );
+            if (i < oldManifest.executionHooks.length) {
+                _removeExecHooks(
+                    mh.executionSelector,
+                    _resolveManifestFunction(
+                        mh.preExecHook, oldPlugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    ),
+                    _resolveManifestFunction(
+                        mh.postExecHook, oldPlugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
+                    )
+                );
+            }
 
             _addExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, newPlugin, dependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook, newPlugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 ),
                 _resolveManifestFunction(
-                    mh.postExecHook, newPlugin, dependencies, ManifestAssociatedFunctionType.NONE
+                    mh.postExecHook, newPlugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
 
@@ -908,7 +944,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             revert onReplaceForNewPluginFailed(newPlugin, revertReason);
         }
 
-        // @TODO: Check if onReplaceBefore succeeds and update the last parameter of the event
         emit PluginReplaced(oldPlugin, newPlugin, onReplaceOldSuccess);
     }
 

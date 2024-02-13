@@ -22,6 +22,7 @@ import {SimpleVersionRegistry} from "../../src/plugins/registry/SimpleVersionReg
 import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {ReplacingComprehensivePlugin} from "../mocks/plugins/ReplacingComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {ReplacingSingleOwnerPlugin} from "../mocks/plugins/ReplacingSingleOwnerPlugin.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -459,6 +460,26 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(tokenReceiverPlugin));
         assertEq(plugins[1], address(replacingSingleOwnerPlugin));
+    }
+
+    function test_replacePlugin_NotRegistered() public {
+        vm.startPrank(owner2);
+
+        ReplacingSingleOwnerPlugin nonRegisteredPlugin = new ReplacingSingleOwnerPlugin();
+
+        bytes32 newManifestHash = keccak256(abi.encode(nonRegisteredPlugin.pluginManifest()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PluginManagerInternals.IncompatiblePluginVersion.selector,
+                address(singleOwnerPlugin),
+                address(nonRegisteredPlugin)
+            )
+        );
+        IPluginManager(account2).replacePlugin({
+            oldPlugin: address(singleOwnerPlugin),
+            newPlugin: address(nonRegisteredPlugin),
+            newManifestHash: newManifestHash
+        });
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {

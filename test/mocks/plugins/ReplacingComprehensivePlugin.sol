@@ -14,7 +14,7 @@ import {
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
-contract ComprehensivePlugin is BasePlugin {
+contract ReplacingComprehensivePlugin is BasePlugin {
     enum FunctionId {
         PRE_USER_OP_VALIDATION_HOOK_1,
         PRE_USER_OP_VALIDATION_HOOK_2,
@@ -29,7 +29,7 @@ contract ComprehensivePlugin is BasePlugin {
     }
 
     string public constant NAME = "Comprehensive Plugin";
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
     string public constant AUTHOR = "ERC-6900 Authors";
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -37,6 +37,9 @@ contract ComprehensivePlugin is BasePlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     function foo() external {}
+
+    // Newly added execution function
+    function bar() external {}
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin interface functions    ┃
@@ -134,9 +137,13 @@ contract ComprehensivePlugin is BasePlugin {
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](2);
         manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
+            associatedFunction: fooUserOpValidationFunction
+        });
+        manifest.userOpValidationFunctions[1] = ManifestAssociatedFunction({
+            executionSelector: this.bar.selector,
             associatedFunction: fooUserOpValidationFunction
         });
 
@@ -145,13 +152,17 @@ contract ComprehensivePlugin is BasePlugin {
             functionId: uint8(FunctionId.RUNTIME_VALIDATION),
             dependencyIndex: 0 // Unused.
         });
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](2);
         manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: fooRuntimeValidationFunction
         });
+        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+            executionSelector: this.bar.selector,
+            associatedFunction: fooRuntimeValidationFunction
+        });
 
-        manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](4);
+        manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](6);
         manifest.preUserOpValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
@@ -184,8 +195,25 @@ contract ComprehensivePlugin is BasePlugin {
                 dependencyIndex: 0 // Unused.
             })
         });
+        manifest.preUserOpValidationHooks[4] = ManifestAssociatedFunction({
+            executionSelector: this.bar.selector,
+            associatedFunction: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_1),
+                dependencyIndex: 0 // Unused.
+            })
+        });
+        manifest.preUserOpValidationHooks[5] = ManifestAssociatedFunction({
+            executionSelector: this.bar.selector,
+            associatedFunction: ManifestFunction({
+                functionType: ManifestAssociatedFunctionType.SELF,
+                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_2),
+                dependencyIndex: 0 // Unused.
+            })
+        });
 
-        manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](4);
+
+        manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](6);
         manifest.preRuntimeValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
@@ -218,8 +246,24 @@ contract ComprehensivePlugin is BasePlugin {
                 dependencyIndex: 0 // Unused.
             })
         });
+        manifest.preRuntimeValidationHooks[4] = ManifestAssociatedFunction({
+            executionSelector: this.foo.selector,
+            associatedFunction: ManifestFunction({
+            functionType: ManifestAssociatedFunctionType.SELF,
+            functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1),
+            dependencyIndex: 0 // Unused.
+        })
+        });
+        manifest.preRuntimeValidationHooks[5] = ManifestAssociatedFunction({
+            executionSelector: this.foo.selector,
+            associatedFunction: ManifestFunction({
+            functionType: ManifestAssociatedFunctionType.SELF,
+            functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2),
+            dependencyIndex: 0 // Unused.
+        })
+        });
 
-        manifest.executionHooks = new ManifestExecutionHook[](1);
+        manifest.executionHooks = new ManifestExecutionHook[](2);
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
             preExecHook: ManifestFunction({
@@ -232,6 +276,19 @@ contract ComprehensivePlugin is BasePlugin {
                 functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
                 dependencyIndex: 0 // Unused.
             })
+        });
+        manifest.executionHooks[1] = ManifestExecutionHook({
+            executionSelector: this.bar.selector,
+            preExecHook: ManifestFunction({
+            functionType: ManifestAssociatedFunctionType.SELF,
+            functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
+            dependencyIndex: 0 // Unused.
+        }),
+            postExecHook: ManifestFunction({
+            functionType: ManifestAssociatedFunctionType.SELF,
+            functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
+            dependencyIndex: 0 // Unused.
+        })
         });
 
         return manifest;
