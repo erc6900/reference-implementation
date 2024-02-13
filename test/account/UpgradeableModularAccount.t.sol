@@ -9,7 +9,7 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -17,11 +17,12 @@ import {IVersionRegistry} from "../../src/interfaces/IVersionRegistry.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
-import {SimpleVersionRegistry} from "../../src/plugins/SimpleVersionRegistry.sol";
+import {SimpleVersionRegistry} from "../../src/plugins/registry/SimpleVersionRegistry.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {ReplacingComprehensivePlugin} from "../mocks/plugins/ReplacingComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {ReplacingSingleOwnerPlugin} from "../mocks/plugins/ReplacingSingleOwnerPlugin.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -437,7 +438,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_replacePlugin_default() public {
-        vm.startPrank(owner2)
+        vm.startPrank(owner2);
 
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
         IPluginManager(account2).installPlugin({
@@ -459,6 +460,62 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(tokenReceiverPlugin));
         assertEq(plugins[1], address(replacingSingleOwnerPlugin));
+    }
+
+    function test_replacePlugin_NotRegistered() public {
+        vm.startPrank(owner2);
+
+        ReplacingSingleOwnerPlugin nonRegisteredPlugin = new ReplacingSingleOwnerPlugin();
+
+        bytes32 newManifestHash = keccak256(abi.encode(nonRegisteredPlugin.pluginManifest()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PluginManagerInternals.IncompatiblePluginVersion.selector,
+                address(singleOwnerPlugin),
+                address(nonRegisteredPlugin)
+            )
+        );
+        IPluginManager(account2).replacePlugin({
+            oldPlugin: address(singleOwnerPlugin),
+            newPlugin: address(nonRegisteredPlugin),
+            newManifestHash: newManifestHash
+        });
+    }
+
+    function test_replacePlugin_AddFunctionality() public {
+        ComprehensivePlugin compPlugin = new ComprehensivePlugin();
+        ReplacingComprehensivePlugin replacingCompPlugin = new ReplacingComprehensivePlugin();
+        versionRegistry.registerPlugin(address(compPlugin));
+        versionRegistry.registerPlugin(address(replacingCompPlugin));
+
+        vm.startPrank(owner2);
+        bytes32 manifestHash = keccak256(abi.encode(compPlugin.pluginManifest()));
+        IPluginManager(account2).installPlugin({
+            plugin: address(compPlugin),
+            manifestHash: manifestHash,
+            pluginInstallData: "",
+            dependencies: new FunctionReference[](0)
+        });
+
+        bytes32 newManifestHash = keccak256(abi.encode(replacingCompPlugin.pluginManifest()));
+        IPluginManager(account2).replacePlugin({
+            oldPlugin: address(compPlugin),
+            newPlugin: address(replacingCompPlugin),
+            newManifestHash: newManifestHash
+        });
+
+        IAccountLoupe.ExecutionFunctionConfig memory execConfig =
+            IAccountLoupe(account2).getExecutionFunctionConfig(replacingCompPlugin.bar.selector);
+        assertEq(execConfig.plugin, address(replacingCompPlugin));
+        (address a, uint8 barUserOpValidationFunctionId) =
+            FunctionReferenceLib.unpack(execConfig.userOpValidationFunction);
+        uint8 userOpValidationFunctionId =
+            replacingCompPlugin.pluginManifest().userOpValidationFunctions[1].associatedFunction.functionId;
+        assertEq(userOpValidationFunctionId, barUserOpValidationFunctionId);
+
+        IAccountLoupe.ExecutionHooks[] memory hooks =
+            IAccountLoupe(account2).getExecutionHooks(replacingCompPlugin.bar.selector);
+        assertEq(hooks.length, 1);
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
