@@ -358,13 +358,13 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
 
     function _castToBytes32(address addr, bytes4 b4) internal pure returns (bytes32 res) {
         assembly {
-            res := or(shl(96, addr), b4)
+            res := or(shl(32, addr), b4)
         }
     }
 
     function _castToAddressAndBytes4(bytes32 b32) internal pure returns (address addr, bytes4 b4) {
         assembly {
-            addr := shr(96, b32)
+            addr := shr(32, b32)
             b4 := and(b32, 0xFFFFFFFF)
         }
     }
