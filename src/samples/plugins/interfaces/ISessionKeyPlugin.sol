@@ -33,7 +33,7 @@ interface IModularSessionKeyPlugin {
     /// @param _untils The times until which the owners are valid.
     event SessionKeysAdded(
         address indexed account,
-        address[] indexed sessionKeys,
+        address[] sessionKeys,
         bytes4[] selectors,
         uint48[] _afters,
         uint48[] _untils
@@ -43,7 +43,7 @@ interface IModularSessionKeyPlugin {
     /// @param account The account whose session keys are updated.
     /// @param sessionKeys The addresses of the session keys.
     /// @param selectors The selectors of the functions that the session keys are allowed to call.
-    event SessionKeysRemoved(address indexed account, address[] indexed sessionKeys, bytes4[] selectors);
+    event SessionKeysRemoved(address indexed account, address[] sessionKeys, bytes4[] selectors);
 
     error InvalidSignature();
     error NotAuthorized();
