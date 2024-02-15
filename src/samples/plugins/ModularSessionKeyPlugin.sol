@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {UpgradeableModularAccount} from "../../account/UpgradeableModularAccount.sol";
 import {
@@ -35,12 +36,15 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     using ECDSA for bytes32;
     using PluginStorageLib for address;
     using PluginStorageLib for bytes;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     string public constant NAME = "Modular Session Key Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "Decipher ERC-6900 Team";
 
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
+    mapping(address account => EnumerableSet.Bytes32Set) private _sessionKeySet;
 
     struct SessionInfo {
         uint48 validAfter;
@@ -52,46 +56,46 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc IModularSessionKeyPlugin
-    function addSessionKey(address tempOwner, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil)
+    function addSessionKey(address sessionKey, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil)
         external
     {
-        _addSessionKey(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
-        emit SessionKeyAdded(msg.sender, tempOwner, allowedSelector, validAfter, validUntil);
+        _addSessionKey(msg.sender, sessionKey, allowedSelector, validAfter, validUntil);
+        emit SessionKeyAdded(msg.sender, sessionKey, allowedSelector, validAfter, validUntil);
     }
 
     /// @inheritdoc IModularSessionKeyPlugin
-    function removeSessionKey(address tempOwner, bytes4 allowedSelector) external {
-        _removeSessionKey(msg.sender, tempOwner, allowedSelector);
-        emit SessionKeyRemoved(msg.sender, tempOwner, allowedSelector);
+    function removeSessionKey(address sessionKey, bytes4 allowedSelector) external {
+        _removeSessionKey(msg.sender, sessionKey, allowedSelector);
+        emit SessionKeyRemoved(msg.sender, sessionKey, allowedSelector);
     }
 
     /// @inheritdoc IModularSessionKeyPlugin
     function addSessionKeyBatch(
-        address[] calldata tempOwners,
+        address[] calldata sessionKeys,
         bytes4[] calldata allowedSelectors,
         uint48[] calldata validAfters,
         uint48[] calldata validUntils
     ) external {
         if (
-            tempOwners.length != allowedSelectors.length || tempOwners.length != validAfters.length
-                || tempOwners.length != validUntils.length
+            sessionKeys.length != allowedSelectors.length || sessionKeys.length != validAfters.length
+                || sessionKeys.length != validUntils.length
         ) {
             revert WrongDataLength();
         }
-        for (uint256 i = 0; i < tempOwners.length; i++) {
-            _addSessionKey(msg.sender, tempOwners[i], allowedSelectors[i], validAfters[i], validUntils[i]);
+        for (uint256 i = 0; i < sessionKeys.length; i++) {
+            _addSessionKey(msg.sender, sessionKeys[i], allowedSelectors[i], validAfters[i], validUntils[i]);
         }
-        emit SessionKeysAdded(msg.sender, tempOwners, allowedSelectors, validAfters, validUntils);
+        emit SessionKeysAdded(msg.sender, sessionKeys, allowedSelectors, validAfters, validUntils);
     }
 
-    function removeSessionKeyBatch(address[] calldata tempOwners, bytes4[] calldata allowedSelectors) external {
-        if (tempOwners.length != allowedSelectors.length) {
+    function removeSessionKeyBatch(address[] calldata sessionKeys, bytes4[] calldata allowedSelectors) external {
+        if (sessionKeys.length != allowedSelectors.length) {
             revert WrongDataLength();
         }
-        for (uint256 i = 0; i < tempOwners.length; i++) {
-            _removeSessionKey(msg.sender, tempOwners[i], allowedSelectors[i]);
+        for (uint256 i = 0; i < sessionKeys.length; i++) {
+            _removeSessionKey(msg.sender, sessionKeys[i], allowedSelectors[i]);
         }
-        emit SessionKeysRemoved(msg.sender, tempOwners, allowedSelectors);
+        emit SessionKeysRemoved(msg.sender, sessionKeys, allowedSelectors);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -99,16 +103,31 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc IModularSessionKeyPlugin
-    function getSessionDuration(address account, address tempOwner, bytes4 allowedSelector)
+    function getSessionDuration(address account, address sessionKey, bytes4 allowedSelector)
         external
         view
-        returns (uint48 _validAfter, uint48 _validUntil)
+        returns (uint48 validAfter, uint48 validUntil)
     {
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
-        _validAfter = sessionInfo.validAfter;
-        _validUntil = sessionInfo.validUntil;
+        validAfter = sessionInfo.validAfter;
+        validUntil = sessionInfo.validUntil;
+    }
+
+    /// @inheritdoc IModularSessionKeyPlugin
+    function getSessionKeysAndSelectors(address account)
+        external
+        view
+        returns (address[] memory sessionKeys, bytes4[] memory selectors)
+    {
+        EnumerableSet.Bytes32Set storage sessionKeySet = _sessionKeySet[account];
+        uint256 length = sessionKeySet.length();
+        sessionKeys = new address[](length);
+        selectors = new bytes4[](length);
+        for (uint256 i = 0; i < length; i++) {
+            (sessionKeys[i], selectors[i]) = _castToAddressAndBytes4(sessionKeySet.at(i));
+        }
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -119,33 +138,37 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     function onInstall(bytes calldata data) external override {
         if (data.length != 0) {
             (
-                address[] memory tempOwners,
+                address[] memory sessionKeys,
                 bytes4[] memory allowedSelectors,
                 uint48[] memory validAfters,
                 uint48[] memory validUntils
             ) = abi.decode(data, (address[], bytes4[], uint48[], uint48[]));
             if (
-                tempOwners.length != allowedSelectors.length || tempOwners.length != validAfters.length
-                    || tempOwners.length != validUntils.length
+                sessionKeys.length != allowedSelectors.length || sessionKeys.length != validAfters.length
+                    || sessionKeys.length != validUntils.length
             ) {
                 revert WrongDataLength();
             }
-            for (uint256 i = 0; i < tempOwners.length; i++) {
-                _addSessionKey(msg.sender, tempOwners[i], allowedSelectors[i], validAfters[i], validUntils[i]);
+            for (uint256 i = 0; i < sessionKeys.length;) {
+                _addSessionKey(msg.sender, sessionKeys[i], allowedSelectors[i], validAfters[i], validUntils[i]);
+
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
 
     /// @inheritdoc BasePlugin
-    function onUninstall(bytes calldata data) external override {
-        if (data.length != 0) {
-            (address[] memory tempOwners, bytes4[] memory allowedSelectors) =
-                abi.decode(data, (address[], bytes4[]));
-            if (tempOwners.length != allowedSelectors.length) {
-                revert WrongDataLength();
-            }
-            for (uint256 i = 0; i < tempOwners.length; i++) {
-                _removeSessionKey(msg.sender, tempOwners[i], allowedSelectors[i]);
+    function onUninstall(bytes calldata) external override {
+        EnumerableSet.Bytes32Set storage sessionKeySet = _sessionKeySet[msg.sender];
+        uint256 length = sessionKeySet.length();
+        for (uint256 i = 0; i < length;) {
+            (address sessionKey, bytes4 allowedSelecor) = _castToAddressAndBytes4(sessionKeySet.at(i));
+            _removeSessionKey(msg.sender, sessionKey, allowedSelecor);
+
+            unchecked {
+                ++i;
             }
         }
     }
@@ -158,18 +181,19 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         returns (uint256)
     {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
-            (address signer,) = userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
+            (address signer, ECDSA.RecoverError err) =
+                userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
+            if (err != ECDSA.RecoverError.NoError) {
+                revert InvalidSignature();
+            }
             bytes4 selector = bytes4(userOp.callData[0:4]);
-            bytes memory key = userOp.sender.allocateAssociatedStorageKey(0, 1);
+            bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
             StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(signer, selector)));
             SessionInfo storage duration = _castPtrToStruct(ptr);
             uint48 validAfter = duration.validAfter;
             uint48 validUntil = duration.validUntil;
 
-            if (validUntil != 0) {
-                return _packValidationData(false, validUntil, validAfter);
-            }
-            return _SIG_VALIDATION_FAILED;
+            return _packValidationData(validUntil == 0, validUntil, validAfter);
         }
         revert NotImplemented();
     }
@@ -182,7 +206,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     {
         if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)) {
             bytes4 selector = bytes4(data[0:4]);
-            bytes memory key = address(msg.sender).allocateAssociatedStorageKey(0, 1);
+            bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
             StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
             SessionInfo storage duration = _castPtrToStruct(ptr);
             uint48 validAfter = duration.validAfter;
@@ -297,7 +321,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
 
     function _addSessionKey(
         address account,
-        address tempOwner,
+        address sessionKey,
         bytes4 allowedSelector,
         uint48 _validAfter,
         uint48 _validUntil
@@ -306,23 +330,42 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
             revert WrongTimeRangeForSession();
         }
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
         sessionInfo.validAfter = _validAfter;
         sessionInfo.validUntil = _validUntil;
+
+        EnumerableSet.Bytes32Set storage sessionKeySet = _sessionKeySet[account];
+        sessionKeySet.add(_castToBytes32(sessionKey, allowedSelector));
     }
 
-    function _removeSessionKey(address account, address tempOwner, bytes4 allowedSelector) internal {
+    function _removeSessionKey(address account, address sessionKey, bytes4 allowedSelector) internal {
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(tempOwner, allowedSelector)));
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
         sessionInfo.validAfter = 0;
         sessionInfo.validUntil = 0;
+
+        EnumerableSet.Bytes32Set storage sessionKeySet = _sessionKeySet[account];
+        sessionKeySet.remove(_castToBytes32(sessionKey, allowedSelector));
     }
 
     function _castPtrToStruct(StoragePointer ptr) internal pure returns (SessionInfo storage val) {
         assembly ("memory-safe") {
             val.slot := ptr
+        }
+    }
+
+    function _castToBytes32(address addr, bytes4 b4) internal pure returns (bytes32 res) {
+        assembly {
+            res := or(shl(96, addr), b4)
+        }
+    }
+
+    function _castToAddressAndBytes4(bytes32 b32) internal pure returns (address addr, bytes4 b4) {
+        assembly {
+            addr := shr(96, b32)
+            b4 := and(b32, 0xFFFFFFFF)
         }
     }
 

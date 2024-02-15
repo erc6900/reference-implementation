@@ -105,10 +105,10 @@ contract ModularSessionKeyPluginTest is Test {
         vm.startPrank(owner);
         FunctionReference[] memory modularSessionDependency = new FunctionReference[](2);
         modularSessionDependency[0] = FunctionReferenceLib.pack(
-            address(ownerPlugin), (uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER))
+            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER)
         );
         modularSessionDependency[1] = FunctionReferenceLib.pack(
-            address(ownerPlugin), (uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF))
+            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF)
         );
 
         bytes32 modularSessionKeyManifestHash = keccak256(abi.encode(modularSessionKeyPlugin.pluginManifest()));
@@ -328,8 +328,6 @@ contract ModularSessionKeyPluginTest is Test {
         bytes4[] memory allowedSelectors = new bytes4[](1);
         allowedSelectors[0] = TRANSFERFROM_SESSIONKEY_SELECTOR;
 
-        bytes memory data = abi.encode(tempOwners, allowedSelectors);
-
         vm.startPrank(owner);
 
         vm.expectEmit(true, true, true, true);
@@ -346,7 +344,7 @@ contract ModularSessionKeyPluginTest is Test {
         account.uninstallPlugin({
             plugin: address(modularSessionKeyPlugin),
             config: bytes(""),
-            pluginUninstallData: data
+            pluginUninstallData: ""
         });
 
         vm.stopPrank();
