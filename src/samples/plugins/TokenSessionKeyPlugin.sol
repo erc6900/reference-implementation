@@ -92,12 +92,8 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         });
 
         manifest.dependencyInterfaceIds = new bytes4[](2);
-        for (uint256 i = 0; i < manifest.dependencyInterfaceIds.length;) {
-            manifest.dependencyInterfaceIds[i] = type(IModularSessionKeyPlugin).interfaceId;
-            unchecked {
-                ++i;
-            }
-        }
+        manifest.dependencyInterfaceIds[0] = type(IModularSessionKeyPlugin).interfaceId;
+        manifest.dependencyInterfaceIds[1] = type(IModularSessionKeyPlugin).interfaceId;
 
         bytes4[] memory permittedExternalSelectors = new bytes4[](1);
         permittedExternalSelectors[0] = TRANSFERFROM_SELECTOR;

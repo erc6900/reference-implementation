@@ -13,10 +13,10 @@ interface IModularSessionKeyPlugin {
     /// @param account The account whose session key is updated.
     /// @param sessionKey The address of the session key.
     /// @param selector The selector of the function that the session key is allowed to call.
-    /// @param _after The time after which the owner is valid.
-    /// @param _until The time until which the owner is valid.
+    /// @param validAfter The time after which the owner is valid.
+    /// @param validUntil The time until which the owner is valid.
     event SessionKeyAdded(
-        address indexed account, address indexed sessionKey, bytes4 selector, uint48 _after, uint48 _until
+        address indexed account, address indexed sessionKey, bytes4 selector, uint48 validAfter, uint48 validUntil
     );
 
     /// @notice This event is emitted when a session key is removed from the account.
@@ -29,14 +29,14 @@ interface IModularSessionKeyPlugin {
     /// @param account The account whose session keys are updated.
     /// @param sessionKeys The addresses of the session keys.
     /// @param selectors The selectors of the functions that the session keys are allowed to call.
-    /// @param _afters The times after which the owners are valid.
-    /// @param _untils The times until which the owners are valid.
+    /// @param validAfters The times after which the owners are valid.
+    /// @param validUntils The times until which the owners are valid.
     event SessionKeysAdded(
         address indexed account,
         address[] sessionKeys,
         bytes4[] selectors,
-        uint48[] _afters,
-        uint48[] _untils
+        uint48[] validAfters,
+        uint48[] validUntils
     );
 
     /// @notice This event is emitted when session keys are removed from the account.
@@ -56,9 +56,9 @@ interface IModularSessionKeyPlugin {
     /// is passed as a parameter, which enforces its own permissions on the calls it can make.
     /// @param sessionKey The address of the session key.
     /// @param allowedSelector The selector of the function that the session key is allowed to call.
-    /// @param _after The time after which the owner is valid.
-    /// @param _until The time until which the owner is valid.
-    function addSessionKey(address sessionKey, bytes4 allowedSelector, uint48 _after, uint48 _until) external;
+    /// @param validAfter The time after which the owner is valid.
+    /// @param validUntil The time until which the owner is valid.
+    function addSessionKey(address sessionKey, bytes4 allowedSelector, uint48 validAfter, uint48 validUntil) external;
 
     /// @notice Remove a session key from the account.
     /// @dev This function is installed on the account as part of plugin installation, and should
@@ -72,13 +72,13 @@ interface IModularSessionKeyPlugin {
     /// only be called from an account.
     /// @param sessionKeys The addresses of the session keys.
     /// @param allowedSelectors The selectors of the functions that the session keys are allowed to call.
-    /// @param _afters The times after which the owners are valid.
-    /// @param _untils The times until which the owners are valid.
+    /// @param validAfters The times after which the owners are valid.
+    /// @param validUntils The times until which the owners are valid.
     function addSessionKeyBatch(
         address[] calldata sessionKeys,
         bytes4[] calldata allowedSelectors,
-        uint48[] calldata _afters,
-        uint48[] calldata _untils
+        uint48[] calldata validAfters,
+        uint48[] calldata validUntils
     ) external;
 
     /// @notice Remove session keys from the account.
@@ -95,7 +95,7 @@ interface IModularSessionKeyPlugin {
     function getSessionDuration(address account, address sessionKey, bytes4 allowedSelector)
         external
         view
-        returns (uint48 _after, uint48 _until);
+        returns (uint48 validAfter, uint48 validUntil);
 
     /// @notice Get all session keys and selectors for a given account.
     /// @param account The account to get session keys and selectors for.

@@ -82,8 +82,12 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         ) {
             revert WrongDataLength();
         }
-        for (uint256 i = 0; i < sessionKeys.length; i++) {
+        for (uint256 i = 0; i < sessionKeys.length;) {
             _addSessionKey(msg.sender, sessionKeys[i], allowedSelectors[i], validAfters[i], validUntils[i]);
+
+            unchecked {
+                ++i;
+            }
         }
         emit SessionKeysAdded(msg.sender, sessionKeys, allowedSelectors, validAfters, validUntils);
     }
@@ -92,8 +96,12 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         if (sessionKeys.length != allowedSelectors.length) {
             revert WrongDataLength();
         }
-        for (uint256 i = 0; i < sessionKeys.length; i++) {
+        for (uint256 i = 0; i < sessionKeys.length;) {
             _removeSessionKey(msg.sender, sessionKeys[i], allowedSelectors[i]);
+
+            unchecked {
+                ++i;
+            }
         }
         emit SessionKeysRemoved(msg.sender, sessionKeys, allowedSelectors);
     }
@@ -125,8 +133,12 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         uint256 length = sessionKeySet.length();
         sessionKeys = new address[](length);
         selectors = new bytes4[](length);
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length;) {
             (sessionKeys[i], selectors[i]) = _castToAddressAndBytes4(sessionKeySet.at(i));
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -323,17 +335,17 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         address account,
         address sessionKey,
         bytes4 allowedSelector,
-        uint48 _validAfter,
-        uint48 _validUntil
+        uint48 validAfter,
+        uint48 validUntil
     ) internal {
-        if (_validUntil <= _validAfter) {
+        if (validUntil <= validAfter) {
             revert WrongTimeRangeForSession();
         }
         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
-        sessionInfo.validAfter = _validAfter;
-        sessionInfo.validUntil = _validUntil;
+        sessionInfo.validAfter = validAfter;
+        sessionInfo.validUntil = validUntil;
 
         EnumerableSet.Bytes32Set storage sessionKeySet = _sessionKeySet[account];
         sessionKeySet.add(_castToBytes32(sessionKey, allowedSelector));
