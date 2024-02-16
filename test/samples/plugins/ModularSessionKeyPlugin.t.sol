@@ -61,11 +61,7 @@ contract ModularSessionKeyPluginTest is Test {
     );
     event SessionKeyRemoved(address indexed account, address indexed sessionKey, bytes4 allowedSelector);
     event SessionKeysAdded(
-        address indexed account,
-        address[] sessionKeys,
-        bytes4[] allowedSelectors,
-        uint48[] afters,
-        uint48[] untils
+        address indexed account, address[] sessionKeys, bytes4[] allowedSelectors, uint48[] afters, uint48[] untils
     );
     event SessionKeysRemoved(address indexed account, address[] sessionKeys, bytes4[] allowedSelectors);
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSuccess);
