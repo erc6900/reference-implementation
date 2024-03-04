@@ -8,7 +8,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {AccountStorage, getAccountStorage, HookGroup, toFunctionReferenceArray} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, SelectorData, toFunctionReferenceArray} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
@@ -43,14 +43,14 @@ abstract contract AccountLoupe is IAccountLoupe {
 
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
-        HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
-        uint256 preExecHooksLength = hooks.preHooks.length();
-        uint256 postOnlyExecHooksLength = hooks.postOnlyHooks.length();
+        SelectorData storage selectorData = getAccountStorage().selectorData[selector];
+        uint256 preExecHooksLength = selectorData.preHooks.length();
+        uint256 postOnlyExecHooksLength = selectorData.postOnlyHooks.length();
         uint256 maxExecHooksLength = postOnlyExecHooksLength;
 
         // There can only be as many associated post hooks to run as there are pre hooks.
         for (uint256 i = 0; i < preExecHooksLength;) {
-            (, uint256 count) = hooks.preHooks.at(i);
+            (, uint256 count) = selectorData.preHooks.at(i);
             unchecked {
                 maxExecHooksLength += (count + 1);
                 ++i;
@@ -62,14 +62,14 @@ abstract contract AccountLoupe is IAccountLoupe {
         uint256 actualExecHooksLength;
 
         for (uint256 i = 0; i < preExecHooksLength;) {
-            (bytes32 key,) = hooks.preHooks.at(i);
+            (bytes32 key,) = selectorData.preHooks.at(i);
             FunctionReference preExecHook = FunctionReference.wrap(bytes21(key));
 
-            uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
+            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
                 for (uint256 j = 0; j < associatedPostExecHooksLength;) {
                     execHooks[actualExecHooksLength].preExecHook = preExecHook;
-                    (key,) = hooks.associatedPostHooks[preExecHook].at(j);
+                    (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
                     execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
 
                     unchecked {
@@ -91,7 +91,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         }
 
         for (uint256 i = 0; i < postOnlyExecHooksLength;) {
-            (bytes32 key,) = hooks.postOnlyHooks.at(i);
+            (bytes32 key,) = selectorData.postOnlyHooks.at(i);
             execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
 
             unchecked {

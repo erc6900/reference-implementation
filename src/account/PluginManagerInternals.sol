@@ -21,7 +21,6 @@ import {
     getAccountStorage,
     SelectorData,
     getPermittedCallKey,
-    HookGroup,
     PermittedExternalCallData
 } from "./AccountStorage.sol";
 
@@ -126,25 +125,11 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _addHooks(_selectorData.executionHooks, preExecHook, postExecHook);
-    }
-
-    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _removeHooks(_selectorData.executionHooks, preExecHook, postExecHook);
-    }
-
-    function _addHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
         if (!preExecHook.isEmpty()) {
-            _addOrIncrement(hooks.preHooks, _toSetValue(preExecHook));
+            _addOrIncrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
-                _addOrIncrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+                _addOrIncrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
             if (postExecHook.isEmpty()) {
@@ -152,24 +137,26 @@ abstract contract PluginManagerInternals is IPluginManager {
                 revert NullFunctionReference();
             }
 
-            _addOrIncrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
+            _addOrIncrement(_selectorData.postOnlyHooks, _toSetValue(postExecHook));
         }
     }
 
-    function _removeHooks(HookGroup storage hooks, FunctionReference preExecHook, FunctionReference postExecHook)
+    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
         internal
     {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+
         if (!preExecHook.isEmpty()) {
-            _removeOrDecrement(hooks.preHooks, _toSetValue(preExecHook));
+            _removeOrDecrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
-                _removeOrDecrement(hooks.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+                _removeOrDecrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
             // The case where both pre and post hooks are null was checked during installation.
 
             // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            _removeOrDecrement(hooks.postOnlyHooks, _toSetValue(postExecHook));
+            _removeOrDecrement(_selectorData.postOnlyHooks, _toSetValue(postExecHook));
         }
     }
 
