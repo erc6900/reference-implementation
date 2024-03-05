@@ -129,8 +129,7 @@ contract ModularSessionKeyPluginTest is Test {
 
         FunctionReference[] memory tokenSessionDependency = new FunctionReference[](1);
         tokenSessionDependency[0] = FunctionReferenceLib.pack(
-            address(modularSessionKeyPlugin),
-            uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
+            address(modularSessionKeyPlugin), uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
         );
         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 

@@ -302,7 +302,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addValidationFunction(
                 mv.executionSelector,
                 _resolveManifestFunction(
-                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                    mv.associatedFunction,
+                    plugin,
+                    dependencies,
+                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
                 )
             );
 
