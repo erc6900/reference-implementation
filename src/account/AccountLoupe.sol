@@ -36,9 +36,7 @@ abstract contract AccountLoupe is IAccountLoupe {
             config.plugin = _storage.selectorData[selector].plugin;
         }
 
-        config.userOpValidationFunction = _storage.selectorData[selector].userOpValidation;
-
-        config.runtimeValidationFunction = _storage.selectorData[selector].runtimeValidation;
+        config.validationFunction = _storage.selectorData[selector].validation;
     }
 
     /// @inheritdoc IAccountLoupe

@@ -41,8 +41,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
-    error RuntimeValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
-    error UserOpValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
+    error ValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
 
     modifier notNullFunction(FunctionReference functionReference) {
         if (functionReference.isEmpty()) {
@@ -76,48 +75,26 @@ abstract contract PluginManagerInternals is IPluginManager {
         _selectorData.plugin = address(0);
     }
 
-    function _addUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
+    function _addValidationFunction(bytes4 selector, FunctionReference validationFunction)
         internal
         notNullFunction(validationFunction)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!_selectorData.userOpValidation.isEmpty()) {
-            revert UserOpValidationFunctionAlreadySet(selector, validationFunction);
+        if (!_selectorData.validation.isEmpty()) {
+            revert ValidationFunctionAlreadySet(selector, validationFunction);
         }
 
-        _selectorData.userOpValidation = validationFunction;
+        _selectorData.validation = validationFunction;
     }
 
-    function _removeUserOpValidationFunction(bytes4 selector, FunctionReference validationFunction)
+    function _removeValidationFunction(bytes4 selector, FunctionReference validationFunction)
         internal
         notNullFunction(validationFunction)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.userOpValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
-    }
-
-    function _addRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (!_selectorData.runtimeValidation.isEmpty()) {
-            revert RuntimeValidationFunctionAlreadySet(selector, validationFunction);
-        }
-
-        _selectorData.runtimeValidation = validationFunction;
-    }
-
-    function _removeRuntimeValidationFunction(bytes4 selector, FunctionReference validationFunction)
-        internal
-        notNullFunction(validationFunction)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        _selectorData.runtimeValidation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+        _selectorData.validation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
     }
 
     function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
@@ -319,25 +296,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        length = manifest.userOpValidationFunctions.length;
+        length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length;) {
-            ManifestAssociatedFunction memory mv = manifest.userOpValidationFunctions[i];
-            _addUserOpValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
-                )
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        length = manifest.runtimeValidationFunctions.length;
-        for (uint256 i = 0; i < length;) {
-            ManifestAssociatedFunction memory mv = manifest.runtimeValidationFunctions[i];
-            _addRuntimeValidationFunction(
+            ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
+            _addValidationFunction(
                 mv.executionSelector,
                 _resolveManifestFunction(
                     mv.associatedFunction,
@@ -521,31 +483,16 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        length = manifest.runtimeValidationFunctions.length;
+        length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length;) {
-            ManifestAssociatedFunction memory mv = manifest.runtimeValidationFunctions[i];
-            _removeRuntimeValidationFunction(
+            ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
+            _removeValidationFunction(
                 mv.executionSelector,
                 _resolveManifestFunction(
                     mv.associatedFunction,
                     plugin,
                     dependencies,
                     ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
-                )
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        length = manifest.userOpValidationFunctions.length;
-        for (uint256 i = 0; i < length;) {
-            ManifestAssociatedFunction memory mv = manifest.userOpValidationFunctions[i];
-            _removeUserOpValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
 

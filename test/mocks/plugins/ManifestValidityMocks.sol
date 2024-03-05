@@ -16,36 +16,6 @@ import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
 
 import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 
-contract BadValidationMagicValue_UserOp_Plugin is BaseTestPlugin {
-    function onInstall(bytes calldata) external override {}
-
-    function onUninstall(bytes calldata) external override {}
-
-    function foo() external pure returns (bytes32) {
-        return keccak256("bar");
-    }
-
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.foo.selector;
-
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                // Illegal assignment: validation always allow only usable on runtime validation functions
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        return manifest;
-    }
-}
-
 contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
@@ -61,8 +31,8 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlug
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
@@ -101,8 +71,8 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugi
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
@@ -212,8 +182,8 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
@@ -241,8 +211,8 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,

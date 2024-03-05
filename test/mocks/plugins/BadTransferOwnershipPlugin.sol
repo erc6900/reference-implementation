@@ -47,8 +47,8 @@ contract BadTransferOwnershipPlugin is BasePlugin {
         manifest.permittedExecutionSelectors = new bytes4[](1);
         manifest.permittedExecutionSelectors[0] = ISingleOwnerPlugin.transferOwnership.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.evilTransferOwnership.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,

@@ -11,7 +11,6 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
-    BadValidationMagicValue_UserOp_Plugin,
     BadValidationMagicValue_PreRuntimeValidationHook_Plugin,
     BadValidationMagicValue_PreUserOpValidationHook_Plugin,
     BadValidationMagicValue_PreExecHook_Plugin,
@@ -37,22 +36,6 @@ contract ManifestValidityTest is OptimizedTest {
         // Create an account with "this" as the owner, so we can execute along the runtime path with regular
         // solidity semantics
         account = factory.createAccount(address(this), 0);
-    }
-
-    // Tests that the plugin manager rejects a plugin with a user op validationFunction set to "validation always
-    // allow"
-    function test_ManifestValidity_invalid_ValidationAlwaysAllow_UserOpValidationFunction() public {
-        BadValidationMagicValue_UserOp_Plugin plugin = new BadValidationMagicValue_UserOp_Plugin();
-
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
-
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        account.installPlugin({
-            plugin: address(plugin),
-            manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
-        });
     }
 
     // Tests that the plugin manager rejects a plugin with a pre-runtime validation hook set to "validation always

@@ -18,10 +18,9 @@ contract ComprehensivePlugin is BasePlugin {
     enum FunctionId {
         PRE_USER_OP_VALIDATION_HOOK_1,
         PRE_USER_OP_VALIDATION_HOOK_2,
-        USER_OP_VALIDATION,
         PRE_RUNTIME_VALIDATION_HOOK_1,
         PRE_RUNTIME_VALIDATION_HOOK_2,
-        RUNTIME_VALIDATION,
+        VALIDATION,
         PRE_EXECUTION_HOOK,
         PRE_PERMITTED_CALL_EXECUTION_HOOK,
         POST_EXECUTION_HOOK,
@@ -66,7 +65,7 @@ contract ComprehensivePlugin is BasePlugin {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
+        if (functionId == uint8(FunctionId.VALIDATION)) {
             return 0;
         }
         revert NotImplemented();
@@ -86,7 +85,7 @@ contract ComprehensivePlugin is BasePlugin {
         pure
         override
     {
-        if (functionId == uint8(FunctionId.RUNTIME_VALIDATION)) {
+        if (functionId == uint8(FunctionId.VALIDATION)) {
             return;
         }
         revert NotImplemented();
@@ -121,26 +120,15 @@ contract ComprehensivePlugin is BasePlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        ManifestFunction memory fooUserOpValidationFunction = ManifestFunction({
+        ManifestFunction memory fooValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            functionId: uint8(FunctionId.VALIDATION),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
-            associatedFunction: fooUserOpValidationFunction
-        });
-
-        ManifestFunction memory fooRuntimeValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.RUNTIME_VALIDATION),
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: fooRuntimeValidationFunction
+            associatedFunction: fooValidationFunction
         });
 
         manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](4);

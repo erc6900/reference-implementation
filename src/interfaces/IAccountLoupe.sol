@@ -7,8 +7,7 @@ interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector.
     struct ExecutionFunctionConfig {
         address plugin;
-        FunctionReference userOpValidationFunction;
-        FunctionReference runtimeValidationFunction;
+        FunctionReference validationFunction;
     }
 
     /// @notice Pre and post hooks for a given selector.

@@ -35,8 +35,8 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
-    FunctionReference userOpValidation;
-    FunctionReference runtimeValidation;
+    // User operation validation and runtime validation share a function reference.
+    FunctionReference validation;
     // The pre validation hooks for this function selector.
     EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
     EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;

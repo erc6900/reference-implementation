@@ -45,8 +45,8 @@ contract ResultCreatorPlugin is BaseTestPlugin {
         manifest.executionFunctions[0] = this.foo.selector;
         manifest.executionFunctions[1] = this.bar.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
@@ -121,8 +121,8 @@ contract ResultConsumerPlugin is BaseTestPlugin {
         manifest.executionFunctions[0] = this.checkResultEFPFallback.selector;
         manifest.executionFunctions[1] = this.checkResultEFPExternal.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](2);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](2);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.checkResultEFPFallback.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
@@ -130,7 +130,7 @@ contract ResultConsumerPlugin is BaseTestPlugin {
                 dependencyIndex: 0
             })
         });
-        manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
+        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: this.checkResultEFPExternal.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,

@@ -5,8 +5,7 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 
 interface IModularSessionKeyPlugin {
     enum FunctionId {
-        RUNTIME_VALIDATION_TEMPORARY_OWNER,
-        USER_OP_VALIDATION_TEMPORARY_OWNER
+        VALIDATION_TEMPORARY_OWNER
     }
 
     /// @notice This event is emitted when a session key is added to the account.
