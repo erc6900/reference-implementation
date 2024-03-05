@@ -12,8 +12,7 @@ bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c40149916
 
 struct PluginData {
     bool anyExternalExecPermitted;
-    // boolean to indicate if the plugin can spend native tokens, if any of the execution function can spend
-    // native tokens, a plugin is considered to be able to spend native tokens of the accounts
+    // boolean to indicate if the plugin can spend native tokens from the account.
     bool canSpendNativeToken;
     bytes32 manifestHash;
     FunctionReference[] dependencies;
@@ -31,14 +30,6 @@ struct PermittedExternalCallData {
     mapping(bytes4 => bool) permittedSelectors;
 }
 
-// Represets a set of pre- and post- hooks.
-struct HookGroup {
-    EnumerableMap.Bytes32ToUintMap preHooks;
-    // bytes21 key = pre hook function reference
-    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
-    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
-}
-
 // Represents data associated with a specifc function selector.
 struct SelectorData {
     // The plugin that implements this execution function.
@@ -50,7 +41,10 @@ struct SelectorData {
     EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
     EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;
     // The execution hooks for this function selector.
-    HookGroup executionHooks;
+    EnumerableMap.Bytes32ToUintMap preHooks;
+    // bytes21 key = pre hook function reference
+    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
+    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
 }
 
 struct AccountStorage {
