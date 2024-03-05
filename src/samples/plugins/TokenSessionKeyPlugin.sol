@@ -68,32 +68,20 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.transferFromSessionKey.selector;
 
-        ManifestFunction memory tempOwnerUserOpValidationFunction = ManifestFunction({
+        ManifestFunction memory tempOwnerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
             functionId: 0, // Unused
             dependencyIndex: 0 // Used as first index
         });
-        ManifestFunction memory tempOwnerRuntimeValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-            functionId: 0, // Unused
-            dependencyIndex: 1 // Used as second index
-        });
 
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferFromSessionKey.selector,
-            associatedFunction: tempOwnerUserOpValidationFunction
+            associatedFunction: tempOwnerValidationFunction
         });
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.transferFromSessionKey.selector,
-            associatedFunction: tempOwnerRuntimeValidationFunction
-        });
-
-        manifest.dependencyInterfaceIds = new bytes4[](2);
+        manifest.dependencyInterfaceIds = new bytes4[](1);
         manifest.dependencyInterfaceIds[0] = type(IModularSessionKeyPlugin).interfaceId;
-        manifest.dependencyInterfaceIds[1] = type(IModularSessionKeyPlugin).interfaceId;
 
         bytes4[] memory permittedExternalSelectors = new bytes4[](1);
         permittedExternalSelectors[0] = TRANSFERFROM_SELECTOR;

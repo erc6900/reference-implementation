@@ -45,7 +45,7 @@ contract EFPCallerPlugin is BaseTestPlugin {
         manifest.executionFunctions[9] = this.getNumberCounter3.selector;
         manifest.executionFunctions[10] = this.incrementCounter3.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](11);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](11);
 
         ManifestFunction memory alwaysAllowValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
@@ -54,7 +54,7 @@ contract EFPCallerPlugin is BaseTestPlugin {
         });
 
         for (uint256 i = 0; i < manifest.executionFunctions.length; i++) {
-            manifest.runtimeValidationFunctions[i] = ManifestAssociatedFunction({
+            manifest.validationFunctions[i] = ManifestAssociatedFunction({
                 executionSelector: manifest.executionFunctions[i],
                 associatedFunction: alwaysAllowValidationFunction
             });
@@ -181,8 +181,8 @@ contract EFPCallerPluginAnyExternal is BaseTestPlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.passthroughExecute.selector;
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.passthroughExecute.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,

@@ -336,7 +336,7 @@ contract UpgradeableModularAccount is
         }
         bytes4 selector = bytes4(userOp.callData);
 
-        FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].userOpValidation;
+        FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
 
         validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
     }
@@ -395,7 +395,9 @@ contract UpgradeableModularAccount is
                     validationData = currentValidationData;
                 }
             } else {
-                // _RUNTIME_VALIDATION_ALWAYS_ALLOW and _PRE_HOOK_ALWAYS_DENY is not permitted here.
+                // _PRE_HOOK_ALWAYS_DENY is not permitted here.
+                // If this is _RUNTIME_VALIDATION_ALWAYS_ALLOW, the call should revert.
+                // Todo: this is the wrong error if it is set to _RUNTIME_VALIDATION_ALWAYS_ALLOW.
                 revert InvalidConfiguration();
             }
         }
@@ -405,7 +407,7 @@ contract UpgradeableModularAccount is
         if (msg.sender == address(_ENTRY_POINT)) return;
 
         AccountStorage storage _storage = getAccountStorage();
-        FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].runtimeValidation;
+        FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
         // run all preRuntimeValidation hooks
         EnumerableMap.Bytes32ToUintMap storage preRuntimeValidationHooks =
             getAccountStorage().selectorData[msg.sig].preRuntimeValidationHooks;
