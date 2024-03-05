@@ -17,7 +17,7 @@ import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.so
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, HookGroup, getAccountStorage, getPermittedCallKey} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, getPermittedCallKey, SelectorData} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
@@ -459,14 +459,14 @@ contract UpgradeableModularAccount is
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
-        HookGroup storage hooks = getAccountStorage().selectorData[selector].executionHooks;
-        uint256 preExecHooksLength = hooks.preHooks.length();
-        uint256 postOnlyHooksLength = hooks.postOnlyHooks.length();
+        SelectorData storage selectorData = getAccountStorage().selectorData[selector];
+        uint256 preExecHooksLength = selectorData.preHooks.length();
+        uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
         uint256 maxPostExecHooksLength = postOnlyHooksLength;
 
         // There can only be as many associated post hooks to run as there are pre hooks.
         for (uint256 i = 0; i < preExecHooksLength;) {
-            (, uint256 count) = hooks.preHooks.at(i);
+            (, uint256 count) = selectorData.preHooks.at(i);
             unchecked {
                 maxPostExecHooksLength += (count + 1);
                 ++i;
@@ -479,7 +479,7 @@ contract UpgradeableModularAccount is
 
         // Copy post-only hooks to the array.
         for (uint256 i = 0; i < postOnlyHooksLength;) {
-            (bytes32 key,) = hooks.postOnlyHooks.at(i);
+            (bytes32 key,) = selectorData.postOnlyHooks.at(i);
             postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
             unchecked {
                 ++actualPostHooksToRunLength;
@@ -490,7 +490,7 @@ contract UpgradeableModularAccount is
         // Then run the pre hooks and copy the associated post hooks (along with their pre hook's return data) to
         // the array.
         for (uint256 i = 0; i < preExecHooksLength;) {
-            (bytes32 key,) = hooks.preHooks.at(i);
+            (bytes32 key,) = selectorData.preHooks.at(i);
             FunctionReference preExecHook = _toFunctionReference(key);
 
             if (preExecHook.isEmptyOrMagicValue()) {
@@ -501,10 +501,10 @@ contract UpgradeableModularAccount is
 
             bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
 
-            uint256 associatedPostExecHooksLength = hooks.associatedPostHooks[preExecHook].length();
+            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
                 for (uint256 j = 0; j < associatedPostExecHooksLength;) {
-                    (key,) = hooks.associatedPostHooks[preExecHook].at(j);
+                    (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
                     postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
                     postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
