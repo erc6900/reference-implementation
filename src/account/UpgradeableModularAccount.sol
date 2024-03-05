@@ -397,7 +397,6 @@ contract UpgradeableModularAccount is
             } else {
                 // _PRE_HOOK_ALWAYS_DENY is not permitted here.
                 // If this is _RUNTIME_VALIDATION_ALWAYS_ALLOW, the call should revert.
-                // Todo: this is the wrong error if it is set to _RUNTIME_VALIDATION_ALWAYS_ALLOW.
                 revert InvalidConfiguration();
             }
         }
