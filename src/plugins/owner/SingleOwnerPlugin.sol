@@ -103,37 +103,31 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
+    function runtimeValidationFunction(address sender, uint256, bytes calldata)
         external
         view
         override
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
-            // Validate that the sender is the owner of the account or self.
-            if (sender != _owners[msg.sender] && sender != msg.sender) {
-                revert NotAuthorized();
-            }
-            return;
+        // Validate that the sender is the owner of the account or self.
+        if (sender != _owners[msg.sender] && sender != msg.sender) {
+            revert NotAuthorized();
         }
-        revert NotImplemented();
+        return;
     }
 
     /// @inheritdoc BasePlugin
-    function userOpValidationFunction(uint8 functionId, UserOperation calldata userOp, bytes32 userOpHash)
+    function userOpValidationFunction(UserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
-            // Validate the user op signature against the owner.
-            (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-            if (signer == address(0) || signer != _owners[msg.sender]) {
-                return _SIG_VALIDATION_FAILED;
-            }
-            return _SIG_VALIDATION_PASSED;
+        // Validate the user op signature against the owner.
+        (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
+        if (signer == address(0) || signer != _owners[msg.sender]) {
+            return _SIG_VALIDATION_FAILED;
         }
-        revert NotImplemented();
+        return _SIG_VALIDATION_PASSED;
     }
 
     /// @inheritdoc BasePlugin
@@ -147,7 +141,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions = new ManifestAssociatedFunction[](8);
@@ -182,7 +175,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
         ManifestFunction memory alwaysAllowFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions[7] = ManifestAssociatedFunction({

@@ -50,7 +50,6 @@ contract ResultCreatorPlugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -126,7 +125,6 @@ contract ResultConsumerPlugin is BaseTestPlugin {
             executionSelector: this.checkResultEFPFallback.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -134,7 +132,6 @@ contract ResultConsumerPlugin is BaseTestPlugin {
             executionSelector: this.checkResultEFPExternal.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });

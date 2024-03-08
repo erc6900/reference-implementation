@@ -70,7 +70,6 @@ contract TokenSessionKeyPlugin is BasePlugin, ITokenSessionKeyPlugin {
 
         ManifestFunction memory tempOwnerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-            functionId: 0, // Unused
             dependencyIndex: 0 // Used as first index
         });
 

@@ -36,7 +36,6 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlug
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -47,7 +46,6 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlug
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -76,7 +74,6 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugi
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -87,7 +84,6 @@ contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugi
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -118,12 +114,10 @@ contract BadValidationMagicValue_PreExecHook_Plugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             preExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             }),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0, // Dummy unimplemented function id, but can be added correctly
                 dependencyIndex: 0
             })
         });
@@ -153,12 +147,10 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             preExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0, // Dummy unimplemented function id, but can be added correctly
                 dependencyIndex: 0
             }),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -187,7 +179,6 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -216,7 +207,6 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -246,12 +236,10 @@ contract BadHookMagicValue_PostExecHook_Plugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             preExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0, // Dummy unimplemented function id, but can be added correctly
                 dependencyIndex: 0
             }),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });

@@ -52,7 +52,6 @@ contract BadTransferOwnershipPlugin is BasePlugin {
             executionSelector: this.evilTransferOwnership.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0, // Unused.
                 dependencyIndex: 0 // Unused.
             })
         });

@@ -17,7 +17,7 @@ import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.so
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, getPermittedCallKey, SelectorData} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, getPermittedCallKey, toPlugin, SelectorData} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
@@ -38,7 +38,7 @@ contract UpgradeableModularAccount is
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
-        FunctionReference postExecHook;
+        IPlugin postExecHookPlugin;
     }
 
     IEntryPoint private immutable _ENTRY_POINT;
@@ -55,12 +55,12 @@ contract UpgradeableModularAccount is
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
     error InvalidConfiguration();
     error NativeTokenSpendingNotPermitted(address plugin);
-    error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
-    error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
-    error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
+    error PostExecHookReverted(address plugin, bytes revertReason);
+    error PreExecHookReverted(address plugin, bytes revertReason);
+    error PreRuntimeValidationHookFailed(address plugin, bytes revertReason);
     error RuntimeValidationFunctionMissing(bytes4 selector);
-    error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
-    error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
+    error RuntimeValidationFunctionReverted(address plugin, bytes revertReason);
+    error UnexpectedAggregator(address plugin, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
 
@@ -99,7 +99,7 @@ contract UpgradeableModularAccount is
             revert ArrayLengthMismatch();
         }
 
-        FunctionReference[] memory emptyDependencies = new FunctionReference[](0);
+        address[] memory emptyDependencies = new address[](0);
 
         for (uint256 i = 0; i < length;) {
             _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies);
@@ -219,7 +219,7 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         // Make sure plugin is allowed to spend native token.
-        if (value > 0 && value > msg.value && !_storage.pluginData[msg.sender].canSpendNativeToken) {
+        if (value > 0 && value > msg.value && !_storage.pluginData[IPlugin(msg.sender)].canSpendNativeToken) {
             revert NativeTokenSpendingNotPermitted(msg.sender);
         }
 
@@ -241,7 +241,7 @@ contract UpgradeableModularAccount is
 
         // If the target contract is not permitted, check if the caller plugin is permitted to make any external
         // calls.
-        if (!(targetContractPermittedCall || _storage.pluginData[msg.sender].anyExternalExecPermitted)) {
+        if (!(targetContractPermittedCall || _storage.pluginData[IPlugin(msg.sender)].anyExternalExecPermitted)) {
             revert ExecFromPluginExternalNotPermitted(msg.sender, target, value, data);
         }
 
@@ -263,7 +263,7 @@ contract UpgradeableModularAccount is
         address plugin,
         bytes32 manifestHash,
         bytes calldata pluginInstallData,
-        FunctionReference[] calldata dependencies
+        address[] calldata dependencies
     ) external override wrapNativeFunction {
         _installPlugin(plugin, manifestHash, pluginInstallData, dependencies);
     }
@@ -336,19 +336,19 @@ contract UpgradeableModularAccount is
         }
         bytes4 selector = bytes4(userOp.callData);
 
-        FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
+        IPlugin userOpValidation = getAccountStorage().selectorData[selector].validation;
 
-        validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        validationData = _doUserOpValidation(selector, userOpValidation, userOp, userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
     function _doUserOpValidation(
         bytes4 selector,
-        FunctionReference userOpValidationFunction,
+        IPlugin userOpValidationPlugin,
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
-        if (userOpValidationFunction.isEmpty()) {
+        if (userOpValidationPlugin == NULL_PLUGIN) {
             revert UserOpValidationFunctionMissing(selector);
         }
 
@@ -361,15 +361,14 @@ contract UpgradeableModularAccount is
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength;) {
             (bytes32 key,) = preUserOpValidationHooks.at(i);
-            FunctionReference preUserOpValidationHook = _toFunctionReference(key);
+            IPlugin preUserOpValidationHookPlugin = toPlugin(key);
 
-            if (!preUserOpValidationHook.isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
-                currentValidationData = IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
+            if (!_isEmptyOrMagicValue(preUserOpValidationHookPlugin)) {
+                currentValidationData = preUserOpValidationHookPlugin.preUserOpValidationHook(userOp, userOpHash);
 
                 if (uint160(currentValidationData) > 1) {
                     // If the aggregator is not 0 or 1, it is an unexpected value
-                    revert UnexpectedAggregator(plugin, functionId, address(uint160(currentValidationData)));
+                    revert UnexpectedAggregator(address(preUserOpValidationHookPlugin), address(uint160(currentValidationData)));
                 }
                 validationData = _coalescePreValidation(validationData, currentValidationData);
             } else {
@@ -384,9 +383,8 @@ contract UpgradeableModularAccount is
 
         // Run the user op validationFunction
         {
-            if (!userOpValidationFunction.isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-                currentValidationData = IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
+            if (!_isEmptyOrMagicValue(userOpValidationPlugin)) {
+                currentValidationData = IPlugin(userOpValidationPlugin).userOpValidationFunction(userOp, userOpHash);
 
                 if (preUserOpValidationHooksLength != 0) {
                     // If we have other validation data we need to coalesce with
@@ -406,7 +404,7 @@ contract UpgradeableModularAccount is
         if (msg.sender == address(_ENTRY_POINT)) return;
 
         AccountStorage storage _storage = getAccountStorage();
-        FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
+        IPlugin runtimeValidationPlugin = _storage.selectorData[msg.sig].validation;
         // run all preRuntimeValidation hooks
         EnumerableMap.Bytes32ToUintMap storage preRuntimeValidationHooks =
             getAccountStorage().selectorData[msg.sig].preRuntimeValidationHooks;
@@ -414,21 +412,20 @@ contract UpgradeableModularAccount is
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength;) {
             (bytes32 key,) = preRuntimeValidationHooks.at(i);
-            FunctionReference preRuntimeValidationHook = _toFunctionReference(key);
+            IPlugin preRuntimeValidationHookPlugin = toPlugin(key);
 
-            if (!preRuntimeValidationHook.isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = preRuntimeValidationHook.unpack();
+            if (!_isEmptyOrMagicValue(preRuntimeValidationHookPlugin)) {
                 // solhint-disable-next-line no-empty-blocks
-                try IPlugin(plugin).preRuntimeValidationHook(functionId, msg.sender, msg.value, msg.data) {}
+                try preRuntimeValidationHookPlugin.preRuntimeValidationHook(msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
-                    revert PreRuntimeValidationHookFailed(plugin, functionId, revertReason);
+                    revert PreRuntimeValidationHookFailed(address(preRuntimeValidationHookPlugin), revertReason);
                 }
 
                 unchecked {
                     ++i;
                 }
             } else {
-                if (preRuntimeValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+                if (preRuntimeValidationHookPlugin == _PRE_HOOK_ALWAYS_DENY) {
                     revert AlwaysDenyRule();
                 }
                 // Function reference cannot be 0 or _RUNTIME_VALIDATION_ALWAYS_ALLOW.
@@ -438,17 +435,16 @@ contract UpgradeableModularAccount is
 
         // Identifier scope limiting
         {
-            if (!runtimeValidationFunction.isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
+            if (!_isEmptyOrMagicValue(runtimeValidationPlugin)) {
                 // solhint-disable-next-line no-empty-blocks
-                try IPlugin(plugin).runtimeValidationFunction(functionId, msg.sender, msg.value, msg.data) {}
+                try runtimeValidationPlugin.runtimeValidationFunction(msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
-                    revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
+                    revert RuntimeValidationFunctionReverted(address(runtimeValidationPlugin), revertReason);
                 }
             } else {
-                if (runtimeValidationFunction.isEmpty()) {
+                if (runtimeValidationPlugin == NULL_PLUGIN) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
-                } else if (runtimeValidationFunction.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+                } else if (runtimeValidationPlugin == _PRE_HOOK_ALWAYS_DENY) {
                     revert InvalidConfiguration();
                 }
                 // If _RUNTIME_VALIDATION_ALWAYS_ALLOW, just let the function finish.
@@ -481,7 +477,7 @@ contract UpgradeableModularAccount is
         // Copy post-only hooks to the array.
         for (uint256 i = 0; i < postOnlyHooksLength;) {
             (bytes32 key,) = selectorData.postOnlyHooks.at(i);
-            postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
+            postHooksToRun[actualPostHooksToRunLength].postExecHookPlugin = toPlugin(key);
             unchecked {
                 ++actualPostHooksToRunLength;
                 ++i;
@@ -492,21 +488,21 @@ contract UpgradeableModularAccount is
         // the array.
         for (uint256 i = 0; i < preExecHooksLength;) {
             (bytes32 key,) = selectorData.preHooks.at(i);
-            FunctionReference preExecHook = _toFunctionReference(key);
+            IPlugin preExecHookPlugin = toPlugin(key);
 
-            if (preExecHook.isEmptyOrMagicValue()) {
+            if (_isEmptyOrMagicValue(preExecHookPlugin)) {
                 // The function reference must be PRE_HOOK_ALWAYS_DENY in this case, because zero and any other
                 // magic value is unassignable here.
                 revert AlwaysDenyRule();
             }
 
-            bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
+            bytes memory preExecHookReturnData = _runPreExecHook(preExecHookPlugin, data);
 
-            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
+            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHookPlugin].length();
             if (associatedPostExecHooksLength > 0) {
                 for (uint256 j = 0; j < associatedPostExecHooksLength;) {
-                    (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
-                    postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
+                    (key,) = selectorData.associatedPostHooks[preExecHookPlugin].at(j);
+                    postHooksToRun[actualPostHooksToRunLength].postExecHookPlugin = toPlugin(key);
                     postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
                     unchecked {
@@ -527,17 +523,16 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _runPreExecHook(FunctionReference preExecHook, bytes calldata data)
+    function _runPreExecHook(IPlugin preExecHookPlugin, bytes calldata data)
         internal
         returns (bytes memory preExecHookReturnData)
     {
-        (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
+        try preExecHookPlugin.preExecutionHook(msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
-            revert PreExecHookReverted(plugin, functionId, revertReason);
+            revert PreExecHookReverted(address(preExecHookPlugin), revertReason);
         }
     }
 
@@ -550,11 +545,10 @@ contract UpgradeableModularAccount is
             }
 
             PostExecToRun memory postHookToRun = postHooksToRun[i];
-            (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
-            try IPlugin(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
+            try postHookToRun.postExecHookPlugin.postExecutionHook(postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
-                revert PostExecHookReverted(plugin, functionId, revertReason);
+                revert PostExecHookReverted(address(postHookToRun.postExecHookPlugin), revertReason);
             }
         }
     }

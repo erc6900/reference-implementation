@@ -4,9 +4,6 @@ pragma solidity ^0.8.19;
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 interface ISingleOwnerPlugin {
-    enum FunctionId {
-        VALIDATION_OWNER_OR_SELF
-    }
 
     /// @notice This event is emitted when ownership of the account changes.
     /// @param account The account whose ownership changed.

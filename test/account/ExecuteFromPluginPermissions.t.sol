@@ -55,7 +55,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
         // Add the EFP caller plugin to the account
         bytes32 efpCallerManifestHash = keccak256(abi.encode(efpCallerPlugin.pluginManifest()));
@@ -63,7 +63,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(efpCallerPlugin),
             manifestHash: efpCallerManifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         // Add the EFP caller plugin with any external permissions to the account
@@ -73,7 +73,7 @@ contract ExecuteFromPluginPermissionsTest is OptimizedTest {
             plugin: address(efpCallerPluginAnyExternal),
             manifestHash: efpCallerAnyExternalManifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 

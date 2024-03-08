@@ -113,13 +113,13 @@ contract SingleOwnerPluginTest is OptimizedTest {
         plugin.transferOwnership(owner1);
         assertEq(owner1, plugin.owner());
         plugin.runtimeValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, ""
+            owner1, 0, ""
         );
 
         vm.startPrank(b);
         vm.expectRevert(ISingleOwnerPlugin.NotAuthorized.selector);
         plugin.runtimeValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, ""
+            owner1, 0, ""
         );
     }
 
@@ -136,7 +136,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
 
         // sig check should fail
         uint256 success = plugin.userOpValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
+            userOp, userOpHash
         );
         assertEq(success, 1);
 
@@ -146,7 +146,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
 
         // sig check should pass
         success = plugin.userOpValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
+            userOp, userOpHash
         );
         assertEq(success, 0);
     }

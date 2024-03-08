@@ -21,7 +21,8 @@ import {
     getAccountStorage,
     SelectorData,
     getPermittedCallKey,
-    PermittedExternalCallData
+    PermittedExternalCallData,
+    toPlugin
 } from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
@@ -41,17 +42,14 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
-    error ValidationFunctionAlreadySet(bytes4 selector, FunctionReference validationFunction);
+    error ValidationFunctionAlreadySet(bytes4 selector, IPlugin validation);
 
-    modifier notNullFunction(FunctionReference functionReference) {
-        if (functionReference.isEmpty()) {
-            revert NullFunctionReference();
-        }
-        _;
-    }
+    IPlugin internal constant NULL_PLUGIN = IPlugin(address(0));
+    IPlugin internal constant _RUNTIME_VALIDATION_ALWAYS_ALLOW = IPlugin(address(1));
+    IPlugin internal constant _PRE_HOOK_ALWAYS_DENY = IPlugin(address(2));
 
-    modifier notNullPlugin(address plugin) {
-        if (plugin == address(0)) {
+    modifier notNullPlugin(IPlugin plugin) {
+        if (address(plugin) == address(0)) {
             revert NullPlugin();
         }
         _;
@@ -59,7 +57,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(plugin) {
+    function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(IPlugin(plugin)) {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (_selectorData.plugin != address(0)) {
@@ -75,58 +73,58 @@ abstract contract PluginManagerInternals is IPluginManager {
         _selectorData.plugin = address(0);
     }
 
-    function _addValidationFunction(bytes4 selector, FunctionReference validationFunction)
+    function _addValidationFunction(bytes4 selector, IPlugin validation)
         internal
-        notNullFunction(validationFunction)
+        notNullPlugin(validation)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!_selectorData.validation.isEmpty()) {
-            revert ValidationFunctionAlreadySet(selector, validationFunction);
+        if (_selectorData.validation != NULL_PLUGIN) {
+            revert ValidationFunctionAlreadySet(selector, validation);
         }
 
-        _selectorData.validation = validationFunction;
+        _selectorData.validation = validation;
     }
 
-    function _removeValidationFunction(bytes4 selector, FunctionReference validationFunction)
+    function _removeValidationFunction(bytes4 selector, IPlugin validation)
         internal
-        notNullFunction(validationFunction)
+        notNullPlugin(validation)
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.validation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+        _selectorData.validation = NULL_PLUGIN;
     }
 
-    function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
+    function _addExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook)
         internal
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!preExecHook.isEmpty()) {
+        if (preExecHook != NULL_PLUGIN) {
             _addOrIncrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
-            if (!postExecHook.isEmpty()) {
+            if (postExecHook != NULL_PLUGIN) {
                 _addOrIncrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
-            if (postExecHook.isEmpty()) {
+            if (postExecHook == NULL_PLUGIN) {
                 // both pre and post hooks cannot be null
-                revert NullFunctionReference();
+                revert NullPlugin();
             }
 
             _addOrIncrement(_selectorData.postOnlyHooks, _toSetValue(postExecHook));
         }
     }
 
-    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
+    function _removeExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook)
         internal
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!preExecHook.isEmpty()) {
+        if (preExecHook != NULL_PLUGIN) {
             _removeOrDecrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
-            if (!postExecHook.isEmpty()) {
+            if (postExecHook != NULL_PLUGIN) {
                 _removeOrDecrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
             }
         } else {
@@ -137,9 +135,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
     }
 
-    function _addPreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+    function _addPreUserOpValidationHook(bytes4 selector, IPlugin preUserOpValidationHook)
         internal
-        notNullFunction(preUserOpValidationHook)
+        notNullPlugin(preUserOpValidationHook)
     {
         _addOrIncrement(
             getAccountStorage().selectorData[selector].preUserOpValidationHooks,
@@ -147,9 +145,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         );
     }
 
-    function _removePreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+    function _removePreUserOpValidationHook(bytes4 selector, IPlugin preUserOpValidationHook)
         internal
-        notNullFunction(preUserOpValidationHook)
+        notNullPlugin(preUserOpValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
         _removeOrDecrement(
@@ -158,9 +156,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         );
     }
 
-    function _addPreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
+    function _addPreRuntimeValidationHook(bytes4 selector, IPlugin preRuntimeValidationHook)
         internal
-        notNullFunction(preRuntimeValidationHook)
+        notNullPlugin(preRuntimeValidationHook)
     {
         _addOrIncrement(
             getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
@@ -168,9 +166,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         );
     }
 
-    function _removePreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
+    function _removePreRuntimeValidationHook(bytes4 selector, IPlugin preRuntimeValidationHook)
         internal
-        notNullFunction(preRuntimeValidationHook)
+        notNullPlugin(preRuntimeValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
         _removeOrDecrement(
@@ -183,7 +181,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         address plugin,
         bytes32 manifestHash,
         bytes memory pluginInstallData,
-        FunctionReference[] memory dependencies
+        address[] memory dependencies
     ) internal {
         AccountStorage storage _storage = getAccountStorage();
 
@@ -211,15 +209,15 @@ abstract contract PluginManagerInternals is IPluginManager {
         uint256 length = dependencies.length;
         for (uint256 i = 0; i < length;) {
             // Check the dependency interface id over the address of the dependency.
-            (address dependencyAddr,) = dependencies[i].unpack();
+            IPlugin dependencyAddr = IPlugin(dependencies[i]);
 
             // Check that the dependency is installed.
             if (_storage.pluginData[dependencyAddr].manifestHash == bytes32(0)) {
-                revert MissingPluginDependency(dependencyAddr);
+                revert MissingPluginDependency(address(dependencyAddr));
             }
 
             // Check that the dependency supports the expected interface.
-            if (!ERC165Checker.supportsInterface(dependencyAddr, manifest.dependencyInterfaceIds[i])) {
+            if (!ERC165Checker.supportsInterface(address(dependencyAddr), manifest.dependencyInterfaceIds[i])) {
                 revert InvalidDependenciesProvided();
             }
 
@@ -232,14 +230,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Add the plugin metadata to the account
-        _storage.pluginData[plugin].manifestHash = manifestHash;
-        _storage.pluginData[plugin].dependencies = dependencies;
+        _storage.pluginData[IPlugin(plugin)].manifestHash = manifestHash;
+        _storage.pluginData[IPlugin(plugin)].dependencies = dependencies;
 
         // Update components according to the manifest.
 
         // Mark whether or not this plugin may spend native token amounts
         if (manifest.canSpendNativeToken) {
-            _storage.pluginData[plugin].canSpendNativeToken = true;
+            _storage.pluginData[IPlugin(plugin)].canSpendNativeToken = true;
         }
 
         length = manifest.executionFunctions.length;
@@ -265,7 +263,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Add the permitted external calls to the account.
         if (manifest.permitAnyExternalAddress) {
-            _storage.pluginData[plugin].anyExternalExecPermitted = true;
+            _storage.pluginData[IPlugin(plugin)].anyExternalExecPermitted = true;
         } else {
             // Only store the specific permitted external calls if "permit any" flag was not set.
             length = manifest.permittedExternalCalls.length;
@@ -315,7 +313,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
-        FunctionReference[] memory emptyDependencies;
+        address[] memory emptyDependencies;
 
         length = manifest.preUserOpValidationHooks.length;
         for (uint256 i = 0; i < length;) {
@@ -399,25 +397,24 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Check manifest hash.
-        bytes32 manifestHash = _storage.pluginData[plugin].manifestHash;
+        bytes32 manifestHash = _storage.pluginData[IPlugin(plugin)].manifestHash;
         if (!_isValidPluginManifest(manifest, manifestHash)) {
             revert InvalidPluginManifest();
         }
 
         // Ensure that there are no dependent plugins.
-        if (_storage.pluginData[plugin].dependentCount != 0) {
+        if (_storage.pluginData[IPlugin(plugin)].dependentCount != 0) {
             revert PluginDependencyViolation(plugin);
         }
 
         // Remove this plugin as a dependent from its dependencies.
-        FunctionReference[] memory dependencies = _storage.pluginData[plugin].dependencies;
+        address[] memory dependencies = _storage.pluginData[IPlugin(plugin)].dependencies;
         uint256 length = dependencies.length;
         for (uint256 i = 0; i < length;) {
-            FunctionReference dependency = dependencies[i];
-            (address dependencyAddr,) = dependency.unpack();
+            address dependency = dependencies[i];
 
             // Decrement the dependent count for the dependency function.
-            _storage.pluginData[dependencyAddr].dependentCount -= 1;
+            _storage.pluginData[IPlugin(dependency)].dependentCount -= 1;
 
             unchecked {
                 ++i;
@@ -427,7 +424,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
 
         // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
-        FunctionReference[] memory emptyDependencies;
+        address[] memory emptyDependencies;
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length;) {
@@ -505,7 +502,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         if (manifest.permitAnyExternalAddress) {
             // Only clear if it was set during install time
-            _storage.pluginData[plugin].anyExternalExecPermitted = false;
+            _storage.pluginData[IPlugin(plugin)].anyExternalExecPermitted = false;
         } else {
             // Only clear the specific permitted external calls if "permit any" flag was not set.
             length = manifest.permittedExternalCalls.length;
@@ -564,7 +561,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Remove the plugin metadata from the account.
-        delete _storage.pluginData[plugin];
+        delete _storage.pluginData[IPlugin(plugin)];
 
         // Clear the plugin storage for the account.
         bool onUninstallSuccess = true;
@@ -596,12 +593,16 @@ abstract contract PluginManagerInternals is IPluginManager {
         return true;
     }
 
-    function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {
-        return bytes32(FunctionReference.unwrap(functionReference));
+    function _toSetValue(IPlugin plugin) internal pure returns (bytes32) {
+        return bytes32(bytes20(address(plugin)));
     }
 
     function _toFunctionReference(bytes32 setValue) internal pure returns (FunctionReference) {
         return FunctionReference.wrap(bytes21(setValue));
+    }
+
+    function _isEmptyOrMagicValue(IPlugin plugin) internal pure returns (bool) {
+        return address(plugin) <= address(2);
     }
 
     function _isValidPluginManifest(PluginManifest memory manifest, bytes32 manifestHash)
@@ -615,31 +616,31 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _resolveManifestFunction(
         ManifestFunction memory manifestFunction,
         address plugin,
-        FunctionReference[] memory dependencies,
+        address[] memory dependencies,
         // Indicates which magic value, if any, is permissible for the function to resolve.
         ManifestAssociatedFunctionType allowedMagicValue
-    ) internal pure returns (FunctionReference) {
+    ) internal pure returns (IPlugin) {
         if (manifestFunction.functionType == ManifestAssociatedFunctionType.SELF) {
-            return FunctionReferenceLib.pack(plugin, manifestFunction.functionId);
+            return IPlugin(plugin);
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.DEPENDENCY) {
             if (manifestFunction.dependencyIndex >= dependencies.length) {
                 revert InvalidPluginManifest();
             }
-            return dependencies[manifestFunction.dependencyIndex];
+            return IPlugin(dependencies[manifestFunction.dependencyIndex]);
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW)
         {
             if (allowedMagicValue == ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW) {
-                return FunctionReferenceLib._RUNTIME_VALIDATION_ALWAYS_ALLOW;
+                return _RUNTIME_VALIDATION_ALWAYS_ALLOW;
             } else {
                 revert InvalidPluginManifest();
             }
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
             if (allowedMagicValue == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
-                return FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY;
+                return _PRE_HOOK_ALWAYS_DENY;
             } else {
                 revert InvalidPluginManifest();
             }
         }
-        return FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE; // Empty checks are done elsewhere
+        return IPlugin(address(0)); // Empty checks are done elsewhere
     }
 }

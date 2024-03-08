@@ -13,6 +13,7 @@ import {
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
+import {IPlugin} from "../../src/interfaces/IPlugin.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
@@ -31,7 +32,7 @@ contract AccountLoupeTest is OptimizedTest {
 
     UpgradeableModularAccount public account1;
 
-    FunctionReference public ownerValidation;
+    IPlugin public ownerValidation;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -45,11 +46,9 @@ contract AccountLoupeTest is OptimizedTest {
         account1 = factory.createAccount(address(this), 0);
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
-        account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
+        account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new address[](0));
 
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
-        );
+        ownerValidation = IPlugin(singleOwnerPlugin);
     }
 
     function test_pluginLoupe_getInstalledPlugins_initial() public {
@@ -63,7 +62,7 @@ contract AccountLoupeTest is OptimizedTest {
 
     function test_pluginLoupe_getExecutionFunctionConfig_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
-        FunctionReference[] memory expectedValidations = new FunctionReference[](5);
+        IPlugin[] memory expectedValidations = new IPlugin[](5);
 
         selectorsToCheck[0] = IStandardExecutor.execute.selector;
         expectedValidations[0] = ownerValidation;
@@ -86,8 +85,8 @@ contract AccountLoupeTest is OptimizedTest {
 
             assertEq(config.plugin, address(account1));
             assertEq(
-                FunctionReference.unwrap(config.validationFunction),
-                FunctionReference.unwrap(expectedValidations[i])
+                config.validationPlugin,
+                address(expectedValidations[i])
             );
         }
     }
@@ -95,13 +94,11 @@ contract AccountLoupeTest is OptimizedTest {
     function test_pluginLoupe_getExecutionFunctionConfig_plugin() public {
         bytes4[] memory selectorsToCheck = new bytes4[](2);
         address[] memory expectedPluginAddress = new address[](2);
-        FunctionReference[] memory expectedValidations = new FunctionReference[](2);
+        IPlugin[] memory expectedValidations = new IPlugin[](2);
 
         selectorsToCheck[0] = comprehensivePlugin.foo.selector;
         expectedPluginAddress[0] = address(comprehensivePlugin);
-        expectedValidations[0] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
-        );
+        expectedValidations[0] = IPlugin(comprehensivePlugin);
 
         selectorsToCheck[1] = singleOwnerPlugin.transferOwnership.selector;
         expectedPluginAddress[1] = address(singleOwnerPlugin);
@@ -113,8 +110,8 @@ contract AccountLoupeTest is OptimizedTest {
 
             assertEq(config.plugin, expectedPluginAddress[i]);
             assertEq(
-                FunctionReference.unwrap(config.validationFunction),
-                FunctionReference.unwrap(expectedValidations[i])
+                config.validationPlugin,
+                address(expectedValidations[i])
             );
         }
     }
@@ -124,20 +121,12 @@ contract AccountLoupeTest is OptimizedTest {
 
         assertEq(hooks.length, 1);
         assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
-                )
-            )
+            hooks[0].preExecHookPlugin,
+            address(comprehensivePlugin)
         );
         assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
-                )
-            )
+            hooks[0].postExecHookPlugin,
+            address(comprehensivePlugin)
         );
     }
 
@@ -152,12 +141,10 @@ contract AccountLoupeTest is OptimizedTest {
             executionSelector: ComprehensivePlugin.foo.selector,
             preExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
                 dependencyIndex: 0
             }),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -165,7 +152,7 @@ contract AccountLoupeTest is OptimizedTest {
         MockPlugin mockPlugin = new MockPlugin(mockPluginManifest);
         bytes32 manifestHash = keccak256(abi.encode(mockPlugin.pluginManifest()));
 
-        account1.installPlugin(address(mockPlugin), manifestHash, "", new FunctionReference[](0));
+        account1.installPlugin(address(mockPlugin), manifestHash, "", new address[](0));
 
         // Assert that the returned execution hooks are what is expected
 
@@ -173,76 +160,50 @@ contract AccountLoupeTest is OptimizedTest {
 
         assertEq(hooks.length, 2);
         assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
-                )
-            )
+            hooks[0].preExecHookPlugin,
+            address(comprehensivePlugin)
         );
         assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
-                )
-            )
+            hooks[0].postExecHookPlugin,
+            address(comprehensivePlugin)
         );
         assertEq(
-            FunctionReference.unwrap(hooks[1].preExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+            hooks[1].preExecHookPlugin,
+            address(mockPlugin)
         );
         assertEq(
-            FunctionReference.unwrap(hooks[1].postExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
+            hooks[1].postExecHookPlugin,
+            address(mockPlugin)
         );
     }
 
     function test_pluginLoupe_getPreUserOpValidationHooks() public {
-        (FunctionReference[] memory hooks,) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
+        (address[] memory hooks,) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
-        assertEq(hooks.length, 2);
+        assertEq(hooks.length, 1);
         assertEq(
-            FunctionReference.unwrap(hooks[0]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_1)
-                )
-            )
+            hooks[0],
+            address(comprehensivePlugin)
         );
-        assertEq(
-            FunctionReference.unwrap(hooks[1]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_2)
-                )
-            )
-        );
+        // todo: add a second hook to measure here
+        // assertEq(
+        //     hooks[1],
+        //     address(comprehensivePlugin)
+        // );
     }
 
     function test_pluginLoupe_getPreRuntimeValidationHooks() public {
-        (, FunctionReference[] memory hooks) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
+        (, address[] memory hooks) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
-        assertEq(hooks.length, 2);
+        assertEq(hooks.length, 1);
         assertEq(
-            FunctionReference.unwrap(hooks[0]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1)
-                )
-            )
+            hooks[0],
+            address(comprehensivePlugin)
         );
-        assertEq(
-            FunctionReference.unwrap(hooks[1]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2)
-                )
-            )
-        );
+        // todo: add a second hook to measure here
+        // assertEq(
+        //     hooks[1],
+        //     address(comprehensivePlugin)
+        // );
     }
 }

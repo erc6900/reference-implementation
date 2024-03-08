@@ -51,7 +51,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -68,7 +68,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -83,7 +83,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -98,7 +98,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -114,7 +114,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -130,7 +130,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -145,7 +145,7 @@ contract ManifestValidityTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 }

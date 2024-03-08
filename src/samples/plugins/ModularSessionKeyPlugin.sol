@@ -186,53 +186,47 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     }
 
     /// @inheritdoc BasePlugin
-    function userOpValidationFunction(uint8 functionId, UserOperation calldata userOp, bytes32 userOpHash)
+    function userOpValidationFunction(UserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_TEMPORARY_OWNER)) {
-            (address signer, ECDSA.RecoverError err) =
-                userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
-            if (err != ECDSA.RecoverError.NoError) {
-                revert InvalidSignature();
-            }
-            bytes4 selector = bytes4(userOp.callData[0:4]);
-            bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
-            StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(signer, selector)));
-            SessionInfo storage duration = _castPtrToStruct(ptr);
-            uint48 validAfter = duration.validAfter;
-            uint48 validUntil = duration.validUntil;
-
-            return _packValidationData(validUntil == 0, validUntil, validAfter);
+        (address signer, ECDSA.RecoverError err) =
+            userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
+        if (err != ECDSA.RecoverError.NoError) {
+            revert InvalidSignature();
         }
-        revert NotImplemented();
+        bytes4 selector = bytes4(userOp.callData[0:4]);
+        bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(signer, selector)));
+        SessionInfo storage duration = _castPtrToStruct(ptr);
+        uint48 validAfter = duration.validAfter;
+        uint48 validUntil = duration.validUntil;
+
+        return _packValidationData(validUntil == 0, validUntil, validAfter);
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata data)
+    function runtimeValidationFunction(address sender, uint256, bytes calldata data)
         external
         view
         override
     {
-        if (functionId == uint8(FunctionId.VALIDATION_TEMPORARY_OWNER)) {
-            bytes4 selector = bytes4(data[0:4]);
-            bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
-            StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
-            SessionInfo storage duration = _castPtrToStruct(ptr);
-            uint48 validAfter = duration.validAfter;
-            uint48 validUntil = duration.validUntil;
+        bytes4 selector = bytes4(data[0:4]);
+        bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
+        StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
+        SessionInfo storage duration = _castPtrToStruct(ptr);
+        uint48 validAfter = duration.validAfter;
+        uint48 validUntil = duration.validUntil;
 
-            if (validUntil != 0) {
-                if (block.timestamp < validAfter || block.timestamp > validUntil) {
-                    revert WrongTimeRangeForSession();
-                }
-                return;
+        if (validUntil != 0) {
+            if (block.timestamp < validAfter || block.timestamp > validUntil) {
+                revert WrongTimeRangeForSession();
             }
-            revert NotAuthorized();
+            return;
         }
-        revert NotImplemented();
+        revert NotAuthorized();
     }
 
     /// @inheritdoc BasePlugin
@@ -247,7 +241,6 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-            functionId: 0, // Unused.
             dependencyIndex: 0 // Used as first index.
         });
         manifest.validationFunctions = new ManifestAssociatedFunction[](5);
@@ -270,7 +263,6 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
 
         ManifestFunction memory alwaysAllowFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
 
