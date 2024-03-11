@@ -57,7 +57,7 @@ contract ComprehensivePlugin is BasePlugin {
         return 0;
     }
 
-    function userOpValidationFunction(UserOperation calldata, bytes32) external pure override returns (uint256) {
+    function validateUserOp(UserOperation calldata, bytes32) external pure override returns (uint256) {
         return 0;
     }
 
@@ -72,7 +72,7 @@ contract ComprehensivePlugin is BasePlugin {
         return;
     }
 
-    function runtimeValidationFunction(address, uint256, bytes calldata) external pure override {
+    function validateRuntime(address, uint256, bytes calldata) external pure override {
         return;
     }
 

@@ -14,8 +14,8 @@ import {
     BadValidationMagicValue_PreUserOpValidationHook_Plugin,
     BadValidationMagicValue_PreExecHook_Plugin,
     BadValidationMagicValue_PostExecHook_Plugin,
-    BadHookMagicValue_UserOpValidationFunction_Plugin,
-    BadHookMagicValue_RuntimeValidationFunction_Plugin,
+    BadHookMagicValue_UserOpValidation_Plugin,
+    BadHookMagicValue_RuntimeValidation_Plugin,
     BadHookMagicValue_PostExecHook_Plugin
 } from "../mocks/plugins/ManifestValidityMocks.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -103,8 +103,7 @@ contract ManifestValidityTest is OptimizedTest {
 
     // Tests that the plugin manager rejects a plugin with a user op validationFunction set to "hook always deny"
     function test_ManifestValidity_invalid_HookAlwaysDeny_UserOpValidation() public {
-        BadHookMagicValue_UserOpValidationFunction_Plugin plugin =
-            new BadHookMagicValue_UserOpValidationFunction_Plugin();
+        BadHookMagicValue_UserOpValidation_Plugin plugin = new BadHookMagicValue_UserOpValidation_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
@@ -117,10 +116,9 @@ contract ManifestValidityTest is OptimizedTest {
         });
     }
 
-    // Tests that the plugin manager rejects a plugin with a runtime validationFunction set to "hook always deny"
-    function test_ManifestValidity_invalid_HookAlwaysDeny_RuntimeValidationFunction() public {
-        BadHookMagicValue_RuntimeValidationFunction_Plugin plugin =
-            new BadHookMagicValue_RuntimeValidationFunction_Plugin();
+    // Tests that the plugin manager rejects a plugin with a runtime validation function set to "hook always deny"
+    function test_ManifestValidity_invalid_HookAlwaysDeny_RuntimeValidation() public {
+        BadHookMagicValue_RuntimeValidation_Plugin plugin = new BadHookMagicValue_RuntimeValidation_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 

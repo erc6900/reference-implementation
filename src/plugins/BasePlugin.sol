@@ -36,7 +36,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
     }
 
     /// @inheritdoc IPlugin
-    function userOpValidationFunction(UserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash)
         external
         virtual
         returns (uint256)
@@ -52,7 +52,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
     }
 
     /// @inheritdoc IPlugin
-    function runtimeValidationFunction(address sender, uint256 value, bytes calldata data) external virtual {
+    function validateRuntime(address sender, uint256 value, bytes calldata data) external virtual {
         (sender, value, data);
         revert NotImplemented();
     }

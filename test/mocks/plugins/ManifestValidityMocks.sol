@@ -152,7 +152,7 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
     }
 }
 
-contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
+contract BadHookMagicValue_UserOpValidation_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -180,7 +180,7 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
     }
 }
 
-contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
+contract BadHookMagicValue_RuntimeValidation_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}

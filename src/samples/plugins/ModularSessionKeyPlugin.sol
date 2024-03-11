@@ -186,7 +186,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     }
 
     /// @inheritdoc BasePlugin
-    function userOpValidationFunction(UserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -207,7 +207,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(address sender, uint256, bytes calldata data) external view override {
+    function validateRuntime(address sender, uint256, bytes calldata data) external view override {
         bytes4 selector = bytes4(data[0:4]);
         bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));

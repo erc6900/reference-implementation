@@ -58,11 +58,11 @@ contract UpgradeableModularAccount is
     error PostExecHookReverted(address plugin, bytes revertReason);
     error PreExecHookReverted(address plugin, bytes revertReason);
     error PreRuntimeValidationHookFailed(address plugin, bytes revertReason);
-    error RuntimeValidationFunctionMissing(bytes4 selector);
-    error RuntimeValidationFunctionReverted(address plugin, bytes revertReason);
+    error RuntimeValidationMissing(bytes4 selector);
+    error RuntimeValidationReverted(address plugin, bytes revertReason);
     error UnexpectedAggregator(address plugin, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
-    error UserOpValidationFunctionMissing(bytes4 selector);
+    error UserOpValidationMissing(bytes4 selector);
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
@@ -349,7 +349,7 @@ contract UpgradeableModularAccount is
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
         if (userOpValidationPlugin == _NULL_PLUGIN) {
-            revert UserOpValidationFunctionMissing(selector);
+            revert UserOpValidationMissing(selector);
         }
 
         uint256 currentValidationData;
@@ -386,8 +386,7 @@ contract UpgradeableModularAccount is
         // Run the user op validationFunction
         {
             if (!_isEmptyOrMagicValue(userOpValidationPlugin)) {
-                currentValidationData =
-                    IPlugin(userOpValidationPlugin).userOpValidationFunction(userOp, userOpHash);
+                currentValidationData = IPlugin(userOpValidationPlugin).validateUserOp(userOp, userOpHash);
 
                 if (preUserOpValidationHooksLength != 0) {
                     // If we have other validation data we need to coalesce with
@@ -440,13 +439,13 @@ contract UpgradeableModularAccount is
         {
             if (!_isEmptyOrMagicValue(runtimeValidationPlugin)) {
                 // solhint-disable-next-line no-empty-blocks
-                try runtimeValidationPlugin.runtimeValidationFunction(msg.sender, msg.value, msg.data) {}
+                try runtimeValidationPlugin.validateRuntime(msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
-                    revert RuntimeValidationFunctionReverted(address(runtimeValidationPlugin), revertReason);
+                    revert RuntimeValidationReverted(address(runtimeValidationPlugin), revertReason);
                 }
             } else {
                 if (runtimeValidationPlugin == _NULL_PLUGIN) {
-                    revert RuntimeValidationFunctionMissing(msg.sig);
+                    revert RuntimeValidationMissing(msg.sig);
                 } else if (runtimeValidationPlugin == _PRE_HOOK_ALWAYS_DENY) {
                     revert InvalidConfiguration();
                 }

@@ -230,7 +230,7 @@ contract ModularSessionKeyPluginTest is Test {
         bytes memory revertReason = abi.encodeWithSelector(IModularSessionKeyPlugin.NotAuthorized.selector);
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
                 revertReason
             )
@@ -270,7 +270,7 @@ contract ModularSessionKeyPluginTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
                 revertReason
             )
@@ -291,7 +291,7 @@ contract ModularSessionKeyPluginTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
                 revertReason
             )

@@ -28,7 +28,7 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
         return _preUserOpValidationHookData;
     }
 
-    function userOpValidationFunction(UserOperation calldata, bytes32) external view override returns (uint256) {
+    function validateUserOp(UserOperation calldata, bytes32) external view override returns (uint256) {
         return _userOpValidationFunctionData;
     }
 }
