@@ -192,8 +192,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         override
         returns (uint256)
     {
-        (address signer, ECDSA.RecoverError err) =
-            userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
+        (address signer, ECDSA.RecoverError err) = userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
         if (err != ECDSA.RecoverError.NoError) {
             revert InvalidSignature();
         }
@@ -208,11 +207,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(address sender, uint256, bytes calldata data)
-        external
-        view
-        override
-    {
+    function runtimeValidationFunction(address sender, uint256, bytes calldata data) external view override {
         bytes4 selector = bytes4(data[0:4]);
         bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));

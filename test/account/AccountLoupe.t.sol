@@ -5,7 +5,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestAssociatedFunctionType,
     ManifestExecutionHook,
@@ -16,7 +15,6 @@ import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPlugin} from "../../src/interfaces/IPlugin.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -84,10 +82,7 @@ contract AccountLoupeTest is OptimizedTest {
                 account1.getExecutionFunctionConfig(selectorsToCheck[i]);
 
             assertEq(config.plugin, address(account1));
-            assertEq(
-                config.validationPlugin,
-                address(expectedValidations[i])
-            );
+            assertEq(config.validationPlugin, address(expectedValidations[i]));
         }
     }
 
@@ -109,10 +104,7 @@ contract AccountLoupeTest is OptimizedTest {
                 account1.getExecutionFunctionConfig(selectorsToCheck[i]);
 
             assertEq(config.plugin, expectedPluginAddress[i]);
-            assertEq(
-                config.validationPlugin,
-                address(expectedValidations[i])
-            );
+            assertEq(config.validationPlugin, address(expectedValidations[i]));
         }
     }
 
@@ -120,14 +112,8 @@ contract AccountLoupeTest is OptimizedTest {
         IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 1);
-        assertEq(
-            hooks[0].preExecHookPlugin,
-            address(comprehensivePlugin)
-        );
-        assertEq(
-            hooks[0].postExecHookPlugin,
-            address(comprehensivePlugin)
-        );
+        assertEq(hooks[0].preExecHookPlugin, address(comprehensivePlugin));
+        assertEq(hooks[0].postExecHookPlugin, address(comprehensivePlugin));
     }
 
     function test_pluginLoupe_getHooks_multiple() public {
@@ -139,14 +125,8 @@ contract AccountLoupeTest is OptimizedTest {
         mockPluginManifest.executionHooks = new ManifestExecutionHook[](1);
         mockPluginManifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: ComprehensivePlugin.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            })
+            preExecHook: ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            postExecHook: ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         });
 
         MockPlugin mockPlugin = new MockPlugin(mockPluginManifest);
@@ -159,32 +139,17 @@ contract AccountLoupeTest is OptimizedTest {
         IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 2);
-        assertEq(
-            hooks[0].preExecHookPlugin,
-            address(comprehensivePlugin)
-        );
-        assertEq(
-            hooks[0].postExecHookPlugin,
-            address(comprehensivePlugin)
-        );
-        assertEq(
-            hooks[1].preExecHookPlugin,
-            address(mockPlugin)
-        );
-        assertEq(
-            hooks[1].postExecHookPlugin,
-            address(mockPlugin)
-        );
+        assertEq(hooks[0].preExecHookPlugin, address(comprehensivePlugin));
+        assertEq(hooks[0].postExecHookPlugin, address(comprehensivePlugin));
+        assertEq(hooks[1].preExecHookPlugin, address(mockPlugin));
+        assertEq(hooks[1].postExecHookPlugin, address(mockPlugin));
     }
 
     function test_pluginLoupe_getPreUserOpValidationHooks() public {
         (address[] memory hooks,) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 1);
-        assertEq(
-            hooks[0],
-            address(comprehensivePlugin)
-        );
+        assertEq(hooks[0], address(comprehensivePlugin));
         // todo: add a second hook to measure here
         // assertEq(
         //     hooks[1],
@@ -196,10 +161,7 @@ contract AccountLoupeTest is OptimizedTest {
         (, address[] memory hooks) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 1);
-        assertEq(
-            hooks[0],
-            address(comprehensivePlugin)
-        );
+        assertEq(hooks[0], address(comprehensivePlugin));
         // todo: add a second hook to measure here
         // assertEq(
         //     hooks[1],

@@ -46,12 +46,7 @@ contract ComprehensivePlugin is BasePlugin {
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(UserOperation calldata, bytes32)
-        external
-        pure
-        override
-        returns (uint256)
-    {
+    function preUserOpValidationHook(UserOperation calldata, bytes32) external pure override returns (uint256) {
         // if (functionId == uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_1)) {
         //     return 0;
         // } else if (functionId == uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_2)) {
@@ -62,12 +57,7 @@ contract ComprehensivePlugin is BasePlugin {
         return 0;
     }
 
-    function userOpValidationFunction(UserOperation calldata, bytes32)
-        external
-        pure
-        override
-        returns (uint256)
-    {
+    function userOpValidationFunction(UserOperation calldata, bytes32) external pure override returns (uint256) {
         return 0;
     }
 
@@ -82,20 +72,11 @@ contract ComprehensivePlugin is BasePlugin {
         return;
     }
 
-    function runtimeValidationFunction(address, uint256, bytes calldata)
-        external
-        pure
-        override
-    {
+    function runtimeValidationFunction(address, uint256, bytes calldata) external pure override {
         return;
     }
 
-    function preExecutionHook(address, uint256, bytes calldata)
-        external
-        pure
-        override
-        returns (bytes memory)
-    {
+    function preExecutionHook(address, uint256, bytes calldata) external pure override returns (bytes memory) {
         // if (functionId == uint8(FunctionId.PRE_EXECUTION_HOOK)) {
         //     return "";
         // } else if (functionId == uint8(FunctionId.PRE_PERMITTED_CALL_EXECUTION_HOOK)) {
@@ -115,7 +96,6 @@ contract ComprehensivePlugin is BasePlugin {
         // revert NotImplemented();
         // Todo: is there a logic step missing here, with the two different hooks?
         return;
-
     }
 
     function pluginManifest() external pure override returns (PluginManifest memory) {

@@ -16,7 +16,6 @@ import {ITokenSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/IT
 
 import {UpgradeableModularAccount} from "../../../src/account/UpgradeableModularAccount.sol";
 import {MSCAFactoryFixture} from "../../mocks/MSCAFactoryFixture.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 

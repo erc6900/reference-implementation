@@ -103,11 +103,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     }
 
     /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(address sender, uint256, bytes calldata)
-        external
-        view
-        override
-    {
+    function runtimeValidationFunction(address sender, uint256, bytes calldata) external view override {
         // Validate that the sender is the owner of the account or self.
         if (sender != _owners[msg.sender] && sender != msg.sender) {
             revert NotAuthorized();

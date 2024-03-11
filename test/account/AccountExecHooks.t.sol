@@ -15,7 +15,6 @@ import {
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -70,10 +69,7 @@ contract AccountExecHooksTest is OptimizedTest {
     function test_preExecHook_install() public {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
             ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, dependencyIndex: 0})
         );
     }
@@ -107,14 +103,8 @@ contract AccountExecHooksTest is OptimizedTest {
     function test_execHookPair_install() public {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
     }
 
@@ -158,10 +148,7 @@ contract AccountExecHooksTest is OptimizedTest {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
             ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, dependencyIndex: 0}),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
     }
 
@@ -238,14 +225,8 @@ contract AccountExecHooksTest is OptimizedTest {
         // Install the first plugin.
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
 
         // Attempt to install a second plugin that applies the first plugin's hook pair (as dependencies) to the
@@ -256,14 +237,8 @@ contract AccountExecHooksTest is OptimizedTest {
 
         _installPlugin2WithHooksExpectFail(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-                dependencyIndex: 1
-            }),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.DEPENDENCY, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.DEPENDENCY, dependencyIndex: 1}),
             dependencies,
             abi.encodePacked(PluginManagerInternals.InvalidPluginManifest.selector)
         );

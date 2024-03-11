@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -116,10 +115,7 @@ contract BadValidationMagicValue_PreExecHook_Plugin is BaseTestPlugin {
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
                 dependencyIndex: 0
             }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            })
+            postExecHook: ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         });
 
         return manifest;
@@ -145,10 +141,7 @@ contract BadValidationMagicValue_PostExecHook_Plugin is BaseTestPlugin {
         // Illegal assignment: validation always allow only usable on runtime validation functions
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
+            preExecHook: ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
                 dependencyIndex: 0
@@ -234,10 +227,7 @@ contract BadHookMagicValue_PostExecHook_Plugin is BaseTestPlugin {
         // Illegal assignment: hook always deny only usable on runtime validation functions
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                dependencyIndex: 0
-            }),
+            preExecHook: ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
             postExecHook: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
                 dependencyIndex: 0

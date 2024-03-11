@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 interface IModularSessionKeyPlugin {
-
     /// @notice This event is emitted when a session key is added to the account.
     /// @param account The account whose session key is updated.
     /// @param sessionKey The address of the session key.

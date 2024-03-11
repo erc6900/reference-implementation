@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
-
 interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector.
     struct ExecutionFunctionConfig {
@@ -35,10 +33,7 @@ interface IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (
-            address[] memory preUserOpValidationHooks,
-            address[] memory preRuntimeValidationHooks
-        );
+        returns (address[] memory preUserOpValidationHooks, address[] memory preRuntimeValidationHooks);
 
     /// @notice Get an array of all installed plugins.
     /// @return The addresses of all installed plugins.

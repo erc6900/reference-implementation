@@ -9,15 +9,16 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
-import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, getPermittedCallKey, toPlugin, SelectorData} from "./AccountStorage.sol";
+import {
+    AccountStorage, getAccountStorage, getPermittedCallKey, toPlugin, SelectorData
+} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
@@ -34,7 +35,6 @@ contract UpgradeableModularAccount is
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using FunctionReferenceLib for FunctionReference;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -348,7 +348,7 @@ contract UpgradeableModularAccount is
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
-        if (userOpValidationPlugin == NULL_PLUGIN) {
+        if (userOpValidationPlugin == _NULL_PLUGIN) {
             revert UserOpValidationFunctionMissing(selector);
         }
 
@@ -368,7 +368,9 @@ contract UpgradeableModularAccount is
 
                 if (uint160(currentValidationData) > 1) {
                     // If the aggregator is not 0 or 1, it is an unexpected value
-                    revert UnexpectedAggregator(address(preUserOpValidationHookPlugin), address(uint160(currentValidationData)));
+                    revert UnexpectedAggregator(
+                        address(preUserOpValidationHookPlugin), address(uint160(currentValidationData))
+                    );
                 }
                 validationData = _coalescePreValidation(validationData, currentValidationData);
             } else {
@@ -384,7 +386,8 @@ contract UpgradeableModularAccount is
         // Run the user op validationFunction
         {
             if (!_isEmptyOrMagicValue(userOpValidationPlugin)) {
-                currentValidationData = IPlugin(userOpValidationPlugin).userOpValidationFunction(userOp, userOpHash);
+                currentValidationData =
+                    IPlugin(userOpValidationPlugin).userOpValidationFunction(userOp, userOpHash);
 
                 if (preUserOpValidationHooksLength != 0) {
                     // If we have other validation data we need to coalesce with
@@ -442,7 +445,7 @@ contract UpgradeableModularAccount is
                     revert RuntimeValidationFunctionReverted(address(runtimeValidationPlugin), revertReason);
                 }
             } else {
-                if (runtimeValidationPlugin == NULL_PLUGIN) {
+                if (runtimeValidationPlugin == _NULL_PLUGIN) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
                 } else if (runtimeValidationPlugin == _PRE_HOOK_ALWAYS_DENY) {
                     revert InvalidConfiguration();
@@ -459,16 +462,7 @@ contract UpgradeableModularAccount is
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
-        uint256 maxPostExecHooksLength = postOnlyHooksLength;
-
-        // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength;) {
-            (, uint256 count) = selectorData.preHooks.at(i);
-            unchecked {
-                maxPostExecHooksLength += (count + 1);
-                ++i;
-            }
-        }
+        uint256 maxPostExecHooksLength = postOnlyHooksLength + preExecHooksLength;
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
         postHooksToRun = new PostExecToRun[](maxPostExecHooksLength);
@@ -498,17 +492,12 @@ contract UpgradeableModularAccount is
 
             bytes memory preExecHookReturnData = _runPreExecHook(preExecHookPlugin, data);
 
-            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHookPlugin].length();
-            if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
-                    (key,) = selectorData.associatedPostHooks[preExecHookPlugin].at(j);
-                    postHooksToRun[actualPostHooksToRunLength].postExecHookPlugin = toPlugin(key);
-                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
+            if (selectorData.hasAssociatedPostHook[preExecHookPlugin]) {
+                postHooksToRun[actualPostHooksToRunLength].postExecHookPlugin = preExecHookPlugin;
+                postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
-                    unchecked {
-                        ++actualPostHooksToRunLength;
-                        ++j;
-                    }
+                unchecked {
+                    ++actualPostHooksToRunLength;
                 }
             }
 
@@ -527,9 +516,7 @@ contract UpgradeableModularAccount is
         internal
         returns (bytes memory preExecHookReturnData)
     {
-        try preExecHookPlugin.preExecutionHook(msg.sender, msg.value, data) returns (
-            bytes memory returnData
-        ) {
+        try preExecHookPlugin.preExecutionHook(msg.sender, msg.value, data) returns (bytes memory returnData) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
             revert PreExecHookReverted(address(preExecHookPlugin), revertReason);

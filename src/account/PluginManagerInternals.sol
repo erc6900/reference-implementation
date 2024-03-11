@@ -5,7 +5,6 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
@@ -15,20 +14,22 @@ import {
     ManifestExternalCallPermission,
     PluginManifest
 } from "../interfaces/IPlugin.sol";
-import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {
     AccountStorage,
     getAccountStorage,
     SelectorData,
     getPermittedCallKey,
-    PermittedExternalCallData,
-    toPlugin
+    PermittedExternalCallData
 } from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using FunctionReferenceLib for FunctionReference;
+
+    IPlugin internal constant _NULL_PLUGIN = IPlugin(address(0));
+    IPlugin internal constant _RUNTIME_VALIDATION_ALWAYS_ALLOW = IPlugin(address(1));
+    IPlugin internal constant _PRE_HOOK_ALWAYS_DENY = IPlugin(address(2));
 
     error ArrayLengthMismatch();
     error ExecutionFunctionAlreadySet(bytes4 selector);
@@ -43,10 +44,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
     error ValidationFunctionAlreadySet(bytes4 selector, IPlugin validation);
-
-    IPlugin internal constant NULL_PLUGIN = IPlugin(address(0));
-    IPlugin internal constant _RUNTIME_VALIDATION_ALWAYS_ALLOW = IPlugin(address(1));
-    IPlugin internal constant _PRE_HOOK_ALWAYS_DENY = IPlugin(address(2));
 
     modifier notNullPlugin(IPlugin plugin) {
         if (address(plugin) == address(0)) {
@@ -73,41 +70,37 @@ abstract contract PluginManagerInternals is IPluginManager {
         _selectorData.plugin = address(0);
     }
 
-    function _addValidationFunction(bytes4 selector, IPlugin validation)
-        internal
-        notNullPlugin(validation)
-    {
+    function _addValidationFunction(bytes4 selector, IPlugin validation) internal notNullPlugin(validation) {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.validation != NULL_PLUGIN) {
+        if (_selectorData.validation != _NULL_PLUGIN) {
             revert ValidationFunctionAlreadySet(selector, validation);
         }
 
         _selectorData.validation = validation;
     }
 
-    function _removeValidationFunction(bytes4 selector, IPlugin validation)
-        internal
-        notNullPlugin(validation)
-    {
+    function _removeValidationFunction(bytes4 selector, IPlugin validation) internal notNullPlugin(validation) {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.validation = NULL_PLUGIN;
+        _selectorData.validation = _NULL_PLUGIN;
     }
 
-    function _addExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook)
-        internal
-    {
+    function _addExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook) internal {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (preExecHook != NULL_PLUGIN) {
+        if (preExecHook != _NULL_PLUGIN) {
             _addOrIncrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
-            if (postExecHook != NULL_PLUGIN) {
-                _addOrIncrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+            if (postExecHook != _NULL_PLUGIN) {
+                if (preExecHook == _PRE_HOOK_ALWAYS_DENY) {
+                    // todo: more elegant handling of this case.
+                    revert InvalidPluginManifest();
+                }
+                _selectorData.hasAssociatedPostHook[preExecHook] = true;
             }
         } else {
-            if (postExecHook == NULL_PLUGIN) {
+            if (postExecHook == _NULL_PLUGIN) {
                 // both pre and post hooks cannot be null
                 revert NullPlugin();
             }
@@ -116,16 +109,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
     }
 
-    function _removeExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook)
-        internal
-    {
+    function _removeExecHooks(bytes4 selector, IPlugin preExecHook, IPlugin postExecHook) internal {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (preExecHook != NULL_PLUGIN) {
+        if (preExecHook != _NULL_PLUGIN) {
             _removeOrDecrement(_selectorData.preHooks, _toSetValue(preExecHook));
 
-            if (postExecHook != NULL_PLUGIN) {
-                _removeOrDecrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+            if (postExecHook != _NULL_PLUGIN) {
+                _selectorData.hasAssociatedPostHook[preExecHook] = false;
             }
         } else {
             // The case where both pre and post hooks are null was checked during installation.
@@ -595,10 +586,6 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _toSetValue(IPlugin plugin) internal pure returns (bytes32) {
         return bytes32(bytes20(address(plugin)));
-    }
-
-    function _toFunctionReference(bytes32 setValue) internal pure returns (FunctionReference) {
-        return FunctionReference.wrap(bytes21(setValue));
     }
 
     function _isEmptyOrMagicValue(IPlugin plugin) internal pure returns (bool) {

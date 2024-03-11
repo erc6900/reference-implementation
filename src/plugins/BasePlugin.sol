@@ -46,19 +46,13 @@ abstract contract BasePlugin is ERC165, IPlugin {
     }
 
     /// @inheritdoc IPlugin
-    function preRuntimeValidationHook(address sender, uint256 value, bytes calldata data)
-        external
-        virtual
-    {
+    function preRuntimeValidationHook(address sender, uint256 value, bytes calldata data) external virtual {
         (sender, value, data);
         revert NotImplemented();
     }
 
     /// @inheritdoc IPlugin
-    function runtimeValidationFunction(address sender, uint256 value, bytes calldata data)
-        external
-        virtual
-    {
+    function runtimeValidationFunction(address sender, uint256 value, bytes calldata data) external virtual {
         (sender, value, data);
         revert NotImplemented();
     }

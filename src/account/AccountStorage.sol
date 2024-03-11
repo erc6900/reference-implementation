@@ -5,7 +5,6 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -43,7 +42,7 @@ struct SelectorData {
     // The execution hooks for this function selector.
     EnumerableMap.Bytes32ToUintMap preHooks;
     // bytes20 key = pre hook plugin address
-    mapping(IPlugin => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
+    mapping(IPlugin => bool) hasAssociatedPostHook;
     EnumerableMap.Bytes32ToUintMap postOnlyHooks;
 }
 
@@ -74,7 +73,6 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
     return bytes24(bytes20(addr)) | (bytes24(selector) >> 160);
 }
 
-
 function toPlugin(bytes32 key) pure returns (IPlugin) {
     return IPlugin(address(bytes20(key)));
 }
@@ -82,10 +80,7 @@ function toPlugin(bytes32 key) pure returns (IPlugin) {
 // Helper function to get all elements of a set into memory.
 using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
 
-function toAddressArray(EnumerableMap.Bytes32ToUintMap storage map)
-    view
-    returns (address[] memory)
-{
+function toAddressArray(EnumerableMap.Bytes32ToUintMap storage map) view returns (address[] memory) {
     uint256 length = map.length();
     address[] memory result = new address[](length);
     for (uint256 i = 0; i < length;) {

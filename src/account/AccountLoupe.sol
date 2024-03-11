@@ -45,16 +45,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyExecHooksLength = selectorData.postOnlyHooks.length();
-        uint256 maxExecHooksLength = postOnlyExecHooksLength;
-
-        // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength;) {
-            (, uint256 count) = selectorData.preHooks.at(i);
-            unchecked {
-                maxExecHooksLength += (count + 1);
-                ++i;
-            }
-        }
+        uint256 maxExecHooksLength = postOnlyExecHooksLength + preExecHooksLength;
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
         execHooks = new ExecutionHooks[](maxExecHooksLength);
@@ -64,27 +55,14 @@ abstract contract AccountLoupe is IAccountLoupe {
             (bytes32 key,) = selectorData.preHooks.at(i);
             IPlugin preExecHookPlugin = toPlugin(key);
 
-            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHookPlugin].length();
-            if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
-                    execHooks[actualExecHooksLength].preExecHookPlugin = address(preExecHookPlugin);
-                    (key,) = selectorData.associatedPostHooks[preExecHookPlugin].at(j);
-                    execHooks[actualExecHooksLength].postExecHookPlugin = address(toPlugin(key));
+            execHooks[actualExecHooksLength].preExecHookPlugin = address(preExecHookPlugin);
 
-                    unchecked {
-                        ++actualExecHooksLength;
-                        ++j;
-                    }
-                }
-            } else {
-                execHooks[actualExecHooksLength].preExecHookPlugin = address(preExecHookPlugin);
-
-                unchecked {
-                    ++actualExecHooksLength;
-                }
+            if (selectorData.hasAssociatedPostHook[preExecHookPlugin]) {
+                execHooks[actualExecHooksLength].postExecHookPlugin = address(preExecHookPlugin);
             }
 
             unchecked {
+                ++actualExecHooksLength;
                 ++i;
             }
         }
@@ -109,10 +87,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (
-            address[] memory preUserOpValidationHooks,
-            address[] memory preRuntimeValidationHooks
-        )
+        returns (address[] memory preUserOpValidationHooks, address[] memory preRuntimeValidationHooks)
     {
         preUserOpValidationHooks =
             toAddressArray(getAccountStorage().selectorData[selector].preUserOpValidationHooks);

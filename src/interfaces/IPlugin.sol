@@ -130,16 +130,14 @@ interface IPlugin {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function preRuntimeValidationHook(address sender, uint256 value, bytes calldata data)
-        external;
+    function preRuntimeValidationHook(address sender, uint256 value, bytes calldata data) external;
 
     /// @notice Run the runtime validation function.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function runtimeValidationFunction(address sender, uint256 value, bytes calldata data)
-        external;
+    function runtimeValidationFunction(address sender, uint256 value, bytes calldata data) external;
 
     /// @notice Run the pre execution hook.
     /// @dev To indicate the entire call should revert, the function MUST revert.
