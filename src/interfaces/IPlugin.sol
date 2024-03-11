@@ -65,7 +65,7 @@ struct PluginMetadata {
     // The author field SHOULD be a username representing the identity of the user or organization
     // that created this plugin.
     string author;
-    // String desciptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
+    // String descriptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
     // functions implemented by this plugin.
     SelectorPermission[] permissionDescriptors;
 }
