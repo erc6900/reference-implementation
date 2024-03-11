@@ -15,7 +15,6 @@ import {
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -36,15 +35,11 @@ contract AccountExecHooksTest is OptimizedTest {
     bytes32 public manifestHash2;
 
     bytes4 internal constant _EXEC_SELECTOR = bytes4(uint32(1));
-    uint8 internal constant _PRE_HOOK_FUNCTION_ID_1 = 1;
-    uint8 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
-    uint8 internal constant _PRE_HOOK_FUNCTION_ID_3 = 3;
-    uint8 internal constant _POST_HOOK_FUNCTION_ID_4 = 4;
 
     PluginManifest public m1;
     PluginManifest public m2;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash, address[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     // emitted by MockPlugin
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -65,7 +60,6 @@ contract AccountExecHooksTest is OptimizedTest {
                 executionSelector: _EXEC_SELECTOR,
                 associatedFunction: ManifestFunction({
                     functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                    functionId: 0,
                     dependencyIndex: 0
                 })
             })
@@ -75,12 +69,8 @@ contract AccountExecHooksTest is OptimizedTest {
     function test_preExecHook_install() public {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _PRE_HOOK_FUNCTION_ID_1,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, functionId: 0, dependencyIndex: 0})
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, dependencyIndex: 0})
         );
     }
 
@@ -93,7 +83,6 @@ contract AccountExecHooksTest is OptimizedTest {
         emit ReceivedCall(
             abi.encodeWithSelector(
                 IPlugin.preExecutionHook.selector,
-                _PRE_HOOK_FUNCTION_ID_1,
                 address(this), // caller
                 0, // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
@@ -114,16 +103,8 @@ contract AccountExecHooksTest is OptimizedTest {
     function test_execHookPair_install() public {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _PRE_HOOK_FUNCTION_ID_1,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _POST_HOOK_FUNCTION_ID_2,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
     }
 
@@ -137,7 +118,6 @@ contract AccountExecHooksTest is OptimizedTest {
         emit ReceivedCall(
             abi.encodeWithSelector(
                 IPlugin.preExecutionHook.selector,
-                _PRE_HOOK_FUNCTION_ID_1,
                 address(this), // caller
                 0, // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
@@ -150,7 +130,7 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         // post hook call
         emit ReceivedCall(
-            abi.encodeCall(IPlugin.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
+            abi.encodeCall(IPlugin.postExecutionHook, ("")),
             0 // msg value in call to plugin
         );
 
@@ -167,12 +147,8 @@ contract AccountExecHooksTest is OptimizedTest {
     function test_postOnlyExecHook_install() public {
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, functionId: 0, dependencyIndex: 0}),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _POST_HOOK_FUNCTION_ID_2,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.NONE, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
     }
 
@@ -183,7 +159,7 @@ contract AccountExecHooksTest is OptimizedTest {
 
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
-            abi.encodeCall(IPlugin.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
+            abi.encodeCall(IPlugin.postExecutionHook, ("")),
             0 // msg value in call to plugin
         );
 
@@ -203,10 +179,9 @@ contract AccountExecHooksTest is OptimizedTest {
             _EXEC_SELECTOR,
             ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
                 dependencyIndex: 0
             }),
-            ManifestFunction(ManifestAssociatedFunctionType.NONE, 0, 0)
+            ManifestFunction(ManifestAssociatedFunctionType.NONE, 0)
         );
 
         // Install a second plugin that applies the same pre hook on the same selector.
@@ -214,11 +189,10 @@ contract AccountExecHooksTest is OptimizedTest {
             _EXEC_SELECTOR,
             ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
                 dependencyIndex: 0
             }),
-            ManifestFunction(ManifestAssociatedFunctionType.NONE, 0, 0),
-            new FunctionReference[](0)
+            ManifestFunction(ManifestAssociatedFunctionType.NONE, 0),
+            new address[](0)
         );
 
         vm.stopPrank();
@@ -251,36 +225,20 @@ contract AccountExecHooksTest is OptimizedTest {
         // Install the first plugin.
         _installPlugin1WithHooks(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _PRE_HOOK_FUNCTION_ID_1,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: _POST_HOOK_FUNCTION_ID_2,
-                dependencyIndex: 0
-            })
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.SELF, dependencyIndex: 0})
         );
 
         // Attempt to install a second plugin that applies the first plugin's hook pair (as dependencies) to the
         // same selector. This should revert.
-        FunctionReference[] memory dependencies = new FunctionReference[](2);
-        dependencies[0] = FunctionReferenceLib.pack(address(mockPlugin1), _PRE_HOOK_FUNCTION_ID_1);
-        dependencies[1] = FunctionReferenceLib.pack(address(mockPlugin1), _POST_HOOK_FUNCTION_ID_2);
+        address[] memory dependencies = new address[](2);
+        dependencies[0] = address(mockPlugin1);
+        dependencies[1] = address(mockPlugin1);
 
         _installPlugin2WithHooksExpectFail(
             _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-                functionId: 0,
-                dependencyIndex: 0
-            }),
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-                functionId: 0,
-                dependencyIndex: 1
-            }),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.DEPENDENCY, dependencyIndex: 0}),
+            ManifestFunction({functionType: ManifestAssociatedFunctionType.DEPENDENCY, dependencyIndex: 1}),
             dependencies,
             abi.encodePacked(PluginManagerInternals.InvalidPluginManifest.selector)
         );
@@ -300,13 +258,13 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
+        emit PluginInstalled(address(mockPlugin1), manifestHash1, new address[](0));
 
         account.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
             pluginInstallData: bytes(""),
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -314,7 +272,7 @@ contract AccountExecHooksTest is OptimizedTest {
         bytes4 selector,
         ManifestFunction memory preHook,
         ManifestFunction memory postHook,
-        FunctionReference[] memory dependencies
+        address[] memory dependencies
     ) internal {
         if (preHook.functionType == ManifestAssociatedFunctionType.DEPENDENCY) {
             m2.dependencyInterfaceIds.push(type(IPlugin).interfaceId);
@@ -345,7 +303,7 @@ contract AccountExecHooksTest is OptimizedTest {
         bytes4 selector,
         ManifestFunction memory preHook,
         ManifestFunction memory postHook,
-        FunctionReference[] memory dependencies,
+        address[] memory dependencies,
         bytes memory revertData
     ) internal {
         if (preHook.functionType == ManifestAssociatedFunctionType.DEPENDENCY) {

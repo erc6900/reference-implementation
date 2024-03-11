@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
@@ -47,7 +46,7 @@ contract AccountReturnDataTest is OptimizedTest {
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
         // Add the result consumer plugin to the account
         bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
@@ -55,7 +54,7 @@ contract AccountReturnDataTest is OptimizedTest {
             plugin: address(resultConsumerPlugin),
             manifestHash: resultConsumerManifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 

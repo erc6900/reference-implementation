@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -50,7 +49,6 @@ contract ResultCreatorPlugin is BaseTestPlugin {
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -126,7 +124,6 @@ contract ResultConsumerPlugin is BaseTestPlugin {
             executionSelector: this.checkResultEFPFallback.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });
@@ -134,7 +131,6 @@ contract ResultConsumerPlugin is BaseTestPlugin {
             executionSelector: this.checkResultEFPExternal.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });

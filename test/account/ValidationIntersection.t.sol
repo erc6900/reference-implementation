@@ -5,14 +5,12 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
-    MockBaseUserOpValidationPlugin,
-    MockUserOpValidation1HookPlugin,
-    MockUserOpValidation2HookPlugin,
+    MockUserOpValidationWithPreHookPlugin,
+    MockOnlyPreUserOpValidationHookPlugin,
     MockUserOpValidationPlugin
 } from "../mocks/plugins/ValidationPluginMocks.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -25,9 +23,9 @@ contract ValidationIntersectionTest is OptimizedTest {
     address public owner1;
     uint256 public owner1Key;
     UpgradeableModularAccount public account1;
-    MockUserOpValidationPlugin public noHookPlugin;
-    MockUserOpValidation1HookPlugin public oneHookPlugin;
-    MockUserOpValidation2HookPlugin public twoHookPlugin;
+    MockUserOpValidationPlugin public uoPlugin;
+    MockUserOpValidationWithPreHookPlugin public uoPvhPlugin;
+    MockOnlyPreUserOpValidationHookPlugin public pvhPlugin;
 
     function setUp() public {
         entryPoint = new EntryPoint();
@@ -39,37 +37,37 @@ contract ValidationIntersectionTest is OptimizedTest {
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 1 ether);
 
-        noHookPlugin = new MockUserOpValidationPlugin();
-        oneHookPlugin = new MockUserOpValidation1HookPlugin();
-        twoHookPlugin = new MockUserOpValidation2HookPlugin();
+        uoPlugin = new MockUserOpValidationPlugin();
+        uoPvhPlugin = new MockUserOpValidationWithPreHookPlugin();
+        pvhPlugin = new MockOnlyPreUserOpValidationHookPlugin();
 
         vm.startPrank(address(owner1));
         account1.installPlugin({
-            plugin: address(noHookPlugin),
-            manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),
+            plugin: address(uoPlugin),
+            manifestHash: keccak256(abi.encode(uoPlugin.pluginManifest())),
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
         account1.installPlugin({
-            plugin: address(oneHookPlugin),
-            manifestHash: keccak256(abi.encode(oneHookPlugin.pluginManifest())),
+            plugin: address(uoPvhPlugin),
+            manifestHash: keccak256(abi.encode(uoPvhPlugin.pluginManifest())),
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
         account1.installPlugin({
-            plugin: address(twoHookPlugin),
-            manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
+            plugin: address(pvhPlugin),
+            manifestHash: keccak256(abi.encode(pvhPlugin.pluginManifest())),
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
         vm.stopPrank();
     }
 
     function testFuzz_validationIntersect_single(uint256 validationData) public {
-        noHookPlugin.setValidationData(validationData);
+        uoPlugin.setValidationData(validationData);
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(noHookPlugin.foo.selector);
+        userOp.callData = bytes.concat(uoPlugin.foo.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -79,13 +77,13 @@ contract ValidationIntersectionTest is OptimizedTest {
     }
 
     function test_validationIntersect_authorizer_sigfail_validationFunction() public {
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             _SIG_VALIDATION_FAILED,
             0 // returns OK
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -96,13 +94,13 @@ contract ValidationIntersectionTest is OptimizedTest {
     }
 
     function test_validationIntersect_authorizer_sigfail_hook() public {
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             0, // returns OK
             _SIG_VALIDATION_FAILED
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -119,12 +117,12 @@ contract ValidationIntersectionTest is OptimizedTest {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             _packValidationData(address(0), start1, end1), _packValidationData(address(0), start2, end2)
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -140,12 +138,12 @@ contract ValidationIntersectionTest is OptimizedTest {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             _packValidationData(address(0), start2, end2), _packValidationData(address(0), start1, end1)
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -157,23 +155,20 @@ contract ValidationIntersectionTest is OptimizedTest {
     function test_validationIntersect_revert_unexpectedAuthorizer() public {
         address badAuthorizer = makeAddr("badAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             0, // returns OK
             uint256(uint160(badAuthorizer)) // returns an aggregator, which preValidation hooks are not allowed to
                 // do.
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.UnexpectedAggregator.selector,
-                address(oneHookPlugin),
-                MockBaseUserOpValidationPlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_1,
-                badAuthorizer
+                UpgradeableModularAccount.UnexpectedAggregator.selector, address(uoPvhPlugin), badAuthorizer
             )
         );
         account1.validateUserOp(userOp, uoHash, 1 wei);
@@ -182,13 +177,13 @@ contract ValidationIntersectionTest is OptimizedTest {
     function test_validationIntersect_validAuthorizer() public {
         address goodAuthorizer = makeAddr("goodAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             uint256(uint160(goodAuthorizer)), // returns a valid aggregator
             0 // returns OK
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -206,12 +201,12 @@ contract ValidationIntersectionTest is OptimizedTest {
 
         address goodAuthorizer = makeAddr("goodAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             _packValidationData(goodAuthorizer, start1, end1), _packValidationData(address(0), start2, end2)
         );
 
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -227,14 +222,15 @@ contract ValidationIntersectionTest is OptimizedTest {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        twoHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             0, // returns OK
-            _packValidationData(address(0), start1, end1),
-            _packValidationData(address(0), start2, end2)
+            _packValidationData(address(0), start1, end1)
         );
 
+        pvhPlugin.setValidationData(_packValidationData(address(0), start2, end2));
+
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -244,14 +240,15 @@ contract ValidationIntersectionTest is OptimizedTest {
     }
 
     function test_validationIntersect_multiplePreValidationHooksSigFail() public {
-        twoHookPlugin.setValidationData(
+        uoPvhPlugin.setValidationData(
             0, // returns OK
-            0, // returns OK
-            _SIG_VALIDATION_FAILED
+            0 // returns OK
         );
 
+        pvhPlugin.setValidationData(_SIG_VALIDATION_FAILED);
+
         UserOperation memory userOp;
-        userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
+        userOp.callData = bytes.concat(uoPvhPlugin.bar.selector);
 
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 

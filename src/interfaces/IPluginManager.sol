@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 type FunctionReference is bytes21;
 
 interface IPluginManager {
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash, address[] dependencies);
 
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSucceeded);
 
@@ -19,7 +19,7 @@ interface IPluginManager {
         address plugin,
         bytes32 manifestHash,
         bytes calldata pluginInstallData,
-        FunctionReference[] calldata dependencies
+        address[] calldata dependencies
     ) external;
 
     /// @notice Uninstall a plugin from the modular account.

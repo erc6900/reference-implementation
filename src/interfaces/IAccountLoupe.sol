@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
-
 interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector.
     struct ExecutionFunctionConfig {
         address plugin;
-        FunctionReference validationFunction;
+        address validationPlugin;
     }
 
     /// @notice Pre and post hooks for a given selector.
     /// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
     struct ExecutionHooks {
-        FunctionReference preExecHook;
-        FunctionReference postExecHook;
+        address preExecHookPlugin;
+        address postExecHookPlugin;
     }
 
     /// @notice Get the validation functions and plugin address for a selector.
@@ -35,10 +33,7 @@ interface IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (
-            FunctionReference[] memory preUserOpValidationHooks,
-            FunctionReference[] memory preRuntimeValidationHooks
-        );
+        returns (address[] memory preUserOpValidationHooks, address[] memory preRuntimeValidationHooks);
 
     /// @notice Get an array of all installed plugins.
     /// @return The addresses of all installed plugins.

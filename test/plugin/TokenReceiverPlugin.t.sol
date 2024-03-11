@@ -9,7 +9,6 @@ import {IERC777Recipient} from "@openzeppelin/contracts/token/ERC777/IERC777Reci
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
@@ -60,7 +59,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     function _initPlugin() internal {
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        acct.installPlugin(address(plugin), manifestHash, "", new FunctionReference[](0));
+        acct.installPlugin(address(plugin), manifestHash, "", new address[](0));
     }
 
     function test_failERC721Transfer() public {

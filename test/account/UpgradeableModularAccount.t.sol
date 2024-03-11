@@ -9,7 +9,6 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -47,7 +46,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash, address[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -265,12 +264,12 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash, new FunctionReference[](0));
+        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash, new address[](0));
         IPluginManager(account2).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
@@ -293,7 +292,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(mockPluginWithBadPermittedExec),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -305,7 +304,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
             pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -320,7 +319,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(badPlugin),
             manifestHash: bytes32(0),
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -332,7 +331,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         vm.expectRevert(
@@ -344,7 +343,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
     }
 
@@ -357,7 +356,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         vm.expectEmit(true, true, true, true);
@@ -378,7 +377,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         vm.expectEmit(true, true, true, true);
@@ -403,7 +402,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         // Attempt to uninstall with a blank manifest
@@ -431,7 +430,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            dependencies: new address[](0)
         });
 
         vm.stopPrank();

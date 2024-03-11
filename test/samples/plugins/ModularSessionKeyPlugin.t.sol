@@ -16,7 +16,6 @@ import {ITokenSessionKeyPlugin} from "../../../src/samples/plugins/interfaces/IT
 
 import {UpgradeableModularAccount} from "../../../src/account/UpgradeableModularAccount.sol";
 import {MSCAFactoryFixture} from "../../mocks/MSCAFactoryFixture.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 
@@ -99,10 +98,8 @@ contract ModularSessionKeyPluginTest is Test {
         vm.deal(address(account), 1 ether);
 
         vm.startPrank(owner);
-        FunctionReference[] memory modularSessionDependency = new FunctionReference[](1);
-        modularSessionDependency[0] = FunctionReferenceLib.pack(
-            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
-        );
+        address[] memory modularSessionDependency = new address[](1);
+        modularSessionDependency[0] = address(ownerPlugin);
 
         bytes32 modularSessionKeyManifestHash = keccak256(abi.encode(modularSessionKeyPlugin.pluginManifest()));
 
@@ -127,10 +124,8 @@ contract ModularSessionKeyPluginTest is Test {
             dependencies: modularSessionDependency
         });
 
-        FunctionReference[] memory tokenSessionDependency = new FunctionReference[](1);
-        tokenSessionDependency[0] = FunctionReferenceLib.pack(
-            address(modularSessionKeyPlugin), uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
-        );
+        address[] memory tokenSessionDependency = new address[](1);
+        tokenSessionDependency[0] = address(modularSessionKeyPlugin);
         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
         account.installPlugin({
@@ -235,9 +230,8 @@ contract ModularSessionKeyPluginTest is Test {
         bytes memory revertReason = abi.encodeWithSelector(IModularSessionKeyPlugin.NotAuthorized.selector);
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -276,9 +270,8 @@ contract ModularSessionKeyPluginTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -298,9 +291,8 @@ contract ModularSessionKeyPluginTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                UpgradeableModularAccount.RuntimeValidationReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );

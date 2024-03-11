@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -49,7 +48,6 @@ contract EFPCallerPlugin is BaseTestPlugin {
 
         ManifestFunction memory alwaysAllowValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0,
             dependencyIndex: 0
         });
 
@@ -186,7 +184,6 @@ contract EFPCallerPluginAnyExternal is BaseTestPlugin {
             executionSelector: this.passthroughExecute.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
                 dependencyIndex: 0
             })
         });

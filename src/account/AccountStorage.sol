@@ -5,7 +5,6 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -15,7 +14,7 @@ struct PluginData {
     // boolean to indicate if the plugin can spend native tokens from the account.
     bool canSpendNativeToken;
     bytes32 manifestHash;
-    FunctionReference[] dependencies;
+    address[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
     uint256 dependentCount;
 }
@@ -36,14 +35,14 @@ struct SelectorData {
     // If this is a native function, the address must remain address(0).
     address plugin;
     // User operation validation and runtime validation share a function reference.
-    FunctionReference validation;
+    IPlugin validation;
     // The pre validation hooks for this function selector.
     EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
     EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;
     // The execution hooks for this function selector.
     EnumerableMap.Bytes32ToUintMap preHooks;
-    // bytes21 key = pre hook function reference
-    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
+    // bytes20 key = pre hook plugin address
+    mapping(IPlugin => bool) hasAssociatedPostHook;
     EnumerableMap.Bytes32ToUintMap postOnlyHooks;
 }
 
@@ -53,7 +52,7 @@ struct AccountStorage {
     bool initializing;
     // Plugin metadata storage
     EnumerableSet.AddressSet plugins;
-    mapping(address => PluginData) pluginData;
+    mapping(IPlugin => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     // bytes24 key = address(calling plugin) || bytes4(selector of execution function)
@@ -74,18 +73,19 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
     return bytes24(bytes20(addr)) | (bytes24(selector) >> 160);
 }
 
+function toPlugin(bytes32 key) pure returns (IPlugin) {
+    return IPlugin(address(bytes20(key)));
+}
+
 // Helper function to get all elements of a set into memory.
 using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
 
-function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
-    view
-    returns (FunctionReference[] memory)
-{
+function toAddressArray(EnumerableMap.Bytes32ToUintMap storage map) view returns (address[] memory) {
     uint256 length = map.length();
-    FunctionReference[] memory result = new FunctionReference[](length);
+    address[] memory result = new address[](length);
     for (uint256 i = 0; i < length;) {
         (bytes32 key,) = map.at(i);
-        result[i] = FunctionReference.wrap(bytes21(key));
+        result[i] = address(bytes20(key));
 
         unchecked {
             ++i;

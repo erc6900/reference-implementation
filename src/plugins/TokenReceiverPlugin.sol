@@ -81,7 +81,6 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC777Recipient, I
         // Only runtime validationFunction is needed since callbacks come from token contracts only
         ManifestFunction memory alwaysAllowFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions = new ManifestAssociatedFunction[](4);
