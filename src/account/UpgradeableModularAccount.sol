@@ -6,6 +6,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -28,6 +29,7 @@ contract UpgradeableModularAccount is
     AccountStorageInitializable,
     BaseAccount,
     IERC165,
+    IERC1271,
     IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
@@ -35,6 +37,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -298,6 +301,14 @@ contract UpgradeableModularAccount is
         }
 
         return getAccountStorage().supportedIfaces[interfaceId] > 0;
+    }
+
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view override returns (bytes4) {
+        // Uses the first signature validator that is added.
+        // Multiple validation support will be implemented in a separate PR.
+        return IPlugin(getAccountStorage().signatureValidators.at(0)).isValidSignatureWithSender(
+            msg.sender, hash, signature
+        );
     }
 
     /// @inheritdoc UUPSUpgradeable

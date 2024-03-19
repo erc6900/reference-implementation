@@ -61,6 +61,8 @@ struct AccountStorage {
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
+    // Holds all added signature validators.
+    EnumerableSet.AddressSet signatureValidators;
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
