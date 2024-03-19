@@ -58,17 +58,6 @@ abstract contract BasePlugin is ERC165, IPlugin {
     }
 
     /// @inheritdoc IPlugin
-    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata signature)
-        external
-        virtual
-        view
-        returns (bytes4)
-    {
-        (sender, hash, signature);
-        revert NotImplemented();
-    }
-
-    /// @inheritdoc IPlugin
     function preExecutionHook(address sender, uint256 value, bytes calldata data)
         external
         virtual
@@ -81,6 +70,17 @@ abstract contract BasePlugin is ERC165, IPlugin {
     /// @inheritdoc IPlugin
     function postExecutionHook(bytes calldata preExecHookData) external virtual {
         (preExecHookData);
+        revert NotImplemented();
+    }
+
+    /// @inheritdoc IPlugin
+    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata signature)
+        external
+        view
+        virtual
+        returns (bytes4)
+    {
+        (sender, hash, signature);
         revert NotImplemented();
     }
 

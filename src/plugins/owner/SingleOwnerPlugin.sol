@@ -65,7 +65,12 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function isValidSignatureWithSender(address sender, bytes32 digest, bytes memory signature) public view override returns (bytes4) {
+    function isValidSignatureWithSender(address sender, bytes32 digest, bytes memory signature)
+        public
+        view
+        override
+        returns (bytes4)
+    {
         (sender);
         if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
             return _1271_MAGIC_VALUE;
