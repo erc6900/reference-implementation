@@ -152,6 +152,17 @@ interface IPlugin {
     /// @param preExecHookData The context returned by its associated pre execution hook.
     function postExecutionHook(bytes calldata preExecHookData) external;
 
+    /// @notice Validates a signature using ERC-1271.
+    /// @param sender the address that sent the ERC-1271 request to the smart account
+    /// @param hash the hash of the ERC-1271 request
+    /// @param signature the signature of the ERC-1271 request
+    ///
+    /// @return the ERC-1271 `MAGIC_VALUE` if the signature is valid, or 0xFFFFFFFF if invalid.
+    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4);
+
     /// @notice Describe the contents and intended configuration of the plugin.
     /// @dev This manifest MUST stay constant over time.
     /// @return A manifest describing the contents and intended configuration of the plugin.

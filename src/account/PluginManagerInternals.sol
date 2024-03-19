@@ -55,19 +55,28 @@ abstract contract PluginManagerInternals is IPluginManager {
     // Storage update operations
 
     function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(IPlugin(plugin)) {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        // Temporary specification mechanism for signature validators, prior to multi-validation support.
+        if (selector == IPlugin.isValidSignatureWithSender.selector) {
+            getAccountStorage().signatureValidators.add(plugin);
+        } else {
+            SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.plugin != address(0)) {
-            revert ExecutionFunctionAlreadySet(selector);
+            if (_selectorData.plugin != address(0)) {
+                revert ExecutionFunctionAlreadySet(selector);
+            }
+
+            _selectorData.plugin = plugin;
         }
-
-        _selectorData.plugin = plugin;
     }
 
     function _removeExecutionFunction(bytes4 selector) internal {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        if (selector == IPlugin.isValidSignatureWithSender.selector) {
+            getAccountStorage().signatureValidators.remove(msg.sender);
+        } else {
+            SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.plugin = address(0);
+            _selectorData.plugin = address(0);
+        }
     }
 
     function _addValidationFunction(bytes4 selector, IPlugin validation) internal notNullPlugin(validation) {

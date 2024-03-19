@@ -420,6 +420,14 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         assertEq(plugins[1], address(plugin));
     }
 
+    function test_isValidSignature_EOA() public {
+        bytes32 digest = keccak256("test");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, digest);
+
+        // sig check should pass using 1271 magic value
+        assertEq(bytes4(0x1626ba7e), account2.isValidSignature(digest, abi.encodePacked(r, s, v)));
+    }
+
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
         vm.startPrank(owner2);
 
