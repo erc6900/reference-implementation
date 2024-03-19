@@ -151,20 +151,20 @@ contract SingleOwnerPluginTest is OptimizedTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
 
         // sig check should fail
-        assertEq(plugin.isValidSignature(digest, abi.encodePacked(r, s, v)), bytes4(0xFFFFFFFF));
+        assertEq(plugin.isValidSignatureWithSender(address(0), digest, abi.encodePacked(r, s, v)), bytes4(0xFFFFFFFF));
 
         // transfer ownership to signer
         plugin.transferOwnership(signer);
         assertEq(signer, plugin.owner());
 
         // sig check should pass
-        assertEq(plugin.isValidSignature(digest, abi.encodePacked(r, s, v)), _1271_MAGIC_VALUE);
+        assertEq(plugin.isValidSignatureWithSender(address(0), digest, abi.encodePacked(r, s, v)), _1271_MAGIC_VALUE);
     }
 
     function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
         vm.startPrank(a);
         plugin.transferOwnership(address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
-        assertEq(plugin.isValidSignature(digest, signature), _1271_MAGIC_VALUE);
+        assertEq(plugin.isValidSignatureWithSender(address(0), digest, signature), _1271_MAGIC_VALUE);
     }
 }

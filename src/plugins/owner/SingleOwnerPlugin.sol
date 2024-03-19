@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
@@ -36,7 +35,7 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
+contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin {
     using ECDSA for bytes32;
 
     string public constant NAME = "Single Owner Plugin";
@@ -60,14 +59,14 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         _transferOwnership(newOwner);
     }
 
-    /// @inheritdoc IERC1271
     /// @dev The signature is valid if it is signed by the owner's private key
     /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
     /// owner (if the owner is a contract). Note that unlike the signature
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function isValidSignature(bytes32 digest, bytes memory signature) public view override returns (bytes4) {
+    function isValidSignatureWithSender(address sender, bytes32 digest, bytes memory signature) public view override returns (bytes4) {
+        (sender);
         if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
@@ -132,7 +131,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
         manifest.executionFunctions = new bytes4[](3);
         manifest.executionFunctions[0] = this.transferOwnership.selector;
-        manifest.executionFunctions[1] = this.isValidSignature.selector;
+        manifest.executionFunctions[1] = this.isValidSignatureWithSender.selector;
         manifest.executionFunctions[2] = this.owner.selector;
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
