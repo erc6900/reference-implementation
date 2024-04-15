@@ -180,14 +180,14 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerValidationFunction
         });
 
-        ManifestFunction memory alwaysAllowFunction = ManifestFunction({
+        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions[7] = ManifestAssociatedFunction({
             executionSelector: this.isValidSignature.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
 
         return manifest;
