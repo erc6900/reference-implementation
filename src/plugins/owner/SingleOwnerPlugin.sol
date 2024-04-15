@@ -60,34 +60,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         _transferOwnership(newOwner);
     }
 
-    /// @inheritdoc IERC1271
-    /// @dev The signature is valid if it is signed by the owner's private key
-    /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-    /// owner (if the owner is a contract). Note that unlike the signature
-    /// validation used in `validateUserOp`, this does///*not** wrap the digest in
-    /// an "Ethereum Signed Message" envelope before checking the signature in
-    /// the EOA-owner case.
-    function isValidSignature(bytes32 digest, bytes memory signature) public view override returns (bytes4) {
-        if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
-            return _1271_MAGIC_VALUE;
-        }
-        return 0xffffffff;
-    }
-
-    /// @inheritdoc ISingleOwnerPlugin
-    function owner() external view returns (address) {
-        return _owners[msg.sender];
-    }
-
-    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin view functions    ┃
-    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-    /// @inheritdoc ISingleOwnerPlugin
-    function ownerOf(address account) external view returns (address) {
-        return _owners[account];
-    }
-
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -136,7 +108,39 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         revert NotImplemented();
     }
 
-    /// @inheritdoc BasePlugin
+    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    // ┃    Execution view functions    ┃
+    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+    /// @inheritdoc IERC1271
+    /// @dev The signature is valid if it is signed by the owner's private key
+    /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
+    /// owner (if the owner is a contract). Note that unlike the signature
+    /// validation used in `validateUserOp`, this does///*not** wrap the digest in
+    /// an "Ethereum Signed Message" envelope before checking the signature in
+    /// the EOA-owner case.
+    function isValidSignature(bytes32 digest, bytes memory signature) external view override returns (bytes4) {
+        if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
+            return _1271_MAGIC_VALUE;
+        }
+        return 0xffffffff;
+    }
+
+    /// @inheritdoc ISingleOwnerPlugin
+    function owner() external view returns (address) {
+        return _owners[msg.sender];
+    }
+
+    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    // ┃    Plugin view functions    ┃
+    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+    /// @inheritdoc ISingleOwnerPlugin
+    function ownerOf(address account) external view returns (address) {
+        return _owners[account];
+    }
+
+     /// @inheritdoc BasePlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
@@ -212,6 +216,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
 
         return metadata;
     }
+
     // ┏━━━━━━━━━━━━━━━┓
     // ┃    EIP-165    ┃
     // ┗━━━━━━━━━━━━━━━┛

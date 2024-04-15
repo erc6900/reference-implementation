@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExternalCallPermission,
-    ManifestExecutionHook,
     PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
-import {IPlugin} from "../../../src/interfaces/IPlugin.sol";
 
 import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
