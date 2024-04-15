@@ -79,27 +79,27 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC777Recipient, I
         manifest.executionFunctions[3] = this.onERC1155BatchReceived.selector;
 
         // Only runtime validationFunction is needed since callbacks come from token contracts only
-        ManifestFunction memory alwaysAllowFunction = ManifestFunction({
+        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](4);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](4);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.tokensReceived.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
-        manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
+        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: this.onERC721Received.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
-        manifest.runtimeValidationFunctions[2] = ManifestAssociatedFunction({
+        manifest.validationFunctions[2] = ManifestAssociatedFunction({
             executionSelector: this.onERC1155Received.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
-        manifest.runtimeValidationFunctions[3] = ManifestAssociatedFunction({
+        manifest.validationFunctions[3] = ManifestAssociatedFunction({
             executionSelector: this.onERC1155BatchReceived.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
 
         manifest.interfaceIds = new bytes4[](3);

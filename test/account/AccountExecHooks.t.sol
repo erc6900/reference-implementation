@@ -60,7 +60,7 @@ contract AccountExecHooksTest is OptimizedTest {
 
         m1.executionFunctions.push(_EXEC_SELECTOR);
 
-        m1.runtimeValidationFunctions.push(
+        m1.validationFunctions.push(
             ManifestAssociatedFunction({
                 executionSelector: _EXEC_SELECTOR,
                 associatedFunction: ManifestFunction({

@@ -192,7 +192,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)) {
+        if (functionId == uint8(FunctionId.VALIDATION_TEMPORARY_OWNER)) {
             (address signer, ECDSA.RecoverError err) =
                 userOpHash.toEthSignedMessageHash().tryRecover(userOp.signature);
             if (err != ECDSA.RecoverError.NoError) {
@@ -216,7 +216,7 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         view
         override
     {
-        if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)) {
+        if (functionId == uint8(FunctionId.VALIDATION_TEMPORARY_OWNER)) {
             bytes4 selector = bytes4(data[0:4]);
             bytes memory key = msg.sender.allocateAssociatedStorageKey(0, 1);
             StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sender, selector)));
@@ -245,65 +245,42 @@ contract ModularSessionKeyPlugin is BasePlugin, IModularSessionKeyPlugin {
         manifest.executionFunctions[2] = this.addSessionKeyBatch.selector;
         manifest.executionFunctions[3] = this.removeSessionKeyBatch.selector;
 
-        ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
+        ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.DEPENDENCY,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Used as first index.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](4);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](5);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.addSessionKey.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[1] = ManifestAssociatedFunction({
+        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: this.removeSessionKey.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[2] = ManifestAssociatedFunction({
+        manifest.validationFunctions[2] = ManifestAssociatedFunction({
             executionSelector: this.addSessionKeyBatch.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[3] = ManifestAssociatedFunction({
+        manifest.validationFunctions[3] = ManifestAssociatedFunction({
             executionSelector: this.removeSessionKeyBatch.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
 
-        ManifestFunction memory ownerOrSelfRuntimeValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.DEPENDENCY,
-            functionId: 0, // Unused.
-            dependencyIndex: 1
-        });
         ManifestFunction memory alwaysAllowFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
 
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](5);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.addSessionKey.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.removeSessionKey.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: this.addSessionKeyBatch.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: this.removeSessionKeyBatch.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[4] = ManifestAssociatedFunction({
+        manifest.validationFunctions[4] = ManifestAssociatedFunction({
             executionSelector: this.getSessionDuration.selector,
             associatedFunction: alwaysAllowFunction
         });
 
-        manifest.dependencyInterfaceIds = new bytes4[](2);
+        manifest.dependencyInterfaceIds = new bytes4[](1);
         manifest.dependencyInterfaceIds[0] = type(ISingleOwnerPlugin).interfaceId;
-        manifest.dependencyInterfaceIds[1] = type(ISingleOwnerPlugin).interfaceId;
 
         return manifest;
     }

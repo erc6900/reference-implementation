@@ -108,7 +108,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         view
         override
     {
-        if (functionId == uint8(FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF)) {
+        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate that the sender is the owner of the account or self.
             if (sender != _owners[msg.sender] && sender != msg.sender) {
                 revert NotAuthorized();
@@ -125,7 +125,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.USER_OP_VALIDATION_OWNER)) {
+        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate the user op signature against the owner.
             (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
@@ -145,87 +145,49 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         manifest.executionFunctions[1] = this.isValidSignature.selector;
         manifest.executionFunctions[2] = this.owner.selector;
 
-        ManifestFunction memory ownerUserOpValidationFunction = ManifestFunction({
+        ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.USER_OP_VALIDATION_OWNER),
+            functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](7);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](8);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[1] = ManifestAssociatedFunction({
+        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[2] = ManifestAssociatedFunction({
+        manifest.validationFunctions[2] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.executeBatch.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[3] = ManifestAssociatedFunction({
+        manifest.validationFunctions[3] = ManifestAssociatedFunction({
             executionSelector: IPluginManager.installPlugin.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[4] = ManifestAssociatedFunction({
+        manifest.validationFunctions[4] = ManifestAssociatedFunction({
             executionSelector: IPluginManager.uninstallPlugin.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[5] = ManifestAssociatedFunction({
+        manifest.validationFunctions[5] = ManifestAssociatedFunction({
             executionSelector: UUPSUpgradeable.upgradeTo.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
-        manifest.userOpValidationFunctions[6] = ManifestAssociatedFunction({
+        manifest.validationFunctions[6] = ManifestAssociatedFunction({
             executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
-            associatedFunction: ownerUserOpValidationFunction
+            associatedFunction: ownerValidationFunction
         });
 
-        ManifestFunction memory ownerOrSelfRuntimeValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF),
-            dependencyIndex: 0 // Unused.
-        });
-        ManifestFunction memory alwaysAllowFunction = ManifestFunction({
+        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
-        manifest.runtimeValidationFunctions = new ManifestAssociatedFunction[](9);
-        manifest.runtimeValidationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.transferOwnership.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.owner.selector,
-            associatedFunction: alwaysAllowFunction
-        });
-        manifest.runtimeValidationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.executeBatch.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[4] = ManifestAssociatedFunction({
-            executionSelector: IPluginManager.installPlugin.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[5] = ManifestAssociatedFunction({
-            executionSelector: IPluginManager.uninstallPlugin.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[6] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeTo.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[7] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
-            associatedFunction: ownerOrSelfRuntimeValidationFunction
-        });
-        manifest.runtimeValidationFunctions[8] = ManifestAssociatedFunction({
+        manifest.validationFunctions[7] = ManifestAssociatedFunction({
             executionSelector: this.isValidSignature.selector,
-            associatedFunction: alwaysAllowFunction
+            associatedFunction: alwaysAllowRuntime
         });
 
         return manifest;
