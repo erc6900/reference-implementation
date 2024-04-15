@@ -5,8 +5,7 @@ import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/User
 
 interface ISingleOwnerPlugin {
     enum FunctionId {
-        RUNTIME_VALIDATION_OWNER_OR_SELF,
-        USER_OP_VALIDATION_OWNER
+        VALIDATION_OWNER_OR_SELF
     }
 
     /// @notice This event is emitted when ownership of the account changes.

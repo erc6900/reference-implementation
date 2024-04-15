@@ -99,12 +99,9 @@ contract ModularSessionKeyPluginTest is Test {
         vm.deal(address(account), 1 ether);
 
         vm.startPrank(owner);
-        FunctionReference[] memory modularSessionDependency = new FunctionReference[](2);
+        FunctionReference[] memory modularSessionDependency = new FunctionReference[](1);
         modularSessionDependency[0] = FunctionReferenceLib.pack(
-            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.USER_OP_VALIDATION_OWNER)
-        );
-        modularSessionDependency[1] = FunctionReferenceLib.pack(
-            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.RUNTIME_VALIDATION_OWNER_OR_SELF)
+            address(ownerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
         );
 
         bytes32 modularSessionKeyManifestHash = keccak256(abi.encode(modularSessionKeyPlugin.pluginManifest()));
@@ -130,14 +127,9 @@ contract ModularSessionKeyPluginTest is Test {
             dependencies: modularSessionDependency
         });
 
-        FunctionReference[] memory tokenSessionDependency = new FunctionReference[](2);
+        FunctionReference[] memory tokenSessionDependency = new FunctionReference[](1);
         tokenSessionDependency[0] = FunctionReferenceLib.pack(
-            address(modularSessionKeyPlugin),
-            uint8(IModularSessionKeyPlugin.FunctionId.USER_OP_VALIDATION_TEMPORARY_OWNER)
-        );
-        tokenSessionDependency[1] = FunctionReferenceLib.pack(
-            address(modularSessionKeyPlugin),
-            uint8(IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER)
+            address(modularSessionKeyPlugin), uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
         );
         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
@@ -245,7 +237,7 @@ contract ModularSessionKeyPluginTest is Test {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -286,7 +278,7 @@ contract ModularSessionKeyPluginTest is Test {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );
@@ -308,7 +300,7 @@ contract ModularSessionKeyPluginTest is Test {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(modularSessionKeyPlugin),
-                IModularSessionKeyPlugin.FunctionId.RUNTIME_VALIDATION_TEMPORARY_OWNER,
+                IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER,
                 revertReason
             )
         );

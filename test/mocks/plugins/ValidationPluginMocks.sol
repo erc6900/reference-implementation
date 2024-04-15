@@ -78,8 +78,8 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions = new bytes4[](1);
         manifest.executionFunctions[0] = this.foo.selector;
 
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
@@ -121,8 +121,8 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.bar.selector,
             associatedFunction: userOpValidationFunctionRef
         });
@@ -173,8 +173,8 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
             dependencyIndex: 0 // Unused.
         });
-        manifest.userOpValidationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.userOpValidationFunctions[0] = ManifestAssociatedFunction({
+        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
+        manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.baz.selector,
             associatedFunction: userOpValidationFunctionRef
         });

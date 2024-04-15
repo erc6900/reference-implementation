@@ -90,8 +90,7 @@ struct PluginManifest {
     // plugin MUST still be able to spend up to the balance that it sends to the account in the same call.
     bool canSpendNativeToken;
     ManifestExternalCallPermission[] permittedExternalCalls;
-    ManifestAssociatedFunction[] userOpValidationFunctions;
-    ManifestAssociatedFunction[] runtimeValidationFunctions;
+    ManifestAssociatedFunction[] validationFunctions;
     ManifestAssociatedFunction[] preUserOpValidationHooks;
     ManifestAssociatedFunction[] preRuntimeValidationHooks;
     ManifestExecutionHook[] executionHooks;
