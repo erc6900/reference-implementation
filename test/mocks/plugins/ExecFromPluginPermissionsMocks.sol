@@ -14,18 +14,25 @@ import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
 import {Counter} from "../Counter.sol";
 
-// Hardcode the counter addresses from ExecuteFromPluginPermissionsTest to be able to have a pure plugin manifest
-// easily
-address constant counter1 = 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f;
-address constant counter2 = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
-address constant counter3 = 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a;
-
 contract EFPCallerPlugin is BaseTestPlugin {
+    // Store the counters as immutables, and use the view -> pure cast to get the manifest
+    // solhint-disable private-vars-leading-underscore, immutable-vars-naming
+    address immutable private counter1;
+    address immutable private counter2;
+    address immutable private counter3;
+    // solhint-enable private-vars-leading-underscore, immutable-vars-naming
+
+    constructor(address _counter1, address _counter2, address _counter3) {
+        counter1 = _counter1;
+        counter2 = _counter2;
+        counter3 = _counter3;
+    }
+
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
+    function _getManifest() internal view returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new bytes4[](11);
@@ -84,6 +91,20 @@ contract EFPCallerPlugin is BaseTestPlugin {
         });
 
         return manifest;
+    }
+
+    function _castToPure(function() internal view returns (PluginManifest memory) fnIn)
+        internal
+        pure
+        returns (function() internal pure returns (PluginManifest memory) fnOut)
+    {
+        assembly ("memory-safe") {
+            fnOut := fnIn
+        }
+    }
+
+    function pluginManifest() external pure override returns (PluginManifest memory) {
+        return _castToPure(_getManifest)();
     }
 
     // The manifest requested access to use the plugin-defined method "foo"

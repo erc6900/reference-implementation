@@ -2,9 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {
     ManifestAssociatedFunctionType,
@@ -16,33 +14,22 @@ import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract AccountLoupeTest is OptimizedTest {
-    EntryPoint public entryPoint;
-    SingleOwnerPlugin public singleOwnerPlugin;
-    MSCAFactoryFixture public factory;
+contract AccountLoupeTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;
-
-    UpgradeableModularAccount public account1;
 
     FunctionReference public ownerValidation;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
-        entryPoint = new EntryPoint();
+        _transferOwnershipToTest();
 
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
-        factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
         comprehensivePlugin = new ComprehensivePlugin();
-
-        account1 = factory.createAccount(address(this), 0);
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));

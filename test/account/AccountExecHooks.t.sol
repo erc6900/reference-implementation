@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
-
 import {
     IPlugin,
     ManifestAssociatedFunctionType,
@@ -12,24 +9,13 @@ import {
     ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract AccountExecHooksTest is OptimizedTest {
-    using ECDSA for bytes32;
-
-    EntryPoint public entryPoint;
-    SingleOwnerPlugin public singleOwnerPlugin;
-    MSCAFactoryFixture public factory;
-
-    UpgradeableModularAccount public account;
-
+contract AccountExecHooksTest is AccountTestBase {
     MockPlugin public mockPlugin1;
     MockPlugin public mockPlugin2;
     bytes32 public manifestHash1;
@@ -50,13 +36,7 @@ contract AccountExecHooksTest is OptimizedTest {
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
-        entryPoint = new EntryPoint();
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
-        factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
-
-        // Create an account with "this" as the owner, so we can execute along the runtime path with regular
-        // solidity semantics
-        account = factory.createAccount(address(this), 0);
+        _transferOwnershipToTest();
 
         m1.executionFunctions.push(_EXEC_SELECTOR);
 
@@ -101,7 +81,7 @@ contract AccountExecHooksTest is OptimizedTest {
             0 // msg value in call to plugin
         );
 
-        (bool success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertTrue(success);
     }
 
@@ -154,7 +134,7 @@ contract AccountExecHooksTest is OptimizedTest {
             0 // msg value in call to plugin
         );
 
-        (bool success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertTrue(success);
     }
 
@@ -187,7 +167,7 @@ contract AccountExecHooksTest is OptimizedTest {
             0 // msg value in call to plugin
         );
 
-        (bool success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertTrue(success);
     }
 
@@ -225,7 +205,7 @@ contract AccountExecHooksTest is OptimizedTest {
     }
 
     function test_overlappingPreExecHooks_run() public {
-        (bool success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertFalse(success);
     }
 
@@ -236,14 +216,14 @@ contract AccountExecHooksTest is OptimizedTest {
         _uninstallPlugin(mockPlugin2);
 
         // Expect the pre hook to still exist.
-        (bool success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertFalse(success);
 
         // Uninstall the first plugin.
         _uninstallPlugin(mockPlugin1);
 
         // Execution selector should no longer exist.
-        (success,) = address(account).call(abi.encodeWithSelector(_EXEC_SELECTOR));
+        (success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
         assertFalse(success);
     }
 
@@ -302,7 +282,7 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
 
-        account.installPlugin({
+        account1.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
             pluginInstallData: bytes(""),
@@ -333,7 +313,7 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(mockPlugin2), manifestHash2, dependencies);
 
-        account.installPlugin({
+        account1.installPlugin({
             plugin: address(mockPlugin2),
             manifestHash: manifestHash2,
             pluginInstallData: bytes(""),
@@ -361,7 +341,7 @@ contract AccountExecHooksTest is OptimizedTest {
         manifestHash2 = keccak256(abi.encode(mockPlugin2.pluginManifest()));
 
         vm.expectRevert(revertData);
-        account.installPlugin({
+        account1.installPlugin({
             plugin: address(mockPlugin2),
             manifestHash: manifestHash2,
             pluginInstallData: bytes(""),
@@ -375,6 +355,6 @@ contract AccountExecHooksTest is OptimizedTest {
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
 
-        account.uninstallPlugin(address(plugin), bytes(""), bytes(""));
+        account1.uninstallPlugin(address(plugin), bytes(""), bytes(""));
     }
 }
