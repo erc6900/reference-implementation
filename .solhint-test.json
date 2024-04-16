@@ -11,7 +11,9 @@
       "modifier-name-mixedcase": ["error"],
       "private-vars-leading-underscore": ["error"],
       "no-inline-assembly": "off",
-      "avoid-low-level-calls": "off"
+      "avoid-low-level-calls": "off",
+      "one-contract-per-file": "off",
+      "no-empty-blocks": "off"
     }
   }
   

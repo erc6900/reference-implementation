@@ -2,17 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {
-    ManifestExecutionHook,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
-import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 
 contract BadTransferOwnershipPlugin is BasePlugin {
