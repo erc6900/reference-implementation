@@ -92,7 +92,8 @@ pragma solidity ^0.8.19;
 //         emit SessionKeysAdded(msg.sender, sessionKeys, allowedSelectors, validAfters, validUntils);
 //     }
 
-//     function removeSessionKeyBatch(address[] calldata sessionKeys, bytes4[] calldata allowedSelectors) external {
+//     function removeSessionKeyBatch(address[] calldata sessionKeys, bytes4[] calldata allowedSelectors) external
+// {
 //         if (sessionKeys.length != allowedSelectors.length) {
 //             revert WrongDataLength();
 //         }
@@ -117,7 +118,8 @@ pragma solidity ^0.8.19;
 //         returns (uint48 validAfter, uint48 validUntil)
 //     {
 //         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
+//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey,
+// allowedSelector)));
 //         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
 //         validAfter = sessionInfo.validAfter;
 //         validUntil = sessionInfo.validUntil;
@@ -301,7 +303,8 @@ pragma solidity ^0.8.19;
 
 //     /// @inheritdoc BasePlugin
 //     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
-//         return interfaceId == type(IModularSessionKeyPlugin).interfaceId || super.supportsInterface(interfaceId);
+//         return interfaceId == type(IModularSessionKeyPlugin).interfaceId ||
+// super.supportsInterface(interfaceId);
 //     }
 
 //     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -319,7 +322,8 @@ pragma solidity ^0.8.19;
 //             revert WrongTimeRangeForSession();
 //         }
 //         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
+//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey,
+// allowedSelector)));
 //         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
 //         sessionInfo.validAfter = validAfter;
 //         sessionInfo.validUntil = validUntil;
@@ -330,7 +334,8 @@ pragma solidity ^0.8.19;
 
 //     function _removeSessionKey(address account, address sessionKey, bytes4 allowedSelector) internal {
 //         bytes memory key = account.allocateAssociatedStorageKey(0, 1);
-//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey, allowedSelector)));
+//         StoragePointer ptr = key.associatedStorageLookup(keccak256(abi.encodePacked(sessionKey,
+// allowedSelector)));
 //         SessionInfo storage sessionInfo = _castPtrToStruct(ptr);
 //         sessionInfo.validAfter = 0;
 //         sessionInfo.validUntil = 0;

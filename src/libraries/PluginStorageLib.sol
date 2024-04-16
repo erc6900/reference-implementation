@@ -6,11 +6,13 @@ pragma solidity ^0.8.19;
 // /// @title Plugin Storage Library
 // /// @notice Library for allocating and accessing ERC-4337 address-associated storage within plugins.
 // library PluginStorageLib {
-//     /// @notice Allocates a memory buffer for an associated storage key, and sets the associated address and batch
+//     /// @notice Allocates a memory buffer for an associated storage key, and sets the associated address and
+// batch
 //     /// index.
 //     /// @param addr The address to associate with the storage key.
 //     /// @param batchIndex The batch index to associate with the storage key.
-//     /// @param keySize The size of the key in words, where each word is 32 bytes. Not inclusive of the address and
+//     /// @param keySize The size of the key in words, where each word is 32 bytes. Not inclusive of the address
+// and
 //     /// batch index.
 //     /// @return key The allocated memory buffer.
 //     function allocateAssociatedStorageKey(address addr, uint256 batchIndex, uint8 keySize)
@@ -38,7 +40,8 @@ pragma solidity ^0.8.19;
 //         }
 //     }
 
-//     function associatedStorageLookup(bytes memory key, bytes32 input) internal pure returns (StoragePointer ptr) {
+//     function associatedStorageLookup(bytes memory key, bytes32 input) internal pure returns (StoragePointer ptr)
+// {
 //         assembly ("memory-safe") {
 //             mstore(add(key, 96), input)
 //             ptr := keccak256(add(key, 32), mload(key))

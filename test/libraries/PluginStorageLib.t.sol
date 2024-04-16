@@ -67,7 +67,8 @@ pragma solidity ^0.8.19;
 //         assertEq(accountWrites.length, FUZZ_ARR_SIZE);
 //         for (uint256 i = 0; i < FUZZ_ARR_SIZE; i++) {
 //             bytes32 expectedKey = bytes32(
-//                 uint256(keccak256(abi.encodePacked(uint256(uint160(account)), uint256(batchIndex), inputKey))) + i
+//                 uint256(keccak256(abi.encodePacked(uint256(uint160(account)), uint256(batchIndex), inputKey))) +
+// i
 //             );
 //             assertEq(accountWrites[i], expectedKey);
 //             assertEq(vm.load(address(this), expectedKey), bytes32(uint256(values[i])));

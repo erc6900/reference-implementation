@@ -57,11 +57,13 @@ pragma solidity ^0.8.19;
 //         bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
 //     );
 //     event SessionKeyAdded(
-//         address indexed account, address indexed sessionKey, bytes4 allowedSelector, uint48 _after, uint48 _until
+//         address indexed account, address indexed sessionKey, bytes4 allowedSelector, uint48 _after, uint48
+// _until
 //     );
 //     event SessionKeyRemoved(address indexed account, address indexed sessionKey, bytes4 allowedSelector);
 //     event SessionKeysAdded(
-//         address indexed account, address[] sessionKeys, bytes4[] allowedSelectors, uint48[] afters, uint48[] untils
+//         address indexed account, address[] sessionKeys, bytes4[] allowedSelectors, uint48[] afters, uint48[]
+// untils
 //     );
 //     event SessionKeysRemoved(address indexed account, address[] sessionKeys, bytes4[] allowedSelectors);
 //     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSuccess);
@@ -129,7 +131,8 @@ pragma solidity ^0.8.19;
 
 //         FunctionReference[] memory tokenSessionDependency = new FunctionReference[](1);
 //         tokenSessionDependency[0] = FunctionReferenceLib.pack(
-//             address(modularSessionKeyPlugin), uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
+//             address(modularSessionKeyPlugin),
+// uint8(IModularSessionKeyPlugin.FunctionId.VALIDATION_TEMPORARY_OWNER)
 //         );
 //         bytes32 tokenSessionKeyManifestHash = keccak256(abi.encode(tokenSessionKeyPlugin.pluginManifest()));
 
@@ -195,7 +198,8 @@ pragma solidity ^0.8.19;
 //     function test_sessionKey_userOp() public {
 //         UserOperation[] memory userOps = new UserOperation[](1);
 
-//         (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), target, 1 ether);
+//         (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), target, 1
+// ether);
 //         userOps[0] = userOp;
 
 //         entryPoint.handleOps(userOps, beneficiary);

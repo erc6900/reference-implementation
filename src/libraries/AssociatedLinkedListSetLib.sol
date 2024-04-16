@@ -31,14 +31,16 @@ pragma solidity ^0.8.19;
 //     // Mapping keys exclude the upper 15 bits of the meta bytes, which allows keys to be either a value or the
 //     // sentinel.
 
-//     bytes4 internal constant _ASSOCIATED_STORAGE_PREFIX = 0x9cc6c923; // bytes4(keccak256("AssociatedLinkedListSet"))
+//     bytes4 internal constant _ASSOCIATED_STORAGE_PREFIX = 0x9cc6c923; //
+// bytes4(keccak256("AssociatedLinkedListSet"))
 
 //     // A custom type representing the index of a storage slot
 //     type StoragePointer is bytes32;
 
 //     // A custom type representing a pointer to a location in memory beyond the current free memory pointer.
 //     // Holds a fixed-size buffer similar to "bytes memory", but without a length field.
-//     // Care must be taken when using these, as they may be overwritten if ANY memory is allocated after allocating
+//     // Care must be taken when using these, as they may be overwritten if ANY memory is allocated after
+// allocating
 //     // a TempBytesMemory.
 //     type TempBytesMemory is bytes32;
 
@@ -118,14 +120,17 @@ pragma solidity ^0.8.19;
 //                 // Found the entry
 //                 // Set the previous value's next value to the next value,
 //                 // and the flags to the current value's flags.
-//                 // and the next value's `hasNext` flag to determine whether or not the next value is (or points to)
+//                 // and the next value's `hasNext` flag to determine whether or not the next value is (or points
+// to)
 //                 // the sentinel value.
 
 //                 // Need to do:
-//                 // map[prevKey] = clearFlags(nextValue) | getUserFlags(currentVal) | (nextValue & HAS_NEXT_FLAG);
+//                 // map[prevKey] = clearFlags(nextValue) | getUserFlags(currentVal) | (nextValue &
+// HAS_NEXT_FLAG);
 //                 // map[currentKey] = bytes32(0);
 
-//                 _store(prevSlot, clearFlags(nextValue) | getUserFlags(currentVal) | (nextValue & HAS_NEXT_FLAG));
+//                 _store(prevSlot, clearFlags(nextValue) | getUserFlags(currentVal) | (nextValue &
+// HAS_NEXT_FLAG));
 //                 _store(valueSlot, bytes32(0));
 
 //                 return true;
@@ -142,7 +147,8 @@ pragma solidity ^0.8.19;
 //     /// @param value The value to remove
 //     /// @param prev The previous value in the set
 //     /// @return True if the value was removed, false if the value does not exist
-//     function tryRemoveKnown(AssociatedLinkedListSet storage set, address associated, SetValue value, bytes32 prev)
+//     function tryRemoveKnown(AssociatedLinkedListSet storage set, address associated, SetValue value, bytes32
+// prev)
 //         internal
 //         returns (bool)
 //     {
@@ -240,7 +246,8 @@ pragma solidity ^0.8.19;
 //     /// @param flags The flags to enable.
 //     /// @return True if the operation succeeds or short-circuits due to the flags already being enabled. False
 //     /// otherwise.
-//     function tryEnableFlags(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16 flags)
+//     function tryEnableFlags(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16
+// flags)
 //         internal
 //         returns (bool)
 //     {
@@ -260,9 +267,11 @@ pragma solidity ^0.8.19;
 //     /// @param associated The address the set is associated with.
 //     /// @param value The value to disable the flags on.
 //     /// @param flags The flags to disable.
-//     /// @return True if the operation succeeds, or short-circuits due to the flags already being disabled or if the
+//     /// @return True if the operation succeeds, or short-circuits due to the flags already being disabled or if
+// the
 //     /// set does not contain the value. False otherwise.
-//     function tryDisableFlags(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16 flags)
+//     function tryDisableFlags(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16
+// flags)
 //         internal
 //         returns (bool)
 //     {
@@ -273,8 +282,10 @@ pragma solidity ^0.8.19;
 //     }
 
 //     /// @notice Checks if a set contains a value
-//     /// @dev This method does not clear the upper bits of `value`, that is expected to be done as part of casting
-//     /// to the correct type. If this function is provided the sentinel value by using the upper bits, this function
+//     /// @dev This method does not clear the upper bits of `value`, that is expected to be done as part of
+// casting
+//     /// to the correct type. If this function is provided the sentinel value by using the upper bits, this
+// function
 //     /// may returns `true`.
 //     /// @param set The set to check
 //     /// @param associated The address the set is associated with
@@ -344,7 +355,8 @@ pragma solidity ^0.8.19;
 //     /// @param value The value to check the flags on.
 //     /// @param flags The flags to check.
 //     /// @return True if all of the flags are disabled, false otherwise.
-//     function flagsDisabled(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16 flags)
+//     function flagsDisabled(AssociatedLinkedListSet storage set, address associated, SetValue value, uint16
+// flags)
 //         internal
 //         view
 //         returns (bool)

@@ -15,7 +15,8 @@ pragma solidity ^0.8.19;
 //     /// @param validAfter The time after which the owner is valid.
 //     /// @param validUntil The time until which the owner is valid.
 //     event SessionKeyAdded(
-//         address indexed account, address indexed sessionKey, bytes4 selector, uint48 validAfter, uint48 validUntil
+//         address indexed account, address indexed sessionKey, bytes4 selector, uint48 validAfter, uint48
+// validUntil
 //     );
 
 //     /// @notice This event is emitted when a session key is removed from the account.
