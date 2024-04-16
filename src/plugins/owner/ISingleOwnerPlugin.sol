@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
-
 interface ISingleOwnerPlugin {
     enum FunctionId {
         VALIDATION_OWNER_OR_SELF

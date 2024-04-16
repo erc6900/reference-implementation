@@ -5,7 +5,7 @@
   },
   "scripts": {
     "lint": "pnpm lint:src && pnpm lint:test",
-    "lint:src": "solhint -c .solhint-src.json ./src/**/*.sol",
-    "lint:test": "solhint -c .solhint-test.json ./test/**/*.sol"
+    "lint:src": "solhint -c .solhint-src.json './src/**/*.sol'",
+    "lint:test": "solhint -c .solhint-test.json './test/**/*.sol'"
   }
 }
