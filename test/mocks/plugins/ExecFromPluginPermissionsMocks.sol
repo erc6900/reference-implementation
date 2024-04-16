@@ -17,9 +17,9 @@ import {Counter} from "../Counter.sol";
 contract EFPCallerPlugin is BaseTestPlugin {
     // Store the counters as immutables, and use the view -> pure cast to get the manifest
     // solhint-disable private-vars-leading-underscore, immutable-vars-naming
-    address immutable private counter1;
-    address immutable private counter2;
-    address immutable private counter3;
+    address private immutable counter1;
+    address private immutable counter2;
+    address private immutable counter3;
     // solhint-enable private-vars-leading-underscore, immutable-vars-naming
 
     constructor(address _counter1, address _counter2, address _counter3) {
