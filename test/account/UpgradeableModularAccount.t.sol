@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {console} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
@@ -18,24 +17,16 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 import {Counter} from "../mocks/Counter.sol";
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract UpgradeableModularAccountTest is OptimizedTest {
+contract UpgradeableModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;
 
-    EntryPoint public entryPoint;
-    address payable public beneficiary;
-    SingleOwnerPlugin public singleOwnerPlugin;
     TokenReceiverPlugin public tokenReceiverPlugin;
-    MSCAFactoryFixture public factory;
 
-    address public owner1;
-    uint256 public owner1Key;
-    UpgradeableModularAccount public account1;
-
+    // A separate account and owner that isn't deployed yet, used to test initcode
     address public owner2;
     uint256 public owner2Key;
     UpgradeableModularAccount public account2;
@@ -52,42 +43,57 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
-        entryPoint = new EntryPoint();
-        (owner1, owner1Key) = makeAddrAndKey("owner1");
-        beneficiary = payable(makeAddr("beneficiary"));
-        vm.deal(beneficiary, 1 wei);
-
-        singleOwnerPlugin = _deploySingleOwnerPlugin();
         tokenReceiverPlugin = _deployTokenReceiverPlugin();
-        factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
+
+        (owner2, owner2Key) = makeAddrAndKey("owner2");
 
         // Compute counterfactual address
-        account1 = UpgradeableModularAccount(payable(factory.getAddress(owner1, 0)));
-        vm.deal(address(account1), 100 ether);
-
-        // Pre-deploy account two for different gas estimates
-        (owner2, owner2Key) = makeAddrAndKey("owner2");
-        account2 = factory.createAccount(owner2, 0);
+        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);
         counter = new Counter();
         counter.increment(); // amoritze away gas cost of zero->nonzero transition
-
-        vm.deal(address(this), 100 ether);
-        entryPoint.depositTo{value: 1 wei}(address(account2));
     }
 
     function test_deployAccount() public {
-        factory.createAccount(owner1, 0);
+        factory.createAccount(owner2, 0);
     }
 
-    function test_basicUserOp() public {
+    function test_postDeploy_ethSend() public {
         UserOperation memory userOp = UserOperation({
             sender: address(account1),
             nonce: 0,
-            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
+            initCode: "",
+            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            callGasLimit: CALL_GAS_LIMIT,
+            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            preVerificationGas: 0,
+            maxFeePerGas: 1,
+            maxPriorityFeePerGas: 1,
+            paymasterAndData: "",
+            signature: ""
+        });
+
+        // Generate signature
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+        userOp.signature = abi.encodePacked(r, s, v);
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+
+        entryPoint.handleOps(userOps, beneficiary);
+
+        assertEq(ethRecipient.balance, 2 wei);
+    }
+
+    function test_basicUserOp_withInitCode() public {
+        UserOperation memory userOp = UserOperation({
+            sender: address(account2),
+            nonce: 0,
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2)),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
@@ -100,7 +106,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -109,13 +115,13 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         entryPoint.handleOps(userOps, beneficiary);
     }
 
-    function test_standardExecuteEthSend() public {
+    function test_standardExecuteEthSend_withInitcode() public {
         address payable recipient = payable(makeAddr("recipient"));
 
         UserOperation memory userOp = UserOperation({
-            sender: address(account1),
+            sender: address(account2),
             nonce: 0,
-            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (recipient, 1 wei, "")),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
@@ -128,7 +134,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -139,37 +145,9 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         assertEq(recipient.balance, 1 wei);
     }
 
-    function test_postDeploy_ethSend() public {
-        UserOperation memory userOp = UserOperation({
-            sender: address(account2),
-            nonce: 0,
-            initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
-            preVerificationGas: 0,
-            maxFeePerGas: 1,
-            maxPriorityFeePerGas: 1,
-            paymasterAndData: "",
-            signature: ""
-        });
-
-        // Generate signature
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
-
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-
-        entryPoint.handleOps(userOps, beneficiary);
-
-        assertEq(ethRecipient.balance, 2 wei);
-    }
-
     function test_debug_upgradeableModularAccount_storageAccesses() public {
         UserOperation memory userOp = UserOperation({
-            sender: address(account2),
+            sender: address(account1),
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
@@ -184,7 +162,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -197,7 +175,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
     function test_contractInteraction() public {
         UserOperation memory userOp = UserOperation({
-            sender: address(account2),
+            sender: address(account1),
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(
@@ -214,7 +192,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -232,7 +210,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         calls[1] = Call({target: address(counter), value: 0, data: abi.encodeCall(counter.increment, ())});
 
         UserOperation memory userOp = UserOperation({
-            sender: address(account2),
+            sender: address(account1),
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.executeBatch, (calls)),
@@ -247,7 +225,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -260,27 +238,27 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_installPlugin() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(tokenReceiverPlugin), manifestHash, new FunctionReference[](0));
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
             dependencies: new FunctionReference[](0)
         });
 
-        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(tokenReceiverPlugin));
     }
 
     function test_installPlugin_ExecuteFromPlugin_PermittedExecSelectorNotInstalled() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         PluginManifest memory m;
         m.permittedExecutionSelectors = new bytes4[](1);
@@ -289,7 +267,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         MockPlugin mockPluginWithBadPermittedExec = new MockPlugin(m);
         bytes32 manifestHash = keccak256(abi.encode(mockPluginWithBadPermittedExec.pluginManifest()));
 
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(mockPluginWithBadPermittedExec),
             manifestHash: manifestHash,
             pluginInstallData: "",
@@ -298,10 +276,10 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_installPlugin_invalidManifest() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
             pluginInstallData: abi.encode(uint48(1 days)),
@@ -310,13 +288,13 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_installPlugin_interfaceNotSupported() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         address badPlugin = address(1);
         vm.expectRevert(
             abi.encodeWithSelector(PluginManagerInternals.PluginInterfaceNotSupported.selector, address(badPlugin))
         );
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(badPlugin),
             manifestHash: bytes32(0),
             pluginInstallData: "",
@@ -325,10 +303,10 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_installPlugin_alreadyInstalled() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
@@ -340,7 +318,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
                 PluginManagerInternals.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
             )
         );
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
             pluginInstallData: abi.encode(uint48(1 days)),
@@ -349,11 +327,11 @@ contract UpgradeableModularAccountTest is OptimizedTest {
     }
 
     function test_uninstallPlugin_default() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
@@ -362,19 +340,19 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
-        IPluginManager(account2).uninstallPlugin({plugin: address(plugin), config: "", pluginUninstallData: ""});
-        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
+        IPluginManager(account1).uninstallPlugin({plugin: address(plugin), config: "", pluginUninstallData: ""});
+        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
 
     function test_uninstallPlugin_manifestParameter() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
@@ -383,23 +361,23 @@ contract UpgradeableModularAccountTest is OptimizedTest {
 
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
-        IPluginManager(account2).uninstallPlugin({
+        IPluginManager(account1).uninstallPlugin({
             plugin: address(plugin),
             config: serializedManifest,
             pluginUninstallData: ""
         });
-        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
         assertEq(plugins.length, 1);
         assertEq(plugins[0], address(singleOwnerPlugin));
     }
 
     function test_uninstallPlugin_invalidManifestFails() public {
-        vm.startPrank(owner2);
+        vm.startPrank(owner1);
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
@@ -410,12 +388,12 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         PluginManifest memory blankManifest;
 
         vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account2).uninstallPlugin({
+        IPluginManager(account1).uninstallPlugin({
             plugin: address(plugin),
             config: abi.encode(blankManifest),
             pluginUninstallData: ""
         });
-        address[] memory plugins = IAccountLoupe(account2).getInstalledPlugins();
+        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
         assertEq(plugins.length, 2);
         assertEq(plugins[0], address(singleOwnerPlugin));
         assertEq(plugins[1], address(plugin));
@@ -427,7 +405,7 @@ contract UpgradeableModularAccountTest is OptimizedTest {
         plugin = new MockPlugin(manifest);
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
-        IPluginManager(account2).installPlugin({
+        IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
             pluginInstallData: "",
