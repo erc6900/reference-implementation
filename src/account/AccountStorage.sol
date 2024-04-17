@@ -83,13 +83,9 @@ function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
 {
     uint256 length = map.length();
     FunctionReference[] memory result = new FunctionReference[](length);
-    for (uint256 i = 0; i < length;) {
+    for (uint256 i = 0; i < length; ++i) {
         (bytes32 key,) = map.at(i);
         result[i] = FunctionReference.wrap(bytes21(key));
-
-        unchecked {
-            ++i;
-        }
     }
     return result;
 }

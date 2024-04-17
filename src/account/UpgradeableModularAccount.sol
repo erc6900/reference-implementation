@@ -101,12 +101,8 @@ contract UpgradeableModularAccount is
 
         FunctionReference[] memory emptyDependencies = new FunctionReference[](0);
 
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ++i) {
             _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies);
-
-            unchecked {
-                ++i;
-            }
         }
 
         emit ModularAccountInitialized(_ENTRY_POINT);
@@ -166,12 +162,8 @@ contract UpgradeableModularAccount is
         uint256 callsLength = calls.length;
         results = new bytes[](callsLength);
 
-        for (uint256 i = 0; i < callsLength;) {
+        for (uint256 i = 0; i < callsLength; ++i) {
             results[i] = _exec(calls[i].target, calls[i].value, calls[i].data);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -359,7 +351,7 @@ contract UpgradeableModularAccount is
             getAccountStorage().selectorData[selector].preUserOpValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
-        for (uint256 i = 0; i < preUserOpValidationHooksLength;) {
+        for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
             (bytes32 key,) = preUserOpValidationHooks.at(i);
             FunctionReference preUserOpValidationHook = _toFunctionReference(key);
 
@@ -375,10 +367,6 @@ contract UpgradeableModularAccount is
             } else {
                 // Function reference cannot be 0 and _RUNTIME_VALIDATION_ALWAYS_ALLOW is not permitted here.
                 revert InvalidConfiguration();
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -412,7 +400,7 @@ contract UpgradeableModularAccount is
             getAccountStorage().selectorData[msg.sig].preRuntimeValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
-        for (uint256 i = 0; i < preRuntimeValidationHooksLength;) {
+        for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
             (bytes32 key,) = preRuntimeValidationHooks.at(i);
             FunctionReference preRuntimeValidationHook = _toFunctionReference(key);
 
@@ -422,10 +410,6 @@ contract UpgradeableModularAccount is
                 try IPlugin(plugin).preRuntimeValidationHook(functionId, msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
                     revert PreRuntimeValidationHookFailed(plugin, functionId, revertReason);
-                }
-
-                unchecked {
-                    ++i;
                 }
             } else {
                 if (preRuntimeValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
@@ -466,11 +450,10 @@ contract UpgradeableModularAccount is
         uint256 maxPostExecHooksLength = postOnlyHooksLength;
 
         // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength;) {
+        for (uint256 i = 0; i < preExecHooksLength; ++i) {
             (, uint256 count) = selectorData.preHooks.at(i);
             unchecked {
                 maxPostExecHooksLength += (count + 1);
-                ++i;
             }
         }
 
@@ -479,18 +462,17 @@ contract UpgradeableModularAccount is
         uint256 actualPostHooksToRunLength;
 
         // Copy post-only hooks to the array.
-        for (uint256 i = 0; i < postOnlyHooksLength;) {
+        for (uint256 i = 0; i < postOnlyHooksLength; ++i) {
             (bytes32 key,) = selectorData.postOnlyHooks.at(i);
             postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
             unchecked {
                 ++actualPostHooksToRunLength;
-                ++i;
             }
         }
 
         // Then run the pre hooks and copy the associated post hooks (along with their pre hook's return data) to
         // the array.
-        for (uint256 i = 0; i < preExecHooksLength;) {
+        for (uint256 i = 0; i < preExecHooksLength; ++i) {
             (bytes32 key,) = selectorData.preHooks.at(i);
             FunctionReference preExecHook = _toFunctionReference(key);
 
@@ -504,20 +486,15 @@ contract UpgradeableModularAccount is
 
             uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
+                for (uint256 j = 0; j < associatedPostExecHooksLength; ++j) {
                     (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
                     postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
                     postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
 
                     unchecked {
                         ++actualPostHooksToRunLength;
-                        ++j;
                     }
                 }
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -545,9 +522,8 @@ contract UpgradeableModularAccount is
     function _doCachedPostExecHooks(PostExecToRun[] memory postHooksToRun) internal {
         uint256 postHooksToRunLength = postHooksToRun.length;
         for (uint256 i = postHooksToRunLength; i > 0;) {
-            unchecked {
-                --i;
-            }
+            // Decrement here, instead of in the loop body, to handle the case where length is 0.
+            --i;
 
             PostExecToRun memory postHookToRun = postHooksToRun[i];
             (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();

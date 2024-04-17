@@ -47,11 +47,10 @@ abstract contract AccountLoupe is IAccountLoupe {
         uint256 maxExecHooksLength = postOnlyExecHooksLength;
 
         // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength;) {
+        for (uint256 i = 0; i < preExecHooksLength; ++i) {
             (, uint256 count) = selectorData.preHooks.at(i);
             unchecked {
                 maxExecHooksLength += (count + 1);
-                ++i;
             }
         }
 
@@ -59,20 +58,19 @@ abstract contract AccountLoupe is IAccountLoupe {
         execHooks = new ExecutionHooks[](maxExecHooksLength);
         uint256 actualExecHooksLength;
 
-        for (uint256 i = 0; i < preExecHooksLength;) {
+        for (uint256 i = 0; i < preExecHooksLength; ++i) {
             (bytes32 key,) = selectorData.preHooks.at(i);
             FunctionReference preExecHook = FunctionReference.wrap(bytes21(key));
 
             uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
             if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength;) {
+                for (uint256 j = 0; j < associatedPostExecHooksLength; ++j) {
                     execHooks[actualExecHooksLength].preExecHook = preExecHook;
                     (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
                     execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
 
                     unchecked {
                         ++actualExecHooksLength;
-                        ++j;
                     }
                 }
             } else {
@@ -82,19 +80,14 @@ abstract contract AccountLoupe is IAccountLoupe {
                     ++actualExecHooksLength;
                 }
             }
-
-            unchecked {
-                ++i;
-            }
         }
 
-        for (uint256 i = 0; i < postOnlyExecHooksLength;) {
+        for (uint256 i = 0; i < postOnlyExecHooksLength; ++i) {
             (bytes32 key,) = selectorData.postOnlyHooks.at(i);
             execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
 
             unchecked {
                 ++actualExecHooksLength;
-                ++i;
             }
         }
 
