@@ -1,44 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {
     MockBaseUserOpValidationPlugin,
     MockUserOpValidation1HookPlugin,
     MockUserOpValidation2HookPlugin,
     MockUserOpValidationPlugin
 } from "../mocks/plugins/ValidationPluginMocks.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract ValidationIntersectionTest is OptimizedTest {
+contract ValidationIntersectionTest is AccountTestBase {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
-    EntryPoint public entryPoint;
-
-    address public owner1;
-    uint256 public owner1Key;
-    UpgradeableModularAccount public account1;
     MockUserOpValidationPlugin public noHookPlugin;
     MockUserOpValidation1HookPlugin public oneHookPlugin;
     MockUserOpValidation2HookPlugin public twoHookPlugin;
 
     function setUp() public {
-        entryPoint = new EntryPoint();
-        owner1 = makeAddr("owner1");
-
-        SingleOwnerPlugin singleOwnerPlugin = _deploySingleOwnerPlugin();
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
-
-        account1 = factory.createAccount(owner1, 0);
-        vm.deal(address(account1), 1 ether);
-
         noHookPlugin = new MockUserOpValidationPlugin();
         oneHookPlugin = new MockUserOpValidation1HookPlugin();
         twoHookPlugin = new MockUserOpValidation2HookPlugin();
