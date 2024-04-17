@@ -14,8 +14,6 @@ abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    error ManifestDiscrepancy(address plugin);
-
     /// @inheritdoc IAccountLoupe
     function getExecutionFunctionConfig(bytes4 selector)
         external
