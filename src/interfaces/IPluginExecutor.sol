@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.25;
 
 interface IPluginExecutor {
     /// @notice Execute a call from a plugin to another plugin, via an execution function installed on the account.
