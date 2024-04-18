@@ -1,5 +1,5 @@
 [profile.default]
-solc = '0.8.19'
+solc = '0.8.25'
 via_ir = false
 src = 'src'
 test = 'test'
