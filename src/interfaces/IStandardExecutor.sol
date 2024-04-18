@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.25;
 
 struct Call {
     // The target address for the account to call.
