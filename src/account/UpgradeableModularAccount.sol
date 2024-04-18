@@ -348,7 +348,7 @@ contract UpgradeableModularAccount is
 
         // Do preUserOpValidation hooks
         EnumerableMap.Bytes32ToUintMap storage preUserOpValidationHooks =
-            getAccountStorage().selectorData[selector].preUserOpValidationHooks;
+            getAccountStorage().selectorData[selector].preValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
@@ -397,7 +397,7 @@ contract UpgradeableModularAccount is
         FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
         // run all preRuntimeValidation hooks
         EnumerableMap.Bytes32ToUintMap storage preRuntimeValidationHooks =
-            getAccountStorage().selectorData[msg.sig].preRuntimeValidationHooks;
+            getAccountStorage().selectorData[msg.sig].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {

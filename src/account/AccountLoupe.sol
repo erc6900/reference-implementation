@@ -99,15 +99,10 @@ abstract contract AccountLoupe is IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (
-            FunctionReference[] memory preUserOpValidationHooks,
-            FunctionReference[] memory preRuntimeValidationHooks
-        )
+        returns (FunctionReference[] memory preValidationHooks)
     {
-        preUserOpValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preUserOpValidationHooks);
-        preRuntimeValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preRuntimeValidationHooks);
+        preValidationHooks =
+            toFunctionReferenceArray(getAccountStorage().selectorData[selector].preValidationHooks);
     }
 
     /// @inheritdoc IAccountLoupe

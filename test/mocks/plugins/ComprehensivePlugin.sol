@@ -16,10 +16,8 @@ import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 contract ComprehensivePlugin is BasePlugin {
     enum FunctionId {
-        PRE_USER_OP_VALIDATION_HOOK_1,
-        PRE_USER_OP_VALIDATION_HOOK_2,
-        PRE_RUNTIME_VALIDATION_HOOK_1,
-        PRE_RUNTIME_VALIDATION_HOOK_2,
+        PRE_VALIDATION_HOOK_1,
+        PRE_VALIDATION_HOOK_2,
         VALIDATION,
         PRE_EXECUTION_HOOK,
         PRE_PERMITTED_CALL_EXECUTION_HOOK,
@@ -51,9 +49,9 @@ contract ComprehensivePlugin is BasePlugin {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_1)) {
+        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_1)) {
             return 0;
-        } else if (functionId == uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_2)) {
+        } else if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_2)) {
             return 0;
         }
         revert NotImplemented();
@@ -72,9 +70,9 @@ contract ComprehensivePlugin is BasePlugin {
     }
 
     function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata) external pure override {
-        if (functionId == uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1)) {
+        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_1)) {
             return;
-        } else if (functionId == uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2)) {
+        } else if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_2)) {
             return;
         }
         revert NotImplemented();
@@ -131,70 +129,36 @@ contract ComprehensivePlugin is BasePlugin {
             associatedFunction: fooValidationFunction
         });
 
-        manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](4);
-        manifest.preUserOpValidationHooks[0] = ManifestAssociatedFunction({
+        manifest.preValidationHooks = new ManifestAssociatedFunction[](4);
+        manifest.preValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_1),
+                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
                 dependencyIndex: 0 // Unused.
             })
         });
-        manifest.preUserOpValidationHooks[1] = ManifestAssociatedFunction({
+        manifest.preValidationHooks[1] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_2),
+                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_2),
                 dependencyIndex: 0 // Unused.
             })
         });
-        manifest.preUserOpValidationHooks[2] = ManifestAssociatedFunction({
+        manifest.preValidationHooks[2] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.execute.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_1),
+                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
                 dependencyIndex: 0 // Unused.
             })
         });
-        manifest.preUserOpValidationHooks[3] = ManifestAssociatedFunction({
+        manifest.preValidationHooks[3] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.execute.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_USER_OP_VALIDATION_HOOK_2),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-
-        manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](4);
-        manifest.preRuntimeValidationHooks[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preRuntimeValidationHooks[1] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preRuntimeValidationHooks[2] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preRuntimeValidationHooks[3] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2),
+                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_2),
                 dependencyIndex: 0 // Unused.
             })
         });
