@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
@@ -103,20 +102,28 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (!preExecHook.isEmpty()) {
+            if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+                // Increment the overlappingDenies counter.
+                _selectorData.denyExecutionCount += 1;
+                return;
+            }
+
             // Don't need to check for duplicates, as the hook can be run at most once.
             _selectorData.preHooks.add(_toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
                 _selectorData.associatedPostHooks[preExecHook] = postExecHook;
             }
-        } else {
-            if (postExecHook.isEmpty()) {
-                // both pre and post hooks cannot be null
-                revert NullFunctionReference();
-            }
 
-            _selectorData.postOnlyHooks.add(_toSetValue(postExecHook));
+            return;
         }
+
+        if (postExecHook.isEmpty()) {
+            // both pre and post hooks cannot be null
+            revert NullFunctionReference();
+        }
+
+        _selectorData.postOnlyHooks.add(_toSetValue(postExecHook));
     }
 
     function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
@@ -125,17 +132,25 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (!preExecHook.isEmpty()) {
+            if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+                // Decrement the overlappingDenies counter.
+                _selectorData.denyExecutionCount -= 1;
+                return;
+            }
+
             _selectorData.preHooks.remove(_toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
                 _selectorData.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
             }
-        } else {
-            // The case where both pre and post hooks are null was checked during installation.
 
-            // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            _selectorData.postOnlyHooks.remove(_toSetValue(postExecHook));
+            return;
         }
+
+        // The case where both pre and post hooks are null was checked during installation.
+
+        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
+        _selectorData.postOnlyHooks.remove(_toSetValue(postExecHook));
     }
 
     function _addPreValidationHook(bytes4 selector, FunctionReference preValidationHook)
@@ -273,10 +288,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addPreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.associatedFunction, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
         }
@@ -367,10 +379,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removePreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.associatedFunction, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
         }
