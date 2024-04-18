@@ -35,15 +35,16 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
+    // uint overlappingDenies TODO
     // User operation validation and runtime validation share a function reference.
     FunctionReference validation;
     // The pre validation hooks for this function selector.
-    EnumerableMap.Bytes32ToUintMap preValidationHooks;
+    EnumerableSet.Bytes32Set preValidationHooks;
     // The execution hooks for this function selector.
-    EnumerableMap.Bytes32ToUintMap preHooks;
+    EnumerableSet.Bytes32Set preHooks;
     // bytes21 key = pre hook function reference
-    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
-    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
+    mapping(FunctionReference => FunctionReference) associatedPostHooks;
+    EnumerableSet.Bytes32Set postOnlyHooks;
 }
 
 struct AccountStorage {
@@ -74,16 +75,16 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
 }
 
 // Helper function to get all elements of a set into memory.
-using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
+using EnumerableSet for EnumerableSet.Bytes32Set;
 
-function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
+function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
     view
     returns (FunctionReference[] memory)
 {
-    uint256 length = map.length();
+    uint256 length = set.length();
     FunctionReference[] memory result = new FunctionReference[](length);
     for (uint256 i = 0; i < length; ++i) {
-        (bytes32 key,) = map.at(i);
+        bytes32 key = set.at(i);
         result[i] = FunctionReference.wrap(bytes21(key));
     }
     return result;

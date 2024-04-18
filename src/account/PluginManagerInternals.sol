@@ -25,7 +25,7 @@ import {
 } from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
-    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
     using FunctionReferenceLib for FunctionReference;
 
@@ -103,10 +103,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (!preExecHook.isEmpty()) {
-            _addOrIncrement(_selectorData.preHooks, _toSetValue(preExecHook));
+            // Don't need to check for duplicates, as the hook can be run at most once.
+            _selectorData.preHooks.add(_toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
-                _addOrIncrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+                _selectorData.associatedPostHooks[preExecHook] = postExecHook;
             }
         } else {
             if (postExecHook.isEmpty()) {
@@ -114,7 +115,7 @@ abstract contract PluginManagerInternals is IPluginManager {
                 revert NullFunctionReference();
             }
 
-            _addOrIncrement(_selectorData.postOnlyHooks, _toSetValue(postExecHook));
+            _selectorData.postOnlyHooks.add(_toSetValue(postExecHook));
         }
     }
 
@@ -124,16 +125,16 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (!preExecHook.isEmpty()) {
-            _removeOrDecrement(_selectorData.preHooks, _toSetValue(preExecHook));
+            _selectorData.preHooks.remove(_toSetValue(preExecHook));
 
             if (!postExecHook.isEmpty()) {
-                _removeOrDecrement(_selectorData.associatedPostHooks[preExecHook], _toSetValue(postExecHook));
+                _selectorData.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
             }
         } else {
             // The case where both pre and post hooks are null was checked during installation.
 
             // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-            _removeOrDecrement(_selectorData.postOnlyHooks, _toSetValue(postExecHook));
+            _selectorData.postOnlyHooks.remove(_toSetValue(postExecHook));
         }
     }
 
@@ -141,9 +142,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preValidationHook)
     {
-        _addOrIncrement(
-            getAccountStorage().selectorData[selector].preValidationHooks, _toSetValue(preValidationHook)
-        );
+        getAccountStorage().selectorData[selector].preValidationHooks.add(_toSetValue(preValidationHook));
     }
 
     function _removePreValidationHook(bytes4 selector, FunctionReference preValidationHook)
@@ -151,9 +150,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         notNullFunction(preValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _removeOrDecrement(
-            getAccountStorage().selectorData[selector].preValidationHooks, _toSetValue(preValidationHook)
-        );
+        getAccountStorage().selectorData[selector].preValidationHooks.remove(_toSetValue(preValidationHook));
     }
 
     function _installPlugin(
@@ -447,25 +444,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
-    }
-
-    function _addOrIncrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal {
-        (bool success, uint256 value) = map.tryGet(key);
-        map.set(key, success ? value + 1 : 0);
-    }
-
-    /// @return True if the key was removed or its value was decremented, false if the key was not found.
-    function _removeOrDecrement(EnumerableMap.Bytes32ToUintMap storage map, bytes32 key) internal returns (bool) {
-        (bool success, uint256 value) = map.tryGet(key);
-        if (!success) {
-            return false;
-        }
-        if (value == 0) {
-            map.remove(key);
-        } else {
-            map.set(key, value - 1);
-        }
-        return true;
     }
 
     function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {

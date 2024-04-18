@@ -11,7 +11,7 @@ import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {AccountStorage, getAccountStorage, SelectorData, toFunctionReferenceArray} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
-    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @inheritdoc IAccountLoupe
@@ -41,56 +41,22 @@ abstract contract AccountLoupe is IAccountLoupe {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyExecHooksLength = selectorData.postOnlyHooks.length();
-        uint256 maxExecHooksLength = postOnlyExecHooksLength;
-
-        // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            (, uint256 count) = selectorData.preHooks.at(i);
-            unchecked {
-                maxExecHooksLength += (count + 1);
-            }
-        }
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
-        execHooks = new ExecutionHooks[](maxExecHooksLength);
-        uint256 actualExecHooksLength;
+        execHooks = new ExecutionHooks[](preExecHooksLength + postOnlyExecHooksLength);
 
         for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            (bytes32 key,) = selectorData.preHooks.at(i);
+            bytes32 key = selectorData.preHooks.at(i);
             FunctionReference preExecHook = FunctionReference.wrap(bytes21(key));
+            FunctionReference associatedPostExecHook = selectorData.associatedPostHooks[preExecHook];
 
-            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
-            if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength; ++j) {
-                    execHooks[actualExecHooksLength].preExecHook = preExecHook;
-                    (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
-                    execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
-
-                    unchecked {
-                        ++actualExecHooksLength;
-                    }
-                }
-            } else {
-                execHooks[actualExecHooksLength].preExecHook = preExecHook;
-
-                unchecked {
-                    ++actualExecHooksLength;
-                }
-            }
+            execHooks[i].preExecHook = preExecHook;
+            execHooks[i].postExecHook = associatedPostExecHook;
         }
 
         for (uint256 i = 0; i < postOnlyExecHooksLength; ++i) {
-            (bytes32 key,) = selectorData.postOnlyHooks.at(i);
-            execHooks[actualExecHooksLength].postExecHook = FunctionReference.wrap(bytes21(key));
-
-            unchecked {
-                ++actualExecHooksLength;
-            }
-        }
-
-        // Trim the exec hooks array to the actual length, since we may have overallocated.
-        assembly ("memory-safe") {
-            mstore(execHooks, actualExecHooksLength)
+            bytes32 key = selectorData.postOnlyHooks.at(i);
+            execHooks[preExecHooksLength + i].postExecHook = FunctionReference.wrap(bytes21(key));
         }
     }
 

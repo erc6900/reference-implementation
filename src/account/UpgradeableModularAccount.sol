@@ -32,7 +32,6 @@ contract UpgradeableModularAccount is
     PluginManagerInternals,
     UUPSUpgradeable
 {
-    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using FunctionReferenceLib for FunctionReference;
 
@@ -342,12 +341,12 @@ contract UpgradeableModularAccount is
         uint256 currentValidationData;
 
         // Do preUserOpValidation hooks
-        EnumerableMap.Bytes32ToUintMap storage preUserOpValidationHooks =
+        EnumerableSet.Bytes32Set storage preUserOpValidationHooks =
             getAccountStorage().selectorData[selector].preValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
-            (bytes32 key,) = preUserOpValidationHooks.at(i);
+            bytes32 key = preUserOpValidationHooks.at(i);
             FunctionReference preUserOpValidationHook = _toFunctionReference(key);
 
             if (!preUserOpValidationHook.isEmptyOrMagicValue()) {
@@ -391,12 +390,12 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
         FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
         // run all preRuntimeValidation hooks
-        EnumerableMap.Bytes32ToUintMap storage preRuntimeValidationHooks =
+        EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
             getAccountStorage().selectorData[msg.sig].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
-            (bytes32 key,) = preRuntimeValidationHooks.at(i);
+            bytes32 key = preRuntimeValidationHooks.at(i);
             FunctionReference preRuntimeValidationHook = _toFunctionReference(key);
 
             if (!preRuntimeValidationHook.isEmptyOrMagicValue()) {
@@ -440,35 +439,37 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory postHooksToRun)
     {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
+
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
-        uint256 maxPostExecHooksLength = postOnlyHooksLength;
-
-        // There can only be as many associated post hooks to run as there are pre hooks.
-        for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            (, uint256 count) = selectorData.preHooks.at(i);
-            unchecked {
-                maxPostExecHooksLength += (count + 1);
-            }
-        }
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
-        postHooksToRun = new PostExecToRun[](maxPostExecHooksLength);
-        uint256 actualPostHooksToRunLength;
+        postHooksToRun = new PostExecToRun[](preExecHooksLength + postOnlyHooksLength);
 
-        // Copy post-only hooks to the array.
+        // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
+        // be sure that the set of hooks to run will not be affected by state changes mid-execution.
+
+        // Copy post-only hooks.
         for (uint256 i = 0; i < postOnlyHooksLength; ++i) {
-            (bytes32 key,) = selectorData.postOnlyHooks.at(i);
-            postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
-            unchecked {
-                ++actualPostHooksToRunLength;
+            bytes32 key = selectorData.postOnlyHooks.at(i);
+            postHooksToRun[i].postExecHook = _toFunctionReference(key);
+        }
+
+        // Copy associated post hooks to the array.
+        for (uint256 i = 0; i < preExecHooksLength; ++i) {
+            FunctionReference preExecHook = _toFunctionReference(selectorData.preHooks.at(i));
+
+            FunctionReference associatedPostExecHook = selectorData.associatedPostHooks[preExecHook];
+
+            if (associatedPostExecHook.notEq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+                postHooksToRun[i + postOnlyHooksLength].postExecHook = associatedPostExecHook;
             }
         }
 
-        // Then run the pre hooks and copy the associated post hooks (along with their pre hook's return data) to
-        // the array.
+        // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
+        // exists.
         for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            (bytes32 key,) = selectorData.preHooks.at(i);
+            bytes32 key = selectorData.preHooks.at(i);
             FunctionReference preExecHook = _toFunctionReference(key);
 
             if (preExecHook.isEmptyOrMagicValue()) {
@@ -479,23 +480,11 @@ contract UpgradeableModularAccount is
 
             bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
 
-            uint256 associatedPostExecHooksLength = selectorData.associatedPostHooks[preExecHook].length();
-            if (associatedPostExecHooksLength > 0) {
-                for (uint256 j = 0; j < associatedPostExecHooksLength; ++j) {
-                    (key,) = selectorData.associatedPostHooks[preExecHook].at(j);
-                    postHooksToRun[actualPostHooksToRunLength].postExecHook = _toFunctionReference(key);
-                    postHooksToRun[actualPostHooksToRunLength].preExecHookReturnData = preExecHookReturnData;
-
-                    unchecked {
-                        ++actualPostHooksToRunLength;
-                    }
-                }
+            // If there is an associated post-exec hook, save the return data.
+            PostExecToRun memory postExecToRun = postHooksToRun[i + postOnlyHooksLength];
+            if (postExecToRun.postExecHook.notEq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+                postExecToRun.preExecHookReturnData = preExecHookReturnData;
             }
-        }
-
-        // Trim the post hook array to the actual length, since we may have overallocated.
-        assembly ("memory-safe") {
-            mstore(postHooksToRun, actualPostHooksToRunLength)
         }
     }
 
@@ -521,6 +510,12 @@ contract UpgradeableModularAccount is
             --i;
 
             PostExecToRun memory postHookToRun = postHooksToRun[i];
+
+            if (postHookToRun.postExecHook.eq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+                // This is an empty post hook, from a pre-only hook, so we skip it.
+                continue;
+            }
+
             (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
             try IPlugin(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
