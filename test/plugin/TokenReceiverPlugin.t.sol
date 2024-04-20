@@ -3,8 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {ERC721PresetMinterPauserAutoId} from
-    "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -12,6 +10,7 @@ import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
+import {MockERC721} from "../mocks/MockERC721.sol";
 import {MockERC1155} from "../mocks/MockERC1155.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
@@ -19,7 +18,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     UpgradeableModularAccount public acct;
     TokenReceiverPlugin public plugin;
 
-    ERC721PresetMinterPauserAutoId public t0;
+    MockERC721 public t0;
     MockERC1155 public t1;
 
     // init dynamic length arrays for use in args
@@ -38,8 +37,8 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
         acct = factory.createAccount(address(this), 0);
         plugin = _deployTokenReceiverPlugin();
 
-        t0 = new ERC721PresetMinterPauserAutoId("t0", "t0", "");
-        t0.mint(address(this));
+        t0 = new MockERC721("t0", "t0");
+        t0.mint(address(this), _TOKEN_ID);
 
         t1 = new MockERC1155();
         t1.mint(address(this), _TOKEN_ID, _TOKEN_AMOUNT);
