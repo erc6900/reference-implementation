@@ -48,9 +48,6 @@ struct SelectorData {
 }
 
 struct AccountStorage {
-    // AccountStorageInitializable variables
-    uint8 initialized;
-    bool initializing;
     // Plugin metadata storage
     EnumerableSet.AddressSet plugins;
     mapping(address => PluginData) pluginData;

@@ -5,6 +5,7 @@ import {console} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -23,6 +24,7 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract UpgradeableModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     TokenReceiverPlugin public tokenReceiverPlugin;
 

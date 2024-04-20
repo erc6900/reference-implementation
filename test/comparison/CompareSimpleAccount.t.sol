@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
@@ -14,6 +15,7 @@ import {Counter} from "../mocks/Counter.sol";
 
 contract CompareSimpleAccountTest is Test {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     EntryPoint public entryPoint;
     address payable public beneficiary;
