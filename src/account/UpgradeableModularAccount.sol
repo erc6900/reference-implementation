@@ -8,6 +8,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
@@ -18,13 +19,12 @@ import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, getPermittedCallKey, SelectorData} from "./AccountStorage.sol";
-import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
     AccountLoupe,
-    AccountStorageInitializable,
+    Initializable,
     BaseAccount,
     IERC165,
     IPluginExecutor,
@@ -293,11 +293,6 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc UUPSUpgradeable
-    function upgradeTo(address newImplementation) public override onlyProxy wrapNativeFunction {
-        _upgradeToAndCallUUPS(newImplementation, new bytes(0), false);
-    }
-
-    /// @inheritdoc UUPSUpgradeable
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
@@ -305,7 +300,7 @@ contract UpgradeableModularAccount is
         onlyProxy
         wrapNativeFunction
     {
-        _upgradeToAndCallUUPS(newImplementation, data, true);
+        UUPSUpgradeable.upgradeToAndCall(newImplementation, data);
     }
 
     /// @notice Gets the entry point for this account
