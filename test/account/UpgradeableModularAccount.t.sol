@@ -42,6 +42,11 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
+    // helper function to compress 2 gas values into a single bytes32
+    function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
+        return bytes32(uint256(g1 << 128 + uint128(g2)));
+    }
+
     function setUp() public {
         tokenReceiverPlugin = _deployTokenReceiverPlugin();
 
@@ -67,11 +72,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 1,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 1),
             paymasterAndData: "",
             signature: ""
         });
@@ -95,11 +98,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2)),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -123,11 +124,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (recipient, 1 wei, "")),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 1),
             paymasterAndData: "",
             signature: ""
         });
@@ -151,11 +150,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 1,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 1),
             paymasterAndData: "",
             signature: ""
         });
@@ -181,11 +178,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             callData: abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0, abi.encodeCall(counter.increment, ()))
                 ),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 1,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 1),
             paymasterAndData: "",
             signature: ""
         });
@@ -214,11 +209,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.executeBatch, (calls)),
-            callGasLimit: CALL_GAS_LIMIT,
-            verificationGasLimit: VERIFICATION_GAS_LIMIT,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 1,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 1),
             paymasterAndData: "",
             signature: ""
         });

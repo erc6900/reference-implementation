@@ -32,6 +32,14 @@ contract CompareSimpleAccountTest is Test {
 
     Counter public counter;
 
+    uint256 public constant CALL_GAS_LIMIT = 500000;
+    uint256 public constant VERIFICATION_GAS_LIMIT = 500000;
+
+    // helper function to compress 2 gas values into a single bytes32
+    function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
+        return bytes32(uint256(g1 << 128 + uint128(g2)));
+    }
+
     function setUp() public {
         entryPoint = new EntryPoint();
         (owner1, owner1Key) = makeAddrAndKey("owner1");
@@ -59,11 +67,9 @@ contract CompareSimpleAccountTest is Test {
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
             callData: abi.encodeCall(SimpleAccount.execute, (beneficiary, 1, "")),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -84,11 +90,9 @@ contract CompareSimpleAccountTest is Test {
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
             callData: "",
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -109,11 +113,9 @@ contract CompareSimpleAccountTest is Test {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(SimpleAccount.execute, (beneficiary, 1, "")),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -136,11 +138,9 @@ contract CompareSimpleAccountTest is Test {
             callData: abi.encodeCall(
                 SimpleAccount.execute, (address(counter), 0, abi.encodeCall(Counter.increment, ()))
                 ),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
