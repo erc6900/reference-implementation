@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {console} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -62,7 +62,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_postDeploy_ethSend() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: "",
@@ -81,7 +81,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
@@ -90,7 +90,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_basicUserOp_withInitCode() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account2),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
@@ -109,7 +109,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
@@ -118,7 +118,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_standardExecuteEthSend_withInitcode() public {
         address payable recipient = payable(makeAddr("recipient"));
 
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account2),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
@@ -137,7 +137,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
@@ -146,7 +146,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_debug_upgradeableModularAccount_storageAccesses() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: "",
@@ -165,7 +165,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         vm.record();
@@ -174,13 +174,13 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_contractInteraction() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0, abi.encodeCall(counter.increment, ()))
-            ),
+                ),
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: 0,
@@ -195,7 +195,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
@@ -209,7 +209,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         calls[0] = Call({target: ethRecipient, value: 1 wei, data: ""});
         calls[1] = Call({target: address(counter), value: 0, data: abi.encodeCall(counter.increment, ())});
 
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: "",
@@ -228,7 +228,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);

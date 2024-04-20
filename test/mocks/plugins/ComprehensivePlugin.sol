@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
     ManifestExecutionHook,
@@ -45,7 +45,7 @@ contract ComprehensivePlugin is BasePlugin {
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(uint8 functionId, UserOperation calldata, bytes32)
+    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         pure
         override
@@ -59,7 +59,7 @@ contract ComprehensivePlugin is BasePlugin {
         revert NotImplemented();
     }
 
-    function userOpValidationFunction(uint8 functionId, UserOperation calldata, bytes32)
+    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         pure
         override

@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
@@ -317,7 +317,7 @@ contract UpgradeableModularAccount is
     // INTERNAL FUNCTIONS
 
     // Parent function validateUserOp enforces that this call can only be made by the EntryPoint
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
@@ -337,7 +337,7 @@ contract UpgradeableModularAccount is
     function _doUserOpValidation(
         bytes4 selector,
         FunctionReference userOpValidationFunction,
-        UserOperation calldata userOp,
+        PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
         if (userOpValidationFunction.isEmpty()) {
