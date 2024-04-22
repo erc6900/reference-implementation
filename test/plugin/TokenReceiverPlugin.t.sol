@@ -75,12 +75,24 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     }
 
     function test_failERC1155Transfer() public {
-        // for 1155, reverts are caught in a try catch and bubbled up with a diff reason
-        vm.expectRevert("ERC1155: transfer to non-ERC1155Receiver implementer");
+        // for 1155, reverts are caught in a try catch and bubbled up with the reason from the account
+        vm.expectRevert(
+            abi.encodePacked(
+                UpgradeableModularAccount.UnrecognizedFunction.selector,
+                IERC1155Receiver.onERC1155Received.selector,
+                bytes28(0)
+            )
+        );
         t1.safeTransferFrom(address(this), address(acct), _TOKEN_ID, _TOKEN_AMOUNT, "");
 
-        // for 1155, reverts are caught in a try catch and bubbled up with a diff reason
-        vm.expectRevert("ERC1155: transfer to non-ERC1155Receiver implementer");
+        // for 1155, reverts are caught in a try catch and bubbled up with the reason from the account
+        vm.expectRevert(
+            abi.encodePacked(
+                UpgradeableModularAccount.UnrecognizedFunction.selector,
+                IERC1155Receiver.onERC1155BatchReceived.selector,
+                bytes28(0)
+            )
+        );
         t1.safeBatchTransferFrom(address(this), address(acct), tokenIds, tokenAmts, "");
     }
 

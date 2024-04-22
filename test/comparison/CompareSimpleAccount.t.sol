@@ -39,7 +39,7 @@ contract CompareSimpleAccountTest is Test {
 
     // helper function to compress 2 gas values into a single bytes32
     function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
-        return bytes32(uint256(g1 << 128 + uint128(g2)));
+        return bytes32(uint256((g1 << 128) + uint128(g2)));
     }
 
     function setUp() public {
