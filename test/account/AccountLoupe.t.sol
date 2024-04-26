@@ -185,16 +185,15 @@ contract AccountLoupeTest is AccountTestBase {
         );
     }
 
-    function test_pluginLoupe_getPreUserOpValidationHooks() public {
-        (FunctionReference[] memory hooks,) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
+    function test_pluginLoupe_getValidationHooks() public {
+        FunctionReference[] memory hooks = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
 
         assertEq(hooks.length, 2);
         assertEq(
             FunctionReference.unwrap(hooks[0]),
             FunctionReference.unwrap(
                 FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_1)
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_1)
                 )
             )
         );
@@ -202,32 +201,7 @@ contract AccountLoupeTest is AccountTestBase {
             FunctionReference.unwrap(hooks[1]),
             FunctionReference.unwrap(
                 FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_2)
-                )
-            )
-        );
-    }
-
-    function test_pluginLoupe_getPreRuntimeValidationHooks() public {
-        (, FunctionReference[] memory hooks) = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
-
-        assertEq(hooks.length, 2);
-        assertEq(
-            FunctionReference.unwrap(hooks[0]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_RUNTIME_VALIDATION_HOOK_1)
-                )
-            )
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[1]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin),
-                    uint8(ComprehensivePlugin.FunctionId.PRE_RUNTIME_VALIDATION_HOOK_2)
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_2)
                 )
             )
         );

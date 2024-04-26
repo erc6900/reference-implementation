@@ -12,7 +12,7 @@ import {
 import {BaseTestPlugin} from "./BaseTestPlugin.sol";
 
 // solhint-disable-next-line contract-name-camelcase
-contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlugin {
+contract BadValidationMagicValue_PreValidationHook_Plugin is BaseTestPlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -37,50 +37,9 @@ contract BadValidationMagicValue_PreRuntimeValidationHook_Plugin is BaseTestPlug
             })
         });
 
-        manifest.preRuntimeValidationHooks = new ManifestAssociatedFunction[](1);
+        manifest.preValidationHooks = new ManifestAssociatedFunction[](1);
         // Illegal assignment: validation always allow only usable on runtime validation functions
-        manifest.preRuntimeValidationHooks[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        return manifest;
-    }
-}
-
-// solhint-disable-next-line contract-name-camelcase
-contract BadValidationMagicValue_PreUserOpValidationHook_Plugin is BaseTestPlugin {
-    function onInstall(bytes calldata) external override {}
-
-    function onUninstall(bytes calldata) external override {}
-
-    function foo() external pure returns (bytes32) {
-        return keccak256("bar");
-    }
-
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.foo.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        manifest.preUserOpValidationHooks = new ManifestAssociatedFunction[](1);
-        // Illegal assignment: validation always allow only usable on runtime validation functions
-        manifest.preUserOpValidationHooks[0] = ManifestAssociatedFunction({
+        manifest.preValidationHooks[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: ManifestFunction({
                 functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,

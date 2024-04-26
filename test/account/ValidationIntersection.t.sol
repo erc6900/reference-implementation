@@ -155,7 +155,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.UnexpectedAggregator.selector,
                 address(oneHookPlugin),
-                MockBaseUserOpValidationPlugin.FunctionId.PRE_USER_OP_VALIDATION_HOOK_1,
+                MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1,
                 badAuthorizer
             )
         );
