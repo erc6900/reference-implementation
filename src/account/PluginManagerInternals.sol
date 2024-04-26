@@ -103,7 +103,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         if (!preExecHook.isEmpty()) {
             if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-                // Increment the overlappingDenies counter.
+                // Increment `denyExecutionCount`, because this pre exec hook may be applied multiple times.
                 _selectorData.denyExecutionCount += 1;
                 return;
             }
@@ -133,7 +133,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         if (!preExecHook.isEmpty()) {
             if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-                // Decrement the overlappingDenies counter.
+                // Decrement `denyExecutionCount`, because this pre exec hook may be applied multiple times.
                 _selectorData.denyExecutionCount -= 1;
                 return;
             }

@@ -459,7 +459,7 @@ contract UpgradeableModularAccount is
 
             FunctionReference associatedPostExecHook = selectorData.associatedPostHooks[preExecHook];
 
-            if (associatedPostExecHook.notEq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+            if (associatedPostExecHook.notEmpty()) {
                 postHooksToRun[i + postOnlyHooksLength].postExecHook = associatedPostExecHook;
             }
         }
@@ -480,7 +480,7 @@ contract UpgradeableModularAccount is
 
             // If there is an associated post-exec hook, save the return data.
             PostExecToRun memory postExecToRun = postHooksToRun[i + postOnlyHooksLength];
-            if (postExecToRun.postExecHook.notEq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+            if (postExecToRun.postExecHook.notEmpty()) {
                 postExecToRun.preExecHookReturnData = preExecHookReturnData;
             }
         }
@@ -509,7 +509,7 @@ contract UpgradeableModularAccount is
 
             PostExecToRun memory postHookToRun = postHooksToRun[i];
 
-            if (postHookToRun.postExecHook.eq(FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE)) {
+            if (postHookToRun.postExecHook.isEmpty()) {
                 // This is an empty post hook, from a pre-only hook, so we skip it.
                 continue;
             }

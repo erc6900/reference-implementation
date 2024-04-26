@@ -34,6 +34,10 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
+    // How many times a `PRE_HOOK_ALWAYS_DENY` has been added for this function.
+    // Since that is the only type of hook that may overlap, we can use this to track the number of times it has
+    // been applied, and whether or not the deny should apply. The size `uint48` was chosen somewhat arbitrarily,
+    // but it packs alongside `plugin` while still leaving some other space in the slot for future packing.
     uint48 denyExecutionCount;
     // User operation validation and runtime validation share a function reference.
     FunctionReference validation;
@@ -73,9 +77,9 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
     return bytes24(bytes20(addr)) | (bytes24(selector) >> 160);
 }
 
-// Helper function to get all elements of a set into memory.
 using EnumerableSet for EnumerableSet.Bytes32Set;
 
+/// @dev Helper function to get all elements of a set into memory.
 function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
     view
     returns (FunctionReference[] memory)

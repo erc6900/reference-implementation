@@ -41,7 +41,6 @@ abstract contract AccountLoupe is IAccountLoupe {
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyExecHooksLength = selectorData.postOnlyHooks.length();
 
-        // Overallocate on length - not all of this may get filled up. We set the correct length later.
         execHooks = new ExecutionHooks[](preExecHooksLength + postOnlyExecHooksLength);
 
         for (uint256 i = 0; i < preExecHooksLength; ++i) {
