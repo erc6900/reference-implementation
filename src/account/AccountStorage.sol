@@ -38,8 +38,7 @@ struct SelectorData {
     // User operation validation and runtime validation share a function reference.
     FunctionReference validation;
     // The pre validation hooks for this function selector.
-    EnumerableMap.Bytes32ToUintMap preUserOpValidationHooks;
-    EnumerableMap.Bytes32ToUintMap preRuntimeValidationHooks;
+    EnumerableMap.Bytes32ToUintMap preValidationHooks;
     // The execution hooks for this function selector.
     EnumerableMap.Bytes32ToUintMap preHooks;
     // bytes21 key = pre hook function reference

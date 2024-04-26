@@ -91,8 +91,7 @@ struct PluginManifest {
     bool canSpendNativeToken;
     ManifestExternalCallPermission[] permittedExternalCalls;
     ManifestAssociatedFunction[] validationFunctions;
-    ManifestAssociatedFunction[] preUserOpValidationHooks;
-    ManifestAssociatedFunction[] preRuntimeValidationHooks;
+    ManifestAssociatedFunction[] preValidationHooks;
     ManifestExecutionHook[] executionHooks;
 }
 

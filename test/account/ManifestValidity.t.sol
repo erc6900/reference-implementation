@@ -5,8 +5,7 @@ import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.s
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {
-    BadValidationMagicValue_PreRuntimeValidationHook_Plugin,
-    BadValidationMagicValue_PreUserOpValidationHook_Plugin,
+    BadValidationMagicValue_PreValidationHook_Plugin,
     BadValidationMagicValue_PreExecHook_Plugin,
     BadValidationMagicValue_PostExecHook_Plugin,
     BadHookMagicValue_UserOpValidationFunction_Plugin,
@@ -22,26 +21,9 @@ contract ManifestValidityTest is AccountTestBase {
 
     // Tests that the plugin manager rejects a plugin with a pre-runtime validation hook set to "validation always
     // allow"
-    function test_ManifestValidity_invalid_ValidationAlwaysAllow_PreRuntimeValidationHook() public {
-        BadValidationMagicValue_PreRuntimeValidationHook_Plugin plugin =
-            new BadValidationMagicValue_PreRuntimeValidationHook_Plugin();
-
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
-
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        account1.installPlugin({
-            plugin: address(plugin),
-            manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
-        });
-    }
-
-    // Tests that the plugin manager rejects a plugin with a pre-user op validation hook set to "validation always
-    // allow"
-    function test_ManifestValidity_invalid_ValidationAlwaysAllow_PreUserOpValidationHook() public {
-        BadValidationMagicValue_PreUserOpValidationHook_Plugin plugin =
-            new BadValidationMagicValue_PreUserOpValidationHook_Plugin();
+    function test_ManifestValidity_invalid_ValidationAlwaysAllow_PreValidationHook() public {
+        BadValidationMagicValue_PreValidationHook_Plugin plugin =
+            new BadValidationMagicValue_PreValidationHook_Plugin();
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 

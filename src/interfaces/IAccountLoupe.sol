@@ -30,15 +30,11 @@ interface IAccountLoupe {
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
     /// @param selector The selector to get the hooks for.
-    /// @return preUserOpValidationHooks The pre user op validation hooks for this selector.
-    /// @return preRuntimeValidationHooks The pre runtime validation hooks for this selector.
+    /// @return preValidationHooks The pre validation hooks for this selector.
     function getPreValidationHooks(bytes4 selector)
         external
         view
-        returns (
-            FunctionReference[] memory preUserOpValidationHooks,
-            FunctionReference[] memory preRuntimeValidationHooks
-        );
+        returns (FunctionReference[] memory preValidationHooks);
 
     /// @notice Get an array of all installed plugins.
     /// @return The addresses of all installed plugins.

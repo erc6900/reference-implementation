@@ -137,45 +137,22 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
     }
 
-    function _addPreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+    function _addPreValidationHook(bytes4 selector, FunctionReference preValidationHook)
         internal
-        notNullFunction(preUserOpValidationHook)
+        notNullFunction(preValidationHook)
     {
         _addOrIncrement(
-            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
-            _toSetValue(preUserOpValidationHook)
+            getAccountStorage().selectorData[selector].preValidationHooks, _toSetValue(preValidationHook)
         );
     }
 
-    function _removePreUserOpValidationHook(bytes4 selector, FunctionReference preUserOpValidationHook)
+    function _removePreValidationHook(bytes4 selector, FunctionReference preValidationHook)
         internal
-        notNullFunction(preUserOpValidationHook)
+        notNullFunction(preValidationHook)
     {
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
         _removeOrDecrement(
-            getAccountStorage().selectorData[selector].preUserOpValidationHooks,
-            _toSetValue(preUserOpValidationHook)
-        );
-    }
-
-    function _addPreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
-        internal
-        notNullFunction(preRuntimeValidationHook)
-    {
-        _addOrIncrement(
-            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
-            _toSetValue(preRuntimeValidationHook)
-        );
-    }
-
-    function _removePreRuntimeValidationHook(bytes4 selector, FunctionReference preRuntimeValidationHook)
-        internal
-        notNullFunction(preRuntimeValidationHook)
-    {
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _removeOrDecrement(
-            getAccountStorage().selectorData[selector].preRuntimeValidationHooks,
-            _toSetValue(preRuntimeValidationHook)
+            getAccountStorage().selectorData[selector].preValidationHooks, _toSetValue(preValidationHook)
         );
     }
 
@@ -293,24 +270,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
         FunctionReference[] memory emptyDependencies;
 
-        length = manifest.preUserOpValidationHooks.length;
+        length = manifest.preValidationHooks.length;
         for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preUserOpValidationHooks[i];
-            _addPreUserOpValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
-        }
-
-        length = manifest.preRuntimeValidationHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preRuntimeValidationHooks[i];
-            _addPreRuntimeValidationHook(
+            ManifestAssociatedFunction memory mh = manifest.preValidationHooks[i];
+            _addPreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
                     mh.associatedFunction,
@@ -401,24 +364,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             );
         }
 
-        length = manifest.preRuntimeValidationHooks.length;
+        length = manifest.preValidationHooks.length;
         for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preRuntimeValidationHooks[i];
-            _removePreRuntimeValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
-        }
-
-        length = manifest.preUserOpValidationHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preUserOpValidationHooks[i];
-            _removePreUserOpValidationHook(
+            ManifestAssociatedFunction memory mh = manifest.preValidationHooks[i];
+            _removePreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
                     mh.associatedFunction,
