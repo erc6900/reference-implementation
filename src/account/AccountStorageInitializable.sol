@@ -3,7 +3,14 @@ pragma solidity ^0.8.25;
 
 import {AccountStorage, getAccountStorage} from "./AccountStorage.sol";
 
+/// @title AccountStorageInitializable
+/// @dev Bulk of the impl is lifted from OZ 5.0 Initializible
 abstract contract AccountStorageInitializable {
+    /**
+     * @dev Triggered when the contract has been initialized or reinitialized.
+     */
+    event Initialized(uint64 version);
+
     /**
      * @dev The contract is already initialized.
      */
@@ -13,11 +20,6 @@ abstract contract AccountStorageInitializable {
      * @dev The contract is not initializing.
      */
     error NotInitializing();
-
-    /**
-     * @dev Triggered when the contract has been initialized or reinitialized.
-     */
-    event Initialized(uint64 version);
 
     /// @notice Modifier to put on function intended to be called only once per implementation
     /// @dev Reverts if the contract has already been initialized
