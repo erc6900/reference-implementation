@@ -8,7 +8,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
@@ -19,12 +18,13 @@ import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, getPermittedCallKey, SelectorData} from "./AccountStorage.sol";
+import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
     AccountLoupe,
-    Initializable,
+    AccountStorageInitializable,
     BaseAccount,
     IERC165,
     IPluginExecutor,

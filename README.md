@@ -7,7 +7,6 @@ The implementation includes an upgradable modular account with two plugins (`Sin
 ## Important Callouts
 
 - **Not audited and should NOT be used in production**.
-- The Reference Implementation Account uses the storage slot provided by OpenZeppelin's Initializable library. This would prevent upgrades to and from other accounts that use the same library.
 - Not optimized in both deployments and execution. We’ve explicitly removed some optimizations for reader comprehension.
 
 ## Development
