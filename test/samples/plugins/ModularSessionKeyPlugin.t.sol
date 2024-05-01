@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 // import {Test} from "forge-std/Test.sol";
 
 // import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
-// import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+// import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 // import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // import {SingleOwnerPlugin} from "../../../src/plugins/owner/SingleOwnerPlugin.sol";
@@ -196,9 +196,9 @@ pragma solidity ^0.8.19;
 //     }
 
 //     function test_sessionKey_userOp() public {
-//         UserOperation[] memory userOps = new UserOperation[](1);
+//         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
 
-//         (, UserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), target, 1
+//         (, PackedUserOperation memory userOp) = _constructUserOp(address(mockERC20), address(account), target, 1
 // ether);
 //         userOps[0] = userOp;
 
@@ -252,10 +252,10 @@ pragma solidity ^0.8.19;
 
 //     function test_sessionKey_invalidContractFails() public {
 //         address wrongERC20Contract = makeAddr("wrongERC20Contract");
-//         (bytes32 userOpHash, UserOperation memory userOp) =
+//         (bytes32 userOpHash, PackedUserOperation memory userOp) =
 //             _constructUserOp(address(wrongERC20Contract), address(account), target, 1 ether);
 
-//         UserOperation[] memory userOps = new UserOperation[](1);
+//         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
 //         userOps[0] = userOp;
 
 //         bytes memory revertCallData = abi.encodeWithSelector(
@@ -346,12 +346,12 @@ pragma solidity ^0.8.19;
 //     function _constructUserOp(address targetContract, address from, address to, uint256 amount)
 //         internal
 //         view
-//         returns (bytes32, UserOperation memory)
+//         returns (bytes32, PackedUserOperation memory)
 //     {
 //         bytes memory userOpCallData =
 //             abi.encodeCall(TokenSessionKeyPlugin.transferFromSessionKey, (targetContract, from, to, amount));
 
-//         UserOperation memory userOp = UserOperation({
+//         PackedUserOperation memory userOp = PackedUserOperation({
 //             sender: address(account),
 //             nonce: 0,
 //             initCode: "",

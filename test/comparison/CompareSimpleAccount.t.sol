@@ -4,8 +4,9 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {SimpleAccount} from "@eth-infinitism/account-abstraction/samples/SimpleAccount.sol";
 import {SimpleAccountFactory} from "@eth-infinitism/account-abstraction/samples/SimpleAccountFactory.sol";
@@ -14,6 +15,7 @@ import {Counter} from "../mocks/Counter.sol";
 
 contract CompareSimpleAccountTest is Test {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     EntryPoint public entryPoint;
     address payable public beneficiary;
@@ -31,6 +33,14 @@ contract CompareSimpleAccountTest is Test {
     address public account2;
 
     Counter public counter;
+
+    uint256 public constant CALL_GAS_LIMIT = 500000;
+    uint256 public constant VERIFICATION_GAS_LIMIT = 500000;
+
+    // helper function to compress 2 gas values into a single bytes32
+    function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
+        return bytes32(uint256((g1 << 128) + uint128(g2)));
+    }
 
     function setUp() public {
         entryPoint = new EntryPoint();
@@ -54,16 +64,14 @@ contract CompareSimpleAccountTest is Test {
     }
 
     function test_SimpleAccount_deploy_basicSend() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: account1,
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
             callData: abi.encodeCall(SimpleAccount.execute, (beneficiary, 1, "")),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -72,23 +80,21 @@ contract CompareSimpleAccountTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
     }
 
     function test_SimpleAccount_deploy_empty() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: account1,
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner1, 0))),
             callData: "",
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -97,23 +103,21 @@ contract CompareSimpleAccountTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
     }
 
     function test_SimpleAccount_postDeploy_basicSend() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: account2,
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(SimpleAccount.execute, (beneficiary, 1, "")),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -122,25 +126,23 @@ contract CompareSimpleAccountTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
     }
 
     function test_SimpleAccount_postDeploy_contractInteraction() public {
-        UserOperation memory userOp = UserOperation({
+        PackedUserOperation memory userOp = PackedUserOperation({
             sender: account2,
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(
                 SimpleAccount.execute, (address(counter), 0, abi.encodeCall(Counter.increment, ()))
             ),
-            callGasLimit: 5000000,
-            verificationGasLimit: 5000000,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
-            maxFeePerGas: 2,
-            maxPriorityFeePerGas: 1,
+            gasFees: _encodeGas(1, 2),
             paymasterAndData: "",
             signature: ""
         });
@@ -149,7 +151,7 @@ contract CompareSimpleAccountTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = abi.encodePacked(r, s, v);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);

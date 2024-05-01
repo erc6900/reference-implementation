@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 // import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 // import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-// import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+// import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 // import {UpgradeableModularAccount} from "../../account/UpgradeableModularAccount.sol";
 // import {
 //     ManifestFunction,
@@ -188,7 +188,7 @@ pragma solidity ^0.8.25;
 //     }
 
 //     /// @inheritdoc BasePlugin
-//     function userOpValidationFunction(uint8 functionId, UserOperation calldata userOp, bytes32 userOpHash)
+//     function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
 //         external
 //         view
 //         override

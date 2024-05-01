@@ -2,8 +2,9 @@
 pragma solidity ^0.8.19;
 
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
@@ -12,6 +13,7 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract SingleOwnerPluginTest is OptimizedTest {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     SingleOwnerPlugin public plugin;
     EntryPoint public entryPoint;
@@ -123,7 +125,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         );
     }
 
-    function testFuzz_validateUserOpSig(string memory salt, UserOperation memory userOp) public {
+    function testFuzz_validateUserOpSig(string memory salt, PackedUserOperation memory userOp) public {
         // range bound the possible set of priv keys
         (address signer, uint256 privateKey) = makeAddrAndKey(salt);
 

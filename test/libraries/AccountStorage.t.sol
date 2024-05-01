@@ -22,7 +22,7 @@ contract AccountStorageTest is Test {
         assertEq(uint256(vm.load(address(impl), _ACCOUNT_STORAGE_SLOT)), type(uint8).max);
 
         // should revert if we try to initialize again
-        vm.expectRevert(AccountStorageInitializable.AlreadyInitialized.selector);
+        vm.expectRevert(AccountStorageInitializable.InvalidInitialization.selector);
         impl.initialize();
     }
 

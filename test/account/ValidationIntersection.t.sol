@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
@@ -51,7 +51,7 @@ contract ValidationIntersectionTest is AccountTestBase {
     function testFuzz_validationIntersect_single(uint256 validationData) public {
         noHookPlugin.setValidationData(validationData);
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(noHookPlugin.foo.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -67,7 +67,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             0 // returns OK
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -84,7 +84,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _SIG_VALIDATION_FAILED
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -106,7 +106,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _packValidationData(address(0), start1, end1), _packValidationData(address(0), start2, end2)
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -127,7 +127,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _packValidationData(address(0), start2, end2), _packValidationData(address(0), start1, end1)
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -146,7 +146,7 @@ contract ValidationIntersectionTest is AccountTestBase {
                 // do.
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -170,7 +170,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             0 // returns OK
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -193,7 +193,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _packValidationData(goodAuthorizer, start1, end1), _packValidationData(address(0), start2, end2)
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -216,7 +216,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _packValidationData(address(0), start2, end2)
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -233,7 +233,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             _SIG_VALIDATION_FAILED
         );
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
 
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
