@@ -4,7 +4,8 @@ pragma solidity ^0.8.25;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import {UserOperation} from "@eth-infinitism/account-abstraction/interfaces/UserOperation.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IPluginManager} from "../../interfaces/IPluginManager.sol";
@@ -38,6 +39,7 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// send user operations through a bundler.
 contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     string public constant NAME = "Single Owner Plugin";
     string public constant VERSION = "1.0.0";
@@ -91,7 +93,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     }
 
     /// @inheritdoc BasePlugin
-    function userOpValidationFunction(uint8 functionId, UserOperation calldata userOp, bytes32 userOpHash)
+    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -99,7 +101,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate the user op signature against the owner.
-            (address signer,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
+            (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
                 return _SIG_VALIDATION_FAILED;
             }
@@ -154,7 +156,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](8);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](7);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
             associatedFunction: ownerValidationFunction
@@ -176,10 +178,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerValidationFunction
         });
         manifest.validationFunctions[5] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeTo.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[6] = ManifestAssociatedFunction({
             executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
             associatedFunction: ownerValidationFunction
         });
@@ -189,7 +187,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             functionId: 0, // Unused.
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions[7] = ManifestAssociatedFunction({
+        manifest.validationFunctions[6] = ManifestAssociatedFunction({
             executionSelector: this.isValidSignature.selector,
             associatedFunction: alwaysAllowRuntime
         });
