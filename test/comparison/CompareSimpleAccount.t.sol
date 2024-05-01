@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
@@ -14,6 +15,7 @@ import {Counter} from "../mocks/Counter.sol";
 
 contract CompareSimpleAccountTest is Test {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     EntryPoint public entryPoint;
     address payable public beneficiary;
@@ -37,7 +39,7 @@ contract CompareSimpleAccountTest is Test {
 
     // helper function to compress 2 gas values into a single bytes32
     function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
-        return bytes32(uint256(g1 << 128 + uint128(g2)));
+        return bytes32(uint256((g1 << 128) + uint128(g2)));
     }
 
     function setUp() public {

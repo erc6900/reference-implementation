@@ -293,11 +293,6 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc UUPSUpgradeable
-    function upgradeTo(address newImplementation) public override onlyProxy wrapNativeFunction {
-        _upgradeToAndCallUUPS(newImplementation, new bytes(0), false);
-    }
-
-    /// @inheritdoc UUPSUpgradeable
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
@@ -305,7 +300,7 @@ contract UpgradeableModularAccount is
         onlyProxy
         wrapNativeFunction
     {
-        _upgradeToAndCallUUPS(newImplementation, data, true);
+        super.upgradeToAndCall(newImplementation, data);
     }
 
     /// @notice Gets the entry point for this account

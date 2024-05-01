@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
@@ -12,6 +13,7 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract SingleOwnerPluginTest is OptimizedTest {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     SingleOwnerPlugin public plugin;
     EntryPoint public entryPoint;
