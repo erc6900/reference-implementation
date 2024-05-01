@@ -300,7 +300,7 @@ contract UpgradeableModularAccount is
         onlyProxy
         wrapNativeFunction
     {
-        upgradeToAndCall(newImplementation, data);
+        super.upgradeToAndCall(newImplementation, data);
     }
 
     /// @notice Gets the entry point for this account

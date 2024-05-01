@@ -405,6 +405,20 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.stopPrank();
     }
 
+    function test_upgradeToAndCall() public {
+        vm.startPrank(owner1);
+        UpgradeableModularAccount account3 = new UpgradeableModularAccount(entryPoint);
+        bytes32 slot = account3.proxiableUUID();
+
+        // account has impl from factory
+        assertEq(
+            address(factory.accountImplementation()), address(uint160(uint256(vm.load(address(account1), slot))))
+        );
+        account1.upgradeToAndCall(address(account3), bytes(""));
+        // account has new impl
+        assertEq(address(account3), address(uint160(uint256(vm.load(address(account1), slot)))));
+    }
+
     // Internal Functions
 
     function _printStorageReadsAndWrites(address addr) internal {
