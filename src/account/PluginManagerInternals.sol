@@ -80,7 +80,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!_selectorData.validation.isEmpty()) {
+        if (_selectorData.validation.notEmpty()) {
             revert ValidationFunctionAlreadySet(selector, validationFunction);
         }
 
@@ -101,7 +101,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!preExecHook.isEmpty()) {
+        if (preExecHook.notEmpty()) {
             if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                 // Increment `denyExecutionCount`, because this pre exec hook may be applied multiple times.
                 _selectorData.denyExecutionCount += 1;
@@ -111,7 +111,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             // Don't need to check for duplicates, as the hook can be run at most once.
             _selectorData.preHooks.add(_toSetValue(preExecHook));
 
-            if (!postExecHook.isEmpty()) {
+            if (postExecHook.notEmpty()) {
                 _selectorData.associatedPostHooks[preExecHook] = postExecHook;
             }
 
@@ -131,7 +131,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (!preExecHook.isEmpty()) {
+        if (preExecHook.notEmpty()) {
             if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
                 // Decrement `denyExecutionCount`, because this pre exec hook may be applied multiple times.
                 _selectorData.denyExecutionCount -= 1;
@@ -140,7 +140,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
             _selectorData.preHooks.remove(_toSetValue(preExecHook));
 
-            if (!postExecHook.isEmpty()) {
+            if (postExecHook.notEmpty()) {
                 _selectorData.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
             }
 
