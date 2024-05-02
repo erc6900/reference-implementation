@@ -102,12 +102,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (preExecHook.notEmpty()) {
-            if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-                // Increment `denyExecutionCount`, because this pre exec hook may be applied multiple times.
-                _selectorData.denyExecutionCount += 1;
-                return;
-            }
-
             // Don't need to check for duplicates, as the hook can be run at most once.
             _selectorData.preHooks.add(_toSetValue(preExecHook));
 
@@ -132,12 +126,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (preExecHook.notEmpty()) {
-            if (preExecHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-                // Decrement `denyExecutionCount`, because this pre exec hook may be applied multiple times.
-                _selectorData.denyExecutionCount -= 1;
-                return;
-            }
-
             _selectorData.preHooks.remove(_toSetValue(preExecHook));
 
             if (postExecHook.notEmpty()) {
@@ -157,15 +145,27 @@ abstract contract PluginManagerInternals is IPluginManager {
         internal
         notNullFunction(preValidationHook)
     {
-        getAccountStorage().selectorData[selector].preValidationHooks.add(_toSetValue(preValidationHook));
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        if (preValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+            // Increment `denyExecutionCount`, because this pre validation hook may be applied multiple times.
+            _selectorData.denyExecutionCount += 1;
+            return;
+        }
+        _selectorData.preValidationHooks.add(_toSetValue(preValidationHook));
     }
 
     function _removePreValidationHook(bytes4 selector, FunctionReference preValidationHook)
         internal
         notNullFunction(preValidationHook)
     {
+        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        if (preValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
+            // Decrement `denyExecutionCount`, because this pre exec hook may be applied multiple times.
+            _selectorData.denyExecutionCount -= 1;
+            return;
+        }
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        getAccountStorage().selectorData[selector].preValidationHooks.remove(_toSetValue(preValidationHook));
+        _selectorData.preValidationHooks.remove(_toSetValue(preValidationHook));
     }
 
     function _installPlugin(
@@ -288,7 +288,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addPreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.associatedFunction, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
+                    mh.associatedFunction,
+                    plugin,
+                    emptyDependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
         }
@@ -299,7 +302,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 ),
                 _resolveManifestFunction(
                     mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
@@ -365,7 +368,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeExecHooks(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
+                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
                 ),
                 _resolveManifestFunction(
                     mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
@@ -379,7 +382,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removePreValidationHook(
                 mh.executionSelector,
                 _resolveManifestFunction(
-                    mh.associatedFunction, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
+                    mh.associatedFunction,
+                    plugin,
+                    emptyDependencies,
+                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
         }
