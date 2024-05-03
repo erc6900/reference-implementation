@@ -4,19 +4,12 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {
-    ManifestAssociatedFunctionType,
-    ManifestExecutionHook,
-    ManifestFunction,
-    PluginManifest
-} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
-import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountLoupeTest is AccountTestBase {
@@ -108,81 +101,39 @@ contract AccountLoupeTest is AccountTestBase {
 
     function test_pluginLoupe_getExecutionHooks() public {
         IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
-
-        assertEq(hooks.length, 1);
-        assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
-                )
-            )
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
-                )
-            )
-        );
-    }
-
-    function test_pluginLoupe_getHooks_multiple() public {
-        // Add a second set of execution hooks to the account, and validate that it can return all hooks applied
-        // over the function.
-
-        PluginManifest memory mockPluginManifest;
-
-        mockPluginManifest.executionHooks = new ManifestExecutionHook[](1);
-        mockPluginManifest.executionHooks[0] = ManifestExecutionHook({
-            executionSelector: ComprehensivePlugin.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
+        IAccountLoupe.ExecutionHooks[3] memory expectedHooks = [
+            IAccountLoupe.ExecutionHooks({
+                hookFunction: FunctionReferenceLib.pack(
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.BOTH_EXECUTION_HOOKS)
+                ),
+                isPreHook: true,
+                isPostHook: true
             }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-
-        MockPlugin mockPlugin = new MockPlugin(mockPluginManifest);
-        bytes32 manifestHash = keccak256(abi.encode(mockPlugin.pluginManifest()));
-
-        account1.installPlugin(address(mockPlugin), manifestHash, "", new FunctionReference[](0));
-
-        // Assert that the returned execution hooks are what is expected
-
-        IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
-
-        assertEq(hooks.length, 2);
-        assertEq(
-            FunctionReference.unwrap(hooks[0].preExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
+            IAccountLoupe.ExecutionHooks({
+                hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
-                )
-            )
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[0].postExecHook),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
+                ),
+                isPreHook: true,
+                isPostHook: false
+            }),
+            IAccountLoupe.ExecutionHooks({
+                hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
-                )
-            )
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[1].preExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
-        );
-        assertEq(
-            FunctionReference.unwrap(hooks[1].postExecHook),
-            FunctionReference.unwrap(FunctionReferenceLib.pack(address(mockPlugin), uint8(0)))
-        );
+                ),
+                isPreHook: false,
+                isPostHook: true
+            })
+        ];
+
+        assertEq(hooks.length, 3);
+        for (uint256 i = 0; i < hooks.length; i++) {
+            assertEq(
+                FunctionReference.unwrap(hooks[i].hookFunction),
+                FunctionReference.unwrap(expectedHooks[i].hookFunction)
+            );
+            assertEq(hooks[i].isPreHook, expectedHooks[i].isPreHook);
+            assertEq(hooks[i].isPostHook, expectedHooks[i].isPostHook);
+        }
     }
 
     function test_pluginLoupe_getValidationHooks() public {

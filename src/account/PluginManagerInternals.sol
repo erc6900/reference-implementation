@@ -18,7 +18,9 @@ import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.so
 import {
     AccountStorage,
     getAccountStorage,
+    HookData,
     SelectorData,
+    toSetValue,
     getPermittedCallKey,
     PermittedExternalCallData
 } from "./AccountStorage.sol";
@@ -96,49 +98,30 @@ abstract contract PluginManagerInternals is IPluginManager {
         _selectorData.validation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
     }
 
-    function _addExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (preExecHook.notEmpty()) {
-            // Don't need to check for duplicates, as the hook can be run at most once.
-            _selectorData.preHooks.add(_toSetValue(preExecHook));
-
-            if (postExecHook.notEmpty()) {
-                _selectorData.associatedPostHooks[preExecHook] = postExecHook;
-            }
-
-            return;
-        }
-
-        if (postExecHook.isEmpty()) {
-            // both pre and post hooks cannot be null
-            revert NullFunctionReference();
-        }
-
-        _selectorData.postOnlyHooks.add(_toSetValue(postExecHook));
+    function _addExecHooks(
+        bytes4 selector,
+        FunctionReference hookFunction,
+        bool isPreExecHook,
+        bool isPostExecHook
+    ) internal {
+        getAccountStorage().selectorData[selector].executionHooks.add(
+            toSetValue(
+                HookData({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
+            )
+        );
     }
 
-    function _removeExecHooks(bytes4 selector, FunctionReference preExecHook, FunctionReference postExecHook)
-        internal
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-
-        if (preExecHook.notEmpty()) {
-            _selectorData.preHooks.remove(_toSetValue(preExecHook));
-
-            if (postExecHook.notEmpty()) {
-                _selectorData.associatedPostHooks[preExecHook] = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
-            }
-
-            return;
-        }
-
-        // The case where both pre and post hooks are null was checked during installation.
-
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _selectorData.postOnlyHooks.remove(_toSetValue(postExecHook));
+    function _removeExecHooks(
+        bytes4 selector,
+        FunctionReference hookFunction,
+        bool isPreExecHook,
+        bool isPostExecHook
+    ) internal {
+        getAccountStorage().selectorData[selector].executionHooks.remove(
+            toSetValue(
+                HookData({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
+            )
+        );
     }
 
     function _addPreValidationHook(bytes4 selector, FunctionReference preValidationHook)
@@ -151,7 +134,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _selectorData.denyExecutionCount += 1;
             return;
         }
-        _selectorData.preValidationHooks.add(_toSetValue(preValidationHook));
+        _selectorData.preValidationHooks.add(toSetValue(preValidationHook));
     }
 
     function _removePreValidationHook(bytes4 selector, FunctionReference preValidationHook)
@@ -165,7 +148,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             return;
         }
         // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _selectorData.preValidationHooks.remove(_toSetValue(preValidationHook));
+        _selectorData.preValidationHooks.remove(toSetValue(preValidationHook));
     }
 
     function _installPlugin(
@@ -299,15 +282,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            _addExecHooks(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
-                ),
-                _resolveManifestFunction(
-                    mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
-                )
-            );
+            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
+            _addExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.interfaceIds.length;
@@ -365,15 +341,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            _removeExecHooks(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.preExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
-                ),
-                _resolveManifestFunction(
-                    mh.postExecHook, plugin, emptyDependencies, ManifestAssociatedFunctionType.NONE
-                )
-            );
+            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
+            _removeExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.preValidationHooks.length;
@@ -459,14 +428,6 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
-    }
-
-    function _toSetValue(FunctionReference functionReference) internal pure returns (bytes32) {
-        return bytes32(FunctionReference.unwrap(functionReference));
-    }
-
-    function _toFunctionReference(bytes32 setValue) internal pure returns (FunctionReference) {
-        return FunctionReference.wrap(bytes21(setValue));
     }
 
     function _isValidPluginManifest(PluginManifest memory manifest, bytes32 manifestHash)

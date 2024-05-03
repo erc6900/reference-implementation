@@ -7,7 +7,13 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {AccountStorage, getAccountStorage, SelectorData, toFunctionReferenceArray} from "./AccountStorage.sol";
+import {
+    AccountStorage,
+    getAccountStorage,
+    SelectorData,
+    toFunctionReferenceArray,
+    toHookData
+} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -38,23 +44,14 @@ abstract contract AccountLoupe is IAccountLoupe {
     /// @inheritdoc IAccountLoupe
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
-        uint256 preExecHooksLength = selectorData.preHooks.length();
-        uint256 postOnlyExecHooksLength = selectorData.postOnlyHooks.length();
+        uint256 executionHooksLength = selectorData.executionHooks.length();
 
-        execHooks = new ExecutionHooks[](preExecHooksLength + postOnlyExecHooksLength);
+        execHooks = new ExecutionHooks[](executionHooksLength);
 
-        for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            bytes32 key = selectorData.preHooks.at(i);
-            FunctionReference preExecHook = FunctionReference.wrap(bytes21(key));
-            FunctionReference associatedPostExecHook = selectorData.associatedPostHooks[preExecHook];
-
-            execHooks[i].preExecHook = preExecHook;
-            execHooks[i].postExecHook = associatedPostExecHook;
-        }
-
-        for (uint256 i = 0; i < postOnlyExecHooksLength; ++i) {
-            bytes32 key = selectorData.postOnlyHooks.at(i);
-            execHooks[preExecHooksLength + i].postExecHook = FunctionReference.wrap(bytes21(key));
+        for (uint256 i = 0; i < executionHooksLength; ++i) {
+            bytes32 key = selectorData.executionHooks.at(i);
+            ExecutionHooks memory execHook = execHooks[i];
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toHookData(key);
         }
     }
 

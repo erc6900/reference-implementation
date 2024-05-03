@@ -40,9 +40,11 @@ struct ManifestAssociatedFunction {
 }
 
 struct ManifestExecutionHook {
+    // TODO(erc6900 spec): These fields can be packed into a single word
     bytes4 executionSelector;
-    ManifestFunction preExecHook;
-    ManifestFunction postExecHook;
+    uint8 functionId;
+    bool isPreHook;
+    bool isPostHook;
 }
 
 struct ManifestExternalCallPermission {

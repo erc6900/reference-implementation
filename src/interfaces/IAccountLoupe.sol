@@ -13,8 +13,9 @@ interface IAccountLoupe {
     /// @notice Pre and post hooks for a given selector.
     /// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
     struct ExecutionHooks {
-        FunctionReference preExecHook;
-        FunctionReference postExecHook;
+        FunctionReference hookFunction;
+        bool isPreHook;
+        bool isPostHook;
     }
 
     /// @notice Get the validation functions and plugin address for a selector.
