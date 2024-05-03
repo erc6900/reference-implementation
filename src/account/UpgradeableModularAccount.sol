@@ -420,8 +420,6 @@ contract UpgradeableModularAccount is
             } else {
                 if (runtimeValidationFunction.isEmpty()) {
                     revert RuntimeValidationFunctionMissing(msg.sig);
-                } else if (runtimeValidationFunction.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-                    revert InvalidConfiguration();
                 }
                 // If _RUNTIME_VALIDATION_ALWAYS_ALLOW, just let the function finish.
             }
@@ -433,10 +431,6 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory postHooksToRun)
     {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
-
-        if (selectorData.denyExecutionCount > 0) {
-            revert AlwaysDenyRule();
-        }
 
         uint256 preExecHooksLength = selectorData.preHooks.length();
         uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
@@ -469,12 +463,6 @@ contract UpgradeableModularAccount is
         for (uint256 i = 0; i < preExecHooksLength; ++i) {
             bytes32 key = selectorData.preHooks.at(i);
             FunctionReference preExecHook = _toFunctionReference(key);
-
-            if (preExecHook.isEmptyOrMagicValue()) {
-                // The function reference must be PRE_HOOK_ALWAYS_DENY in this case, because zero and any other
-                // magic value is unassignable here.
-                revert AlwaysDenyRule();
-            }
 
             bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
 
