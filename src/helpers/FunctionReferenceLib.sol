@@ -26,6 +26,10 @@ library FunctionReferenceLib {
         return FunctionReference.unwrap(fr) == bytes21(0);
     }
 
+    function notEmpty(FunctionReference fr) internal pure returns (bool) {
+        return FunctionReference.unwrap(fr) != bytes21(0);
+    }
+
     function isEmptyOrMagicValue(FunctionReference fr) internal pure returns (bool) {
         return FunctionReference.unwrap(fr) <= bytes21(uint168(2));
     }
