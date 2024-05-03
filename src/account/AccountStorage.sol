@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
@@ -35,15 +34,20 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
+    // How many times a `PRE_HOOK_ALWAYS_DENY` has been added for this function.
+    // Since that is the only type of hook that may overlap, we can use this to track the number of times it has
+    // been applied, and whether or not the deny should apply. The size `uint48` was chosen somewhat arbitrarily,
+    // but it packs alongside `plugin` while still leaving some other space in the slot for future packing.
+    uint48 denyExecutionCount;
     // User operation validation and runtime validation share a function reference.
     FunctionReference validation;
     // The pre validation hooks for this function selector.
-    EnumerableMap.Bytes32ToUintMap preValidationHooks;
+    EnumerableSet.Bytes32Set preValidationHooks;
     // The execution hooks for this function selector.
-    EnumerableMap.Bytes32ToUintMap preHooks;
+    EnumerableSet.Bytes32Set preHooks;
     // bytes21 key = pre hook function reference
-    mapping(FunctionReference => EnumerableMap.Bytes32ToUintMap) associatedPostHooks;
-    EnumerableMap.Bytes32ToUintMap postOnlyHooks;
+    mapping(FunctionReference => FunctionReference) associatedPostHooks;
+    EnumerableSet.Bytes32Set postOnlyHooks;
 }
 
 struct AccountStorage {
@@ -73,17 +77,17 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
     return bytes24(bytes20(addr)) | (bytes24(selector) >> 160);
 }
 
-// Helper function to get all elements of a set into memory.
-using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
+using EnumerableSet for EnumerableSet.Bytes32Set;
 
-function toFunctionReferenceArray(EnumerableMap.Bytes32ToUintMap storage map)
+/// @dev Helper function to get all elements of a set into memory.
+function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
     view
     returns (FunctionReference[] memory)
 {
-    uint256 length = map.length();
+    uint256 length = set.length();
     FunctionReference[] memory result = new FunctionReference[](length);
     for (uint256 i = 0; i < length; ++i) {
-        (bytes32 key,) = map.at(i);
+        bytes32 key = set.at(i);
         result[i] = FunctionReference.wrap(bytes21(key));
     }
     return result;

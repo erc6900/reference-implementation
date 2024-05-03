@@ -19,10 +19,9 @@ enum ManifestAssociatedFunctionType {
     // setting a hook and is therefore disallowed.
     RUNTIME_VALIDATION_ALWAYS_ALLOW,
     // Resolves to a magic value to always fail in a hook for a given function.
-    // This is only assignable to pre hooks (pre validation and pre execution). It should not be used on
-    // validation functions themselves, because this is equivalent to leaving the validation functions unset.
-    // It should not be used in post-exec hooks, because if it is known to always revert, that should happen
-    // as early as possible to save gas.
+    // This is only assignable to pre execution hooks. It should not be used on validation functions themselves, because
+    // this is equivalent to leaving the validation functions unset. It should not be used in post-exec hooks, because
+    // if it is known to always revert, that should happen as early as possible to save gas.
     PRE_HOOK_ALWAYS_DENY
 }
 // forgefmt: disable-end
