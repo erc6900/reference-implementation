@@ -75,7 +75,7 @@ contract AccountExecHooksTest is AccountTestBase {
             abi.encodeWithSelector(
                 IPlugin.preExecutionHook.selector,
                 _PRE_HOOK_FUNCTION_ID_1,
-                address(this), // caller
+                abi.encode(address(this)), // caller context
                 0, // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),
@@ -119,7 +119,7 @@ contract AccountExecHooksTest is AccountTestBase {
             abi.encodeWithSelector(
                 IPlugin.preExecutionHook.selector,
                 _PRE_HOOK_FUNCTION_ID_1,
-                address(this), // caller
+                abi.encode(address(this)), // caller context
                 0, // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),

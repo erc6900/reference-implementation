@@ -89,7 +89,7 @@ contract ComprehensivePlugin is BasePlugin {
         revert NotImplemented();
     }
 
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata)
+    function preExecutionHook(uint8 functionId, bytes calldata, uint256, bytes calldata)
         external
         pure
         override

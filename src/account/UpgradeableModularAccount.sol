@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -29,7 +30,8 @@ contract UpgradeableModularAccount is
     IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IAccountExecute
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using FunctionReferenceLib for FunctionReference;
@@ -44,11 +46,13 @@ contract UpgradeableModularAccount is
     // As per the EIP-165 spec, no interface should ever match 0xffffffff
     bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
     bytes4 internal constant _IERC165_INTERFACE_ID = 0x01ffc9a7;
+    uint8 internal constant _UO_CONTEXT_THRESHOLD = 128;
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
     error AlwaysDenyRule();
     error AuthorizeUpgradeReverted(bytes revertReason);
+    error CallerNotEntrypoint();
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
     error InvalidConfiguration();
@@ -56,6 +60,7 @@ contract UpgradeableModularAccount is
     error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
+    error RequiresUserOperationContext(FunctionReference preExecHook);
     error RuntimeValidationFunctionMissing(bytes4 selector);
     error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
@@ -67,7 +72,7 @@ contract UpgradeableModularAccount is
     modifier wrapNativeFunction() {
         _doRuntimeValidationIfNotFromEP();
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, abi.encode(msg.sender), msg.data);
 
         _;
 
@@ -121,7 +126,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
-        postExecHooks = _doPreExecHooks(msg.sig, msg.data);
+        postExecHooks = _doPreExecHooks(msg.sig, abi.encode(msg.sender), msg.data);
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execPlugin.call(msg.data);
@@ -165,6 +170,27 @@ contract UpgradeableModularAccount is
         }
     }
 
+    /// @inheritdoc IAccountExecute
+    function executeUserOp(PackedUserOperation calldata userOp, bytes32) external {
+        if (msg.sender != address(_ENTRY_POINT)) {
+            revert CallerNotEntrypoint();
+        }
+        (bytes memory callData, bytes memory senderContext) = abi.decode(userOp.callData, (bytes, bytes));
+
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(bytes4(callData), senderContext, callData);
+
+        (bool success, bytes memory result) = address(this).call(callData);
+
+        if (!success) {
+            // Directly bubble up revert messages
+            assembly ("memory-safe") {
+                revert(add(result, 32), mload(result))
+            }
+        }
+
+        _doCachedPostExecHooks(postExecHooks);
+    }
+
     /// @inheritdoc IPluginExecutor
     function executeFromPlugin(bytes calldata data) external payable override returns (bytes memory) {
         bytes4 selector = bytes4(data[:4]);
@@ -184,7 +210,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(selector);
         }
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector, data);
+        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector, abi.encode(msg.sender), data);
 
         (bool success, bytes memory returnData) = execFunctionPlugin.call(data);
 
@@ -237,7 +263,7 @@ contract UpgradeableModularAccount is
 
         // Run any pre exec hooks for this selector
         PostExecToRun[] memory postExecHooks =
-            _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
+            _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, abi.encode(msg.sender), msg.data);
 
         // Perform the external call
         bytes memory returnData = _exec(target, value, data);
@@ -426,7 +452,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doPreExecHooks(bytes4 selector, bytes calldata data)
+    function _doPreExecHooks(bytes4 selector, bytes memory senderContext, bytes memory data)
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
@@ -436,7 +462,7 @@ contract UpgradeableModularAccount is
         uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
-        postHooksToRun = new PostExecToRun[](preExecHooksLength + postOnlyHooksLength);
+        postHooksToRun = new PostExecToRun[](selectorData.preHooks.length() + selectorData.postOnlyHooks.length());
 
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
@@ -461,30 +487,35 @@ contract UpgradeableModularAccount is
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
         for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            bytes32 key = selectorData.preHooks.at(i);
-            FunctionReference preExecHook = _toFunctionReference(key);
+            address plugin;
+            uint8 functionId;
+            {
+                bytes32 key = selectorData.preHooks.at(i);
+                FunctionReference preExecHook = _toFunctionReference(key);
+                (plugin, functionId) = preExecHook.unpack();
 
-            bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
+                // functionId > _UO_CONTEXT_THRESHOLD means that the plugin wants UO context
+                if (msg.sender == address(_ENTRY_POINT) && functionId > _UO_CONTEXT_THRESHOLD) {
+                    if (abi.decode(senderContext, (address)) == msg.sender) {
+                        revert RequiresUserOperationContext(preExecHook);
+                    }
+                }
+            }
+
+            bytes memory preExecHookReturnData;
+            try IPlugin(plugin).preExecutionHook(functionId, senderContext, msg.value, data) returns (
+                bytes memory returnData
+            ) {
+                preExecHookReturnData = returnData;
+            } catch (bytes memory revertReason) {
+                revert PreExecHookReverted(plugin, functionId, revertReason);
+            }
 
             // If there is an associated post-exec hook, save the return data.
             PostExecToRun memory postExecToRun = postHooksToRun[i + postOnlyHooksLength];
             if (postExecToRun.postExecHook.notEmpty()) {
                 postExecToRun.preExecHookReturnData = preExecHookReturnData;
             }
-        }
-    }
-
-    function _runPreExecHook(FunctionReference preExecHook, bytes calldata data)
-        internal
-        returns (bytes memory preExecHookReturnData)
-    {
-        (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
-            bytes memory returnData
-        ) {
-            preExecHookReturnData = returnData;
-        } catch (bytes memory revertReason) {
-            revert PreExecHookReverted(plugin, functionId, revertReason);
         }
     }
 

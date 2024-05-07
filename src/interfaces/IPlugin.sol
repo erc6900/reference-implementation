@@ -152,11 +152,11 @@ interface IPlugin {
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param functionId An identifier that routes the call to different internal implementations, should there be
     /// more than one.
-    /// @param sender The caller address.
+    /// @param senderContext The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
     /// @return Context to pass to a post execution hook, if present. An empty bytes array MAY be returned.
-    function preExecutionHook(uint8 functionId, address sender, uint256 value, bytes calldata data)
+    function preExecutionHook(uint8 functionId, bytes calldata senderContext, uint256 value, bytes calldata data)
         external
         returns (bytes memory);
 
