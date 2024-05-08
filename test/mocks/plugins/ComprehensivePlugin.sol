@@ -19,10 +19,9 @@ contract ComprehensivePlugin is BasePlugin {
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2,
         VALIDATION,
+        BOTH_EXECUTION_HOOKS,
         PRE_EXECUTION_HOOK,
-        PRE_PERMITTED_CALL_EXECUTION_HOOK,
-        POST_EXECUTION_HOOK,
-        POST_PERMITTED_CALL_EXECUTION_HOOK
+        POST_EXECUTION_HOOK
     }
 
     string public constant NAME = "Comprehensive Plugin";
@@ -97,7 +96,7 @@ contract ComprehensivePlugin is BasePlugin {
     {
         if (functionId == uint8(FunctionId.PRE_EXECUTION_HOOK)) {
             return "";
-        } else if (functionId == uint8(FunctionId.PRE_PERMITTED_CALL_EXECUTION_HOOK)) {
+        } else if (functionId == uint8(FunctionId.BOTH_EXECUTION_HOOKS)) {
             return "";
         }
         revert NotImplemented();
@@ -106,7 +105,7 @@ contract ComprehensivePlugin is BasePlugin {
     function postExecutionHook(uint8 functionId, bytes calldata) external pure override {
         if (functionId == uint8(FunctionId.POST_EXECUTION_HOOK)) {
             return;
-        } else if (functionId == uint8(FunctionId.POST_PERMITTED_CALL_EXECUTION_HOOK)) {
+        } else if (functionId == uint8(FunctionId.BOTH_EXECUTION_HOOKS)) {
             return;
         }
         revert NotImplemented();
@@ -163,19 +162,24 @@ contract ComprehensivePlugin is BasePlugin {
             })
         });
 
-        manifest.executionHooks = new ManifestExecutionHook[](1);
+        manifest.executionHooks = new ManifestExecutionHook[](3);
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            preExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
-                dependencyIndex: 0 // Unused.
-            }),
-            postExecHook: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
-                dependencyIndex: 0 // Unused.
-            })
+            functionId: uint8(FunctionId.BOTH_EXECUTION_HOOKS),
+            isPreHook: true,
+            isPostHook: true
+        });
+        manifest.executionHooks[1] = ManifestExecutionHook({
+            executionSelector: this.foo.selector,
+            functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
+            isPreHook: true,
+            isPostHook: false
+        });
+        manifest.executionHooks[2] = ManifestExecutionHook({
+            executionSelector: this.foo.selector,
+            functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
+            isPreHook: false,
+            isPostHook: true
         });
 
         return manifest;
