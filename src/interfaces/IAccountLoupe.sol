@@ -15,7 +15,7 @@ interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector.
     struct ExecutionFunctionConfig {
         address plugin;
-        FunctionReference validationFunction;
+        FunctionReference defaultValidationFunction;
     }
 
     /// @notice Get the validation functions and plugin address for a selector.
@@ -28,6 +28,11 @@ interface IAccountLoupe {
     /// @param selector The selector to get the hooks for.
     /// @return The pre and post execution hooks for this selector.
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory);
+
+    // todo: natspec
+    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory);
+
+    // todo: should we support a validation checking function (bytes4, FunctionReference) -> bool?
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
     /// @param selector The selector to get the hooks for.

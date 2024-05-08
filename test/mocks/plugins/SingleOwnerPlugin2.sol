@@ -2,13 +2,11 @@
 pragma solidity ^0.8.25;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {IPluginManager} from "../../interfaces/IPluginManager.sol";
+import {IPluginManager} from "../../../src/interfaces/IPluginManager.sol";
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -16,28 +14,15 @@ import {
     PluginManifest,
     PluginMetadata,
     SelectorPermission
-} from "../../interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {BasePlugin} from "../BasePlugin.sol";
-import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
+} from "../../../src/interfaces/IPlugin.sol";
+import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
-/// @title Single Owner Plugin
-/// @author ERC-6900 Authors
-/// @notice This plugin allows an EOA or smart contract to own a modular account.
-/// It also supports [ERC-1271](https://eips.ethereum.org/EIPS/eip-1271) signature
-/// validation for both validating the signature on user operations and in
-/// exposing its own `isValidSignature` method. This only works when the owner of
-/// modular account also support ERC-1271.
-///
-/// ERC-4337's bundler validation rules limit the types of contracts that can be
-/// used as owners to validate user operation signatures. For example, the
-/// contract's `isValidSignature` function may not use any forbidden opcodes
-/// such as `TIMESTAMP` or `NUMBER`, and the contract may not be an ERC-1967
-/// proxy as it accesses a constant implementation slot not associated with
-/// the account, violating storage access rules. This also means that the
-/// owner of a modular account may not be another modular account if you want to
-/// send user operations through a bundler.
-contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
+/// Copy of SingleOwnerPlugin with differently-named execution functions,
+// so it can be installed with overlapping validation to the regular SingleOwnerPlugin.
+// Also missing isValidSignature
+contract SingleOwnerPlugin2 is BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -48,8 +33,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
-    // bytes4(keccak256("isValidSignature(bytes32,bytes)"))
-    bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
+    event OwnershipTransferred(address indexed account, address indexed previousOwner, address indexed newOwner);
 
     mapping(address => address) internal _owners;
 
@@ -57,8 +41,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISingleOwnerPlugin
-    function transferOwnership(address newOwner) external {
+    function transferOwnership2(address newOwner) external {
         _transferOwnership(newOwner);
     }
 
@@ -66,40 +49,37 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
     function onInstall(bytes calldata data) external override {
         _transferOwnership(abi.decode(data, (address)));
     }
 
-    /// @inheritdoc BasePlugin
     function onUninstall(bytes calldata) external override {
         _transferOwnership(address(0));
     }
 
-    /// @inheritdoc BasePlugin
     function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
         external
         view
         override
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
+        if (functionId == uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate that the sender is the owner of the account or self.
             if (sender != _owners[msg.sender]) {
-                revert NotAuthorized();
+                // solhint-disable-next-line custom-errors
+                revert("NotAuthorized()");
             }
             return;
         }
         revert NotImplemented();
     }
 
-    /// @inheritdoc BasePlugin
     function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
+        if (functionId == uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate the user op signature against the owner.
             (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
@@ -114,22 +94,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Execution view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc IERC1271
-    /// @dev The signature is valid if it is signed by the owner's private key
-    /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-    /// owner (if the owner is a contract). Note that unlike the signature
-    /// validation used in `validateUserOp`, this does///*not** wrap the digest in
-    /// an "Ethereum Signed Message" envelope before checking the signature in
-    /// the EOA-owner case.
-    function isValidSignature(bytes32 digest, bytes memory signature) external view override returns (bytes4) {
-        if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
-            return _1271_MAGIC_VALUE;
-        }
-        return 0xffffffff;
-    }
-
-    /// @inheritdoc ISingleOwnerPlugin
-    function owner() external view returns (address) {
+    function owner2() external view returns (address) {
         return _owners[msg.sender];
     }
 
@@ -137,28 +102,25 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Plugin view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISingleOwnerPlugin
     function ownerOf(address account) external view returns (address) {
         return _owners[account];
     }
 
-    /// @inheritdoc BasePlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](3);
-        manifest.executionFunctions[0] = this.transferOwnership.selector;
-        manifest.executionFunctions[1] = this.isValidSignature.selector;
-        manifest.executionFunctions[2] = this.owner.selector;
+        manifest.executionFunctions = new bytes4[](2);
+        manifest.executionFunctions[0] = this.transferOwnership2.selector;
+        manifest.executionFunctions[1] = this.owner2.selector;
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
+            functionId: uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](7);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](6);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.transferOwnership.selector,
+            executionSelector: this.transferOwnership2.selector,
             associatedFunction: ownerValidationFunction
         });
         manifest.validationFunctions[1] = ManifestAssociatedFunction({
@@ -182,20 +144,9 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             associatedFunction: ownerValidationFunction
         });
 
-        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions[6] = ManifestAssociatedFunction({
-            executionSelector: this.isValidSignature.selector,
-            associatedFunction: alwaysAllowRuntime
-        });
-
         return manifest;
     }
 
-    /// @inheritdoc BasePlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
         metadata.name = NAME;
@@ -208,7 +159,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         // Permission descriptions
         metadata.permissionDescriptors = new SelectorPermission[](1);
         metadata.permissionDescriptors[0] = SelectorPermission({
-            functionSelector: this.transferOwnership.selector,
+            functionSelector: this.transferOwnership2.selector,
             permissionDescription: modifyOwnershipPermission
         });
 
@@ -219,7 +170,6 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    EIP-165    ┃
     // ┗━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         return interfaceId == type(ISingleOwnerPlugin).interfaceId || super.supportsInterface(interfaceId);
     }

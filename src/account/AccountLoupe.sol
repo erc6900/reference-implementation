@@ -11,6 +11,7 @@ import {
     AccountStorage,
     getAccountStorage,
     SelectorData,
+    toFunctionReference,
     toFunctionReferenceArray,
     toExecutionHook
 } from "./AccountStorage.sol";
@@ -38,7 +39,7 @@ abstract contract AccountLoupe is IAccountLoupe {
             config.plugin = _storage.selectorData[selector].plugin;
         }
 
-        config.validationFunction = _storage.selectorData[selector].validation;
+        config.defaultValidationFunction = toFunctionReference(_storage.selectorData[selector].validations.at(0));
     }
 
     /// @inheritdoc IAccountLoupe
@@ -53,6 +54,10 @@ abstract contract AccountLoupe is IAccountLoupe {
             ExecutionHook memory execHook = execHooks[i];
             (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
         }
+    }
+
+    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory) {
+        return toFunctionReferenceArray(getAccountStorage().selectorData[selector].validations);
     }
 
     /// @inheritdoc IAccountLoupe

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
+import {FunctionReference} from "./IPluginManager.sol";
+
 struct Call {
     // The target address for the account to call.
     address target;
@@ -25,4 +27,9 @@ interface IStandardExecutor {
     /// @param calls The array of calls.
     /// @return An array containing the return data from the calls.
     function executeBatch(Call[] calldata calls) external payable returns (bytes[] memory);
+
+    // todo: natspec
+    function executeWithValidation(FunctionReference validation, bytes calldata data)
+        external
+        returns (bytes memory);
 }

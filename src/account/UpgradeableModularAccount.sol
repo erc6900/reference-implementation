@@ -22,7 +22,8 @@ import {
     getPermittedCallKey,
     SelectorData,
     toFunctionReference,
-    toExecutionHook
+    toExecutionHook,
+    toSetValue
 } from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
@@ -71,7 +72,7 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        _doRuntimeValidationIfNotFromEP();
+        _doRuntimeValidationIfNotFromEPorSelf();
 
         PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
@@ -123,7 +124,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(msg.sig);
         }
 
-        _doRuntimeValidationIfNotFromEP();
+        _doRuntimeValidationIfNotFromEPorSelf();
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
@@ -169,6 +170,33 @@ contract UpgradeableModularAccount is
         for (uint256 i = 0; i < callsLength; ++i) {
             results[i] = _exec(calls[i].target, calls[i].value, calls[i].data);
         }
+    }
+
+    function executeWithValidation(FunctionReference validation, bytes calldata data)
+        external
+        returns (bytes memory)
+    {
+        // If the call is from the entry point or the account itself, we skip runtime validation because
+        // User Op validation must have occurred.
+        if (msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)) {
+            bytes4 selector = bytes4(data); // If extending, the call will fail in the sub-call anyways.
+
+            if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(validation))) {
+                revert RuntimeValidationFunctionMissing(selector);
+            }
+
+            _doRuntimeValidation(validation);
+        }
+
+        (bool success, bytes memory returnData) = address(this).call(data);
+
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+
+        return returnData;
     }
 
     /// @inheritdoc IPluginExecutor
@@ -333,9 +361,28 @@ contract UpgradeableModularAccount is
             revert AlwaysDenyRule();
         }
 
-        FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
+        // Unless otherwise specified, use the validator at validations[0] as the "default validation".
+        // This is typically the first validation function added, but ordering is not guaranteed by the
+        // OZ EnumerableSet. todo: some manual control over this.
 
-        validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        if (selector == UpgradeableModularAccount.executeWithValidation.selector) {
+            (FunctionReference userOpValidationFunction, bytes memory actualData) =
+                abi.decode(userOp.callData[4:], (FunctionReference, bytes));
+            bytes4 actualSelector = bytes4(actualData);
+
+            if (!_storage.selectorData[actualSelector].validations.contains(toSetValue(userOpValidationFunction)))
+            {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+
+            validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+            (userOpValidationFunction);
+        } else {
+            FunctionReference userOpValidationFunction =
+                toFunctionReference(getAccountStorage().selectorData[selector].validations.at(0));
+
+            validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        }
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
@@ -387,16 +434,25 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doRuntimeValidationIfNotFromEP() internal {
+    function _doRuntimeValidationIfNotFromEPorSelf() internal {
         AccountStorage storage _storage = getAccountStorage();
 
         if (_storage.selectorData[msg.sig].denyExecutionCount > 0) {
             revert AlwaysDenyRule();
         }
 
-        if (msg.sender == address(_ENTRY_POINT)) return;
+        if (msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)) return;
 
-        FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
+        // Unless otherwise specified, use the validator at validations[0] as the "default validation".
+        // This is typically the first validation function added, but ordering is not guaranteed by the
+        // OZ EnumerableSet. todo: some manual control over this.
+        FunctionReference runtimeValidationFunction =
+            toFunctionReference(_storage.selectorData[msg.sig].validations.at(0));
+
+        _doRuntimeValidation(runtimeValidationFunction);
+    }
+
+    function _doRuntimeValidation(FunctionReference runtimeValidationFunction) internal {
         // run all preRuntimeValidation hooks
         EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
             getAccountStorage().selectorData[msg.sig].preValidationHooks;

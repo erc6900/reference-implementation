@@ -66,7 +66,7 @@ contract AccountLoupeTest is AccountTestBase {
 
             assertEq(config.plugin, address(account1));
             assertEq(
-                FunctionReference.unwrap(config.validationFunction),
+                FunctionReference.unwrap(config.defaultValidationFunction),
                 FunctionReference.unwrap(expectedValidations[i])
             );
         }
@@ -93,7 +93,7 @@ contract AccountLoupeTest is AccountTestBase {
 
             assertEq(config.plugin, expectedPluginAddress[i]);
             assertEq(
-                FunctionReference.unwrap(config.validationFunction),
+                FunctionReference.unwrap(config.defaultValidationFunction),
                 FunctionReference.unwrap(expectedValidations[i])
             );
         }
