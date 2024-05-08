@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
@@ -44,10 +45,7 @@ struct SelectorData {
     // The pre validation hooks for this function selector.
     EnumerableSet.Bytes32Set preValidationHooks;
     // The execution hooks for this function selector.
-    EnumerableSet.Bytes32Set preHooks;
-    // bytes21 key = pre hook function reference
-    mapping(FunctionReference => FunctionReference) associatedPostHooks;
-    EnumerableSet.Bytes32Set postOnlyHooks;
+    EnumerableSet.Bytes32Set executionHooks;
 }
 
 struct AccountStorage {
@@ -78,6 +76,34 @@ function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes2
 }
 
 using EnumerableSet for EnumerableSet.Bytes32Set;
+
+function toSetValue(FunctionReference functionReference) pure returns (bytes32) {
+    return bytes32(FunctionReference.unwrap(functionReference));
+}
+
+function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) {
+    return FunctionReference.wrap(bytes21(setValue));
+}
+
+// ExecutionHook layout:
+// 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Function Reference
+// 0x__________________________________________AA____________________ is pre hook
+// 0x____________________________________________BB__________________ is post hook
+
+function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
+    return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
+        | bytes32(executionHook.isPreHook ? uint256(1) << 80 : 0)
+        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0);
+}
+
+function toExecutionHook(bytes32 setValue)
+    pure
+    returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook)
+{
+    hookFunction = FunctionReference.wrap(bytes21(setValue));
+    isPreHook = (uint256(setValue) >> 80) & 0xFF == 1;
+    isPostHook = (uint256(setValue) >> 72) & 0xFF == 1;
+}
 
 /// @dev Helper function to get all elements of a set into memory.
 function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)

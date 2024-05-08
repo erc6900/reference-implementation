@@ -16,7 +16,14 @@ import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.so
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, getPermittedCallKey, SelectorData} from "./AccountStorage.sol";
+import {
+    AccountStorage,
+    getAccountStorage,
+    getPermittedCallKey,
+    SelectorData,
+    toFunctionReference,
+    toExecutionHook
+} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
@@ -51,7 +58,6 @@ contract UpgradeableModularAccount is
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
-    error InvalidConfiguration();
     error NativeTokenSpendingNotPermitted(address plugin);
     error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
@@ -355,7 +361,7 @@ contract UpgradeableModularAccount is
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
             bytes32 key = preUserOpValidationHooks.at(i);
-            FunctionReference preUserOpValidationHook = _toFunctionReference(key);
+            FunctionReference preUserOpValidationHook = toFunctionReference(key);
 
             (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
             currentValidationData = IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
@@ -398,7 +404,7 @@ contract UpgradeableModularAccount is
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
             bytes32 key = preRuntimeValidationHooks.at(i);
-            FunctionReference preRuntimeValidationHook = _toFunctionReference(key);
+            FunctionReference preRuntimeValidationHook = toFunctionReference(key);
 
             (address plugin, uint8 functionId) = preRuntimeValidationHook.unpack();
             // solhint-disable-next-line no-empty-blocks
@@ -432,44 +438,34 @@ contract UpgradeableModularAccount is
     {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
 
-        uint256 preExecHooksLength = selectorData.preHooks.length();
-        uint256 postOnlyHooksLength = selectorData.postOnlyHooks.length();
+        uint256 hooksLength = selectorData.executionHooks.length();
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
-        postHooksToRun = new PostExecToRun[](preExecHooksLength + postOnlyHooksLength);
+        postHooksToRun = new PostExecToRun[](hooksLength);
 
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
-
-        // Copy post-only hooks.
-        for (uint256 i = 0; i < postOnlyHooksLength; ++i) {
-            bytes32 key = selectorData.postOnlyHooks.at(i);
-            postHooksToRun[i].postExecHook = _toFunctionReference(key);
-        }
-
-        // Copy associated post hooks to the array.
-        for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            FunctionReference preExecHook = _toFunctionReference(selectorData.preHooks.at(i));
-
-            FunctionReference associatedPostExecHook = selectorData.associatedPostHooks[preExecHook];
-
-            if (associatedPostExecHook.notEmpty()) {
-                postHooksToRun[i + postOnlyHooksLength].postExecHook = associatedPostExecHook;
+        for (uint256 i = 0; i < hooksLength; ++i) {
+            bytes32 key = selectorData.executionHooks.at(i);
+            (FunctionReference hookFunction,, bool isPostHook) = toExecutionHook(key);
+            if (isPostHook) {
+                postHooksToRun[i].postExecHook = hookFunction;
             }
         }
 
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
-        for (uint256 i = 0; i < preExecHooksLength; ++i) {
-            bytes32 key = selectorData.preHooks.at(i);
-            FunctionReference preExecHook = _toFunctionReference(key);
+        for (uint256 i = 0; i < hooksLength; ++i) {
+            bytes32 key = selectorData.executionHooks.at(i);
+            (FunctionReference hookFunction, bool isPreHook, bool isPostHook) = toExecutionHook(key);
 
-            bytes memory preExecHookReturnData = _runPreExecHook(preExecHook, data);
+            if (isPreHook) {
+                bytes memory preExecHookReturnData = _runPreExecHook(hookFunction, data);
 
-            // If there is an associated post-exec hook, save the return data.
-            PostExecToRun memory postExecToRun = postHooksToRun[i + postOnlyHooksLength];
-            if (postExecToRun.postExecHook.notEmpty()) {
-                postExecToRun.preExecHookReturnData = preExecHookReturnData;
+                // If there is an associated post-exec hook, save the return data.
+                if (isPostHook) {
+                    postHooksToRun[i].preExecHookReturnData = preExecHookReturnData;
+                }
             }
         }
     }
