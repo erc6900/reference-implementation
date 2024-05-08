@@ -3,19 +3,19 @@ pragma solidity ^0.8.25;
 
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
+/// @notice Pre and post hooks for a given selector.
+/// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
+struct ExecutionHook {
+    FunctionReference hookFunction;
+    bool isPreHook;
+    bool isPostHook;
+}
+
 interface IAccountLoupe {
     /// @notice Config for an execution function, given a selector.
     struct ExecutionFunctionConfig {
         address plugin;
         FunctionReference validationFunction;
-    }
-
-    /// @notice Pre and post hooks for a given selector.
-    /// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
-    struct ExecutionHooks {
-        FunctionReference hookFunction;
-        bool isPreHook;
-        bool isPostHook;
     }
 
     /// @notice Get the validation functions and plugin address for a selector.
@@ -27,7 +27,7 @@ interface IAccountLoupe {
     /// @notice Get the pre and post execution hooks for a selector.
     /// @param selector The selector to get the hooks for.
     /// @return The pre and post execution hooks for this selector.
-    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory);
+    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory);
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
     /// @param selector The selector to get the hooks for.

@@ -14,11 +14,11 @@ import {
     ManifestExternalCallPermission,
     PluginManifest
 } from "../interfaces/IPlugin.sol";
+import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {
     AccountStorage,
     getAccountStorage,
-    HookData,
     SelectorData,
     toSetValue,
     getPermittedCallKey,
@@ -106,7 +106,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     ) internal {
         getAccountStorage().selectorData[selector].executionHooks.add(
             toSetValue(
-                HookData({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
+                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
         );
     }
@@ -119,7 +119,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     ) internal {
         getAccountStorage().selectorData[selector].executionHooks.remove(
             toSetValue(
-                HookData({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
+                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
         );
     }

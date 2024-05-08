@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
+import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
@@ -27,12 +28,6 @@ struct PermittedExternalCallData {
     bool addressPermitted;
     bool anySelectorPermitted;
     mapping(bytes4 => bool) permittedSelectors;
-}
-
-struct HookData {
-    FunctionReference hookFunction;
-    bool isPreHook;
-    bool isPostHook;
 }
 
 // Represents data associated with a specifc function selector.
@@ -90,17 +85,18 @@ function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) 
     return FunctionReference.wrap(bytes21(setValue));
 }
 
-// HookData layout:
+// ExecutionHook layout:
 // 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Function Reference
 // 0x__________________________________________AA____________________ is pre hook
 // 0x____________________________________________BB__________________ is post hook
 
-function toSetValue(HookData memory hookData) pure returns (bytes32) {
-    return bytes32(FunctionReference.unwrap(hookData.hookFunction))
-        | bytes32(hookData.isPreHook ? uint256(1) << 80 : 0) | bytes32(hookData.isPostHook ? uint256(1) << 72 : 0);
+function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
+    return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
+        | bytes32(executionHook.isPreHook ? uint256(1) << 80 : 0)
+        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0);
 }
 
-function toHookData(bytes32 setValue)
+function toExecutionHook(bytes32 setValue)
     pure
     returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook)
 {

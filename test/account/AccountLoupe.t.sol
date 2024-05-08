@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
+import {IAccountLoupe, ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
@@ -100,23 +100,23 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getExecutionHooks() public {
-        IAccountLoupe.ExecutionHooks[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
-        IAccountLoupe.ExecutionHooks[3] memory expectedHooks = [
-            IAccountLoupe.ExecutionHooks({
+        ExecutionHook[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
+        ExecutionHook[3] memory expectedHooks = [
+            ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.BOTH_EXECUTION_HOOKS)
                 ),
                 isPreHook: true,
                 isPostHook: true
             }),
-            IAccountLoupe.ExecutionHooks({
+            ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
                 ),
                 isPreHook: true,
                 isPostHook: false
             }),
-            IAccountLoupe.ExecutionHooks({
+            ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
                 ),

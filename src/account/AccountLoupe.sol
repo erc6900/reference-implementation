@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
+import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {
@@ -12,7 +12,7 @@ import {
     getAccountStorage,
     SelectorData,
     toFunctionReferenceArray,
-    toHookData
+    toExecutionHook
 } from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
@@ -42,16 +42,16 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHooks[] memory execHooks) {
+    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory execHooks) {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 executionHooksLength = selectorData.executionHooks.length();
 
-        execHooks = new ExecutionHooks[](executionHooksLength);
+        execHooks = new ExecutionHook[](executionHooksLength);
 
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = selectorData.executionHooks.at(i);
-            ExecutionHooks memory execHook = execHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toHookData(key);
+            ExecutionHook memory execHook = execHooks[i];
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
         }
     }
 
