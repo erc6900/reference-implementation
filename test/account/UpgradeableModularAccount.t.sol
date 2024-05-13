@@ -419,6 +419,15 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(address(account3), address(uint160(uint256(vm.load(address(account1), slot)))));
     }
 
+    function test_transferOwnership() public {
+        assertEq(SingleOwnerPlugin(address(account1)).owner(), owner1);
+
+        vm.prank(owner1);
+        SingleOwnerPlugin(address(account1)).transferOwnership(owner2);
+
+        assertEq(SingleOwnerPlugin(address(account1)).owner(), owner2);
+    }
+
     // Internal Functions
 
     function _printStorageReadsAndWrites(address addr) internal {
