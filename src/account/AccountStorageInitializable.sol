@@ -15,8 +15,8 @@ abstract contract AccountStorageInitializable {
         AccountStorage storage _storage = getAccountStorage();
         bool isTopLevelCall = !_storage.initializing;
         if (
-            isTopLevelCall && _storage.initialized < 1
-                || !Address.isContract(address(this)) && _storage.initialized == 1
+            (isTopLevelCall && _storage.initialized < 1)
+                || (!Address.isContract(address(this)) && _storage.initialized == 1)
         ) {
             _storage.initialized = 1;
             if (isTopLevelCall) {
