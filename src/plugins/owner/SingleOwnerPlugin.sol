@@ -156,7 +156,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
             functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](7);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](8);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
             associatedFunction: ownerValidationFunction
@@ -189,6 +189,10 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         });
         manifest.validationFunctions[6] = ManifestAssociatedFunction({
             executionSelector: this.isValidSignature.selector,
+            associatedFunction: alwaysAllowRuntime
+        });
+        manifest.validationFunctions[7] = ManifestAssociatedFunction({
+            executionSelector: this.owner.selector,
             associatedFunction: alwaysAllowRuntime
         });
 
