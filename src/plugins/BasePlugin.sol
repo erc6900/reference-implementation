@@ -56,7 +56,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
     function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         virtual
-        returns (uint256)
+        returns (bytes memory, uint256)
     {
         (functionId, userOp, userOpHash);
         revert NotImplemented();

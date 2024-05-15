@@ -61,10 +61,10 @@ contract ComprehensivePlugin is BasePlugin {
         external
         pure
         override
-        returns (uint256)
+        returns (bytes memory, uint256)
     {
         if (functionId == uint8(FunctionId.VALIDATION)) {
-            return 0;
+            return ("", 0);
         }
         revert NotImplemented();
     }

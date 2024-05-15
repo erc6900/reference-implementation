@@ -126,7 +126,7 @@ interface IPlugin {
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
     function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
-        returns (uint256);
+        returns (bytes memory, uint256);
 
     /// @notice Run the pre runtime validation hook specified by the `functionId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.

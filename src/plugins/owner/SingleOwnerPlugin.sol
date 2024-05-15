@@ -97,15 +97,15 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         external
         view
         override
-        returns (uint256)
+        returns (bytes memory, uint256)
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate the user op signature against the owner.
             (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
-                return _SIG_VALIDATION_FAILED;
+                return ("", _SIG_VALIDATION_FAILED);
             }
-            return _SIG_VALIDATION_PASSED;
+            return (abi.encode(signer), _SIG_VALIDATION_PASSED);
         }
         revert NotImplemented();
     }

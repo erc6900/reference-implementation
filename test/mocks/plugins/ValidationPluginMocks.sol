@@ -48,10 +48,10 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
         external
         view
         override
-        returns (uint256)
+        returns (bytes memory, uint256)
     {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
-            return _userOpValidationFunctionData;
+            return ("", _userOpValidationFunctionData);
         }
         revert NotImplemented();
     }

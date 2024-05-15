@@ -137,7 +137,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         userOp.signature = abi.encodePacked(r, s, v);
 
         // sig check should fail
-        uint256 success = plugin.userOpValidationFunction(
+        (, uint256 success) = plugin.userOpValidationFunction(
             uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
         );
         assertEq(success, 1);
@@ -147,7 +147,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(signer, plugin.owner());
 
         // sig check should pass
-        success = plugin.userOpValidationFunction(
+        (, success) = plugin.userOpValidationFunction(
             uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
         );
         assertEq(success, 0);

@@ -56,6 +56,7 @@ contract UpgradeableModularAccount is
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
     error InvalidConfiguration();
+    error InvalidContextProvided();
     error NativeTokenSpendingNotPermitted(address plugin);
     error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
@@ -355,7 +356,18 @@ contract UpgradeableModularAccount is
 
         FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
 
-        validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        bytes memory validationContextData;
+        (validationContextData, validationData) =
+            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+
+        // if executeUserOp is used, verify that provided context is correct
+        if (bytes4(userOp.callData) == this.executeUserOp.selector) {
+            (, bytes memory sender) = abi.decode(userOp.callData[4:], (bytes, bytes));
+            // Easy bytes comparison
+            if (keccak256(abi.encode(validationContextData)) != keccak256(abi.encode(sender))) {
+                revert InvalidContextProvided();
+            }
+        }
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
@@ -364,7 +376,7 @@ contract UpgradeableModularAccount is
         FunctionReference userOpValidationFunction,
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
-    ) internal returns (uint256 validationData) {
+    ) internal returns (bytes memory contextData, uint256 validationData) {
         if (userOpValidationFunction.isEmptyOrMagicValue()) {
             // If the validation function is empty, then the call cannot proceed.
             // Alternatively, the validation function may be set to the RUNTIME_VALIDATION_ALWAYS_ALLOW magic
@@ -396,7 +408,8 @@ contract UpgradeableModularAccount is
         // Run the user op validationFunction
         {
             (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            currentValidationData = IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
+            (contextData, currentValidationData) =
+                IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
 
             if (preUserOpValidationHooksLength != 0) {
                 // If we have other validation data we need to coalesce with
