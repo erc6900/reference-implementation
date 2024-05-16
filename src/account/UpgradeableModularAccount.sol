@@ -172,6 +172,8 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IAccountExecute
+    /// @dev userOp.calldata = bytes4(executeUserOp.selector) || bytes callData || bytes
+    /// senderContext
     function executeUserOp(PackedUserOperation calldata userOp, bytes32) external {
         if (msg.sender != address(_ENTRY_POINT)) {
             revert CallerNotEntrypoint();
@@ -356,17 +358,21 @@ contract UpgradeableModularAccount is
 
         FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
 
-        bytes memory validationContextData;
-        (validationContextData, validationData) =
-            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        if (selector == this.executeUserOp.selector) {
+            // if executeUserOp is used, parse out the right calldata and verify senderContext
+            bytes memory validationContextData;
+            // userOp.calldata = bytes4(executeUserOp.selector) || bytes callData || bytes senderContext
+            // TODO: need to modify userOp.calldata here, it should point to `bytes callData` within
+            // userop.callData
+            (validationContextData, validationData) =
+                _doUserOpValidation(bytes4(userOp.callData[36:40]), userOpValidationFunction, userOp, userOpHash);
 
-        // if executeUserOp is used, verify that provided context is correct
-        if (bytes4(userOp.callData) == this.executeUserOp.selector) {
             (, bytes memory sender) = abi.decode(userOp.callData[4:], (bytes, bytes));
-            // Easy bytes comparison
             if (keccak256(abi.encode(validationContextData)) != keccak256(abi.encode(sender))) {
                 revert InvalidContextProvided();
             }
+        } else {
+            (, validationData) = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
         }
     }
 
