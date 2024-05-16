@@ -4,14 +4,17 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
+    IValidation,
+    IValidationHook,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
+    PluginMetadata,
     PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
-import {BaseTestPlugin} from "./BaseTestPlugin.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
-abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
+abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {
     enum FunctionId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
@@ -53,6 +56,17 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
             return _userOpValidationFunctionData;
         }
+        revert NotImplemented();
+    }
+
+    // Empty stubs
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+
+    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {
+        revert NotImplemented();
+    }
+
+    function runtimeValidationFunction(uint8, address, uint256, bytes calldata) external pure override {
         revert NotImplemented();
     }
 }

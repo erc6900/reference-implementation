@@ -11,10 +11,11 @@ import {
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
+import {IValidation, IValidationHook, IExecutionHook, PluginManifest} from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
-contract ComprehensivePlugin is BasePlugin {
+contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, BasePlugin {
     enum FunctionId {
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2,

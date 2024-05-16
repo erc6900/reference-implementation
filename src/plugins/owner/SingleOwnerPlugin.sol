@@ -18,6 +18,7 @@ import {
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
+import {IPlugin, IValidation} from "../../interfaces/IPlugin.sol";
 import {BasePlugin} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
@@ -37,7 +38,7 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
+contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -66,17 +67,17 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
         _transferOwnership(abi.decode(data, (address)));
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function onUninstall(bytes calldata) external override {
         _transferOwnership(address(0));
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IValidation
     function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
         external
         view
@@ -92,7 +93,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         revert NotImplemented();
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IValidation
     function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
@@ -142,7 +143,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         return _owners[account];
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
@@ -199,7 +200,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         return manifest;
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
         metadata.name = NAME;

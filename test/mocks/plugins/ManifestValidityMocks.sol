@@ -5,13 +5,14 @@ import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
-    PluginManifest
+    PluginManifest,
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 
-import {BaseTestPlugin} from "./BaseTestPlugin.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 // solhint-disable-next-line contract-name-camelcase
-contract BadValidationMagicValue_PreValidationHook_Plugin is BaseTestPlugin {
+contract BadValidationMagicValue_PreValidationHook_Plugin is BasePlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -49,10 +50,12 @@ contract BadValidationMagicValue_PreValidationHook_Plugin is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 }
 
 // solhint-disable-next-line contract-name-camelcase
-contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
+contract BadHookMagicValue_UserOpValidationFunction_Plugin is BasePlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -79,10 +82,12 @@ contract BadHookMagicValue_UserOpValidationFunction_Plugin is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 }
 
 // solhint-disable-next-line contract-name-camelcase
-contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
+contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BasePlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -109,4 +114,6 @@ contract BadHookMagicValue_RuntimeValidationFunction_Plugin is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 }
