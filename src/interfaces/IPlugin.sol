@@ -4,6 +4,7 @@
 pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
 // so annotating here to prevent that.
@@ -98,7 +99,7 @@ struct PluginManifest {
     ManifestExecutionHook[] executionHooks;
 }
 
-interface IPlugin {
+interface IPlugin is IERC165 {
     /// @notice Initialize plugin data for the modular account.
     /// @dev Called by the modular account during `installPlugin`.
     /// @param data Optional bytes array to be decoded and used by the plugin to setup initial plugin data for the

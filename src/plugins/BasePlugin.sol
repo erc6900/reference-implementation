@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
 
@@ -24,7 +24,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
     /// making calls to plugins.
     /// @param interfaceId The interface ID to check for support.
     /// @return True if the contract supports `interfaceId`.
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 }

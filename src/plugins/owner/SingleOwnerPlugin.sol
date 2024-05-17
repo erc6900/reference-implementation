@@ -19,7 +19,7 @@ import {
 } from "../../interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IPlugin, IValidation} from "../../interfaces/IPlugin.sol";
-import {BasePlugin} from "../BasePlugin.sol";
+import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
 /// @title Single Owner Plugin
@@ -225,7 +225,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     // ┗━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
         return interfaceId == type(ISingleOwnerPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 
