@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -39,7 +38,7 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
+contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -52,6 +51,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
 
     // bytes4(keccak256("isValidSignature(bytes32,bytes)"))
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
+    bytes4 internal constant _1271_INVALID = 0xffffffff;
 
     mapping(address => address) internal _owners;
 
@@ -112,18 +112,26 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     // ┃    Execution view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc IERC1271
+    /// @inheritdoc IValidation
     /// @dev The signature is valid if it is signed by the owner's private key
     /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
     /// owner (if the owner is a contract). Note that unlike the signature
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function isValidSignature(bytes32 digest, bytes memory signature) external view override returns (bytes4) {
-        if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
-            return _1271_MAGIC_VALUE;
+    function validateSignature(uint8 functionId, address, bytes32 digest, bytes calldata signature)
+        external
+        view
+        override
+        returns (bytes4)
+    {
+        if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
+            if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
+                return _1271_MAGIC_VALUE;
+            }
+            return _1271_INVALID;
         }
-        return 0xffffffff;
+        revert NotImplemented();
     }
 
     /// @inheritdoc ISingleOwnerPlugin
@@ -144,17 +152,16 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](3);
+        manifest.executionFunctions = new bytes4[](2);
         manifest.executionFunctions[0] = this.transferOwnership.selector;
-        manifest.executionFunctions[1] = this.isValidSignature.selector;
-        manifest.executionFunctions[2] = this.owner.selector;
+        manifest.executionFunctions[1] = this.owner.selector;
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
             functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](8);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](7);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.transferOwnership.selector,
             associatedFunction: ownerValidationFunction
@@ -186,13 +193,12 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions[6] = ManifestAssociatedFunction({
-            executionSelector: this.isValidSignature.selector,
-            associatedFunction: alwaysAllowRuntime
-        });
-        manifest.validationFunctions[7] = ManifestAssociatedFunction({
             executionSelector: this.owner.selector,
             associatedFunction: alwaysAllowRuntime
         });
+
+        manifest.signatureValidationFunctions = new uint8[](1);
+        manifest.signatureValidationFunctions[0] = uint8(FunctionId.SIG_VALIDATION);
 
         return manifest;
     }
