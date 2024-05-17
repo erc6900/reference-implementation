@@ -37,7 +37,9 @@ abstract contract AccountTestBase is OptimizedTest {
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
-        SingleOwnerPlugin(address(account1)).transferOwnership(address(this));
+        account1.execute(
+            address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
+        );
     }
 
     // helper function to compress 2 gas values into a single bytes32

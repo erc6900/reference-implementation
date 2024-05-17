@@ -96,7 +96,10 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             sender: address(account2),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
-            callData: abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2)),
+            callData: abi.encodeCall(
+                UpgradeableModularAccount.execute,
+                (address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2)))
+            ),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 2),
@@ -422,12 +425,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_transferOwnership() public {
-        assertEq(SingleOwnerPlugin(address(account1)).owner(), owner1);
+        assertEq(singleOwnerPlugin.ownerOf(address(account1)), owner1);
 
         vm.prank(owner1);
-        SingleOwnerPlugin(address(account1)).transferOwnership(owner2);
+        account1.execute(
+            address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2))
+        );
 
-        assertEq(SingleOwnerPlugin(address(account1)).owner(), owner2);
+        assertEq(singleOwnerPlugin.ownerOf(address(account1)), owner2);
     }
 
     function test_isValidSignature() public {
