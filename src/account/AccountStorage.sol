@@ -57,8 +57,7 @@ struct AccountStorage {
     mapping(address => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
-    // bytes24 key = address(calling plugin) || bytes4(selector of execution function)
-    mapping(bytes24 => bool) callPermitted;
+    mapping(address caller => mapping(bytes4 selector => bool)) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection
@@ -75,10 +74,6 @@ function getAccountStorage() pure returns (AccountStorage storage _storage) {
     assembly ("memory-safe") {
         _storage.slot := _ACCOUNT_STORAGE_SLOT
     }
-}
-
-function getPermittedCallKey(address addr, bytes4 selector) pure returns (bytes24) {
-    return bytes24(bytes20(addr)) | (bytes24(selector) >> 160);
 }
 
 using EnumerableSet for EnumerableSet.Bytes32Set;

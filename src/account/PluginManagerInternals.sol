@@ -21,7 +21,6 @@ import {
     getAccountStorage,
     SelectorData,
     toSetValue,
-    getPermittedCallKey,
     PermittedExternalCallData
 } from "./AccountStorage.sol";
 
@@ -220,7 +219,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             // If there are duplicates, this will just enable the flag again. This is not a problem, since the
             // boolean will be set to false twice during uninstall, which is fine.
-            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = true;
+            _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = true;
         }
 
         // Add the permitted external calls to the account.
@@ -417,7 +416,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length; ++i) {
-            _storage.callPermitted[getPermittedCallKey(plugin, manifest.permittedExecutionSelectors[i])] = false;
+            _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = false;
         }
 
         length = manifest.executionFunctions.length;

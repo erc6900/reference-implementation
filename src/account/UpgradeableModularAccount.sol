@@ -23,7 +23,6 @@ import {AccountLoupe} from "./AccountLoupe.sol";
 import {
     AccountStorage,
     getAccountStorage,
-    getPermittedCallKey,
     SelectorData,
     toSetValue,
     toFunctionReference,
@@ -187,11 +186,9 @@ contract UpgradeableModularAccount is
         bytes4 selector = bytes4(data[:4]);
         address callingPlugin = msg.sender;
 
-        bytes24 execFromPluginKey = getPermittedCallKey(callingPlugin, selector);
-
         AccountStorage storage _storage = getAccountStorage();
 
-        if (!_storage.callPermitted[execFromPluginKey]) {
+        if (!_storage.callPermitted[callingPlugin][selector]) {
             revert ExecFromPluginNotPermitted(callingPlugin, selector);
         }
 
