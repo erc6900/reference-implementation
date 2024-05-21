@@ -29,7 +29,7 @@ contract AccountLoupeTest is AccountTestBase {
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
 
         ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
         );
     }
 

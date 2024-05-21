@@ -47,7 +47,7 @@ abstract contract AccountTestBase is OptimizedTest {
                     abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
                 )
             ),
-            abi.encodePacked(address(singleOwnerPlugin), ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
+            abi.encodePacked(address(singleOwnerPlugin), ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
         );
     }
 

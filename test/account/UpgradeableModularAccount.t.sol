@@ -63,7 +63,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         counter.increment(); // amoritze away gas cost of zero->nonzero transition
 
         ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
         );
     }
 

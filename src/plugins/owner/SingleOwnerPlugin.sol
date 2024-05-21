@@ -84,7 +84,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         view
         override
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
+        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate that the sender is the owner of the account or self.
             if (sender != _owners[msg.sender] && sender != msg.sender) {
                 revert NotAuthorized();
@@ -101,7 +101,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
+        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate the user op signature against the owner.
             (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
@@ -158,7 +158,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
 
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
-            functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
+            functionId: uint8(FunctionId.VALIDATION_OWNER),
             dependencyIndex: 0 // Unused.
         });
         manifest.validationFunctions = new ManifestAssociatedFunction[](5);
