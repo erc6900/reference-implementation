@@ -35,6 +35,10 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
+    // Whether or not the function needs runtime validation, or can be called by anyone.
+    // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
+    // drain the account of native tokens by wasting gas.
+    bool isPublic;
     // How many times a `PRE_HOOK_ALWAYS_DENY` has been added for this function.
     // Since that is the only type of hook that may overlap, we can use this to track the number of times it has
     // been applied, and whether or not the deny should apply. The size `uint48` was chosen somewhat arbitrarily,

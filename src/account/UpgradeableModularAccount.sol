@@ -372,10 +372,8 @@ contract UpgradeableModularAccount is
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
-        if (userOpValidationFunction.isEmptyOrMagicValue()) {
+        if (userOpValidationFunction.isEmpty()) {
             // If the validation function is empty, then the call cannot proceed.
-            // Alternatively, the validation function may be set to the RUNTIME_VALIDATION_ALWAYS_ALLOW magic
-            // value, in which case we also revert.
             revert UserOpValidationFunctionMissing(selector);
         }
 
@@ -443,18 +441,20 @@ contract UpgradeableModularAccount is
 
         // Identifier scope limiting
         {
-            if (!runtimeValidationFunction.isEmptyOrMagicValue()) {
-                (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
-                // solhint-disable-next-line no-empty-blocks
-                try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, msg.data) {}
-                catch (bytes memory revertReason) {
-                    revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
-                }
-            } else {
-                if (runtimeValidationFunction.isEmpty()) {
-                    revert RuntimeValidationFunctionMissing(msg.sig);
-                }
-                // If _RUNTIME_VALIDATION_ALWAYS_ALLOW, just let the function finish.
+            if (_storage.selectorData[msg.sig].isPublic) {
+                // If the function is public, we don't need to check the runtime validation function.
+                return;
+            }
+
+            if (runtimeValidationFunction.isEmpty()) {
+                revert RuntimeValidationFunctionMissing(msg.sig);
+            }
+
+            (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
+            // solhint-disable-next-line no-empty-blocks
+            try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, msg.data) {}
+            catch (bytes memory revertReason) {
+                revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
             }
         }
     }

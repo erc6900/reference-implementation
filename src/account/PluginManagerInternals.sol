@@ -59,7 +59,10 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, address plugin) internal notNullPlugin(plugin) {
+    function _setExecutionFunction(bytes4 selector, bool isPublic, address plugin)
+        internal
+        notNullPlugin(plugin)
+    {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         if (_selectorData.plugin != address(0)) {
@@ -67,12 +70,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         _selectorData.plugin = plugin;
+        _selectorData.isPublic = isPublic;
     }
 
     function _removeExecutionFunction(bytes4 selector) internal {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         _selectorData.plugin = address(0);
+        _selectorData.isPublic = false;
     }
 
     function _addValidationFunction(bytes4 selector, FunctionReference validationFunction)
@@ -211,7 +216,9 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
-            _setExecutionFunction(manifest.executionFunctions[i], plugin);
+            bytes4 selector = manifest.executionFunctions[i].executionSelector;
+            bool isPublic = manifest.executionFunctions[i].isPublic;
+            _setExecutionFunction(selector, isPublic, plugin);
         }
 
         // Add installed plugin and selectors this plugin can call
@@ -253,10 +260,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addValidationFunction(
                 mv.executionSelector,
                 _resolveManifestFunction(
-                    mv.associatedFunction,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
         }
@@ -378,10 +382,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeValidationFunction(
                 mv.executionSelector,
                 _resolveManifestFunction(
-                    mv.associatedFunction,
-                    plugin,
-                    dependencies,
-                    ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW
+                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
                 )
             );
         }
@@ -421,7 +422,8 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
-            _removeExecutionFunction(manifest.executionFunctions[i]);
+            bytes4 selector = manifest.executionFunctions[i].executionSelector;
+            _removeExecutionFunction(selector);
         }
 
         length = manifest.interfaceIds.length;
@@ -465,13 +467,6 @@ abstract contract PluginManagerInternals is IPluginManager {
                 revert InvalidPluginManifest();
             }
             return dependencies[manifestFunction.dependencyIndex];
-        } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW)
-        {
-            if (allowedMagicValue == ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW) {
-                return FunctionReferenceLib._RUNTIME_VALIDATION_ALWAYS_ALLOW;
-            } else {
-                revert InvalidPluginManifest();
-            }
         } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
             if (allowedMagicValue == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
                 return FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY;

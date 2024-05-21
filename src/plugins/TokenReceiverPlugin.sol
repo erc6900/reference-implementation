@@ -4,14 +4,7 @@ pragma solidity ^0.8.25;
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 
-import {
-    IPlugin,
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
-    PluginManifest,
-    PluginMetadata
-} from "../interfaces/IPlugin.sol";
+import {IPlugin, ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {BasePlugin} from "./BasePlugin.sol";
 
 /// @title Token Receiver Plugin
@@ -65,30 +58,13 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](3);
-        manifest.executionFunctions[0] = this.onERC721Received.selector;
-        manifest.executionFunctions[1] = this.onERC1155Received.selector;
-        manifest.executionFunctions[2] = this.onERC1155BatchReceived.selector;
-
-        // Only runtime validationFunction is needed since callbacks come from token contracts only
-        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](3);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.onERC721Received.selector,
-            associatedFunction: alwaysAllowRuntime
-        });
-        manifest.validationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.onERC1155Received.selector,
-            associatedFunction: alwaysAllowRuntime
-        });
-        manifest.validationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: this.onERC1155BatchReceived.selector,
-            associatedFunction: alwaysAllowRuntime
-        });
+        manifest.executionFunctions = new ManifestExecutionFunction[](3);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.onERC721Received.selector, isPublic: true});
+        manifest.executionFunctions[1] =
+            ManifestExecutionFunction({executionSelector: this.onERC1155Received.selector, isPublic: true});
+        manifest.executionFunctions[2] =
+            ManifestExecutionFunction({executionSelector: this.onERC1155BatchReceived.selector, isPublic: true});
 
         manifest.interfaceIds = new bytes4[](2);
         manifest.interfaceIds[0] = type(IERC721Receiver).interfaceId;

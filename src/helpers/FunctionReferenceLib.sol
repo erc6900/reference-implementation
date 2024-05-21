@@ -6,9 +6,6 @@ import {FunctionReference} from "../interfaces/IPluginManager.sol";
 library FunctionReferenceLib {
     // Empty or unset function reference.
     FunctionReference internal constant _EMPTY_FUNCTION_REFERENCE = FunctionReference.wrap(bytes21(0));
-    // Magic value for runtime validation functions that always allow access.
-    FunctionReference internal constant _RUNTIME_VALIDATION_ALWAYS_ALLOW =
-        FunctionReference.wrap(bytes21(uint168(1)));
     // Magic value for hooks that should always revert.
     FunctionReference internal constant _PRE_HOOK_ALWAYS_DENY = FunctionReference.wrap(bytes21(uint168(2)));
 
@@ -28,10 +25,6 @@ library FunctionReferenceLib {
 
     function notEmpty(FunctionReference fr) internal pure returns (bool) {
         return FunctionReference.unwrap(fr) != bytes21(0);
-    }
-
-    function isEmptyOrMagicValue(FunctionReference fr) internal pure returns (bool) {
-        return FunctionReference.unwrap(fr) <= bytes21(uint168(2));
     }
 
     function eq(FunctionReference a, FunctionReference b) internal pure returns (bool) {

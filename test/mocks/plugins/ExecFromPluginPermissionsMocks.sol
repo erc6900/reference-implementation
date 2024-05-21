@@ -2,9 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
+    ManifestExecutionFunction,
     ManifestExternalCallPermission,
     PluginManifest,
     PluginMetadata
@@ -36,32 +34,21 @@ contract EFPCallerPlugin is BasePlugin {
     function _getManifest() internal view returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](11);
-        manifest.executionFunctions[0] = this.useEFPPermissionAllowed.selector;
-        manifest.executionFunctions[1] = this.useEFPPermissionNotAllowed.selector;
-        manifest.executionFunctions[2] = this.setNumberCounter1.selector;
-        manifest.executionFunctions[3] = this.getNumberCounter1.selector;
-        manifest.executionFunctions[4] = this.incrementCounter1.selector;
-        manifest.executionFunctions[5] = this.setNumberCounter2.selector;
-        manifest.executionFunctions[6] = this.getNumberCounter2.selector;
-        manifest.executionFunctions[7] = this.incrementCounter2.selector;
-        manifest.executionFunctions[8] = this.setNumberCounter3.selector;
-        manifest.executionFunctions[9] = this.getNumberCounter3.selector;
-        manifest.executionFunctions[10] = this.incrementCounter3.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](11);
-
-        ManifestFunction memory alwaysAllowValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0,
-            dependencyIndex: 0
-        });
+        manifest.executionFunctions = new ManifestExecutionFunction[](11);
+        manifest.executionFunctions[0].executionSelector = this.useEFPPermissionAllowed.selector;
+        manifest.executionFunctions[1].executionSelector = this.useEFPPermissionNotAllowed.selector;
+        manifest.executionFunctions[2].executionSelector = this.setNumberCounter1.selector;
+        manifest.executionFunctions[3].executionSelector = this.getNumberCounter1.selector;
+        manifest.executionFunctions[4].executionSelector = this.incrementCounter1.selector;
+        manifest.executionFunctions[5].executionSelector = this.setNumberCounter2.selector;
+        manifest.executionFunctions[6].executionSelector = this.getNumberCounter2.selector;
+        manifest.executionFunctions[7].executionSelector = this.incrementCounter2.selector;
+        manifest.executionFunctions[8].executionSelector = this.setNumberCounter3.selector;
+        manifest.executionFunctions[9].executionSelector = this.getNumberCounter3.selector;
+        manifest.executionFunctions[10].executionSelector = this.incrementCounter3.selector;
 
         for (uint256 i = 0; i < manifest.executionFunctions.length; i++) {
-            manifest.validationFunctions[i] = ManifestAssociatedFunction({
-                executionSelector: manifest.executionFunctions[i],
-                associatedFunction: alwaysAllowValidationFunction
-            });
+            manifest.executionFunctions[i].isPublic = true;
         }
 
         // Request permission only for "foo", but not "bar", from ResultCreatorPlugin
@@ -198,18 +185,9 @@ contract EFPCallerPluginAnyExternal is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.passthroughExecute.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.passthroughExecute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.passthroughExecute.selector, isPublic: true});
 
         manifest.permitAnyExternalAddress = true;
 
