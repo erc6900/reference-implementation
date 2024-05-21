@@ -278,7 +278,7 @@ contract UpgradeableModularAccount is
         if (_storage.selectorData[execSelector].denyExecutionCount > 0) {
             revert AlwaysDenyRule();
         }
-        if (_storage.selectorData[execSelector].validation.notEq(runtimeValidationFunction)) {
+        if (!_storage.selectorData[execSelector].validations.contains(toSetValue(runtimeValidationFunction))) {
             revert RuntimeValidationFunctionMissing(execSelector);
         }
 
@@ -395,18 +395,27 @@ contract UpgradeableModularAccount is
             revert AlwaysDenyRule();
         }
 
-        FunctionReference userOpValidationFunction = getAccountStorage().selectorData[selector].validation;
+        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
 
-        validationData = _doUserOpValidation(selector, userOpValidationFunction, userOp, userOpHash);
+        if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(userOpValidationFunction)))
+        {
+            revert UserOpValidationFunctionMissing(selector);
+        }
+
+        validationData =
+            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[21:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
     function _doUserOpValidation(
         bytes4 selector,
         FunctionReference userOpValidationFunction,
-        PackedUserOperation calldata userOp,
+        PackedUserOperation memory userOp,
+        bytes calldata signature,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
+        userOp.signature = signature;
+
         if (userOpValidationFunction.isEmpty()) {
             // If the validation function is empty, then the call cannot proceed.
             revert UserOpValidationFunctionMissing(selector);

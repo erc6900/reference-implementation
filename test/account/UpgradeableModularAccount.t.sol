@@ -10,7 +10,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -39,6 +39,8 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     Counter public counter;
     PluginManifest public manifest;
 
+    FunctionReference public ownerValidation;
+
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
@@ -59,6 +61,10 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.deal(ethRecipient, 1 wei);
         counter = new Counter();
         counter.increment(); // amoritze away gas cost of zero->nonzero transition
+
+        ownerValidation = FunctionReferenceLib.pack(
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
+        );
     }
 
     function test_deployAccount() public {
@@ -81,7 +87,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -110,7 +116,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -136,7 +142,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -162,7 +168,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -190,7 +196,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -221,7 +227,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;

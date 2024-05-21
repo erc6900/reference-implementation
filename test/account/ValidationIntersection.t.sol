@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {
     MockBaseUserOpValidationPlugin,
@@ -21,10 +21,29 @@ contract ValidationIntersectionTest is AccountTestBase {
     MockUserOpValidation1HookPlugin public oneHookPlugin;
     MockUserOpValidation2HookPlugin public twoHookPlugin;
 
+    FunctionReference public noHookValidation;
+    FunctionReference public oneHookValidation;
+    FunctionReference public twoHookValidation;
+
     function setUp() public {
         noHookPlugin = new MockUserOpValidationPlugin();
         oneHookPlugin = new MockUserOpValidation1HookPlugin();
         twoHookPlugin = new MockUserOpValidation2HookPlugin();
+
+        noHookValidation = FunctionReferenceLib.pack({
+            addr: address(noHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+        });
+
+        oneHookValidation = FunctionReferenceLib.pack({
+            addr: address(oneHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+        });
+
+        twoHookValidation = FunctionReferenceLib.pack({
+            addr: address(twoHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+        });
 
         vm.startPrank(address(entryPoint));
         account1.installPlugin({
@@ -53,6 +72,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(noHookPlugin.foo.selector);
+        userOp.signature = abi.encodePacked(noHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -69,6 +89,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -86,6 +107,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -108,6 +130,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -129,6 +152,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -148,6 +172,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -172,6 +197,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -195,6 +221,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.signature = abi.encodePacked(oneHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -218,6 +245,7 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
+        userOp.signature = abi.encodePacked(twoHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));
@@ -236,6 +264,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         PackedUserOperation memory userOp;
         userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
 
+        userOp.signature = abi.encodePacked(twoHookValidation);
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
         vm.prank(address(entryPoint));

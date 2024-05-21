@@ -12,17 +12,16 @@ struct ExecutionHook {
 }
 
 interface IAccountLoupe {
-    /// @notice Config for an execution function, given a selector.
-    struct ExecutionFunctionConfig {
-        address plugin;
-        FunctionReference validationFunction;
-    }
-
-    /// @notice Get the validation functions and plugin address for a selector.
+    /// @notice Get the plugin address for a selector.
     /// @dev If the selector is a native function, the plugin address will be the address of the account.
     /// @param selector The selector to get the configuration for.
-    /// @return The configuration for this selector.
-    function getExecutionFunctionConfig(bytes4 selector) external view returns (ExecutionFunctionConfig memory);
+    /// @return plugin The plugin address for this selector.
+    function getExecutionFunctionHandler(bytes4 selector) external view returns (address plugin);
+
+    /// @notice Get the validation functions for a selector.
+    /// @param selector The selector to get the validation functions for.
+    /// @return The validation functions for this selector.
+    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory);
 
     /// @notice Get the pre and post execution hooks for a selector.
     /// @param selector The selector to get the hooks for.

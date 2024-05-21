@@ -20,11 +20,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionFunctionConfig(bytes4 selector)
-        external
-        view
-        returns (ExecutionFunctionConfig memory config)
-    {
+    function getExecutionFunctionHandler(bytes4 selector) external view returns (address plugin) {
         AccountStorage storage _storage = getAccountStorage();
 
         if (
@@ -33,12 +29,15 @@ abstract contract AccountLoupe is IAccountLoupe {
                 || selector == IPluginManager.installPlugin.selector
                 || selector == IPluginManager.uninstallPlugin.selector
         ) {
-            config.plugin = address(this);
-        } else {
-            config.plugin = _storage.selectorData[selector].plugin;
+            return address(this);
         }
 
-        config.validationFunction = _storage.selectorData[selector].validation;
+        return _storage.selectorData[selector].plugin;
+    }
+
+    /// @inheritdoc IAccountLoupe
+    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory) {
+        return toFunctionReferenceArray(getAccountStorage().selectorData[selector].validations);
     }
 
     /// @inheritdoc IAccountLoupe

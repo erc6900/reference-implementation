@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IAccountLoupe, ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
+import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
@@ -42,58 +42,57 @@ contract AccountLoupeTest is AccountTestBase {
         assertEq(plugins[1], address(comprehensivePlugin));
     }
 
-    function test_pluginLoupe_getExecutionFunctionConfig_native() public {
+    function test_pluginLoupe_getExecutionFunctionHandler_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
-        FunctionReference[] memory expectedValidations = new FunctionReference[](5);
 
         selectorsToCheck[0] = IStandardExecutor.execute.selector;
-        expectedValidations[0] = ownerValidation;
 
         selectorsToCheck[1] = IStandardExecutor.executeBatch.selector;
-        expectedValidations[1] = ownerValidation;
 
         selectorsToCheck[2] = UUPSUpgradeable.upgradeToAndCall.selector;
-        expectedValidations[2] = ownerValidation;
 
         selectorsToCheck[3] = IPluginManager.installPlugin.selector;
-        expectedValidations[3] = ownerValidation;
 
         selectorsToCheck[4] = IPluginManager.uninstallPlugin.selector;
-        expectedValidations[4] = ownerValidation;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            IAccountLoupe.ExecutionFunctionConfig memory config =
-                account1.getExecutionFunctionConfig(selectorsToCheck[i]);
+            address plugin = account1.getExecutionFunctionHandler(selectorsToCheck[i]);
 
-            assertEq(config.plugin, address(account1));
-            assertEq(
-                FunctionReference.unwrap(config.validationFunction),
-                FunctionReference.unwrap(expectedValidations[i])
-            );
+            assertEq(plugin, address(account1));
         }
     }
 
     function test_pluginLoupe_getExecutionFunctionConfig_plugin() public {
         bytes4[] memory selectorsToCheck = new bytes4[](1);
         address[] memory expectedPluginAddress = new address[](1);
-        FunctionReference[] memory expectedValidations = new FunctionReference[](1);
 
         selectorsToCheck[0] = comprehensivePlugin.foo.selector;
         expectedPluginAddress[0] = address(comprehensivePlugin);
-        expectedValidations[0] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
-        );
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            IAccountLoupe.ExecutionFunctionConfig memory config =
-                account1.getExecutionFunctionConfig(selectorsToCheck[i]);
+            address plugin = account1.getExecutionFunctionHandler(selectorsToCheck[i]);
 
-            assertEq(config.plugin, expectedPluginAddress[i]);
-            assertEq(
-                FunctionReference.unwrap(config.validationFunction),
-                FunctionReference.unwrap(expectedValidations[i])
-            );
+            assertEq(plugin, expectedPluginAddress[i]);
         }
+    }
+
+    function test_pluginLoupe_getValidationFunctions() public {
+        FunctionReference[] memory validations = account1.getValidationFunctions(comprehensivePlugin.foo.selector);
+
+        assertEq(validations.length, 1);
+        assertEq(
+            FunctionReference.unwrap(validations[0]),
+            FunctionReference.unwrap(
+                FunctionReferenceLib.pack(
+                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
+                )
+            )
+        );
+
+        validations = account1.getValidationFunctions(account1.execute.selector);
+
+        assertEq(validations.length, 1);
+        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(ownerValidation));
     }
 
     function test_pluginLoupe_getExecutionHooks() public {
