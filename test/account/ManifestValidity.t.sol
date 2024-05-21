@@ -18,6 +18,7 @@ contract ManifestValidityTest is AccountTestBase {
 
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
+        vm.prank(address(entryPoint));
         vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         account1.installPlugin({
             plugin: address(plugin),

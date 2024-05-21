@@ -233,7 +233,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_installPlugin() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
@@ -253,7 +253,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_installPlugin_ExecuteFromPlugin_PermittedExecSelectorNotInstalled() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         PluginManifest memory m;
         m.permittedExecutionSelectors = new bytes4[](1);
@@ -271,7 +271,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_installPlugin_invalidManifest() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
         IPluginManager(account1).installPlugin({
@@ -283,7 +283,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_installPlugin_interfaceNotSupported() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         address badPlugin = address(1);
         vm.expectRevert(
@@ -298,7 +298,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_installPlugin_alreadyInstalled() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
         IPluginManager(account1).installPlugin({
@@ -322,7 +322,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_uninstallPlugin_default() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
@@ -342,7 +342,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_uninstallPlugin_manifestParameter() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
@@ -367,7 +367,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_uninstallPlugin_invalidManifestFails() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
         bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
@@ -395,7 +395,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
-        vm.startPrank(owner2);
+        vm.startPrank(address(entryPoint));
 
         plugin = new MockPlugin(manifest);
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
@@ -411,7 +411,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_upgradeToAndCall() public {
-        vm.startPrank(owner1);
+        vm.startPrank(address(entryPoint));
         UpgradeableModularAccount account3 = new UpgradeableModularAccount(entryPoint);
         bytes32 slot = account3.proxiableUUID();
 
@@ -427,7 +427,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_transferOwnership() public {
         assertEq(singleOwnerPlugin.ownerOf(address(account1)), owner1);
 
-        vm.prank(owner1);
+        vm.prank(address(entryPoint));
         account1.execute(
             address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2))
         );

@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
@@ -37,8 +38,16 @@ abstract contract AccountTestBase is OptimizedTest {
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
-        account1.execute(
-            address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
+        account1.executeWithAuthorization(
+            abi.encodeCall(
+                account1.execute,
+                (
+                    address(singleOwnerPlugin),
+                    0,
+                    abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
+                )
+            ),
+            abi.encodePacked(address(singleOwnerPlugin), ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF)
         );
     }
 

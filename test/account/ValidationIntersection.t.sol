@@ -26,7 +26,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         oneHookPlugin = new MockUserOpValidation1HookPlugin();
         twoHookPlugin = new MockUserOpValidation2HookPlugin();
 
-        vm.startPrank(address(owner1));
+        vm.startPrank(address(entryPoint));
         account1.installPlugin({
             plugin: address(noHookPlugin),
             manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),

@@ -25,6 +25,7 @@ contract AccountLoupeTest is AccountTestBase {
         comprehensivePlugin = new ComprehensivePlugin();
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
 
         ownerValidation = FunctionReferenceLib.pack(

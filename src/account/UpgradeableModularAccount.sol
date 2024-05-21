@@ -81,7 +81,7 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        _doRuntimeValidationIfNotFromEP();
+        _checkPermittedCallerIfNotFromEP();
 
         PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
 
@@ -133,7 +133,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(msg.sig);
         }
 
-        _doRuntimeValidationIfNotFromEP();
+        _checkPermittedCallerIfNotFromEP();
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
@@ -258,6 +258,41 @@ contract UpgradeableModularAccount is
 
         // Run any post exec hooks for this selector
         _doCachedPostExecHooks(postExecHooks);
+
+        return returnData;
+    }
+
+    /// @inheritdoc IPluginExecutor
+    function executeWithAuthorization(bytes calldata data, bytes calldata authorization)
+        external
+        payable
+        returns (bytes memory)
+    {
+        bytes4 execSelector = bytes4(data[0:4]);
+
+        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[0:21]));
+
+        AccountStorage storage _storage = getAccountStorage();
+
+        // check if that runtime validation function is allowed to be called
+        if (_storage.selectorData[execSelector].denyExecutionCount > 0) {
+            revert AlwaysDenyRule();
+        }
+        if (_storage.selectorData[execSelector].validation.notEq(runtimeValidationFunction)) {
+            revert RuntimeValidationFunctionMissing(execSelector);
+        }
+
+        _doRuntimeValidation(runtimeValidationFunction, data, authorization[21:]);
+
+        // If runtime validation passes, execute the call
+
+        (bool success, bytes memory returnData) = address(this).call(data);
+
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
 
         return returnData;
     }
@@ -412,50 +447,40 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doRuntimeValidationIfNotFromEP() internal {
-        AccountStorage storage _storage = getAccountStorage();
-
-        if (_storage.selectorData[msg.sig].denyExecutionCount > 0) {
-            revert AlwaysDenyRule();
-        }
-
-        if (msg.sender == address(_ENTRY_POINT)) return;
-
-        FunctionReference runtimeValidationFunction = _storage.selectorData[msg.sig].validation;
+    function _doRuntimeValidation(
+        FunctionReference runtimeValidationFunction,
+        bytes calldata callData,
+        bytes calldata authorizationData
+    ) internal {
         // run all preRuntimeValidation hooks
         EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
-            getAccountStorage().selectorData[msg.sig].preValidationHooks;
+            getAccountStorage().selectorData[bytes4(callData[0:4])].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
             bytes32 key = preRuntimeValidationHooks.at(i);
             FunctionReference preRuntimeValidationHook = toFunctionReference(key);
 
-            (address plugin, uint8 functionId) = preRuntimeValidationHook.unpack();
+            (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHook.unpack();
+            try IValidationHook(hookPlugin).preRuntimeValidationHook(
+                hookFunctionId, msg.sender, msg.value, callData
+            )
+            // forgefmt: disable-start
             // solhint-disable-next-line no-empty-blocks
-            try IValidationHook(plugin).preRuntimeValidationHook(functionId, msg.sender, msg.value, msg.data) {}
-            catch (bytes memory revertReason) {
-                revert PreRuntimeValidationHookFailed(plugin, functionId, revertReason);
+            {} catch (bytes memory revertReason) {
+            // forgefmt: disable-end
+                revert PreRuntimeValidationHookFailed(hookPlugin, hookFunctionId, revertReason);
             }
         }
 
-        // Identifier scope limiting
-        {
-            if (_storage.selectorData[msg.sig].isPublic) {
-                // If the function is public, we don't need to check the runtime validation function.
-                return;
-            }
+        (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
 
-            if (runtimeValidationFunction.isEmpty()) {
-                revert RuntimeValidationFunctionMissing(msg.sig);
-            }
-
-            (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
-            // solhint-disable-next-line no-empty-blocks
-            try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, msg.data) {}
-            catch (bytes memory revertReason) {
-                revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
-            }
+        try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, callData, authorizationData)
+        // forgefmt: disable-start
+        // solhint-disable-next-line no-empty-blocks
+        {} catch (bytes memory revertReason) {
+        // forgefmt: disable-end
+            revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
         }
     }
 
@@ -536,4 +561,20 @@ contract UpgradeableModularAccount is
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    function _checkPermittedCallerIfNotFromEP() internal view {
+        AccountStorage storage _storage = getAccountStorage();
+
+        if (_storage.selectorData[msg.sig].denyExecutionCount > 0) {
+            revert AlwaysDenyRule();
+        }
+        if (
+            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
+                || _storage.selectorData[msg.sig].isPublic
+        ) return;
+
+        if (!_storage.callPermitted[msg.sender][msg.sig]) {
+            revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
+        }
+    }
 }
