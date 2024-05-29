@@ -3,13 +3,13 @@ pragma solidity ^0.8.19;
 
 import {
     IPlugin,
-    IExecutionHook,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExecutionHook,
     ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
+import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 

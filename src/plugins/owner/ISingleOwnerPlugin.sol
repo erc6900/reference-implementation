@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {IValidation} from "../../interfaces/IPlugin.sol";
+import {IValidation} from "../../interfaces/IValidation.sol";
 
 interface ISingleOwnerPlugin is IValidation {
     enum FunctionId {

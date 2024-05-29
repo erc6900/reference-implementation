@@ -1,9 +1,6 @@
-// solhint-disable one-contract-per-file
-
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
@@ -122,71 +119,3 @@ interface IPlugin is IERC165 {
     /// @return A metadata struct describing the plugin.
     function pluginMetadata() external pure returns (PluginMetadata memory);
 }
-
-interface IValidation is IPlugin {
-    /// @notice Run the user operation validationFunction specified by the `functionId`.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param userOp The user operation.
-    /// @param userOpHash The user operation hash.
-    /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
-        external
-        returns (uint256);
-
-    /// @notice Run the runtime validationFunction specified by the `functionId`.
-    /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param sender The caller address.
-    /// @param value The call value.
-    /// @param data The calldata sent.
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256 value, bytes calldata data)
-        external;
-}
-
-interface IValidationHook is IPlugin {
-    /// @notice Run the pre user operation validation hook specified by the `functionId`.
-    /// @dev Pre user operation validation hooks MUST NOT return an authorizer value other than 0 or 1.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param userOp The user operation.
-    /// @param userOpHash The user operation hash.
-    /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
-        external
-        returns (uint256);
-
-    /// @notice Run the pre runtime validation hook specified by the `functionId`.
-    /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param sender The caller address.
-    /// @param value The call value.
-    /// @param data The calldata sent.
-    function preRuntimeValidationHook(uint8 functionId, address sender, uint256 value, bytes calldata data)
-        external;
-}
-
-interface IExecutionHook is IPlugin {
-    /// @notice Run the pre execution hook specified by the `functionId`.
-    /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param sender The caller address.
-    /// @param value The call value.
-    /// @param data The calldata sent.
-    /// @return Context to pass to a post execution hook, if present. An empty bytes array MAY be returned.
-    function preExecutionHook(uint8 functionId, address sender, uint256 value, bytes calldata data)
-        external
-        returns (bytes memory);
-
-    /// @notice Run the post execution hook specified by the `functionId`.
-    /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param functionId An identifier that routes the call to different internal implementations, should there be
-    /// more than one.
-    /// @param preExecHookData The context returned by its associated pre execution hook.
-    function postExecutionHook(uint8 functionId, bytes calldata preExecHookData) external;
-}
-
-// solhint-enable one-contract-per-file

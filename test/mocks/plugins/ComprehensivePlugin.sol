@@ -11,7 +11,11 @@ import {
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
-import {IValidation, IValidationHook, IExecutionHook, PluginManifest} from "../../../src/interfaces/IPlugin.sol";
+import {PluginManifest} from "../../../src/interfaces/IPlugin.sol";
+import {IValidation} from "../../../src/interfaces/IValidation.sol";
+import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
+import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
+
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 

@@ -4,14 +4,14 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
-    IValidation,
-    IValidationHook,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginMetadata,
     PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
+import {IValidation} from "../../../src/interfaces/IValidation.sol";
+import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {

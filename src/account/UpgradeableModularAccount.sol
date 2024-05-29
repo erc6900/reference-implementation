@@ -10,7 +10,10 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
-import {IPlugin, IValidation, IValidationHook, IExecutionHook, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IValidation} from "../interfaces/IValidation.sol";
+import {IValidationHook} from "../interfaces/IValidationHook.sol";
+import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";

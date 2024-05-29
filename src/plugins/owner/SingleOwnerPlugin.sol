@@ -18,7 +18,8 @@ import {
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {IPlugin, IValidation} from "../../interfaces/IPlugin.sol";
+import {IPlugin} from "../../interfaces/IPlugin.sol";
+import {IValidation} from "../../interfaces/IValidation.sol";
 import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
