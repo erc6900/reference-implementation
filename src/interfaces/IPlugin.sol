@@ -25,7 +25,7 @@ struct ManifestExecutionFunction {
     // TODO(erc6900 spec): These fields can be packed into a single word
     // The selector to install
     bytes4 executionSelector;
-    // If true, the function won't need runtime validaiton, and can be called by anyone.
+    // If true, the function won't need runtime validation, and can be called by anyone.
     bool isPublic;
 }
 
