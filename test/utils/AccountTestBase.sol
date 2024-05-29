@@ -23,6 +23,9 @@ abstract contract AccountTestBase is OptimizedTest {
     uint256 public owner1Key;
     UpgradeableModularAccount public account1;
 
+    uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
+    uint8 public constant SHARED_VALIDATION = 1;
+
     constructor() {
         entryPoint = new EntryPoint();
         (owner1, owner1Key) = makeAddrAndKey("owner1");

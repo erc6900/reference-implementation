@@ -30,6 +30,7 @@ import {
 } from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
+import {PluginManager2} from "./PluginManager2.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -41,6 +42,7 @@ contract UpgradeableModularAccount is
     IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
+    PluginManager2,
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -324,6 +326,40 @@ contract UpgradeableModularAccount is
         _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 
+    /// @notice Initializes the account with a validation function added to the default pool.
+    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
+    /// with user install configs.
+    /// @dev This function is only callable once, and only by the EntryPoint.
+
+    function initializeDefaultValidation(address plugin, uint8 functionId, bytes calldata installData)
+        external
+        initializer
+    {
+        _installValidation(plugin, functionId, true, new bytes4[](0), installData);
+        emit ModularAccountInitialized(_ENTRY_POINT);
+    }
+
+    /// @inheritdoc IPluginManager
+    function installValidation(
+        address plugin,
+        uint8 functionId,
+        bool shared,
+        bytes4[] calldata selectors,
+        bytes calldata installData
+    ) external wrapNativeFunction {
+        _installValidation(plugin, functionId, shared, selectors, installData);
+    }
+
+    /// @inheritdoc IPluginManager
+    function uninstallValidation(
+        address plugin,
+        uint8 functionId,
+        bytes4[] calldata selectors,
+        bytes calldata uninstallData
+    ) external wrapNativeFunction {
+        _uninstallValidation(plugin, functionId, selectors, uninstallData);
+    }
+
     /// @notice ERC165 introspection
     /// @dev returns true for `IERC165.interfaceId` and false for `0xFFFFFFFF`
     /// @param interfaceId interface id to check against
@@ -396,14 +432,29 @@ contract UpgradeableModularAccount is
         }
 
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
+        bool isSharedValidation = uint8(userOp.signature[21]) == 1;
 
-        if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(userOpValidationFunction)))
-        {
-            revert UserOpValidationFunctionMissing(selector);
+        // Check that the provided validation function is applicable to the selector
+        if (isSharedValidation) {
+            if (
+                !_sharedValidationAllowed(selector)
+                    || !_storage.defaultValidations.contains(toSetValue(userOpValidationFunction))
+            ) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+        } else {
+            // Not shared validation, but per-selector
+            if (
+                !getAccountStorage().selectorData[selector].validations.contains(
+                    toSetValue(userOpValidationFunction)
+                )
+            ) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
         }
 
         validationData =
-            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[21:], userOpHash);
+            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
@@ -570,6 +621,19 @@ contract UpgradeableModularAccount is
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    function _sharedValidationAllowed(bytes4 selector) internal view returns (bool) {
+        if (
+            selector == this.execute.selector || selector == this.executeBatch.selector
+                || selector == this.installPlugin.selector || selector == this.uninstallPlugin.selector
+                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
+                || selector == this.upgradeToAndCall.selector
+        ) {
+            return true;
+        }
+
+        return getAccountStorage().selectorData[selector].allowSharedValidation;
+    }
 
     function _checkPermittedCallerIfNotFromEP() internal view {
         AccountStorage storage _storage = getAccountStorage();

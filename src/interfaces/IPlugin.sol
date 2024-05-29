@@ -27,6 +27,8 @@ struct ManifestExecutionFunction {
     bytes4 executionSelector;
     // If true, the function won't need runtime validation, and can be called by anyone.
     bool isPublic;
+    // If true, the function can be validated by a shared validation function.
+    bool allowSharedValidation;
 }
 
 /// @dev For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address
@@ -77,15 +79,12 @@ struct PluginMetadata {
 
 /// @dev A struct describing how the plugin should be installed on a modular account.
 struct PluginManifest {
-    // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
-    // IPlugin's interface ID.
-    bytes4[] interfaceIds;
-    // If this plugin depends on other plugins' validation functions, the interface IDs of those plugins MUST be
-    // provided here, with its position in the array matching the `dependencyIndex` members of `ManifestFunction`
-    // structs used in the manifest.
-    bytes4[] dependencyInterfaceIds;
     // Execution functions defined in this plugin to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
+    ManifestAssociatedFunction[] validationFunctions;
+    ManifestAssociatedFunction[] preValidationHooks;
+    ManifestExecutionHook[] executionHooks;
+    uint8[] signatureValidationFunctions;
     // Plugin execution functions already installed on the MSCA that this plugin will be able to call.
     bytes4[] permittedExecutionSelectors;
     // Boolean to indicate whether the plugin can call any external address.
@@ -94,10 +93,13 @@ struct PluginManifest {
     // plugin MUST still be able to spend up to the balance that it sends to the account in the same call.
     bool canSpendNativeToken;
     ManifestExternalCallPermission[] permittedExternalCalls;
-    ManifestAssociatedFunction[] validationFunctions;
-    ManifestAssociatedFunction[] preValidationHooks;
-    ManifestExecutionHook[] executionHooks;
-    uint8[] signatureValidationFunctions;
+    // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
+    // IPlugin's interface ID.
+    bytes4[] interfaceIds;
+    // If this plugin depends on other plugins' validation functions, the interface IDs of those plugins MUST be
+    // provided here, with its position in the array matching the `dependencyIndex` members of `ManifestFunction`
+    // structs used in the manifest.
+    bytes4[] dependencyInterfaceIds;
 }
 
 interface IPlugin is IERC165 {
