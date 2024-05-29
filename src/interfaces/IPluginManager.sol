@@ -22,8 +22,40 @@ interface IPluginManager {
         FunctionReference[] calldata dependencies
     ) external;
 
+    /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
+    /// path.
+    /// Installs a validation function across a set of execution selectors, and optionally mark it as a default
+    /// validation.
+    /// TODO: remove or update.
+    /// @dev This does not validate anything against the manifest - the caller must ensure validity.
+    /// @param plugin The plugin to install.
+    /// @param functionId The function ID of the validation function to install.
+    /// @param shared Whether the validation function is shared across all selectors in the default pool.
+    /// @param selectors The selectors to install the validation function for.
+    /// @param installData Optional data to be decoded and used by the plugin to setup initial plugin state.
+    function installValidation(
+        address plugin,
+        uint8 functionId,
+        bool shared,
+        bytes4[] calldata selectors,
+        bytes calldata installData
+    ) external;
+
+    /// @notice Uninstall a validation function from a set of execution selectors.
+    /// TODO: remove or update.
+    /// @param plugin The plugin to uninstall.
+    /// @param functionId The function ID of the validation function to uninstall.
+    /// @param selectors The selectors to uninstall the validation function for.
+    /// @param uninstallData Optional data to be decoded and used by the plugin to clear plugin data for the
+    /// account.
+    function uninstallValidation(
+        address plugin,
+        uint8 functionId,
+        bytes4[] calldata selectors,
+        bytes calldata uninstallData
+    ) external;
+
     /// @notice Uninstall a plugin from the modular account.
-    /// @dev Uninstalling owner plugins outside of a replace operation via executeBatch risks losing the account!
     /// @param plugin The plugin to uninstall.
     /// @param config An optional, implementation-specific field that accounts may use to ensure consistency
     /// guarantees.

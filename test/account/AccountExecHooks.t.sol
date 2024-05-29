@@ -39,7 +39,13 @@ contract AccountExecHooksTest is AccountTestBase {
     function setUp() public {
         _transferOwnershipToTest();
 
-        m1.executionFunctions.push(ManifestExecutionFunction({executionSelector: _EXEC_SELECTOR, isPublic: true}));
+        m1.executionFunctions.push(
+            ManifestExecutionFunction({
+                executionSelector: _EXEC_SELECTOR,
+                isPublic: true,
+                allowSharedValidation: false
+            })
+        );
     }
 
     function test_preExecHook_install() public {

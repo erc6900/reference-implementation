@@ -38,10 +38,16 @@ contract ResultCreatorPlugin is BasePlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: true});
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction({executionSelector: this.bar.selector, isPublic: false});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.foo.selector,
+            isPublic: true,
+            allowSharedValidation: false
+        });
+        manifest.executionFunctions[1] = ManifestExecutionFunction({
+            executionSelector: this.bar.selector,
+            isPublic: false,
+            allowSharedValidation: false
+        });
 
         return manifest;
     }
@@ -108,10 +114,16 @@ contract ResultConsumerPlugin is BasePlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.checkResultEFPFallback.selector, isPublic: true});
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction({executionSelector: this.checkResultEFPExternal.selector, isPublic: true});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.checkResultEFPFallback.selector,
+            isPublic: true,
+            allowSharedValidation: false
+        });
+        manifest.executionFunctions[1] = ManifestExecutionFunction({
+            executionSelector: this.checkResultEFPExternal.selector,
+            isPublic: true,
+            allowSharedValidation: false
+        });
 
         manifest.permittedExecutionSelectors = new bytes4[](1);
         manifest.permittedExecutionSelectors[0] = ResultCreatorPlugin.foo.selector;
