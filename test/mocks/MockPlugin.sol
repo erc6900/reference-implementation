@@ -81,8 +81,7 @@ contract MockPlugin is ERC165 {
     fallback() external payable {
         emit ReceivedCall(msg.data, msg.value);
         if (
-            msg.sig == IValidation.userOpValidationFunction.selector
-                || msg.sig == IValidation.runtimeValidationFunction.selector
+            msg.sig == IValidation.validateUserOp.selector || msg.sig == IValidation.validateRuntime.selector
                 || msg.sig == IExecutionHook.preExecutionHook.selector
         ) {
             // return 0 for userOp/runtimeVal case, return bytes("") for preExecutionHook case

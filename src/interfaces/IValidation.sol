@@ -12,7 +12,7 @@ interface IValidation is IPlugin {
     /// @param userOp The user operation.
     /// @param userOpHash The user operation hash.
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         returns (uint256);
 
@@ -23,6 +23,5 @@ interface IValidation is IPlugin {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256 value, bytes calldata data)
-        external;
+    function validateRuntime(uint8 functionId, address sender, uint256 value, bytes calldata data) external;
 }

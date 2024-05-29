@@ -79,11 +79,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     }
 
     /// @inheritdoc IValidation
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
-        external
-        view
-        override
-    {
+    function validateRuntime(uint8 functionId, address sender, uint256, bytes calldata) external view override {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate that the sender is the owner of the account or self.
             if (sender != _owners[msg.sender] && sender != msg.sender) {
@@ -95,7 +91,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     }
 
     /// @inheritdoc IValidation
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override

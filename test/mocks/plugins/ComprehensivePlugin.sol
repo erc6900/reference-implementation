@@ -61,7 +61,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         pure
         override
@@ -82,11 +82,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function runtimeValidationFunction(uint8 functionId, address, uint256, bytes calldata)
-        external
-        pure
-        override
-    {
+    function validateRuntime(uint8 functionId, address, uint256, bytes calldata) external pure override {
         if (functionId == uint8(FunctionId.VALIDATION)) {
             return;
         }

@@ -379,7 +379,7 @@ contract UpgradeableModularAccount is
         // Run the user op validationFunction
         {
             (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            currentValidationData = IValidation(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
+            currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
 
             if (preUserOpValidationHooksLength != 0) {
                 // If we have other validation data we need to coalesce with
@@ -422,7 +422,7 @@ contract UpgradeableModularAccount is
             if (!runtimeValidationFunction.isEmptyOrMagicValue()) {
                 (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
                 // solhint-disable-next-line no-empty-blocks
-                try IValidation(plugin).runtimeValidationFunction(functionId, msg.sender, msg.value, msg.data) {}
+                try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
                     revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
                 }
