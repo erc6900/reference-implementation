@@ -21,7 +21,7 @@ interface IAccountLoupe {
     /// @notice Get the validation functions for a selector.
     /// @param selector The selector to get the validation functions for.
     /// @return The validation functions for this selector.
-    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory);
+    function getValidations(bytes4 selector) external view returns (FunctionReference[] memory);
 
     /// @notice Get the pre and post execution hooks for a selector.
     /// @param selector The selector to get the hooks for.

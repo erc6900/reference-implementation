@@ -20,7 +20,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionFunctionHandler(bytes4 selector) external view returns (address plugin) {
+    function getExecutionFunctionHandler(bytes4 selector) external view override returns (address plugin) {
         AccountStorage storage _storage = getAccountStorage();
 
         if (
@@ -36,12 +36,17 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getValidationFunctions(bytes4 selector) external view returns (FunctionReference[] memory) {
+    function getValidations(bytes4 selector) external view override returns (FunctionReference[] memory) {
         return toFunctionReferenceArray(getAccountStorage().selectorData[selector].validations);
     }
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory execHooks) {
+    function getExecutionHooks(bytes4 selector)
+        external
+        view
+        override
+        returns (ExecutionHook[] memory execHooks)
+    {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 executionHooksLength = selectorData.executionHooks.length();
 
@@ -58,6 +63,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
+        override
         returns (FunctionReference[] memory preValidationHooks)
     {
         preValidationHooks =
@@ -65,7 +71,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
+    function getInstalledPlugins() external view override returns (address[] memory pluginAddresses) {
         pluginAddresses = getAccountStorage().plugins.values();
     }
 }

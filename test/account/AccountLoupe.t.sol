@@ -77,7 +77,7 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getValidationFunctions() public {
-        FunctionReference[] memory validations = account1.getValidationFunctions(comprehensivePlugin.foo.selector);
+        FunctionReference[] memory validations = account1.getValidations(comprehensivePlugin.foo.selector);
 
         assertEq(validations.length, 1);
         assertEq(
@@ -89,7 +89,7 @@ contract AccountLoupeTest is AccountTestBase {
             )
         );
 
-        validations = account1.getValidationFunctions(account1.execute.selector);
+        validations = account1.getValidations(account1.execute.selector);
 
         assertEq(validations.length, 1);
         assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(ownerValidation));
