@@ -262,6 +262,13 @@ abstract contract PluginManagerInternals is IPluginManager {
             );
         }
 
+        length = manifest.signatureValidationFunctions.length;
+        for (uint256 i = 0; i < length; ++i) {
+            FunctionReference signatureValidationFunction =
+                FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
+            _storage.signatureValidations.add(toSetValue(signatureValidationFunction));
+        }
+
         // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
         FunctionReference[] memory emptyDependencies;
 
@@ -357,6 +364,13 @@ abstract contract PluginManagerInternals is IPluginManager {
                     ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
                 )
             );
+        }
+
+        length = manifest.signatureValidationFunctions.length;
+        for (uint256 i = 0; i < length; ++i) {
+            FunctionReference signatureValidationFunction =
+                FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
+            _storage.signatureValidations.remove(toSetValue(signatureValidationFunction));
         }
 
         length = manifest.validationFunctions.length;

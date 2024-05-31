@@ -6,6 +6,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
@@ -24,6 +25,7 @@ import {
     getAccountStorage,
     getPermittedCallKey,
     SelectorData,
+    toSetValue,
     toFunctionReference,
     toExecutionHook
 } from "./AccountStorage.sol";
@@ -36,6 +38,7 @@ contract UpgradeableModularAccount is
     AccountStorageInitializable,
     BaseAccount,
     IERC165,
+    IERC1271,
     IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
@@ -55,6 +58,10 @@ contract UpgradeableModularAccount is
     bytes4 internal constant _INTERFACE_ID_INVALID = 0xffffffff;
     bytes4 internal constant _IERC165_INTERFACE_ID = 0x01ffc9a7;
 
+    // bytes4(keccak256("isValidSignature(bytes32,bytes)"))
+    bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
+    bytes4 internal constant _1271_INVALID = 0xffffffff;
+
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
     error AlwaysDenyRule();
@@ -67,6 +74,7 @@ contract UpgradeableModularAccount is
     error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
     error RuntimeValidationFunctionMissing(bytes4 selector);
     error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
+    error SignatureValidationInvalid(address plugin, uint8 functionId);
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
@@ -308,6 +316,25 @@ contract UpgradeableModularAccount is
         wrapNativeFunction
     {
         super.upgradeToAndCall(newImplementation, data);
+    }
+
+    function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
+        AccountStorage storage _storage = getAccountStorage();
+
+        FunctionReference sigValidation = FunctionReference.wrap(bytes21(signature));
+
+        (address plugin, uint8 functionId) = sigValidation.unpack();
+        if (!_storage.signatureValidations.contains(toSetValue(sigValidation))) {
+            revert SignatureValidationInvalid(plugin, functionId);
+        }
+
+        if (
+            IValidation(plugin).validateSignature(functionId, msg.sender, hash, signature[21:])
+                == _1271_MAGIC_VALUE
+        ) {
+            return _1271_MAGIC_VALUE;
+        }
+        return _1271_INVALID;
     }
 
     /// @notice Gets the entry point for this account

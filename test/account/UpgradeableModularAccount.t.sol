@@ -6,6 +6,7 @@ import {console} from "forge-std/Test.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -16,6 +17,7 @@ import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
@@ -426,6 +428,22 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         SingleOwnerPlugin(address(account1)).transferOwnership(owner2);
 
         assertEq(SingleOwnerPlugin(address(account1)).owner(), owner2);
+    }
+
+    function test_isValidSignature() public {
+        bytes32 message = keccak256("hello world");
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, message);
+
+        // singleOwnerPlugin.ownerOf(address(account1));
+
+        bytes memory signature = abi.encodePacked(
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION), r, s, v
+        );
+
+        bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);
+
+        assertEq(validationResult, bytes4(0x1626ba7e));
     }
 
     // Internal Functions
