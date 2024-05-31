@@ -73,19 +73,15 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getExecutionFunctionConfig_plugin() public {
-        bytes4[] memory selectorsToCheck = new bytes4[](2);
-        address[] memory expectedPluginAddress = new address[](2);
-        FunctionReference[] memory expectedValidations = new FunctionReference[](2);
+        bytes4[] memory selectorsToCheck = new bytes4[](1);
+        address[] memory expectedPluginAddress = new address[](1);
+        FunctionReference[] memory expectedValidations = new FunctionReference[](1);
 
         selectorsToCheck[0] = comprehensivePlugin.foo.selector;
         expectedPluginAddress[0] = address(comprehensivePlugin);
         expectedValidations[0] = FunctionReferenceLib.pack(
             address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
         );
-
-        selectorsToCheck[1] = singleOwnerPlugin.transferOwnership.selector;
-        expectedPluginAddress[1] = address(singleOwnerPlugin);
-        expectedValidations[1] = ownerValidation;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
             IAccountLoupe.ExecutionFunctionConfig memory config =

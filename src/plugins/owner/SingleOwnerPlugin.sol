@@ -152,49 +152,31 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](2);
-        manifest.executionFunctions[0] = this.transferOwnership.selector;
-        manifest.executionFunctions[1] = this.owner.selector;
-
         ManifestFunction memory ownerValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
             functionId: uint8(FunctionId.VALIDATION_OWNER_OR_SELF),
             dependencyIndex: 0 // Unused.
         });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](7);
+        manifest.validationFunctions = new ManifestAssociatedFunction[](5);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.transferOwnership.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.execute.selector,
             associatedFunction: ownerValidationFunction
         });
-        manifest.validationFunctions[2] = ManifestAssociatedFunction({
+        manifest.validationFunctions[1] = ManifestAssociatedFunction({
             executionSelector: IStandardExecutor.executeBatch.selector,
             associatedFunction: ownerValidationFunction
         });
-        manifest.validationFunctions[3] = ManifestAssociatedFunction({
+        manifest.validationFunctions[2] = ManifestAssociatedFunction({
             executionSelector: IPluginManager.installPlugin.selector,
             associatedFunction: ownerValidationFunction
         });
-        manifest.validationFunctions[4] = ManifestAssociatedFunction({
+        manifest.validationFunctions[3] = ManifestAssociatedFunction({
             executionSelector: IPluginManager.uninstallPlugin.selector,
             associatedFunction: ownerValidationFunction
         });
-        manifest.validationFunctions[5] = ManifestAssociatedFunction({
+        manifest.validationFunctions[4] = ManifestAssociatedFunction({
             executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
             associatedFunction: ownerValidationFunction
-        });
-
-        ManifestFunction memory alwaysAllowRuntime = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-            functionId: 0, // Unused.
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions[6] = ManifestAssociatedFunction({
-            executionSelector: this.owner.selector,
-            associatedFunction: alwaysAllowRuntime
         });
 
         manifest.signatureValidationFunctions = new uint8[](1);
