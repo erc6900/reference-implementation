@@ -9,6 +9,7 @@ import {
     ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
+import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
@@ -70,7 +71,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
             abi.encodeWithSelector(
-                IPlugin.preExecutionHook.selector,
+                IExecutionHook.preExecutionHook.selector,
                 _PRE_HOOK_FUNCTION_ID_1,
                 address(this), // caller
                 0, // msg.value in call to account
@@ -109,7 +110,7 @@ contract AccountExecHooksTest is AccountTestBase {
         // pre hook call
         emit ReceivedCall(
             abi.encodeWithSelector(
-                IPlugin.preExecutionHook.selector,
+                IExecutionHook.preExecutionHook.selector,
                 _BOTH_HOOKS_FUNCTION_ID_3,
                 address(this), // caller
                 0, // msg.value in call to account
@@ -123,7 +124,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         // post hook call
         emit ReceivedCall(
-            abi.encodeCall(IPlugin.postExecutionHook, (_BOTH_HOOKS_FUNCTION_ID_3, "")),
+            abi.encodeCall(IExecutionHook.postExecutionHook, (_BOTH_HOOKS_FUNCTION_ID_3, "")),
             0 // msg value in call to plugin
         );
 
@@ -155,7 +156,7 @@ contract AccountExecHooksTest is AccountTestBase {
 
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
-            abi.encodeCall(IPlugin.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
+            abi.encodeCall(IExecutionHook.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
             0 // msg value in call to plugin
         );
 

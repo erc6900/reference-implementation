@@ -11,6 +11,9 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IValidation} from "../interfaces/IValidation.sol";
+import {IValidationHook} from "../interfaces/IValidationHook.sol";
+import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
@@ -364,7 +367,7 @@ contract UpgradeableModularAccount is
             FunctionReference preUserOpValidationHook = toFunctionReference(key);
 
             (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
-            currentValidationData = IPlugin(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
+            currentValidationData = IValidationHook(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
 
             if (uint160(currentValidationData) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
@@ -376,7 +379,7 @@ contract UpgradeableModularAccount is
         // Run the user op validationFunction
         {
             (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            currentValidationData = IPlugin(plugin).userOpValidationFunction(functionId, userOp, userOpHash);
+            currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
 
             if (preUserOpValidationHooksLength != 0) {
                 // If we have other validation data we need to coalesce with
@@ -408,7 +411,7 @@ contract UpgradeableModularAccount is
 
             (address plugin, uint8 functionId) = preRuntimeValidationHook.unpack();
             // solhint-disable-next-line no-empty-blocks
-            try IPlugin(plugin).preRuntimeValidationHook(functionId, msg.sender, msg.value, msg.data) {}
+            try IValidationHook(plugin).preRuntimeValidationHook(functionId, msg.sender, msg.value, msg.data) {}
             catch (bytes memory revertReason) {
                 revert PreRuntimeValidationHookFailed(plugin, functionId, revertReason);
             }
@@ -419,7 +422,7 @@ contract UpgradeableModularAccount is
             if (!runtimeValidationFunction.isEmptyOrMagicValue()) {
                 (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
                 // solhint-disable-next-line no-empty-blocks
-                try IPlugin(plugin).runtimeValidationFunction(functionId, msg.sender, msg.value, msg.data) {}
+                try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, msg.data) {}
                 catch (bytes memory revertReason) {
                     revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
                 }
@@ -475,7 +478,7 @@ contract UpgradeableModularAccount is
         returns (bytes memory preExecHookReturnData)
     {
         (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IPlugin(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
+        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
@@ -500,7 +503,7 @@ contract UpgradeableModularAccount is
 
             (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
-            try IPlugin(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
+            try IExecutionHook(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
                 revert PostExecHookReverted(plugin, functionId, revertReason);
             }

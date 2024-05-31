@@ -18,7 +18,9 @@ import {
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {BasePlugin} from "../BasePlugin.sol";
+import {IPlugin} from "../../interfaces/IPlugin.sol";
+import {IValidation} from "../../interfaces/IValidation.sol";
+import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
 /// @title Single Owner Plugin
@@ -37,7 +39,7 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
+contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin, IERC1271 {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -66,22 +68,18 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
         _transferOwnership(abi.decode(data, (address)));
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function onUninstall(bytes calldata) external override {
         _transferOwnership(address(0));
     }
 
-    /// @inheritdoc BasePlugin
-    function runtimeValidationFunction(uint8 functionId, address sender, uint256, bytes calldata)
-        external
-        view
-        override
-    {
+    /// @inheritdoc IValidation
+    function validateRuntime(uint8 functionId, address sender, uint256, bytes calldata) external view override {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER_OR_SELF)) {
             // Validate that the sender is the owner of the account or self.
             if (sender != _owners[msg.sender] && sender != msg.sender) {
@@ -92,8 +90,8 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         revert NotImplemented();
     }
 
-    /// @inheritdoc BasePlugin
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    /// @inheritdoc IValidation
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -142,7 +140,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         return _owners[account];
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
@@ -199,7 +197,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
         return manifest;
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
         metadata.name = NAME;
@@ -224,7 +222,7 @@ contract SingleOwnerPlugin is BasePlugin, ISingleOwnerPlugin, IERC1271 {
     // ┗━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc BasePlugin
-    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
         return interfaceId == type(ISingleOwnerPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 
