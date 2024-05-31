@@ -94,6 +94,7 @@ struct PluginManifest {
     ManifestAssociatedFunction[] validationFunctions;
     ManifestAssociatedFunction[] preValidationHooks;
     ManifestExecutionHook[] executionHooks;
+    uint8[] signatureValidationFunctions;
 }
 
 interface IPlugin is IERC165 {

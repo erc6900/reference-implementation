@@ -63,7 +63,13 @@ struct AccountStorage {
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
+    // Installed plugins capable of signature validation.
+    EnumerableSet.Bytes32Set signatureValidations;
 }
+
+// TODO: Change how pre-validation hooks work to allow association with validation, rather than selector.
+// Pre signature validation hooks
+// mapping(FunctionReference => EnumerableSet.Bytes32Set) preSignatureValidationHooks;
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
     assembly ("memory-safe") {

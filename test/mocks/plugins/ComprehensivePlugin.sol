@@ -26,7 +26,8 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         VALIDATION,
         BOTH_EXECUTION_HOOKS,
         PRE_EXECUTION_HOOK,
-        POST_EXECUTION_HOOK
+        POST_EXECUTION_HOOK,
+        SIG_VALIDATION
     }
 
     string public constant NAME = "Comprehensive Plugin";
@@ -85,6 +86,17 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
     function validateRuntime(uint8 functionId, address, uint256, bytes calldata) external pure override {
         if (functionId == uint8(FunctionId.VALIDATION)) {
             return;
+        }
+        revert NotImplemented();
+    }
+
+    function validateSignature(uint8 functionId, address, bytes32, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
+            return 0xffffffff;
         }
         revert NotImplemented();
     }
