@@ -114,15 +114,11 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(address(0), plugin.owner());
         plugin.transferOwnership(owner1);
         assertEq(owner1, plugin.owner());
-        plugin.runtimeValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, ""
-        );
+        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, "");
 
         vm.startPrank(b);
         vm.expectRevert(ISingleOwnerPlugin.NotAuthorized.selector);
-        plugin.runtimeValidationFunction(
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, ""
-        );
+        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), owner1, 0, "");
     }
 
     function testFuzz_validateUserOpSig(string memory salt, PackedUserOperation memory userOp) public {
@@ -137,7 +133,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         userOp.signature = abi.encodePacked(r, s, v);
 
         // sig check should fail
-        uint256 success = plugin.userOpValidationFunction(
+        uint256 success = plugin.validateUserOp(
             uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
         );
         assertEq(success, 1);
@@ -147,7 +143,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(signer, plugin.owner());
 
         // sig check should pass
-        success = plugin.userOpValidationFunction(
+        success = plugin.validateUserOp(
             uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER_OR_SELF), userOp, userOpHash
         );
         assertEq(success, 0);

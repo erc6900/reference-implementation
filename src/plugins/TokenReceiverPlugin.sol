@@ -5,6 +5,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 
 import {
+    IPlugin,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
@@ -52,15 +53,15 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     // solhint-disable-next-line no-empty-blocks
     function onInstall(bytes calldata) external pure override {}
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     // solhint-disable-next-line no-empty-blocks
     function onUninstall(bytes calldata) external pure override {}
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
@@ -96,7 +97,7 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
         return manifest;
     }
 
-    /// @inheritdoc BasePlugin
+    /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
         metadata.name = NAME;

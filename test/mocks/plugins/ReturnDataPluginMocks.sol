@@ -6,11 +6,12 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExternalCallPermission,
-    PluginManifest
+    PluginManifest,
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 
-import {BaseTestPlugin} from "./BaseTestPlugin.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 contract RegularResultContract {
     function foo() external pure returns (bytes32) {
@@ -22,7 +23,7 @@ contract RegularResultContract {
     }
 }
 
-contract ResultCreatorPlugin is BaseTestPlugin {
+contract ResultCreatorPlugin is BasePlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -54,9 +55,11 @@ contract ResultCreatorPlugin is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 }
 
-contract ResultConsumerPlugin is BaseTestPlugin {
+contract ResultConsumerPlugin is BasePlugin {
     ResultCreatorPlugin public immutable RESULT_CREATOR;
     RegularResultContract public immutable REGULAR_RESULT_CONTRACT;
 
@@ -151,4 +154,6 @@ contract ResultConsumerPlugin is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 }

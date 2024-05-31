@@ -11,10 +11,15 @@ import {
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
+import {PluginManifest} from "../../../src/interfaces/IPlugin.sol";
+import {IValidation} from "../../../src/interfaces/IValidation.sol";
+import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
+import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
+
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
-contract ComprehensivePlugin is BasePlugin {
+contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, BasePlugin {
     enum FunctionId {
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2,
@@ -56,7 +61,7 @@ contract ComprehensivePlugin is BasePlugin {
         revert NotImplemented();
     }
 
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         pure
         override
@@ -77,11 +82,7 @@ contract ComprehensivePlugin is BasePlugin {
         revert NotImplemented();
     }
 
-    function runtimeValidationFunction(uint8 functionId, address, uint256, bytes calldata)
-        external
-        pure
-        override
-    {
+    function validateRuntime(uint8 functionId, address, uint256, bytes calldata) external pure override {
         if (functionId == uint8(FunctionId.VALIDATION)) {
             return;
         }

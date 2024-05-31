@@ -6,15 +6,16 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExternalCallPermission,
-    PluginManifest
+    PluginManifest,
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
 
-import {BaseTestPlugin} from "./BaseTestPlugin.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
 import {Counter} from "../Counter.sol";
 
-contract EFPCallerPlugin is BaseTestPlugin {
+contract EFPCallerPlugin is BasePlugin {
     // Store the counters as immutables, and use the view -> pure cast to get the manifest
     // solhint-disable private-vars-leading-underscore, immutable-vars-naming
     address private immutable counter1;
@@ -107,6 +108,8 @@ contract EFPCallerPlugin is BaseTestPlugin {
         return _castToPure(_getManifest)();
     }
 
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+
     // The manifest requested access to use the plugin-defined method "foo"
     function useEFPPermissionAllowed() external returns (bytes memory) {
         return IPluginExecutor(msg.sender).executeFromPlugin(abi.encodeCall(ResultCreatorPlugin.foo, ()));
@@ -187,7 +190,7 @@ contract EFPCallerPlugin is BaseTestPlugin {
     }
 }
 
-contract EFPCallerPluginAnyExternal is BaseTestPlugin {
+contract EFPCallerPluginAnyExternal is BasePlugin {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -212,6 +215,8 @@ contract EFPCallerPluginAnyExternal is BaseTestPlugin {
 
         return manifest;
     }
+
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 
     function passthroughExecute(address target, uint256 value, bytes calldata data)
         external

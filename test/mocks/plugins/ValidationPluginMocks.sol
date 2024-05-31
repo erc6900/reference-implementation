@@ -7,11 +7,14 @@ import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
+    PluginMetadata,
     PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
-import {BaseTestPlugin} from "./BaseTestPlugin.sol";
+import {IValidation} from "../../../src/interfaces/IValidation.sol";
+import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
+import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
-abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
+abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {
     enum FunctionId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
@@ -44,7 +47,7 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
         revert NotImplemented();
     }
 
-    function userOpValidationFunction(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         view
         override
@@ -53,6 +56,17 @@ abstract contract MockBaseUserOpValidationPlugin is BaseTestPlugin {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
             return _userOpValidationFunctionData;
         }
+        revert NotImplemented();
+    }
+
+    // Empty stubs
+    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+
+    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {
+        revert NotImplemented();
+    }
+
+    function validateRuntime(uint8, address, uint256, bytes calldata) external pure override {
         revert NotImplemented();
     }
 }
