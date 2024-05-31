@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
-    PluginManifest,
-    PluginMetadata
-} from "../../../src/interfaces/IPlugin.sol";
+import {ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 import {ISingleOwnerPlugin} from "../../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {IPluginExecutor} from "../../../src/interfaces/IPluginExecutor.sol";
@@ -38,21 +32,12 @@ contract BadTransferOwnershipPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.evilTransferOwnership.selector;
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.evilTransferOwnership.selector, isPublic: true});
 
         manifest.permittedExecutionSelectors = new bytes4[](1);
         manifest.permittedExecutionSelectors[0] = ISingleOwnerPlugin.transferOwnership.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.evilTransferOwnership.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0, // Unused.
-                dependencyIndex: 0 // Unused.
-            })
-        });
 
         return manifest;
     }

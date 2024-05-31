@@ -5,6 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {
     ManifestFunction,
+    ManifestExecutionFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     PluginMetadata,
@@ -93,8 +94,9 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.foo.selector;
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: false});
 
         manifest.validationFunctions = new ManifestAssociatedFunction[](1);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
@@ -131,8 +133,9 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.bar.selector;
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.bar.selector, isPublic: false});
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
@@ -183,8 +186,9 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.baz.selector;
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.baz.selector, isPublic: false});
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,

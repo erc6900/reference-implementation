@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {_ACCOUNT_STORAGE_SLOT, getPermittedCallKey} from "../../src/account/AccountStorage.sol";
+import {_ACCOUNT_STORAGE_SLOT} from "../../src/account/AccountStorage.sol";
 import {AccountStorageInitializable} from "../../src/account/AccountStorageInitializable.sol";
 import {MockDiamondStorageContract} from "../mocks/MockDiamondStorageContract.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -33,11 +33,5 @@ contract AccountStorageTest is Test {
         MockDiamondStorageContract(proxy).initialize();
         // post init slot should contains: packed(uint8 initialized = 1, bool initializing = 0)
         assertEq(uint256(vm.load(proxy, _ACCOUNT_STORAGE_SLOT)), uint256(1));
-    }
-
-    function testFuzz_permittedCallKey(address addr, bytes4 selector) public {
-        bytes24 key = getPermittedCallKey(addr, selector);
-        assertEq(bytes20(addr), bytes20(key));
-        assertEq(bytes4(selector), bytes4(key << 160));
     }
 }

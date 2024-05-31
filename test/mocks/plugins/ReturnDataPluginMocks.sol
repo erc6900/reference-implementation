@@ -2,9 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
+    ManifestExecutionFunction,
     ManifestExternalCallPermission,
     PluginManifest,
     PluginMetadata
@@ -39,19 +37,11 @@ contract ResultCreatorPlugin is BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](2);
-        manifest.executionFunctions[0] = this.foo.selector;
-        manifest.executionFunctions[1] = this.bar.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
+        manifest.executionFunctions = new ManifestExecutionFunction[](2);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: true});
+        manifest.executionFunctions[1] =
+            ManifestExecutionFunction({executionSelector: this.bar.selector, isPublic: false});
 
         return manifest;
     }
@@ -117,27 +107,11 @@ contract ResultConsumerPlugin is BasePlugin {
     function _innerPluginManifest() internal view returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](2);
-        manifest.executionFunctions[0] = this.checkResultEFPFallback.selector;
-        manifest.executionFunctions[1] = this.checkResultEFPExternal.selector;
-
-        manifest.validationFunctions = new ManifestAssociatedFunction[](2);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.checkResultEFPFallback.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
-        manifest.validationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: this.checkResultEFPExternal.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        });
+        manifest.executionFunctions = new ManifestExecutionFunction[](2);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.checkResultEFPFallback.selector, isPublic: true});
+        manifest.executionFunctions[1] =
+            ManifestExecutionFunction({executionSelector: this.checkResultEFPExternal.selector, isPublic: true});
 
         manifest.permittedExecutionSelectors = new bytes4[](1);
         manifest.permittedExecutionSelectors[0] = ResultCreatorPlugin.foo.selector;

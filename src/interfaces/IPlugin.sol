@@ -13,11 +13,6 @@ enum ManifestAssociatedFunctionType {
     SELF,
     // Function belongs to an external plugin provided as a dependency during plugin installation.
     DEPENDENCY,
-    // Resolves to a magic value to always bypass runtime validation for a given function.
-    // This is only assignable on runtime validation functions. If it were to be used on a user op validation function,
-    // it would risk burning gas from the account. When used as a hook in any hook location, it is equivalent to not
-    // setting a hook and is therefore disallowed.
-    RUNTIME_VALIDATION_ALWAYS_ALLOW,
     // Resolves to a magic value to always fail in a hook for a given function.
     // This is only assignable to pre execution hooks. It should not be used on validation functions themselves, because
     // this is equivalent to leaving the validation functions unset. It should not be used in post-exec hooks, because
@@ -25,6 +20,14 @@ enum ManifestAssociatedFunctionType {
     PRE_HOOK_ALWAYS_DENY
 }
 // forgefmt: disable-end
+
+struct ManifestExecutionFunction {
+    // TODO(erc6900 spec): These fields can be packed into a single word
+    // The selector to install
+    bytes4 executionSelector;
+    // If true, the function won't need runtime validation, and can be called by anyone.
+    bool isPublic;
+}
 
 /// @dev For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address
 /// of the function at `dependencies[dependencyIndex]` during the call to `installPlugin(config)`.
@@ -82,7 +85,7 @@ struct PluginManifest {
     // structs used in the manifest.
     bytes4[] dependencyInterfaceIds;
     // Execution functions defined in this plugin to be installed on the MSCA.
-    bytes4[] executionFunctions;
+    ManifestExecutionFunction[] executionFunctions;
     // Plugin execution functions already installed on the MSCA that this plugin will be able to call.
     bytes4[] permittedExecutionSelectors;
     // Boolean to indicate whether the plugin can call any external address.
