@@ -6,6 +6,7 @@ import {
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
     ManifestExecutionHook,
+    ManifestExecutionFunction,
     ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
@@ -38,18 +39,7 @@ contract AccountExecHooksTest is AccountTestBase {
     function setUp() public {
         _transferOwnershipToTest();
 
-        m1.executionFunctions.push(_EXEC_SELECTOR);
-
-        m1.validationFunctions.push(
-            ManifestAssociatedFunction({
-                executionSelector: _EXEC_SELECTOR,
-                associatedFunction: ManifestFunction({
-                    functionType: ManifestAssociatedFunctionType.RUNTIME_VALIDATION_ALWAYS_ALLOW,
-                    functionId: 0,
-                    dependencyIndex: 0
-                })
-            })
-        );
+        m1.executionFunctions.push(ManifestExecutionFunction({executionSelector: _EXEC_SELECTOR, isPublic: true}));
     }
 
     function test_preExecHook_install() public {

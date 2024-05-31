@@ -5,6 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {
     ManifestExecutionHook,
+    ManifestExecutionFunction,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
@@ -127,8 +128,9 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.executionFunctions = new bytes4[](1);
-        manifest.executionFunctions[0] = this.foo.selector;
+        manifest.executionFunctions = new ManifestExecutionFunction[](1);
+        manifest.executionFunctions[0] =
+            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: false});
 
         ManifestFunction memory fooValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
