@@ -29,9 +29,9 @@ interface IAccountLoupe {
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory);
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
-    /// @param selector The selector to get the hooks for.
+    /// @param validationFunction The validation function to get the hooks for.
     /// @return preValidationHooks The pre validation hooks for this selector.
-    function getPreValidationHooks(bytes4 selector)
+    function getPreValidationHooks(FunctionReference validationFunction)
         external
         view
         returns (FunctionReference[] memory preValidationHooks);

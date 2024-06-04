@@ -31,6 +31,20 @@ contract AccountLoupeTest is AccountTestBase {
         ownerValidation = FunctionReferenceLib.pack(
             address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
         );
+
+        FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
+        preValidationHooks[0] = FunctionReferenceLib.pack(
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+        );
+        preValidationHooks[1] = FunctionReferenceLib.pack(
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_2)
+        );
+
+        bytes[] memory installDatas = new bytes[](2);
+        vm.prank(address(entryPoint));
+        account1.installValidation(
+            ownerValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+        );
     }
 
     function test_pluginLoupe_getInstalledPlugins_initial() public {
@@ -133,7 +147,7 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreValidationHooks(comprehensivePlugin.foo.selector);
+        FunctionReference[] memory hooks = account1.getPreValidationHooks(ownerValidation);
 
         assertEq(hooks.length, 2);
         assertEq(
