@@ -3,16 +3,12 @@ pragma solidity ^0.8.19;
 
 import {
     IPlugin,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
     ManifestExecutionHook,
     ManifestExecutionFunction,
-    ManifestFunction,
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -166,64 +162,6 @@ contract AccountExecHooksTest is AccountTestBase {
         _uninstallPlugin(mockPlugin1);
     }
 
-    function test_overlappingPreValidationHooks_install() public {
-        // Install the first plugin.
-        _installPlugin1WithPreValidationHook(
-            _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        );
-
-        // Expect the call to fail due to the "always deny" pre hook.
-        vm.breakpoint("a");
-        (bool success, bytes memory retData) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
-        assertFalse(success);
-        assertEq(retData, abi.encodeWithSelector(UpgradeableModularAccount.AlwaysDenyRule.selector));
-
-        // Install a second plugin that applies the same pre hook on the same selector.
-        _installPlugin2WithPreValidationHook(
-            _EXEC_SELECTOR,
-            ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY,
-                functionId: 0,
-                dependencyIndex: 0
-            })
-        );
-
-        // Still expect the call to fail.
-        (success, retData) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
-        assertFalse(success);
-        assertEq(retData, abi.encodeWithSelector(UpgradeableModularAccount.AlwaysDenyRule.selector));
-
-        vm.stopPrank();
-    }
-
-    function test_overlappingPreValidationHooks_uninstall() public {
-        test_overlappingPreValidationHooks_install();
-
-        // Uninstall the second plugin.
-        _uninstallPlugin(mockPlugin2);
-
-        // Expect the pre validation hook of "always deny" to still exist.
-        (bool success, bytes memory retData) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
-        assertFalse(success);
-        assertEq(retData, abi.encodeWithSelector(UpgradeableModularAccount.AlwaysDenyRule.selector));
-
-        // Uninstall the first plugin.
-        _uninstallPlugin(mockPlugin1);
-
-        // // Execution selector should no longer exist.
-        (success, retData) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
-        assertFalse(success);
-        assertEq(
-            retData,
-            abi.encodeWithSelector(UpgradeableModularAccount.UnrecognizedFunction.selector, _EXEC_SELECTOR)
-        );
-    }
-
     function _installPlugin1WithHooks(ManifestExecutionHook memory execHooks) internal {
         m1.executionHooks.push(execHooks);
         mockPlugin1 = new MockPlugin(m1);
@@ -238,54 +176,6 @@ contract AccountExecHooksTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
-            pluginInstallData: bytes(""),
-            dependencies: new FunctionReference[](0)
-        });
-    }
-
-    function _installPlugin1WithPreValidationHook(bytes4 selector, ManifestFunction memory preValidationHook)
-        internal
-    {
-        m1.preValidationHooks.push(
-            ManifestAssociatedFunction({executionSelector: selector, associatedFunction: preValidationHook})
-        );
-
-        mockPlugin1 = new MockPlugin(m1);
-        manifestHash1 = keccak256(abi.encode(mockPlugin1.pluginManifest()));
-
-        vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
-        vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
-
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(mockPlugin1),
-            manifestHash: manifestHash1,
-            pluginInstallData: bytes(""),
-            dependencies: new FunctionReference[](0)
-        });
-    }
-
-    function _installPlugin2WithPreValidationHook(bytes4 selector, ManifestFunction memory preValidationHook)
-        internal
-    {
-        m2.preValidationHooks.push(
-            ManifestAssociatedFunction({executionSelector: selector, associatedFunction: preValidationHook})
-        );
-
-        mockPlugin2 = new MockPlugin(m2);
-        manifestHash2 = keccak256(abi.encode(mockPlugin2.pluginManifest()));
-
-        vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
-        vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin2), manifestHash2, new FunctionReference[](0));
-
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(mockPlugin2),
-            manifestHash: manifestHash2,
             pluginInstallData: bytes(""),
             dependencies: new FunctionReference[](0)
         });

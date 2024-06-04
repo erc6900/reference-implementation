@@ -58,12 +58,37 @@ contract ValidationIntersectionTest is AccountTestBase {
             pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
+        // TODO: change with new install flow
+        // temporary fix to add the pre-validation hook
+        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
+        preValidationHooks[0] = FunctionReferenceLib.pack({
+            addr: address(oneHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+        });
+        bytes[] memory installDatas = new bytes[](1);
+        account1.installValidation(
+            oneHookValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+        );
         account1.installPlugin({
             plugin: address(twoHookPlugin),
             manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
             pluginInstallData: "",
             dependencies: new FunctionReference[](0)
         });
+        // temporary fix to add the pre-validation hook
+        preValidationHooks = new FunctionReference[](2);
+        preValidationHooks[0] = FunctionReferenceLib.pack({
+            addr: address(twoHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+        });
+        preValidationHooks[1] = FunctionReferenceLib.pack({
+            addr: address(twoHookPlugin),
+            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_2)
+        });
+        installDatas = new bytes[](2);
+        account1.installValidation(
+            twoHookValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+        );
         vm.stopPrank();
     }
 

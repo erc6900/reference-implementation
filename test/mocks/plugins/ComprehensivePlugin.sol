@@ -17,7 +17,6 @@ import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
 
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, BasePlugin {
@@ -148,40 +147,6 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.foo.selector,
             associatedFunction: fooValidationFunction
-        });
-
-        manifest.preValidationHooks = new ManifestAssociatedFunction[](4);
-        manifest.preValidationHooks[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preValidationHooks[1] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_2),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preValidationHooks[2] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preValidationHooks[3] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_2),
-                dependencyIndex: 0 // Unused.
-            })
         });
 
         manifest.executionHooks = new ManifestExecutionHook[](3);

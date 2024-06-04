@@ -41,17 +41,19 @@ struct SelectorData {
     bool isPublic;
     // Whether or not a shared validation function may be used to validate this function.
     bool allowSharedValidation;
-    // How many times a `PRE_HOOK_ALWAYS_DENY` has been added for this function.
-    // Since that is the only type of hook that may overlap, we can use this to track the number of times it has
-    // been applied, and whether or not the deny should apply. The size `uint48` was chosen somewhat arbitrarily,
-    // but it packs alongside `plugin` while still leaving some other space in the slot for future packing.
-    uint48 denyExecutionCount;
-    // User operation validation and runtime validation share a function reference.
-    EnumerableSet.Bytes32Set validations;
-    // The pre validation hooks for this function selector.
-    EnumerableSet.Bytes32Set preValidationHooks;
     // The execution hooks for this function selector.
     EnumerableSet.Bytes32Set executionHooks;
+    // Which validation functions are associated with this function selector.
+    EnumerableSet.Bytes32Set validations;
+}
+
+struct ValidationData {
+    // Whether or not this validation can be used as a shared validation function.
+    bool isShared;
+    // Whether or not this validation is a signature validator.
+    bool isSignatureValidation;
+    // The pre validation hooks for this function selector.
+    EnumerableSet.Bytes32Set preValidationHooks;
 }
 
 struct AccountStorage {
@@ -63,20 +65,13 @@ struct AccountStorage {
     mapping(address => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
+    mapping(FunctionReference => ValidationData) validationData;
     mapping(address caller => mapping(bytes4 selector => bool)) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
-    // Installed plugins capable of signature validation.
-    EnumerableSet.Bytes32Set signatureValidations;
-    // Todo: merge this with other validation storage?
-    EnumerableSet.Bytes32Set defaultValidations;
 }
-
-// TODO: Change how pre-validation hooks work to allow association with validation, rather than selector.
-// Pre signature validation hooks
-// mapping(FunctionReference => EnumerableSet.Bytes32Set) preSignatureValidationHooks;
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
     assembly ("memory-safe") {

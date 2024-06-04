@@ -65,7 +65,6 @@ contract UpgradeableModularAccount is
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
-    error AlwaysDenyRule();
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
@@ -275,13 +274,6 @@ contract UpgradeableModularAccount is
 
         FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[0:21]));
 
-        AccountStorage storage _storage = getAccountStorage();
-
-        // check if that runtime validation function is allowed to be called
-        if (_storage.selectorData[execSelector].denyExecutionCount > 0) {
-            revert AlwaysDenyRule();
-        }
-
         // Check if the runtime validation function is allowed to be called
         bool isSharedValidation = uint8(authorization[21]) == 1;
         _checkIfValidationApplies(execSelector, runtimeValidationFunction, isSharedValidation);
@@ -333,33 +325,33 @@ contract UpgradeableModularAccount is
     /// with user install configs.
     /// @dev This function is only callable once, and only by the EntryPoint.
 
-    function initializeDefaultValidation(address plugin, uint8 functionId, bytes calldata installData)
+    function initializeDefaultValidation(FunctionReference validationFunction, bytes calldata installData)
         external
         initializer
     {
-        _installValidation(plugin, functionId, true, new bytes4[](0), installData);
+        _installValidation(validationFunction, true, new bytes4[](0), installData, bytes(""));
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
     /// @inheritdoc IPluginManager
     function installValidation(
-        address plugin,
-        uint8 functionId,
+        FunctionReference validationFunction,
         bool shared,
-        bytes4[] calldata selectors,
-        bytes calldata installData
+        bytes4[] memory selectors,
+        bytes calldata installData,
+        bytes calldata preValidationHooks
     ) external wrapNativeFunction {
-        _installValidation(plugin, functionId, shared, selectors, installData);
+        _installValidation(validationFunction, shared, selectors, installData, preValidationHooks);
     }
 
     /// @inheritdoc IPluginManager
     function uninstallValidation(
-        address plugin,
-        uint8 functionId,
+        FunctionReference validationFunction,
         bytes4[] calldata selectors,
-        bytes calldata uninstallData
+        bytes calldata uninstallData,
+        bytes calldata preValidationHookUninstallData
     ) external wrapNativeFunction {
-        _uninstallValidation(plugin, functionId, selectors, uninstallData);
+        _uninstallValidation(validationFunction, selectors, uninstallData, preValidationHookUninstallData);
     }
 
     /// @notice ERC165 introspection
@@ -394,7 +386,7 @@ contract UpgradeableModularAccount is
         FunctionReference sigValidation = FunctionReference.wrap(bytes21(signature));
 
         (address plugin, uint8 functionId) = sigValidation.unpack();
-        if (!_storage.signatureValidations.contains(toSetValue(sigValidation))) {
+        if (!_storage.validationData[sigValidation].isSignatureValidation) {
             revert SignatureValidationInvalid(plugin, functionId);
         }
 
@@ -427,12 +419,6 @@ contract UpgradeableModularAccount is
         }
         bytes4 selector = bytes4(userOp.callData);
 
-        AccountStorage storage _storage = getAccountStorage();
-
-        if (_storage.selectorData[selector].denyExecutionCount > 0) {
-            revert AlwaysDenyRule();
-        }
-
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
         bool isSharedValidation = uint8(userOp.signature[21]) == 1;
 
@@ -461,7 +447,7 @@ contract UpgradeableModularAccount is
 
         // Do preUserOpValidation hooks
         EnumerableSet.Bytes32Set storage preUserOpValidationHooks =
-            getAccountStorage().selectorData[selector].preValidationHooks;
+            getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
@@ -499,7 +485,7 @@ contract UpgradeableModularAccount is
     ) internal {
         // run all preRuntimeValidation hooks
         EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
-            getAccountStorage().selectorData[bytes4(callData[0:4])].preValidationHooks;
+            getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
@@ -615,10 +601,7 @@ contract UpgradeableModularAccount is
 
         // Check that the provided validation function is applicable to the selector
         if (shared) {
-            if (
-                !_sharedValidationAllowed(selector)
-                    || !_storage.defaultValidations.contains(toSetValue(validationFunction))
-            ) {
+            if (!_sharedValidationAllowed(selector) || !_storage.validationData[validationFunction].isShared) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         } else {
@@ -645,9 +628,6 @@ contract UpgradeableModularAccount is
     function _checkPermittedCallerIfNotFromEP() internal view {
         AccountStorage storage _storage = getAccountStorage();
 
-        if (_storage.selectorData[msg.sig].denyExecutionCount > 0) {
-            revert AlwaysDenyRule();
-        }
         if (
             msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
                 || _storage.selectorData[msg.sig].isPublic
