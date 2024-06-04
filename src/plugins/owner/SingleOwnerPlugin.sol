@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {IPluginManager} from "../../interfaces/IPluginManager.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
@@ -16,9 +13,11 @@ import {
     PluginMetadata,
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IPlugin} from "../../interfaces/IPlugin.sol";
+import {IPluginManager} from "../../interfaces/IPluginManager.sol";
+import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
+import {Signer} from "../../validators/ISignatureValidator.sol";
 import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
@@ -39,9 +38,6 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
 contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
-    using ECDSA for bytes32;
-    using MessageHashUtils for bytes32;
-
     string public constant NAME = "Single Owner Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
@@ -53,14 +49,14 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    mapping(address => address) internal _owners;
+    mapping(address => Signer) internal _owners;
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ISingleOwnerPlugin
-    function transferOwnership(address newOwner) external {
+    function transferOwnership(Signer calldata newOwner) external {
         _transferOwnership(newOwner);
     }
 
@@ -70,12 +66,13 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        _transferOwnership(abi.decode(data, (address)));
+        _transferOwnership(abi.decode(data, (Signer)));
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata) external override {
-        _transferOwnership(address(0));
+        Signer memory empty;
+        _transferOwnership(empty);
     }
 
     /// @inheritdoc IValidation
@@ -86,7 +83,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate that the sender is the owner of the account or self.
-            if (sender != _owners[msg.sender] && sender != msg.sender) {
+            if (sender != abi.decode(_owners[msg.sender].data, (address)) && sender != msg.sender) {
                 revert NotAuthorized();
             }
             return;
@@ -130,16 +127,15 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         returns (bytes4)
     {
         if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
-            if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
-                return _1271_MAGIC_VALUE;
-            }
-            return _1271_INVALID;
+            Signer memory signer = _owners[msg.sender];
+            (bool isValid,) = signer.validator.validate(msg.sender, signer.data, digest, signature);
+            return isValid ? _1271_MAGIC_VALUE : _1271_INVALID;
         }
         revert NotImplemented();
     }
 
     /// @inheritdoc ISingleOwnerPlugin
-    function owner() external view returns (address) {
+    function owner() external view returns (Signer memory) {
         return _owners[msg.sender];
     }
 
@@ -148,7 +144,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc ISingleOwnerPlugin
-    function ownerOf(address account) external view returns (address) {
+    function ownerOf(address account) external view returns (Signer memory) {
         return _owners[account];
     }
 
@@ -222,8 +218,8 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function _transferOwnership(address newOwner) internal {
-        address previousOwner = _owners[msg.sender];
+    function _transferOwnership(Signer memory newOwner) internal {
+        Signer memory previousOwner = _owners[msg.sender];
         _owners[msg.sender] = newOwner;
         emit OwnershipTransferred(msg.sender, previousOwner, newOwner);
     }
