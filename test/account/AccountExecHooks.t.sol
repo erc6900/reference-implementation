@@ -24,8 +24,8 @@ contract AccountExecHooksTest is AccountTestBase {
     uint8 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
     uint8 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
-    PluginManifest public m1;
-    PluginManifest public m2;
+    PluginManifest internal m1;
+    PluginManifest internal m2;
 
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);

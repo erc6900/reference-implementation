@@ -99,16 +99,16 @@ contract AccountReturnDataTest is AccountTestBase {
         assertEq(result2, keccak256("foo"));
     }
 
-    // Tests the ability to read data via executeFromPlugin routing to fallback functions
+    // Tests the ability to read data via routing to fallback functions
     function test_returnData_execFromPlugin_fallback() public {
-        bool result = ResultConsumerPlugin(address(account1)).checkResultEFPFallback(keccak256("bar"));
+        bool result = ResultConsumerPlugin(address(account1)).checkResultFallback(keccak256("bar"));
 
         assertTrue(result);
     }
 
-    // Tests the ability to read data via executeFromPluginExternal
-    function test_returnData_execFromPlugin_execute() public {
-        bool result = ResultConsumerPlugin(address(account1)).checkResultEFPExternal(
+    // Tests the ability to read data via executeWithAuthorization
+    function test_returnData_authorized_exec() public {
+        bool result = ResultConsumerPlugin(address(account1)).checkResultExecuteWithAuthorization(
             address(regularResultContract), keccak256("bar")
         );
 
