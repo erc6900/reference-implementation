@@ -37,7 +37,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     address public ethRecipient;
     Counter public counter;
-    PluginManifest public manifest;
+    PluginManifest internal manifest;
 
     FunctionReference public ownerValidation;
 
@@ -258,7 +258,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(plugins[1], address(tokenReceiverPlugin));
     }
 
-    function test_installPlugin_ExecuteFromPlugin_PermittedExecSelectorNotInstalled() public {
+    function test_installPlugin_PermittedCallSelectorNotInstalled() public {
         vm.startPrank(address(entryPoint));
 
         PluginManifest memory m;

@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IPlugin} from "../interfaces/IPlugin.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
@@ -18,16 +17,6 @@ struct PluginData {
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
     uint256 dependentCount;
-}
-
-// Represents data associated with a plugin's permission to use `executeFromPluginExternal`
-// to interact with contracts and addresses external to the account and its plugins.
-struct PermittedExternalCallData {
-    // Is this address on the permitted addresses list? If it is, we either have a
-    // list of allowed selectors, or the flag that allows any selector.
-    bool addressPermitted;
-    bool anySelectorPermitted;
-    mapping(bytes4 => bool) permittedSelectors;
 }
 
 // Represents data associated with a specifc function selector.
@@ -67,8 +56,6 @@ struct AccountStorage {
     mapping(bytes4 => SelectorData) selectorData;
     mapping(FunctionReference validationFunction => ValidationData) validationData;
     mapping(address caller => mapping(bytes4 selector => bool)) callPermitted;
-    // key = address(calling plugin) || target address
-    mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
 }
