@@ -39,7 +39,7 @@ struct ValidationData {
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
     // The pre validation hooks for this function selector.
-    EnumerableSet.Bytes32Set preValidationHooks;
+    FunctionReference[] preValidationHooks;
 }
 
 struct AccountStorage {

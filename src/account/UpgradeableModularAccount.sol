@@ -19,14 +19,7 @@ import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.so
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    toSetValue,
-    toFunctionReference,
-    toExecutionHook
-} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, SelectorData, toSetValue, toExecutionHook} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 import {PluginManager2} from "./PluginManager2.sol";
@@ -365,13 +358,12 @@ contract UpgradeableModularAccount is
         uint256 currentValidationData;
 
         // Do preUserOpValidation hooks
-        EnumerableSet.Bytes32Set storage preUserOpValidationHooks =
+        FunctionReference[] memory preUserOpValidationHooks =
             getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
 
-        uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
+        uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length;
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
-            bytes32 key = preUserOpValidationHooks.at(i);
-            FunctionReference preUserOpValidationHook = toFunctionReference(key);
+            FunctionReference preUserOpValidationHook = preUserOpValidationHooks[i];
 
             (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
             currentValidationData = IValidationHook(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
@@ -403,13 +395,12 @@ contract UpgradeableModularAccount is
         bytes calldata authorizationData
     ) internal {
         // run all preRuntimeValidation hooks
-        EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
+        FunctionReference[] memory preRuntimeValidationHooks =
             getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
 
-        uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
+        uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length;
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
-            bytes32 key = preRuntimeValidationHooks.at(i);
-            FunctionReference preRuntimeValidationHook = toFunctionReference(key);
+            FunctionReference preRuntimeValidationHook = preRuntimeValidationHooks[i];
 
             (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHook.unpack();
             try IValidationHook(hookPlugin).preRuntimeValidationHook(
