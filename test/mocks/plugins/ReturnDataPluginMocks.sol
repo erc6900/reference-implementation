@@ -101,7 +101,8 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         // This result should be allowed based on the manifest permission request
         bytes memory returnData = IStandardExecutor(msg.sender).executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
-            abi.encodePacked(this, uint8(0), uint8(0)) // Validation function of self, selector-associated
+            abi.encodePacked(this, uint8(0), uint8(0), uint32(1), uint8(255)) // Validation function of self,
+                // selector-associated, with no auth data
         );
 
         bytes32 actual = abi.decode(abi.decode(returnData, (bytes)), (bytes32));

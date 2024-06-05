@@ -24,8 +24,13 @@ interface IValidationHook is IPlugin {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function preRuntimeValidationHook(uint8 functionId, address sender, uint256 value, bytes calldata data)
-        external;
+    function preRuntimeValidationHook(
+        uint8 functionId,
+        address sender,
+        uint256 value,
+        bytes calldata data,
+        bytes calldata authorization
+    ) external;
 
     // TODO: support this hook type within the account & in the manifest
 
