@@ -12,10 +12,13 @@ import {AccountStorage, getAccountStorage, toSetValue} from "./AccountStorage.so
 abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
+
     error DefaultValidationAlreadySet(FunctionReference validationFunction);
     error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
+    error PreValidationHookLimitExceeded();
 
     function _installValidation(
         FunctionReference validationFunction,
@@ -42,6 +45,14 @@ abstract contract PluginManager2 {
                     (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
                     IPlugin(preValidationPlugin).onInstall(initDatas[i]);
                 }
+            }
+
+            // Avoid collision between reserved index and actual indices
+            if (
+                _storage.validationData[validationFunction].preValidationHooks.length
+                    > _RESERVED_VALIDATION_DATA_INDEX
+            ) {
+                revert PreValidationHookLimitExceeded();
             }
         }
 

@@ -10,6 +10,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
@@ -38,6 +39,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using FunctionReferenceLib for FunctionReference;
+    using SparseCalldataSegmentLib for bytes;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -70,6 +72,8 @@ contract UpgradeableModularAccount is
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
     error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isDefault);
+    error SignatureSegmentOutOfOrder();
+    error ValidationSignatureSegmentMissing();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
@@ -336,37 +340,46 @@ contract UpgradeableModularAccount is
 
         _checkIfValidationApplies(selector, userOpValidationFunction, isDefaultValidation);
 
-        validationData =
-            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
+        validationData = _doUserOpValidation(userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
     function _doUserOpValidation(
-        bytes4 selector,
         FunctionReference userOpValidationFunction,
         PackedUserOperation memory userOp,
         bytes calldata signature,
         bytes32 userOpHash
-    ) internal returns (uint256 validationData) {
-        userOp.signature = signature;
+    ) internal returns (uint256) {
+        // Set up the per-hook data tracking fields
+        bytes calldata signatureSegment;
+        (signatureSegment, signature) = signature.getNextSegment();
 
-        if (userOpValidationFunction.isEmpty()) {
-            // If the validation function is empty, then the call cannot proceed.
-            revert UserOpValidationFunctionMissing(selector);
-        }
-
-        uint256 currentValidationData;
+        uint256 validationData;
 
         // Do preUserOpValidation hooks
         FunctionReference[] memory preUserOpValidationHooks =
             getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
 
-        uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length;
-        for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
-            FunctionReference preUserOpValidationHook = preUserOpValidationHooks[i];
+        for (uint256 i = 0; i < preUserOpValidationHooks.length; ++i) {
+            // Load per-hook data, if any is present
+            // The segment index is the first byte of the signature
+            if (signatureSegment.getIndex() == i) {
+                // Use the current segment
+                userOp.signature = signatureSegment.getBody();
 
-            (address plugin, uint8 functionId) = preUserOpValidationHook.unpack();
-            currentValidationData = IValidationHook(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
+                // Load the next per-hook data segment
+                (signatureSegment, signature) = signature.getNextSegment();
+
+                if (uint8(signatureSegment[0]) <= i) {
+                    revert SignatureSegmentOutOfOrder();
+                }
+            } else {
+                userOp.signature = "";
+            }
+
+            (address plugin, uint8 functionId) = preUserOpValidationHooks[i].unpack();
+            uint256 currentValidationData =
+                IValidationHook(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
 
             if (uint160(currentValidationData) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
@@ -377,16 +390,24 @@ contract UpgradeableModularAccount is
 
         // Run the user op validationFunction
         {
-            (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
+            if (signatureSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+                revert ValidationSignatureSegmentMissing();
+            }
 
-            if (preUserOpValidationHooksLength != 0) {
+            userOp.signature = signatureSegment.getBody();
+
+            (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
+            uint256 currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
+
+            if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
                 validationData = _coalesceValidation(validationData, currentValidationData);
             } else {
                 validationData = currentValidationData;
             }
         }
+
+        return validationData;
     }
 
     function _doRuntimeValidation(
@@ -394,17 +415,34 @@ contract UpgradeableModularAccount is
         bytes calldata callData,
         bytes calldata authorizationData
     ) internal {
+        // Set up the per-hook data tracking fields
+        bytes calldata authSegment;
+        (authSegment, authorizationData) = authorizationData.getNextSegment();
+
         // run all preRuntimeValidation hooks
         FunctionReference[] memory preRuntimeValidationHooks =
             getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
 
-        uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length;
-        for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
-            FunctionReference preRuntimeValidationHook = preRuntimeValidationHooks[i];
+        for (uint256 i = 0; i < preRuntimeValidationHooks.length; ++i) {
+            bytes memory currentAuthData;
 
-            (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHook.unpack();
+            if (authSegment.getIndex() == i) {
+                // Use the current segment
+                currentAuthData = authSegment.getBody();
+
+                // Load the next per-hook data segment
+                (authSegment, authorizationData) = authorizationData.getNextSegment();
+
+                if (uint8(authSegment[0]) <= i) {
+                    revert SignatureSegmentOutOfOrder();
+                }
+            } else {
+                currentAuthData = "";
+            }
+
+            (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHooks[i].unpack();
             try IValidationHook(hookPlugin).preRuntimeValidationHook(
-                hookFunctionId, msg.sender, msg.value, callData
+                hookFunctionId, msg.sender, msg.value, callData, currentAuthData
             )
             // forgefmt: disable-start
             // solhint-disable-next-line no-empty-blocks
@@ -414,9 +452,13 @@ contract UpgradeableModularAccount is
             }
         }
 
+        if (authSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+            revert ValidationSignatureSegmentMissing();
+        }
+
         (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
 
-        try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, callData, authorizationData)
+        try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, callData, authSegment.getBody())
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
         {} catch (bytes memory revertReason) {
