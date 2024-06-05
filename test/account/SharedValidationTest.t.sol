@@ -38,7 +38,7 @@ contract SharedValidationTestTest is AccountTestBase {
         );
     }
 
-    function test_sharedValidation_simple() public {
+    function test_sharedValidation_userOp_simple() public {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
@@ -63,6 +63,19 @@ contract SharedValidationTestTest is AccountTestBase {
         userOps[0] = userOp;
 
         entryPoint.handleOps(userOps, beneficiary);
+
+        assertEq(ethRecipient.balance, 2 wei);
+    }
+
+    function test_sharedValidation_runtime_simple() public {
+        // Deploy the account first
+        sharedValidationFactoryFixture.createAccount(owner1, 0);
+
+        vm.prank(owner1);
+        account1.executeWithAuthorization(
+            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            abi.encodePacked(ownerValidation, SHARED_VALIDATION)
+        );
 
         assertEq(ethRecipient.balance, 2 wei);
     }

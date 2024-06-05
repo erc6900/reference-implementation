@@ -59,7 +59,9 @@ contract AccountReturnDataTest is AccountTestBase {
                 account1.execute,
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
-            abi.encodePacked(singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+            abi.encodePacked(
+                singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER, SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
 
         bytes32 result = abi.decode(abi.decode(returnData, (bytes)), (bytes32));
@@ -83,7 +85,9 @@ contract AccountReturnDataTest is AccountTestBase {
 
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
-            abi.encodePacked(singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+            abi.encodePacked(
+                singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER, SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
 
         bytes[] memory returnDatas = abi.decode(retData, (bytes[]));
