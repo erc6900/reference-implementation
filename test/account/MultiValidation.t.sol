@@ -67,13 +67,21 @@ contract MultiValidationTest is AccountTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER))
+            abi.encodePacked(
+                address(validator2),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+                SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
 
         vm.prank(owner2);
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER))
+            abi.encodePacked(
+                address(validator2),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+                SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
     }
 

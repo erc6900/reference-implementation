@@ -79,6 +79,7 @@ contract UpgradeableModularAccount is
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
+    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool shared);
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
@@ -280,11 +281,12 @@ contract UpgradeableModularAccount is
         if (_storage.selectorData[execSelector].denyExecutionCount > 0) {
             revert AlwaysDenyRule();
         }
-        if (!_storage.selectorData[execSelector].validations.contains(toSetValue(runtimeValidationFunction))) {
-            revert RuntimeValidationFunctionMissing(execSelector);
-        }
 
-        _doRuntimeValidation(runtimeValidationFunction, data, authorization[21:]);
+        // Check if the runtime validation function is allowed to be called
+        bool isSharedValidation = uint8(authorization[21]) == 1;
+        _checkIfValidationApplies(execSelector, runtimeValidationFunction, isSharedValidation);
+
+        _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
 
         // If runtime validation passes, execute the call
 
@@ -434,24 +436,7 @@ contract UpgradeableModularAccount is
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
         bool isSharedValidation = uint8(userOp.signature[21]) == 1;
 
-        // Check that the provided validation function is applicable to the selector
-        if (isSharedValidation) {
-            if (
-                !_sharedValidationAllowed(selector)
-                    || !_storage.defaultValidations.contains(toSetValue(userOpValidationFunction))
-            ) {
-                revert UserOpValidationFunctionMissing(selector);
-            }
-        } else {
-            // Not shared validation, but per-selector
-            if (
-                !getAccountStorage().selectorData[selector].validations.contains(
-                    toSetValue(userOpValidationFunction)
-                )
-            ) {
-                revert UserOpValidationFunctionMissing(selector);
-            }
-        }
+        _checkIfValidationApplies(selector, userOpValidationFunction, isSharedValidation);
 
         validationData =
             _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
@@ -621,6 +606,28 @@ contract UpgradeableModularAccount is
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    function _checkIfValidationApplies(bytes4 selector, FunctionReference validationFunction, bool shared)
+        internal
+        view
+    {
+        AccountStorage storage _storage = getAccountStorage();
+
+        // Check that the provided validation function is applicable to the selector
+        if (shared) {
+            if (
+                !_sharedValidationAllowed(selector)
+                    || !_storage.defaultValidations.contains(toSetValue(validationFunction))
+            ) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+        } else {
+            // Not shared validation, but per-selector
+            if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(validationFunction))) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+        }
+    }
 
     function _sharedValidationAllowed(bytes4 selector) internal view returns (bool) {
         if (
