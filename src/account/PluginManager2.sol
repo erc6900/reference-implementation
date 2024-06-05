@@ -13,11 +13,15 @@ import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    // Index marking the start of the data for the validation function.
+    uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
+
     error DefaultValidationAlreadySet(FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
     error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
     error PermissionAlreadySet(FunctionReference validationFunction, ExecutionHook hook);
+    error PreValidationHookLimitExceeded();
 
     function _installValidation(
         FunctionReference validationFunction,
@@ -39,18 +43,20 @@ abstract contract PluginManager2 {
             for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
                 FunctionReference preValidationFunction = preValidationFunctions[i];
 
-                if (
-                    !_storage.validationData[validationFunction].preValidationHooks.add(
-                        toSetValue(preValidationFunction)
-                    )
-                ) {
-                    revert PreValidationAlreadySet(validationFunction, preValidationFunction);
-                }
+                _storage.validationData[validationFunction].preValidationHooks.push(preValidationFunction);
 
                 if (initDatas[i].length > 0) {
                     (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
                     IPlugin(preValidationPlugin).onInstall(initDatas[i]);
                 }
+            }
+
+            // Avoid collision between reserved index and actual indices
+            if (
+                _storage.validationData[validationFunction].preValidationHooks.length
+                    > _RESERVED_VALIDATION_DATA_INDEX
+            ) {
+                revert PreValidationHookLimitExceeded();
             }
         }
 
@@ -110,15 +116,16 @@ abstract contract PluginManager2 {
             bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
 
             // Clear pre validation hooks
-            EnumerableSet.Bytes32Set storage preValidationHooks =
+            FunctionReference[] storage preValidationHooks =
                 _storage.validationData[validationFunction].preValidationHooks;
-            uint256 i = 0;
-            while (preValidationHooks.length() > 0) {
-                FunctionReference preValidationFunction = toFunctionReference(preValidationHooks.at(0));
-                preValidationHooks.remove(toSetValue(preValidationFunction));
-                (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
-                IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[i++]);
+            for (uint256 i = 0; i < preValidationHooks.length; ++i) {
+                FunctionReference preValidationFunction = preValidationHooks[i];
+                if (preValidationHookUninstallDatas[0].length > 0) {
+                    (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
+                    IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                }
             }
+            delete _storage.validationData[validationFunction].preValidationHooks;
         }
 
         {
@@ -135,6 +142,7 @@ abstract contract PluginManager2 {
                 IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
             }
         }
+        delete _storage.validationData[validationFunction].preValidationHooks;
 
         // Because this function also calls `onUninstall`, and removes the default flag from validation, we must
         // assume these selectors passed in to be exhaustive.

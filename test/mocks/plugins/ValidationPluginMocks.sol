@@ -67,7 +67,11 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
     // Empty stubs
     function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 
-    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {
+    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+    {
         revert NotImplemented();
     }
 

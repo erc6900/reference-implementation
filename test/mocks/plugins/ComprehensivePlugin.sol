@@ -74,7 +74,11 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata) external pure override {
+    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+    {
         if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_1)) {
             return;
         } else if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_2)) {

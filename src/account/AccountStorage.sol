@@ -41,7 +41,7 @@ struct ValidationData {
     // How many execution hooks require the UO context.
     uint8 requireUOHookCount;
     // The pre validation hooks for this function selector.
-    EnumerableSet.Bytes32Set preValidationHooks;
+    FunctionReference[] preValidationHooks;
     // Permission hooks for this validation function.
     EnumerableSet.Bytes32Set permissionHooks;
 }
