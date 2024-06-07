@@ -187,14 +187,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _setExecutionFunction(selector, isPublic, allowSharedValidation, plugin);
         }
 
-        // Add installed plugin and selectors this plugin can call
-        length = manifest.permittedExecutionSelectors.length;
-        for (uint256 i = 0; i < length; ++i) {
-            // If there are duplicates, this will just enable the flag again. This is not a problem, since the
-            // boolean will be set to false twice during uninstall, which is fine.
-            _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = true;
-        }
-
         length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
@@ -286,11 +278,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeValidationFunction(
                 mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
             );
-        }
-
-        length = manifest.permittedExecutionSelectors.length;
-        for (uint256 i = 0; i < length; ++i) {
-            _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = false;
         }
 
         length = manifest.executionFunctions.length;

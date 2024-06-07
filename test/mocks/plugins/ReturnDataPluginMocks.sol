@@ -138,9 +138,6 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
             allowSharedValidation: false
         });
 
-        manifest.permittedExecutionSelectors = new bytes4[](1);
-        manifest.permittedExecutionSelectors[0] = ResultCreatorPlugin.foo.selector;
-
         return manifest;
     }
 

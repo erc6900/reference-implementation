@@ -11,7 +11,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
+import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
@@ -37,7 +37,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     address public ethRecipient;
     Counter public counter;
-    PluginManifest internal manifest;
+    PluginManifest internal _manifest;
 
     FunctionReference public ownerValidation;
 
@@ -262,8 +262,6 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
 
         PluginManifest memory m;
-        m.permittedExecutionSelectors = new bytes4[](1);
-        m.permittedExecutionSelectors[0] = IPlugin.onInstall.selector;
 
         MockPlugin mockPluginWithBadPermittedExec = new MockPlugin(m);
         bytes32 manifestHash = keccak256(abi.encode(mockPluginWithBadPermittedExec.pluginManifest()));
@@ -403,7 +401,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
         vm.startPrank(address(entryPoint));
 
-        plugin = new MockPlugin(manifest);
+        plugin = new MockPlugin(_manifest);
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
         IPluginManager(account1).installPlugin({

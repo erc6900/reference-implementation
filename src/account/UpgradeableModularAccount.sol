@@ -546,11 +546,9 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         if (
-            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
-                || _storage.selectorData[msg.sig].isPublic
-        ) return;
-
-        if (!_storage.callPermitted[msg.sender][msg.sig]) {
+            msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
+                && !_storage.selectorData[msg.sig].isPublic
+        ) {
             revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
         }
     }
