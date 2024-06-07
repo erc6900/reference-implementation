@@ -9,6 +9,7 @@ struct ExecutionHook {
     FunctionReference hookFunction;
     bool isPreHook;
     bool isPostHook;
+    bool requireUOContext;
 }
 
 interface IAccountLoupe {
@@ -27,6 +28,14 @@ interface IAccountLoupe {
     /// @param selector The selector to get the hooks for.
     /// @return The pre and post execution hooks for this selector.
     function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory);
+
+    /// @notice Get the pre and post execution hooks for a validation function.
+    /// @param validationFunction The validation function to get the hooks for.
+    /// @return The pre and post execution hooks for this validation function.
+    function getPermissionHooks(FunctionReference validationFunction)
+        external
+        view
+        returns (ExecutionHook[] memory);
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
     /// @param validationFunction The validation function to get the hooks for.

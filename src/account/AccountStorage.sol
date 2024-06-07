@@ -41,8 +41,12 @@ struct ValidationData {
     bool isShared;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
+    // How many execution hooks require the UO context.
+    uint8 requireUOHookCount;
     // The pre validation hooks for this function selector.
     EnumerableSet.Bytes32Set preValidationHooks;
+    // Permission hooks for this validation function.
+    EnumerableSet.Bytes32Set permissionHooks;
 }
 
 struct AccountStorage {
@@ -83,16 +87,18 @@ function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) 
 function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
     return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
         | bytes32(executionHook.isPreHook ? uint256(1) << 80 : 0)
-        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0);
+        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0)
+        | bytes32(executionHook.requireUOContext ? uint256(1) << 64 : 0);
 }
 
 function toExecutionHook(bytes32 setValue)
     pure
-    returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook)
+    returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook, bool requireUOContext)
 {
     hookFunction = FunctionReference.wrap(bytes21(setValue));
     isPreHook = (uint256(setValue) >> 80) & 0xFF == 1;
     isPostHook = (uint256(setValue) >> 72) & 0xFF == 1;
+    requireUOContext = (uint256(setValue) >> 64) & 0xFF == 1;
 }
 
 /// @dev Helper function to get all elements of a set into memory.

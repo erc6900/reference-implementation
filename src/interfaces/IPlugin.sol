@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+import {FunctionReference} from "./IPluginManager.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
 // so annotating here to prevent that.
@@ -45,6 +46,15 @@ struct ManifestExecutionHook {
     uint8 functionId;
     bool isPreHook;
     bool isPostHook;
+    bool requireUOContext;
+}
+
+struct ManifestPermissionHook {
+    FunctionReference validationFunction;
+    uint8 functionId;
+    bool isPreHook;
+    bool isPostHook;
+    bool requireUOContext;
 }
 
 struct SelectorPermission {
@@ -64,6 +74,8 @@ struct PluginMetadata {
     // String desciptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
     // functions implemented by this plugin.
     SelectorPermission[] permissionDescriptors;
+    // A list of all ERC-7715 permission strings that the plugin could possibly use
+    string[] permissionRequest;
 }
 
 /// @dev A struct describing how the plugin should be installed on a modular account.
@@ -71,7 +83,10 @@ struct PluginManifest {
     // Execution functions defined in this plugin to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
     ManifestAssociatedFunction[] validationFunctions;
+    // Execution hooks are associated with a selector
     ManifestExecutionHook[] executionHooks;
+    // Permission hooks are execution hooks associated with a validator instead of a selector
+    ManifestPermissionHook[] permissionHooks;
     uint8[] signatureValidationFunctions;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
     // IPlugin's interface ID.

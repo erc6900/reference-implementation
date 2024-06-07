@@ -7,13 +7,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    toFunctionReferenceArray,
-    toExecutionHook
-} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, toFunctionReferenceArray, toExecutionHook} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -47,15 +41,35 @@ abstract contract AccountLoupe is IAccountLoupe {
         override
         returns (ExecutionHook[] memory execHooks)
     {
-        SelectorData storage selectorData = getAccountStorage().selectorData[selector];
-        uint256 executionHooksLength = selectorData.executionHooks.length();
+        EnumerableSet.Bytes32Set storage hooks = getAccountStorage().selectorData[selector].executionHooks;
+        uint256 executionHooksLength = hooks.length();
 
         execHooks = new ExecutionHook[](executionHooksLength);
 
         for (uint256 i = 0; i < executionHooksLength; ++i) {
-            bytes32 key = selectorData.executionHooks.at(i);
+            bytes32 key = hooks.at(i);
             ExecutionHook memory execHook = execHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook, execHook.requireUOContext) =
+                toExecutionHook(key);
+        }
+    }
+
+    /// @inheritdoc IAccountLoupe
+    function getPermissionHooks(FunctionReference validationFunction)
+        external
+        view
+        override
+        returns (ExecutionHook[] memory permissionHooks)
+    {
+        EnumerableSet.Bytes32Set storage hooks =
+            getAccountStorage().validationData[validationFunction].permissionHooks;
+        uint256 executionHooksLength = hooks.length();
+        permissionHooks = new ExecutionHook[](executionHooksLength);
+        for (uint256 i = 0; i < executionHooksLength; ++i) {
+            bytes32 key = hooks.at(i);
+            ExecutionHook memory execHook = permissionHooks[i];
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook, execHook.requireUOContext) =
+                toExecutionHook(key);
         }
     }
 
