@@ -105,12 +105,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata)
-        external
-        pure
-        override
-        returns (bytes memory)
-    {
+    function preExecutionHook(uint8 functionId, bytes calldata) external pure override returns (bytes memory) {
         if (functionId == uint8(FunctionId.PRE_EXECUTION_HOOK)) {
             return "";
         } else if (functionId == uint8(FunctionId.BOTH_EXECUTION_HOOKS)) {
@@ -154,19 +149,22 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.BOTH_EXECUTION_HOOKS),
             isPreHook: true,
-            isPostHook: true
+            isPostHook: true,
+            requireUOContext: false
         });
         manifest.executionHooks[1] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
             isPreHook: true,
-            isPostHook: false
+            isPostHook: false,
+            requireUOContext: false
         });
         manifest.executionHooks[2] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
             isPreHook: false,
-            isPostHook: true
+            isPostHook: true,
+            requireUOContext: false
         });
 
         return manifest;

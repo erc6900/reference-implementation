@@ -22,7 +22,6 @@ import {AccountLoupe} from "./AccountLoupe.sol";
 import {
     AccountStorage,
     getAccountStorage,
-    SelectorData,
     toSetValue,
     toFunctionReference,
     toExecutionHook
@@ -70,6 +69,7 @@ contract UpgradeableModularAccount is
     error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
     error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
+    error RequireUserOperationContext();
     error RuntimeValidationFunctionMissing(bytes4 selector);
     error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
     error SignatureValidationInvalid(address plugin, uint8 functionId);
@@ -83,7 +83,8 @@ contract UpgradeableModularAccount is
     modifier wrapNativeFunction() {
         _checkPermittedCallerIfNotFromEP();
 
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(msg.sig, msg.data);
+        PostExecToRun[] memory postExecHooks =
+            _doPreExecHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
 
         _;
 
@@ -137,7 +138,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
-        postExecHooks = _doPreExecHooks(msg.sig, msg.data);
+        postExecHooks = _doPreExecHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execPlugin.call(msg.data);
@@ -350,6 +351,17 @@ contract UpgradeableModularAccount is
 
         _checkIfValidationApplies(selector, userOpValidationFunction, isDefaultValidation);
 
+        // Check if there are exec hooks associated with the validator that require UO context, and revert if the
+        // call isn't to `executeUserOp`
+        // This check must be here because if context isn't passed, we wouldn't be able to get the exec hooks
+        // associated with the validator
+        if (getAccountStorage().validationData[userOpValidationFunction].requireUOHookCount > 0) {
+            /**
+             * && msg.sig != this.executeUserOp.selector
+             */
+            revert RequireUserOperationContext();
+        }
+
         validationData =
             _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
     }
@@ -441,13 +453,11 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doPreExecHooks(bytes4 selector, bytes calldata data)
+    function _doPreExecHooks(EnumerableSet.Bytes32Set storage executionHooks, bytes calldata data)
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
-        SelectorData storage selectorData = getAccountStorage().selectorData[selector];
-
-        uint256 hooksLength = selectorData.executionHooks.length();
+        uint256 hooksLength = executionHooks.length();
 
         // Overallocate on length - not all of this may get filled up. We set the correct length later.
         postHooksToRun = new PostExecToRun[](hooksLength);
@@ -455,8 +465,14 @@ contract UpgradeableModularAccount is
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            bytes32 key = selectorData.executionHooks.at(i);
-            (FunctionReference hookFunction,, bool isPostHook) = toExecutionHook(key);
+            bytes32 key = executionHooks.at(i);
+            (FunctionReference hookFunction,, bool isPostHook, bool requireUOContext) = toExecutionHook(key);
+            if (requireUOContext) {
+                /**
+                 * && msg.sig != this.executeUserOp.selector
+                 */
+                revert RequireUserOperationContext();
+            }
             if (isPostHook) {
                 postHooksToRun[i].postExecHook = hookFunction;
             }
@@ -465,8 +481,8 @@ contract UpgradeableModularAccount is
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            bytes32 key = selectorData.executionHooks.at(i);
-            (FunctionReference hookFunction, bool isPreHook, bool isPostHook) = toExecutionHook(key);
+            bytes32 key = executionHooks.at(i);
+            (FunctionReference hookFunction, bool isPreHook, bool isPostHook,) = toExecutionHook(key);
 
             if (isPreHook) {
                 bytes memory preExecHookReturnData = _runPreExecHook(hookFunction, data);
@@ -484,9 +500,8 @@ contract UpgradeableModularAccount is
         returns (bytes memory preExecHookReturnData)
     {
         (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
-            bytes memory returnData
-        ) {
+        try IExecutionHook(plugin).preExecutionHook(functionId, abi.encodePacked(msg.sender, msg.value, data))
+        returns (bytes memory returnData) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
             revert PreExecHookReverted(plugin, functionId, revertReason);

@@ -45,6 +45,7 @@ struct ManifestExecutionHook {
     uint8 functionId;
     bool isPreHook;
     bool isPostHook;
+    bool requireUOContext;
 }
 
 struct SelectorPermission {
@@ -64,6 +65,8 @@ struct PluginMetadata {
     // String desciptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
     // functions implemented by this plugin.
     SelectorPermission[] permissionDescriptors;
+    // A list of all ERC-7715 permission strings that the plugin could possibly use
+    string[] permissionRequest;
 }
 
 /// @dev A struct describing how the plugin should be installed on a modular account.
