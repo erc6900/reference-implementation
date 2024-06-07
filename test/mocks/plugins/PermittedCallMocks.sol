@@ -22,10 +22,6 @@ contract PermittedCallerPlugin is BasePlugin {
             manifest.executionFunctions[i].isPublic = true;
         }
 
-        // Request permission only for "foo", but not "bar", from ResultCreatorPlugin
-        manifest.permittedExecutionSelectors = new bytes4[](1);
-        manifest.permittedExecutionSelectors[0] = ResultCreatorPlugin.foo.selector;
-
         return manifest;
     }
 
