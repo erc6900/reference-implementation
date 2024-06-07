@@ -11,15 +11,18 @@ library SparseCalldataSegmentLib {
         pure
         returns (bytes calldata segment, bytes calldata remainder)
     {
-        // The first 8 bytes hold the length of the segment.
+        // The first 8 bytes hold the length of the segment, excluding the index.
         uint64 length = uint64(bytes8(source[:8]));
 
-        // The segment is the next `length` bytes.
-        // By convention, the first byte of each segmet is the index of the segment, excluding the 1-byte index.
-        segment = source[8:8 + length + 1];
+        // The offset of the remainder of the calldata.
+        uint256 remainderOffset = 8 + length + 1;
+
+        // The segment is the next `length` + 1 bytes, to account for the index.
+        // By convention, the first byte of each segment is the index of the segment.
+        segment = source[8:remainderOffset];
 
         // The remainder is the rest of the calldata.
-        remainder = source[8 + length:];
+        remainder = source[remainderOffset:];
     }
 
     /// @notice Extracts the index from a segment

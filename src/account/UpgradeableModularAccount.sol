@@ -370,7 +370,7 @@ contract UpgradeableModularAccount is
                 // Load the next per-hook data segment
                 (signatureSegment, signature) = signature.getNextSegment();
 
-                if (uint8(signatureSegment[0]) <= i) {
+                if (signatureSegment.getIndex() <= i) {
                     revert SignatureSegmentOutOfOrder();
                 }
             } else {
@@ -433,7 +433,7 @@ contract UpgradeableModularAccount is
                 // Load the next per-hook data segment
                 (authSegment, authorizationData) = authorizationData.getNextSegment();
 
-                if (uint8(authSegment[0]) <= i) {
+                if (authSegment.getIndex() <= i) {
                     revert SignatureSegmentOutOfOrder();
                 }
             } else {
