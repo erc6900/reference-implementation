@@ -43,7 +43,12 @@ contract AccountLoupeTest is AccountTestBase {
         bytes[] memory installDatas = new bytes[](2);
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ownerValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+            ownerValidation,
+            true,
+            new bytes4[](0),
+            bytes(""),
+            abi.encode(preValidationHooks, installDatas),
+            bytes("")
         );
     }
 
