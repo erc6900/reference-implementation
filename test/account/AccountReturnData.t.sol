@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
+import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {
     RegularResultContract,
@@ -26,6 +27,7 @@ contract AccountReturnDataTest is AccountTestBase {
 
         // Add the result creator plugin to the account
         bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorPlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
@@ -34,6 +36,7 @@ contract AccountReturnDataTest is AccountTestBase {
         });
         // Add the result consumer plugin to the account
         bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(resultConsumerPlugin),
             manifestHash: resultConsumerManifestHash,
@@ -51,10 +54,15 @@ contract AccountReturnDataTest is AccountTestBase {
 
     // Tests the ability to read the results of contracts called via IStandardExecutor.execute
     function test_returnData_singular_execute() public {
-        bytes memory returnData =
-            account1.execute(address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()));
+        bytes memory returnData = account1.executeWithAuthorization(
+            abi.encodeCall(
+                account1.execute,
+                (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
+            ),
+            abi.encodePacked(singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+        );
 
-        bytes32 result = abi.decode(returnData, (bytes32));
+        bytes32 result = abi.decode(abi.decode(returnData, (bytes)), (bytes32));
 
         assertEq(result, keccak256("bar"));
     }
@@ -73,7 +81,12 @@ contract AccountReturnDataTest is AccountTestBase {
             data: abi.encodeCall(RegularResultContract.bar, ())
         });
 
-        bytes[] memory returnDatas = account1.executeBatch(calls);
+        bytes memory retData = account1.executeWithAuthorization(
+            abi.encodeCall(account1.executeBatch, (calls)),
+            abi.encodePacked(singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+        );
+
+        bytes[] memory returnDatas = abi.decode(retData, (bytes[]));
 
         bytes32 result1 = abi.decode(returnDatas[0], (bytes32));
         bytes32 result2 = abi.decode(returnDatas[1], (bytes32));

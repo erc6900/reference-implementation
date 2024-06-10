@@ -35,6 +35,7 @@ contract ExecuteFromPluginPermissionsTest is AccountTestBase {
 
         // Add the result creator plugin to the account
         bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorPlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
@@ -43,6 +44,7 @@ contract ExecuteFromPluginPermissionsTest is AccountTestBase {
         });
         // Add the EFP caller plugin to the account
         bytes32 efpCallerManifestHash = keccak256(abi.encode(efpCallerPlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(efpCallerPlugin),
             manifestHash: efpCallerManifestHash,
@@ -53,6 +55,7 @@ contract ExecuteFromPluginPermissionsTest is AccountTestBase {
         // Add the EFP caller plugin with any external permissions to the account
         bytes32 efpCallerAnyExternalManifestHash =
             keccak256(abi.encode(efpCallerPluginAnyExternal.pluginManifest()));
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(efpCallerPluginAnyExternal),
             manifestHash: efpCallerAnyExternalManifestHash,

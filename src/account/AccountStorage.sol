@@ -45,7 +45,7 @@ struct SelectorData {
     // but it packs alongside `plugin` while still leaving some other space in the slot for future packing.
     uint48 denyExecutionCount;
     // User operation validation and runtime validation share a function reference.
-    FunctionReference validation;
+    EnumerableSet.Bytes32Set validations;
     // The pre validation hooks for this function selector.
     EnumerableSet.Bytes32Set preValidationHooks;
     // The execution hooks for this function selector.

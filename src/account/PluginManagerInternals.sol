@@ -86,11 +86,12 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.validation.notEmpty()) {
+        // Fail on duplicate validation functions. Otherwise, dependency validation functions could shadow
+        // non-depdency validation functions. Then, if a either plugin is uninstall, it would cause a partial
+        // uninstall of the other.
+        if (!_selectorData.validations.add(toSetValue(validationFunction))) {
             revert ValidationFunctionAlreadySet(selector, validationFunction);
         }
-
-        _selectorData.validation = validationFunction;
     }
 
     function _removeValidationFunction(bytes4 selector, FunctionReference validationFunction)
@@ -99,7 +100,9 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.validation = FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE;
+        // May ignore return value, as the manifest hash is validated to ensure that the validation function
+        // exists.
+        _selectorData.validations.remove(toSetValue(validationFunction));
     }
 
     function _addExecHooks(

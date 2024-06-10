@@ -23,7 +23,13 @@ interface IValidation is IPlugin {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function validateRuntime(uint8 functionId, address sender, uint256 value, bytes calldata data) external;
+    function validateRuntime(
+        uint8 functionId,
+        address sender,
+        uint256 value,
+        bytes calldata data,
+        bytes calldata authorization
+    ) external;
 
     /// @notice Validates a signature using ERC-1271.
     /// @dev To indicate the entire call should revert, the function MUST revert.

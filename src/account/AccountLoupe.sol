@@ -7,42 +7,38 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    toFunctionReferenceArray,
-    toExecutionHook
-} from "./AccountStorage.sol";
+import {getAccountStorage, SelectorData, toFunctionReferenceArray, toExecutionHook} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionFunctionConfig(bytes4 selector)
-        external
-        view
-        returns (ExecutionFunctionConfig memory config)
-    {
-        AccountStorage storage _storage = getAccountStorage();
-
+    function getExecutionFunctionHandler(bytes4 selector) external view override returns (address plugin) {
         if (
             selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
                 || selector == IPluginManager.installPlugin.selector
                 || selector == IPluginManager.uninstallPlugin.selector
         ) {
-            config.plugin = address(this);
-        } else {
-            config.plugin = _storage.selectorData[selector].plugin;
+            return address(this);
         }
 
-        config.validationFunction = _storage.selectorData[selector].validation;
+        return getAccountStorage().selectorData[selector].plugin;
     }
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionHooks(bytes4 selector) external view returns (ExecutionHook[] memory execHooks) {
+    function getValidations(bytes4 selector) external view override returns (FunctionReference[] memory) {
+        return toFunctionReferenceArray(getAccountStorage().selectorData[selector].validations);
+    }
+
+    /// @inheritdoc IAccountLoupe
+    function getExecutionHooks(bytes4 selector)
+        external
+        view
+        override
+        returns (ExecutionHook[] memory execHooks)
+    {
         SelectorData storage selectorData = getAccountStorage().selectorData[selector];
         uint256 executionHooksLength = selectorData.executionHooks.length();
 
@@ -59,6 +55,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     function getPreValidationHooks(bytes4 selector)
         external
         view
+        override
         returns (FunctionReference[] memory preValidationHooks)
     {
         preValidationHooks =
@@ -66,7 +63,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getInstalledPlugins() external view returns (address[] memory pluginAddresses) {
+    function getInstalledPlugins() external view override returns (address[] memory pluginAddresses) {
         pluginAddresses = getAccountStorage().plugins.values();
     }
 }
