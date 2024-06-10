@@ -519,11 +519,7 @@ contract UpgradeableModularAccount is
             (FunctionReference hookFunction, bool isPreHook, bool isPostHook, bool requireUOContext) =
                 toExecutionHook(key);
 
-<<<<<<< HEAD
             if (!isPackedUO && requireUOContext) {
-=======
-            if (requireUOContext && callNotToExecuteUserOp) {
->>>>>>> 93dbef6 (feat: add execute user op)
                 revert RequireUserOperationContext();
             }
 
