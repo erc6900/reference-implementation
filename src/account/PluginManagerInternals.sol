@@ -86,8 +86,9 @@ abstract contract PluginManagerInternals is IPluginManager {
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        // Fail on duplicate definitions - otherwise dependencies could shadow non-depdency
-        // validation functions, leading to partial uninstalls.
+        // Fail on duplicate validation functions. Otherwise, dependency validation functions could shadow
+        // non-depdency validation functions. Then, if a either plugin is uninstall, it would cause a partial
+        // uninstall of the other.
         if (!_selectorData.validations.add(toSetValue(validationFunction))) {
             revert ValidationFunctionAlreadySet(selector, validationFunction);
         }

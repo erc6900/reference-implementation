@@ -268,9 +268,10 @@ contract UpgradeableModularAccount is
         payable
         returns (bytes memory)
     {
-        bytes4 execSelector = bytes4(data[0:4]);
+        bytes4 execSelector = bytes4(data[:4]);
 
-        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[0:21]));
+        // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
+        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[:21]));
 
         AccountStorage storage _storage = getAccountStorage();
 
@@ -395,6 +396,7 @@ contract UpgradeableModularAccount is
             revert AlwaysDenyRule();
         }
 
+        // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
 
         if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(userOpValidationFunction)))
@@ -463,7 +465,7 @@ contract UpgradeableModularAccount is
     ) internal {
         // run all preRuntimeValidation hooks
         EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
-            getAccountStorage().selectorData[bytes4(callData[0:4])].preValidationHooks;
+            getAccountStorage().selectorData[bytes4(callData[:4])].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {

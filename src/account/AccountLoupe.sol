@@ -7,13 +7,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    toFunctionReferenceArray,
-    toExecutionHook
-} from "./AccountStorage.sol";
+import {getAccountStorage, SelectorData, toFunctionReferenceArray, toExecutionHook} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -21,8 +15,6 @@ abstract contract AccountLoupe is IAccountLoupe {
 
     /// @inheritdoc IAccountLoupe
     function getExecutionFunctionHandler(bytes4 selector) external view override returns (address plugin) {
-        AccountStorage storage _storage = getAccountStorage();
-
         if (
             selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
@@ -32,7 +24,7 @@ abstract contract AccountLoupe is IAccountLoupe {
             return address(this);
         }
 
-        return _storage.selectorData[selector].plugin;
+        return getAccountStorage().selectorData[selector].plugin;
     }
 
     /// @inheritdoc IAccountLoupe
