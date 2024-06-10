@@ -505,13 +505,7 @@ contract UpgradeableModularAccount is
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
             bytes32 key = executionHooks.at(i);
-            (FunctionReference hookFunction,, bool isPostHook, bool requireUOContext) = toExecutionHook(key);
-            if (requireUOContext) {
-                /**
-                 * && msg.sig != this.executeUserOp.selector
-                 */
-                revert RequireUserOperationContext();
-            }
+            (FunctionReference hookFunction,, bool isPostHook,) = toExecutionHook(key);
             if (isPostHook) {
                 postHooksToRun[i].postExecHook = hookFunction;
             }
@@ -519,12 +513,17 @@ contract UpgradeableModularAccount is
 
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
+        bool callNotToExecuteUserOp = msg.sig != this.executeUserOp.selector;
         for (uint256 i = 0; i < hooksLength; ++i) {
             bytes32 key = executionHooks.at(i);
             (FunctionReference hookFunction, bool isPreHook, bool isPostHook, bool requireUOContext) =
                 toExecutionHook(key);
 
+<<<<<<< HEAD
             if (!isPackedUO && requireUOContext) {
+=======
+            if (requireUOContext && callNotToExecuteUserOp) {
+>>>>>>> 93dbef6 (feat: add execute user op)
                 revert RequireUserOperationContext();
             }
 
