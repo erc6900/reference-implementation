@@ -71,7 +71,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8, address, uint256, bytes calldata) external pure override {
+    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata) external pure override {
         revert NotImplemented();
     }
 }

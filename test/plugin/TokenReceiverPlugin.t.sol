@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
+import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
@@ -15,6 +15,7 @@ import {MockERC1155} from "../mocks/MockERC1155.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
+    EntryPoint public entryPoint;
     UpgradeableModularAccount public acct;
     TokenReceiverPlugin public plugin;
 
@@ -32,7 +33,8 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     uint256 internal constant _BATCH_TOKEN_IDS = 5;
 
     function setUp() public {
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(IEntryPoint(address(0)), _deploySingleOwnerPlugin());
+        entryPoint = new EntryPoint();
+        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
 
         acct = factory.createAccount(address(this), 0);
         plugin = _deployTokenReceiverPlugin();
@@ -53,6 +55,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     function _initPlugin() internal {
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
+        vm.prank(address(entryPoint));
         acct.installPlugin(address(plugin), manifestHash, "", new FunctionReference[](0));
     }
 

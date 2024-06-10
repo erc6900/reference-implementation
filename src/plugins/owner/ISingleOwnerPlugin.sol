@@ -5,7 +5,7 @@ import {IValidation} from "../../interfaces/IValidation.sol";
 
 interface ISingleOwnerPlugin is IValidation {
     enum FunctionId {
-        VALIDATION_OWNER_OR_SELF,
+        VALIDATION_OWNER,
         SIG_VALIDATION
     }
 

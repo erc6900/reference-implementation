@@ -228,6 +228,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
 
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
@@ -251,6 +252,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
 
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
@@ -274,6 +276,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit PluginInstalled(address(mockPlugin2), manifestHash2, new FunctionReference[](0));
 
+        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(mockPlugin2),
             manifestHash: manifestHash2,
@@ -288,6 +291,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
 
+        vm.prank(address(entryPoint));
         account1.uninstallPlugin(address(plugin), bytes(""), bytes(""));
     }
 }
