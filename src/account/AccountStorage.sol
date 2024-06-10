@@ -10,9 +10,6 @@ import {FunctionReference} from "../interfaces/IPluginManager.sol";
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
 
 struct PluginData {
-    bool anyExternalExecPermitted;
-    // boolean to indicate if the plugin can spend native tokens from the account.
-    bool canSpendNativeToken;
     bytes32 manifestHash;
     FunctionReference[] dependencies;
     // Tracks the number of times this plugin has been used as a dependency function
