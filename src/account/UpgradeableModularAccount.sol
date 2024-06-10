@@ -379,10 +379,10 @@ contract UpgradeableModularAccount is
         // call isn't to `executeUserOp`
         // This check must be here because if context isn't passed, we wouldn't be able to get the exec hooks
         // associated with the validator
-        if (getAccountStorage().validationData[userOpValidationFunction].requireUOHookCount > 0) {
-            /**
-             * && msg.sig != this.executeUserOp.selector
-             */
+        if (
+            getAccountStorage().validationData[userOpValidationFunction].requireUOHookCount > 0
+                && bytes4(userOp.callData[:4]) != this.executeUserOp.selector
+        ) {
             revert RequireUserOperationContext();
         }
 
