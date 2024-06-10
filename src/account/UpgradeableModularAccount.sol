@@ -167,12 +167,12 @@ contract UpgradeableModularAccount is
 
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
 
-        PostExecToRun[] memory postExecHooks = _doPreHooks(
-            getAccountStorage().selectorData[bytes4(userOp.callData[4:8])].executionHooks, abi.encode(userOp), true
-        );
-
         PostExecToRun[] memory postPermissionHooks = _doPreHooks(
             getAccountStorage().validationData[userOpValidationFunction].permissionHooks, abi.encode(userOp), true
+        );
+
+        PostExecToRun[] memory postExecHooks = _doPreHooks(
+            getAccountStorage().selectorData[bytes4(userOp.callData[4:8])].executionHooks, abi.encode(userOp), true
         );
 
         (bool success, bytes memory result) = address(this).call(userOp.callData[4:]);
@@ -497,13 +497,12 @@ contract UpgradeableModularAccount is
 
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
-        bool callNotToExecuteUserOp = msg.sig != this.executeUserOp.selector;
         for (uint256 i = 0; i < hooksLength; ++i) {
             bytes32 key = executionHooks.at(i);
             (FunctionReference hookFunction, bool isPreHook, bool isPostHook, bool requireUOContext) =
                 toExecutionHook(key);
 
-            if (requireUOContext && callNotToExecuteUserOp) {
+            if (!isPackedUO && requireUOContext) {
                 revert RequireUserOperationContext();
             }
 
