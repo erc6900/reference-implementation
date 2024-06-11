@@ -41,12 +41,12 @@ contract ResultCreatorPlugin is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: true,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
             isPublic: false,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         return manifest;
@@ -117,12 +117,12 @@ contract ResultConsumerPlugin is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.checkResultEFPFallback.selector,
             isPublic: true,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.checkResultEFPExternal.selector,
             isPublic: true,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         manifest.permittedExecutionSelectors = new bytes4[](1);

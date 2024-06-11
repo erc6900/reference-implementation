@@ -43,7 +43,7 @@ contract AccountExecHooksTest is AccountTestBase {
             ManifestExecutionFunction({
                 executionSelector: _EXEC_SELECTOR,
                 isPublic: true,
-                allowSharedValidation: false
+                allowDefaultValidation: false
             })
         );
     }

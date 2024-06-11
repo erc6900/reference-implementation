@@ -27,8 +27,8 @@ struct ManifestExecutionFunction {
     bytes4 executionSelector;
     // If true, the function won't need runtime validation, and can be called by anyone.
     bool isPublic;
-    // If true, the function can be validated by a shared validation function.
-    bool allowSharedValidation;
+    // If true, the function can be validated by a default validation function.
+    bool allowDefaultValidation;
 }
 
 /// @dev For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address

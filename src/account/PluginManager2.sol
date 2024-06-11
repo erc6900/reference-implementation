@@ -8,6 +8,7 @@ import {FunctionReference} from "../interfaces/IPluginManager.sol";
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {AccountStorage, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
+// Temporary additional functions for a user-controlled install flow for validation functions.
 abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -18,7 +19,7 @@ abstract contract PluginManager2 {
     function _installValidation(
         address plugin,
         uint8 functionId,
-        bool shared,
+        bool isDefault,
         bytes4[] memory selectors,
         bytes calldata installData
     ) internal {
@@ -26,7 +27,7 @@ abstract contract PluginManager2 {
 
         AccountStorage storage _storage = getAccountStorage();
 
-        if (shared) {
+        if (isDefault) {
             if (!_storage.defaultValidations.add(toSetValue(validationFunction))) {
                 revert DefaultValidationAlreadySet(plugin, functionId);
             }

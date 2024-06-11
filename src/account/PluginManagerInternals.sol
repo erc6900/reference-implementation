@@ -59,7 +59,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowSharedValidation, address plugin)
+    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowDefaultValidation, address plugin)
         internal
         notNullPlugin(plugin)
     {
@@ -71,7 +71,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         _selectorData.plugin = plugin;
         _selectorData.isPublic = isPublic;
-        _selectorData.allowSharedValidation = allowSharedValidation;
+        _selectorData.allowDefaultValidation = allowDefaultValidation;
     }
 
     function _removeExecutionFunction(bytes4 selector) internal {
@@ -79,7 +79,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         _selectorData.plugin = address(0);
         _selectorData.isPublic = false;
-        _selectorData.allowSharedValidation = false;
+        _selectorData.allowDefaultValidation = false;
     }
 
     function _addValidationFunction(bytes4 selector, FunctionReference validationFunction)
@@ -223,8 +223,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             bytes4 selector = manifest.executionFunctions[i].executionSelector;
             bool isPublic = manifest.executionFunctions[i].isPublic;
-            bool allowSharedValidation = manifest.executionFunctions[i].allowSharedValidation;
-            _setExecutionFunction(selector, isPublic, allowSharedValidation, plugin);
+            bool allowDefaultValidation = manifest.executionFunctions[i].allowDefaultValidation;
+            _setExecutionFunction(selector, isPublic, allowDefaultValidation, plugin);
         }
 
         // Add installed plugin and selectors this plugin can call

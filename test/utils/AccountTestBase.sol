@@ -24,7 +24,7 @@ abstract contract AccountTestBase is OptimizedTest {
     UpgradeableModularAccount public account1;
 
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
-    uint8 public constant SHARED_VALIDATION = 1;
+    uint8 public constant DEFAULT_VALIDATION = 1;
 
     constructor() {
         entryPoint = new EntryPoint();

@@ -9,12 +9,12 @@ import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/Functio
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {SharedValidationFactoryFixture} from "../mocks/SharedValidationFactoryFixture.sol";
+import {DefaultValidationFactoryFixture} from "../mocks/DefaultValidationFactoryFixture.sol";
 
-contract SharedValidationTestTest is AccountTestBase {
+contract DefaultValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
-    SharedValidationFactoryFixture public sharedValidationFactoryFixture;
+    DefaultValidationFactoryFixture public defaultValidationFactoryFixture;
 
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
@@ -24,9 +24,9 @@ contract SharedValidationTestTest is AccountTestBase {
     address public ethRecipient;
 
     function setUp() public {
-        sharedValidationFactoryFixture = new SharedValidationFactoryFixture(entryPoint, singleOwnerPlugin);
+        defaultValidationFactoryFixture = new DefaultValidationFactoryFixture(entryPoint, singleOwnerPlugin);
 
-        account1 = UpgradeableModularAccount(payable(sharedValidationFactoryFixture.getAddress(owner1, 0)));
+        account1 = UpgradeableModularAccount(payable(defaultValidationFactoryFixture.getAddress(owner1, 0)));
 
         vm.deal(address(account1), 100 ether);
 
@@ -38,13 +38,13 @@ contract SharedValidationTestTest is AccountTestBase {
         );
     }
 
-    function test_sharedValidation_userOp_simple() public {
+    function test_defaultValidation_userOp_simple() public {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: abi.encodePacked(
-                sharedValidationFactoryFixture,
-                abi.encodeCall(SharedValidationFactoryFixture.createAccount, (owner1, 0))
+                defaultValidationFactoryFixture,
+                abi.encodeCall(DefaultValidationFactoryFixture.createAccount, (owner1, 0))
             ),
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
@@ -57,7 +57,7 @@ contract SharedValidationTestTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, SHARED_VALIDATION, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, DEFAULT_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -67,14 +67,14 @@ contract SharedValidationTestTest is AccountTestBase {
         assertEq(ethRecipient.balance, 2 wei);
     }
 
-    function test_sharedValidation_runtime_simple() public {
+    function test_defaultValidation_runtime_simple() public {
         // Deploy the account first
-        sharedValidationFactoryFixture.createAccount(owner1, 0);
+        defaultValidationFactoryFixture.createAccount(owner1, 0);
 
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            abi.encodePacked(ownerValidation, SHARED_VALIDATION)
+            abi.encodePacked(ownerValidation, DEFAULT_VALIDATION)
         );
 
         assertEq(ethRecipient.balance, 2 wei);

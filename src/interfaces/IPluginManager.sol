@@ -30,13 +30,13 @@ interface IPluginManager {
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param plugin The plugin to install.
     /// @param functionId The function ID of the validation function to install.
-    /// @param shared Whether the validation function is shared across all selectors in the default pool.
+    /// @param isDefault Whether the validation function applies for all selectors in the default pool.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the plugin to setup initial plugin state.
     function installValidation(
         address plugin,
         uint8 functionId,
-        bool shared,
+        bool isDefault,
         bytes4[] calldata selectors,
         bytes calldata installData
     ) external;

@@ -36,7 +36,7 @@ contract BadTransferOwnershipPlugin is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.evilTransferOwnership.selector,
             isPublic: true,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         manifest.permittedExecutionSelectors = new bytes4[](1);

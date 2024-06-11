@@ -98,7 +98,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: false,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         manifest.validationFunctions = new ManifestAssociatedFunction[](1);
@@ -140,7 +140,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
             isPublic: false,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
@@ -196,7 +196,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.baz.selector,
             isPublic: false,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({

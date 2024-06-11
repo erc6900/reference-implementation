@@ -39,8 +39,8 @@ struct SelectorData {
     // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
     // drain the account of native tokens by wasting gas.
     bool isPublic;
-    // Whether or not a shared validation function may be used to validate this function.
-    bool allowSharedValidation;
+    // Whether or not a default validation function may be used to validate this function.
+    bool allowDefaultValidation;
     // How many times a `PRE_HOOK_ALWAYS_DENY` has been added for this function.
     // Since that is the only type of hook that may overlap, we can use this to track the number of times it has
     // been applied, and whether or not the deny should apply. The size `uint48` was chosen somewhat arbitrarily,

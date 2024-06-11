@@ -29,7 +29,7 @@ contract BadHookMagicValue_ValidationFunction_Plugin is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: false,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         manifest.validationFunctions = new ManifestAssociatedFunction[](1);

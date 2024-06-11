@@ -189,7 +189,7 @@ contract EFPCallerPluginAnyExternal is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.passthroughExecute.selector,
             isPublic: true,
-            allowSharedValidation: false
+            allowDefaultValidation: false
         });
 
         manifest.permitAnyExternalAddress = true;
