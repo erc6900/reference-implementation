@@ -7,15 +7,12 @@ import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/Functio
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountLoupeTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;
-
-    FunctionReference public ownerValidation;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -27,10 +24,6 @@ contract AccountLoupeTest is AccountTestBase {
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
         vm.prank(address(entryPoint));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
-
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
 
         FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
         preValidationHooks[0] = FunctionReferenceLib.pack(

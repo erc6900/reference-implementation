@@ -2,8 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
@@ -16,6 +19,7 @@ import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 /// SingleOwnerPlugin.
 abstract contract AccountTestBase is OptimizedTest {
     using FunctionReferenceLib for FunctionReference;
+    using MessageHashUtils for bytes32;
 
     EntryPoint public entryPoint;
     address payable public beneficiary;
@@ -26,8 +30,13 @@ abstract contract AccountTestBase is OptimizedTest {
     uint256 public owner1Key;
     UpgradeableModularAccount public account1;
 
+    FunctionReference internal ownerValidation;
+
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
     uint8 public constant DEFAULT_VALIDATION = 1;
+
+    uint256 public constant CALL_GAS_LIMIT = 50000;
+    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
     struct PreValidationHookData {
         uint8 index;
@@ -44,6 +53,131 @@ abstract contract AccountTestBase is OptimizedTest {
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
+
+        ownerValidation = FunctionReferenceLib.pack(
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+        );
+    }
+
+    function _runExecUserOp(address target, bytes memory callData) internal {
+        _runUserOp(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)));
+    }
+
+    function _runExecUserOp(address target, bytes memory callData, bytes memory revertReason) internal {
+        _runUserOp(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), revertReason);
+    }
+
+    function _runExecBatchUserOp(Call[] memory calls) internal {
+        _runUserOp(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+    }
+
+    function _runExecBatchUserOp(Call[] memory calls, bytes memory revertReason) internal {
+        _runUserOp(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), revertReason);
+    }
+
+    function _runUserOp(bytes memory callData) internal {
+        // Run user op without expecting a revert
+        _runUserOp(callData, hex"");
+    }
+
+    function _runUserOp(bytes memory callData, bytes memory expectedRevertData) internal {
+        uint256 nonce = entryPoint.getNonce(address(account1), 0);
+
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(account1),
+            nonce: nonce,
+            initCode: hex"",
+            callData: callData,
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
+            preVerificationGas: 0,
+            gasFees: _encodeGas(1, 1),
+            paymasterAndData: hex"",
+            signature: hex""
+        });
+
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+
+        userOp.signature = _encodeSignature(
+            FunctionReferenceLib.pack(
+                address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+            ),
+            DEFAULT_VALIDATION,
+            abi.encodePacked(r, s, v)
+        );
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = userOp;
+
+        if (expectedRevertData.length > 0) {
+            vm.expectRevert(expectedRevertData);
+        }
+        entryPoint.handleOps(userOps, beneficiary);
+    }
+
+    function _runtimeExec(address target, bytes memory callData) internal {
+        _runtimeCall(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)));
+    }
+
+    function _runtimeExec(address target, bytes memory callData, bytes memory expectedRevertData) internal {
+        _runtimeCall(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
+    }
+
+    function _runtimeExecExpFail(address target, bytes memory callData, bytes memory expectedRevertData)
+        internal
+    {
+        _runtimeCallExpFail(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
+    }
+
+    function _runtimeExecBatch(Call[] memory calls) internal {
+        _runtimeCall(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+    }
+
+    function _runtimeExecBatch(Call[] memory calls, bytes memory expectedRevertData) internal {
+        _runtimeCall(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), expectedRevertData);
+    }
+
+    function _runtimeExecBatchExpFail(Call[] memory calls, bytes memory expectedRevertData) internal {
+        _runtimeCallExpFail(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), expectedRevertData);
+    }
+
+    function _runtimeCall(bytes memory callData) internal {
+        _runtimeCall(callData, "");
+    }
+
+    function _runtimeCall(bytes memory callData, bytes memory expectedRevertData) internal {
+        if (expectedRevertData.length > 0) {
+            vm.expectRevert(expectedRevertData);
+        }
+
+        vm.prank(owner1);
+        account1.executeWithAuthorization(
+            callData,
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                DEFAULT_VALIDATION,
+                ""
+            )
+        );
+    }
+
+    // Always expects a revert, even if the revert data is zero-length.
+    function _runtimeCallExpFail(bytes memory callData, bytes memory expectedRevertData) internal {
+        vm.expectRevert(expectedRevertData);
+
+        vm.prank(owner1);
+        account1.executeWithAuthorization(
+            callData,
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                DEFAULT_VALIDATION,
+                ""
+            )
+        );
     }
 
     function _transferOwnershipToTest() internal {

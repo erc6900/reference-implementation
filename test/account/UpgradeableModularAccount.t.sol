@@ -10,7 +10,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -39,11 +39,6 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     Counter public counter;
     PluginManifest internal manifest;
 
-    FunctionReference public ownerValidation;
-
-    uint256 public constant CALL_GAS_LIMIT = 50000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
-
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -61,10 +56,6 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.deal(ethRecipient, 1 wei);
         counter = new Counter();
         counter.increment(); // amoritze away gas cost of zero->nonzero transition
-
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
     }
 
     function test_deployAccount() public {

@@ -25,9 +25,6 @@ contract MultiValidationTest is AccountTestBase {
     address public owner2;
     uint256 public owner2Key;
 
-    uint256 public constant CALL_GAS_LIMIT = 50000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
-
     function setUp() public {
         validator2 = new SingleOwnerPlugin();
 

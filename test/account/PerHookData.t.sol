@@ -3,63 +3,28 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockAccessControlHookPlugin} from "../mocks/plugins/MockAccessControlHookPlugin.sol";
 import {Counter} from "../mocks/Counter.sol";
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
-contract PerHookDataTest is AccountTestBase {
+contract PerHookDataTest is CustomValidationTestBase {
     using MessageHashUtils for bytes32;
 
     MockAccessControlHookPlugin internal accessControlHookPlugin;
 
     Counter internal counter;
 
-    FunctionReference internal ownerValidation;
-
-    uint256 public constant CALL_GAS_LIMIT = 50000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
-
     function setUp() public {
         counter = new Counter();
 
         accessControlHookPlugin = new MockAccessControlHookPlugin();
 
-        // Write over `account1` with a new account proxy, with different initialization.
-
-        address accountImplementation = address(factory.accountImplementation());
-
-        account1 = UpgradeableModularAccount(payable(new ERC1967Proxy(accountImplementation, "")));
-
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
-
-        FunctionReference accessControlHook = FunctionReferenceLib.pack(
-            address(accessControlHookPlugin), uint8(MockAccessControlHookPlugin.FunctionId.PRE_VALIDATION_HOOK)
-        );
-
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
-        preValidationHooks[0] = accessControlHook;
-
-        bytes[] memory preValidationHookData = new bytes[](1);
-        // Access control is restricted to only the counter
-        preValidationHookData[0] = abi.encode(counter);
-
-        bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
-
-        vm.prank(address(entryPoint));
-        account1.installValidation(
-            ownerValidation, true, new bytes4[](0), abi.encode(owner1), packedPreValidationHooks
-        );
-
-        vm.deal(address(account1), 100 ether);
+        _customValidationSetup();
     }
 
     function test_passAccessControl_userOp() public {
@@ -309,5 +274,29 @@ contract PerHookDataTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
 
         return (userOp, userOpHash);
+    }
+
+    // Test config
+
+    function _initialValidationConfig()
+        internal
+        virtual
+        override
+        returns (FunctionReference, bool, bytes4[] memory, bytes memory, bytes memory)
+    {
+        FunctionReference accessControlHook = FunctionReferenceLib.pack(
+            address(accessControlHookPlugin), uint8(MockAccessControlHookPlugin.FunctionId.PRE_VALIDATION_HOOK)
+        );
+
+        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
+        preValidationHooks[0] = accessControlHook;
+
+        bytes[] memory preValidationHookData = new bytes[](1);
+        // Access control is restricted to only the counter
+        preValidationHookData[0] = abi.encode(counter);
+
+        bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
+
+        return (ownerValidation, true, new bytes4[](0), abi.encode(owner1), packedPreValidationHooks);
     }
 }
