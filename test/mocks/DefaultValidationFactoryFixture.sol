@@ -55,11 +55,15 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
-            UpgradeableModularAccount(payable(addr)).initializeDefaultValidation(
+            UpgradeableModularAccount(payable(addr)).initializeWithValidation(
                 FunctionReferenceLib.pack(
                     address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
                 ),
-                pluginInstallData
+                true,
+                new bytes4[](0),
+                pluginInstallData,
+                "",
+                ""
             );
         }
 
