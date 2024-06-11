@@ -7,15 +7,12 @@ import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/Functio
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountLoupeTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;
-
-    FunctionReference public ownerValidation;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -28,10 +25,6 @@ contract AccountLoupeTest is AccountTestBase {
         vm.prank(address(entryPoint));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
 
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
-
         FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
         preValidationHooks[0] = FunctionReferenceLib.pack(
             address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_1)
@@ -43,7 +36,7 @@ contract AccountLoupeTest is AccountTestBase {
         bytes[] memory installDatas = new bytes[](2);
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ownerValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+            _ownerValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
         );
     }
 
@@ -106,7 +99,7 @@ contract AccountLoupeTest is AccountTestBase {
         validations = account1.getValidations(account1.execute.selector);
 
         assertEq(validations.length, 1);
-        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(ownerValidation));
+        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(_ownerValidation));
     }
 
     function test_pluginLoupe_getExecutionHooks() public {
@@ -147,7 +140,7 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreValidationHooks(ownerValidation);
+        FunctionReference[] memory hooks = account1.getPreValidationHooks(_ownerValidation);
 
         assertEq(hooks.length, 2);
         assertEq(

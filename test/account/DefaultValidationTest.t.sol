@@ -5,8 +5,6 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {DefaultValidationFactoryFixture} from "../mocks/DefaultValidationFactoryFixture.sol";
@@ -15,11 +13,6 @@ contract DefaultValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
     DefaultValidationFactoryFixture public defaultValidationFactoryFixture;
-
-    uint256 public constant CALL_GAS_LIMIT = 50000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
-
-    FunctionReference public ownerValidation;
 
     address public ethRecipient;
 
@@ -32,10 +25,6 @@ contract DefaultValidationTest is AccountTestBase {
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);
-
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
     }
 
     function test_defaultValidation_userOp_simple() public {
@@ -57,7 +46,7 @@ contract DefaultValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = _encodeSignature(ownerValidation, DEFAULT_VALIDATION, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -74,7 +63,7 @@ contract DefaultValidationTest is AccountTestBase {
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, "")
+            _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, "")
         );
 
         assertEq(ethRecipient.balance, 2 wei);
