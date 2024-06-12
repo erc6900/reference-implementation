@@ -73,7 +73,7 @@ contract PerHookDataTest is AccountTestBase {
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(counter)});
 
         userOp.signature =
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -95,7 +95,7 @@ contract PerHookDataTest is AccountTestBase {
         });
 
         userOp.signature =
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -115,7 +115,7 @@ contract PerHookDataTest is AccountTestBase {
         (PackedUserOperation memory userOp, bytes32 userOpHash) = _getCounterUserOP();
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
-        userOp.signature = _encodeSignature(ownerValidation, SHARED_VALIDATION, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(ownerValidation, DEFAULT_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -140,7 +140,7 @@ contract PerHookDataTest is AccountTestBase {
         preValidationHookData[1] = PreValidationHookData({index: 1, validationData: abi.encodePacked(counter)});
 
         userOp.signature =
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -178,7 +178,7 @@ contract PerHookDataTest is AccountTestBase {
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(beneficiary)});
 
         userOp.signature =
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -205,7 +205,7 @@ contract PerHookDataTest is AccountTestBase {
             abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, "")
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, "")
         );
 
         assertEq(counter.number(), 1);
@@ -231,7 +231,7 @@ contract PerHookDataTest is AccountTestBase {
             abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, "")
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, "")
         );
     }
 
@@ -249,7 +249,7 @@ contract PerHookDataTest is AccountTestBase {
             abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, "")
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, "")
         );
     }
 
@@ -266,7 +266,7 @@ contract PerHookDataTest is AccountTestBase {
             abi.encodeCall(
                 UpgradeableModularAccount.execute, (address(counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, "")
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, "")
         );
     }
 
@@ -287,7 +287,7 @@ contract PerHookDataTest is AccountTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (beneficiary, 1 wei, "")),
-            _encodeSignature(ownerValidation, SHARED_VALIDATION, preValidationHookData, "")
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, preValidationHookData, "")
         );
     }
 
