@@ -2,6 +2,8 @@
 pragma solidity ^0.8.25;
 
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
 
@@ -26,5 +28,27 @@ abstract contract BasePlugin is ERC165, IPlugin {
     /// @return True if the contract supports `interfaceId`.
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function _getSelectorAndCalldata(bytes calldata data) internal pure returns (bytes4, bytes memory) {
+        if (bytes4(data[:4]) == IAccountExecute.executeUserOp.selector) {
+            (PackedUserOperation memory uo,) = abi.decode(data[4:], (PackedUserOperation, bytes32));
+            bytes4 selector;
+            bytes memory callData = uo.callData;
+            // Bytes arr representation: [bytes32(len), bytes4(executeUserOp.selector), bytes4(actualSelector),
+            // bytes(actualCallData)]
+            // 1. Copy actualSelector into a new var
+            // 2. Shorten bytes arry by 8 by: store length - 8 into the new pointer location
+            // 3. Move the callData pointer by 8
+            assembly {
+                selector := mload(add(callData, 36))
+
+                let len := mload(callData)
+                mstore(add(callData, 8), sub(len, 8))
+                callData := add(callData, 8)
+            }
+            return (selector, callData);
+        }
+        return (bytes4(data[:4]), data[4:]);
     }
 }
