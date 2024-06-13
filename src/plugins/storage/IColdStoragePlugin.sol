@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {IValidation} from "../../interfaces/IValidation.sol";
+import {IExecutionHook} from "../../interfaces/IExecutionHook.sol";
 
-interface IColdStoragePlugin is IValidation {
+interface IColdStoragePlugin is IExecutionHook {
     /// @notice This event is emitted when a token ID is locked or unlocked.
     /// @param account The account associated with this token lock.
     /// @param tokenAddress The address of the token contract.
@@ -17,7 +17,7 @@ interface IColdStoragePlugin is IValidation {
     /// @param account The account associated with this token lock.
     /// @param tokenAddress The address of the token contract.
     /// @param locked True if the entire token contract is locked, false if it is unlocked.
-    event TokenFullLockSet(address indexed account, address indexed tokenAddress, bool locked);
+    event TokenGlobalLockSet(address indexed account, address indexed tokenAddress, bool locked);
 
     /// @notice Locks or unlocks an individual token.
     /// @dev This function is installed on the account as part of plugin installation, and should
@@ -32,5 +32,5 @@ interface IColdStoragePlugin is IValidation {
     /// only be called from an account.
     /// @param tokenAddress The address of the token to lock or unlock.
     /// @param locked Whether or not to lock the token.
-    function setFullTokenock(address tokenAddress, bool locked) external;
+    function setGlobalTokenLock(address tokenAddress, bool locked) external;
 }

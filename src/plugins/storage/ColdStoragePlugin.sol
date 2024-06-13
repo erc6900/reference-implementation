@@ -16,14 +16,14 @@ import {
     PluginMetadata,
     SelectorPermission
 } from "../../interfaces/IPlugin.sol";
-// import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {IValidation} from "../../interfaces/IValidation.sol";
 import {IPlugin} from "../../interfaces/IPlugin.sol";
 import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {IColdStoragePlugin} from "./IColdStoragePlugin.sol";
 
 /// @title Cold Storage Plugin
 /// @author ERC-6900 Authors
+/// @dev There is a limitation, you can't lock "all except N" tokens. TODO: Evaluate this since we're
+/// using an install nonce, it could be doable.
 contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
@@ -39,39 +39,60 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    struct TokenLockData {
-        bool locked;
+    struct GlobalTokenLockInput {
+        address token;
         address[] signers;
     }
 
-    // Allows for easier uninstallation
-    mapping(address account => TokenLockInput[]) internal _accountLockedTokens;
+    struct IndividualTokenLockInput {
+        address token;
+        uint256[] tokenIdsToLock;
+        address[] signers;
+    }
 
-    mapping(address account => mapping(address nftAddress => TokenLockData tokenLockData)) internal
-        _fullTokenLockData;
-    mapping(address account => mapping(address nftAddress => mapping(uint256 tokenId => bool TokenLockData)))
-        internal _individualTokenLockData;
+    mapping(address account => uint256 installNonce) internal _accountInstallNonce;
+    mapping(address account => mapping(uint256 installNonce => mapping(address nftAddress => address[] signers)))
+        internal _globalTokenLockData;
+    mapping(
+        address account
+            => mapping(
+                uint256 installNonce
+                    => mapping(address nftAddress => mapping(uint256 tokenId => address[] signers))
+            )
+    ) internal _individualTokenLockData;
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    struct TokenLockInput {
-        address token;
-        bool shouldLockAll;
-        uint256[] tokenIdsToLock;
-    }
-
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (TokenLockInput[] memory inputs) = abi.decode(data, (TokenLockInput[]));
+        uint256 accountNonce = ++_accountInstallNonce[msg.sender];
 
-        for (uint256 i = 0; i < inputs.length; ++i) {}
+        (GlobalTokenLockInput[] memory globalInputs, IndividualTokenLockInput[] memory individualInputs) =
+            abi.decode(data, (GlobalTokenLockInput[], IndividualTokenLockInput[]));
+
+        // Start with global token locks
+        _installGlobalInputs(globalInputs, accountNonce);
+
+        // Continue with individual token locks
+        _installIndividualInputs(individualInputs, accountNonce);
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata) external override {}
 
+    function setIndividualTokenLock(address tokenAddress, uint256 tokenId, bool locked) external override {}
+
+    function setGlobalTokenLock(address tokenAddress, bool locked) external override {}
+
+    function preExecutionHook(uint8 functionId, address sender, uint256 value, bytes calldata data)
+        external
+        override
+        returns (bytes memory)
+    {}
+
+    function postExecutionHook(uint8 functionId, bytes calldata preExecHookData) external override {}
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -106,28 +127,35 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin {
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
-        external
-        override
-        returns (uint256)
-    {}
 
-    function validateRuntime(
-        uint8 functionId,
-        address sender,
-        uint256 value,
-        bytes calldata data,
-        bytes calldata authorization
-    ) external override {}
+    function _installGlobalInputs(GlobalTokenLockInput[] memory inputs, uint256 accountNonce) internal {
+        for (uint256 i = 0; i < inputs.length; ++i) {
+            GlobalTokenLockInput memory input = inputs[i];
 
-    function validateSignature(uint8 functionId, address sender, bytes32 hash, bytes calldata signature)
-        external
-        view
-        override
-        returns (bytes4)
-    {}
+            require(input.signers.length > 0, "Global input signers must be > 0");
+            require(
+                _globalTokenLockData[msg.sender][accountNonce][input.token].length == 0,
+                "Global input cannot override existing global input, remove it first"
+            ); // This is to prevent doubles in the array for uninstallation
 
-    function setIndividualTokenLock(address tokenAddress, uint256 tokenId, bool locked) external override {}
+            _globalTokenLockData[msg.sender][accountNonce][input.token] = input.signers;
+        }
+    }
 
-    function setFullTokenock(address tokenAddress, bool locked) external override {}
+    function _installIndividualInputs(IndividualTokenLockInput[] memory inputs, uint256 accountNonce) internal {
+        for (uint256 i = 0; i < inputs.length; ++i) {
+            IndividualTokenLockInput memory input = inputs[i];
+
+            require(input.signers.length > 0, "Individual input signers must be >0");
+            require(
+                _globalTokenLockData[msg.sender][accountNonce][input.token].length == 0,
+                "Individual input cannot override global lock"
+            );
+
+            for (uint256 j = 0; j < input.tokenIdsToLock.length; ++j) {
+                _individualTokenLockData[msg.sender][accountNonce][input.token][input.tokenIdsToLock[j]] =
+                    input.signers;
+            }
+        }
+    }
 }
