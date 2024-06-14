@@ -158,6 +158,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
+    /// @notice May be validated by a default validation.
     function execute(address target, uint256 value, bytes calldata data)
         external
         payable
@@ -169,6 +170,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
+    /// @notice May be validated by a default validation function.
     function executeBatch(Call[] calldata calls)
         external
         payable
@@ -303,6 +305,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
@@ -313,6 +316,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
         external
         override
@@ -343,6 +347,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function installValidation(
         address plugin,
         uint8 functionId,
@@ -354,6 +359,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function uninstallValidation(
         address plugin,
         uint8 functionId,
@@ -379,6 +385,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc UUPSUpgradeable
+    /// @notice May be validated by a default validation.
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
