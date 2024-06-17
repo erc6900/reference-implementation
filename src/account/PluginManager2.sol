@@ -7,6 +7,7 @@ import {IPlugin} from "../interfaces/IPlugin.sol";
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {AccountStorage, getAccountStorage, toSetValue, toFunctionReference} from "./AccountStorage.sol";
+import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 
 abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -15,13 +16,15 @@ abstract contract PluginManager2 {
     error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
+    error PermissionAlreadySet(FunctionReference validationFunction, ExecutionHook hook);
 
     function _installValidation(
         FunctionReference validationFunction,
         bool shared,
         bytes4[] memory selectors,
         bytes calldata installData,
-        bytes memory preValidationHooks
+        bytes memory preValidationHooks,
+        bytes memory permissionHooks
     )
         // TODO: flag for signature validation
         internal
@@ -50,6 +53,26 @@ abstract contract PluginManager2 {
             }
         }
 
+        if (permissionHooks.length > 0) {
+            (ExecutionHook[] memory permissionFunctions, bytes[] memory initDatas) =
+                abi.decode(permissionHooks, (ExecutionHook[], bytes[]));
+
+            for (uint256 i = 0; i < permissionFunctions.length; ++i) {
+                ExecutionHook memory permissionFunction = permissionFunctions[i];
+
+                if (
+                    !_storage.validationData[validationFunction].permissionHooks.add(toSetValue(permissionFunction))
+                ) {
+                    revert PermissionAlreadySet(validationFunction, permissionFunction);
+                }
+
+                if (initDatas[i].length > 0) {
+                    (address executionPlugin,) = FunctionReferenceLib.unpack(permissionFunction.hookFunction);
+                    IPlugin(executionPlugin).onInstall(initDatas[i]);
+                }
+            }
+        }
+
         if (shared) {
             if (_storage.validationData[validationFunction].isShared) {
                 revert DefaultValidationAlreadySet(validationFunction);
@@ -74,24 +97,43 @@ abstract contract PluginManager2 {
         FunctionReference validationFunction,
         bytes4[] calldata selectors,
         bytes calldata uninstallData,
-        bytes calldata preValidationHookUninstallData
+        bytes calldata preValidationHookUninstallData,
+        bytes calldata permissionHookUninstallData
     ) internal {
         AccountStorage storage _storage = getAccountStorage();
 
         _storage.validationData[validationFunction].isShared = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
 
-        bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
+        {
+            bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
 
-        // Clear pre validation hooks
-        EnumerableSet.Bytes32Set storage preValidationHooks =
-            _storage.validationData[validationFunction].preValidationHooks;
-        while (preValidationHooks.length() > 0) {
-            FunctionReference preValidationFunction = toFunctionReference(preValidationHooks.at(0));
-            preValidationHooks.remove(toSetValue(preValidationFunction));
-            (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
-            if (preValidationHookUninstallDatas[0].length > 0) {
-                IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+            // Clear pre validation hooks
+            EnumerableSet.Bytes32Set storage preValidationHooks =
+                _storage.validationData[validationFunction].preValidationHooks;
+            while (preValidationHooks.length() > 0) {
+                FunctionReference preValidationFunction = toFunctionReference(preValidationHooks.at(0));
+                preValidationHooks.remove(toSetValue(preValidationFunction));
+                (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
+                if (preValidationHookUninstallDatas[0].length > 0) {
+                    IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                }
+            }
+        }
+
+        {
+            bytes[] memory permissionHookUninstallDatas = abi.decode(permissionHookUninstallData, (bytes[]));
+
+            // Clear permission hooks
+            EnumerableSet.Bytes32Set storage permissionHooks =
+                _storage.validationData[validationFunction].permissionHooks;
+            while (permissionHooks.length() > 0) {
+                FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
+                permissionHooks.remove(toSetValue(permissionHook));
+                (address permissionHookPlugin,) = FunctionReferenceLib.unpack(permissionHook);
+                if (permissionHookUninstallDatas[0].length > 0) {
+                    IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[0]);
+                }
             }
         }
 

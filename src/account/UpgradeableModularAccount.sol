@@ -231,8 +231,11 @@ contract UpgradeableModularAccount is
 
         _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
 
-        // If runtime validation passes, execute the call
+        // If runtime validation passes, do runtime permission checks
+        PostExecToRun[] memory postPermissionHooks =
+            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].permissionHooks, data, false);
 
+        // Execute the call
         (bool success, bytes memory returnData) = address(this).call(data);
 
         if (!success) {
@@ -240,6 +243,8 @@ contract UpgradeableModularAccount is
                 revert(add(returnData, 32), mload(returnData))
             }
         }
+
+        _doCachedPostExecHooks(postPermissionHooks);
 
         return returnData;
     }
@@ -280,7 +285,7 @@ contract UpgradeableModularAccount is
         external
         initializer
     {
-        _installValidation(validationFunction, true, new bytes4[](0), installData, bytes(""));
+        _installValidation(validationFunction, true, new bytes4[](0), installData, bytes(""), bytes(""));
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
@@ -290,9 +295,10 @@ contract UpgradeableModularAccount is
         bool shared,
         bytes4[] memory selectors,
         bytes calldata installData,
-        bytes calldata preValidationHooks
+        bytes calldata preValidationHooks,
+        bytes calldata permissionHooks
     ) external wrapNativeFunction {
-        _installValidation(validationFunction, shared, selectors, installData, preValidationHooks);
+        _installValidation(validationFunction, shared, selectors, installData, preValidationHooks, permissionHooks);
     }
 
     /// @inheritdoc IPluginManager
@@ -300,9 +306,16 @@ contract UpgradeableModularAccount is
         FunctionReference validationFunction,
         bytes4[] calldata selectors,
         bytes calldata uninstallData,
-        bytes calldata preValidationHookUninstallData
+        bytes calldata preValidationHookUninstallData,
+        bytes calldata permissionHookUninstallData
     ) external wrapNativeFunction {
-        _uninstallValidation(validationFunction, selectors, uninstallData, preValidationHookUninstallData);
+        _uninstallValidation(
+            validationFunction,
+            selectors,
+            uninstallData,
+            preValidationHookUninstallData,
+            permissionHookUninstallData
+        );
     }
 
     /// @notice ERC165 introspection
@@ -369,6 +382,9 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(bytes4(userOp.callData));
         }
         bytes4 selector = bytes4(userOp.callData);
+        if (selector == this.executeUserOp.selector) {
+            selector = bytes4(userOp.callData[4:8]);
+        }
 
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
         bool isSharedValidation = uint8(userOp.signature[21]) == 1;
@@ -538,6 +554,7 @@ contract UpgradeableModularAccount is
         try IExecutionHook(plugin).preExecutionHook(functionId, data) returns (bytes memory returnData) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
+            // TODO: same issue with EP0.6 - we can't do bytes4 error codes in plugins
             revert PreExecHookReverted(plugin, functionId, revertReason);
         }
     }
