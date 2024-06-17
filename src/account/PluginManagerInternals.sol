@@ -8,7 +8,6 @@ import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {
     IPlugin,
     ManifestExecutionHook,
-    ManifestPermissionHook,
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
@@ -223,18 +222,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
         }
 
-        length = manifest.permissionHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestPermissionHook memory mh = manifest.permissionHooks[i];
-            EnumerableSet.Bytes32Set storage permissionHooks =
-                _storage.validationData[mh.validationFunction].permissionHooks;
-            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
-            _addExecHooks(permissionHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
-            if (mh.requireUOContext) {
-                _storage.validationData[mh.validationFunction].requireUOHookCount += 1;
-            }
-        }
-
         length = manifest.interfaceIds.length;
         for (uint256 i = 0; i < length; ++i) {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
@@ -289,18 +276,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
-        }
-
-        length = manifest.permissionHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestPermissionHook memory mh = manifest.permissionHooks[i];
-            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
-            EnumerableSet.Bytes32Set storage permissionHooks =
-                _storage.validationData[mh.validationFunction].permissionHooks;
-            _removeExecHooks(permissionHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
-            if (mh.requireUOContext) {
-                _storage.validationData[mh.validationFunction].requireUOHookCount -= 1;
-            }
         }
 
         length = manifest.signatureValidationFunctions.length;
