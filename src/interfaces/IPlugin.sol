@@ -49,14 +49,6 @@ struct ManifestExecutionHook {
     bool requireUOContext;
 }
 
-struct ManifestPermissionHook {
-    FunctionReference validationFunction;
-    uint8 functionId;
-    bool isPreHook;
-    bool isPostHook;
-    bool requireUOContext;
-}
-
 struct SelectorPermission {
     bytes4 functionSelector;
     string permissionDescription;
@@ -83,7 +75,6 @@ struct PluginManifest {
     // Execution functions defined in this plugin to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
     ManifestAssociatedFunction[] validationFunctions;
-    // Execution hooks are associated with a selector
     ManifestExecutionHook[] executionHooks;
     uint8[] signatureValidationFunctions;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
