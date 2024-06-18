@@ -23,6 +23,7 @@ import {
     toSetValue,
     PermittedExternalCallData
 } from "./AccountStorage.sol";
+import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -30,10 +31,13 @@ abstract contract PluginManagerInternals is IPluginManager {
     using FunctionReferenceLib for FunctionReference;
 
     error ArrayLengthMismatch();
+    error Erc4337FunctionNotAllowed(bytes4 selector);
     error ExecutionFunctionAlreadySet(bytes4 selector);
     error InvalidDependenciesProvided();
     error InvalidPluginManifest();
+    error IPluginFunctionNotAllowed(bytes4 selector);
     error MissingPluginDependency(address dependency);
+    error NativeFunctionNotAllowed(bytes4 selector);
     error NullFunctionReference();
     error NullPlugin();
     error PluginAlreadyInstalled(address plugin);
@@ -67,6 +71,26 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         if (_selectorData.plugin != address(0)) {
             revert ExecutionFunctionAlreadySet(selector);
+        }
+
+        // Make sure incoming execution function does not collide with any native functions (data are stored on the
+        // account implementation contract)
+        if (KnownSelectors.isNativeFunction(selector)) {
+            revert NativeFunctionNotAllowed(selector);
+        }
+
+        // Make sure incoming execution function is not a function in IPlugin
+        if (KnownSelectors.isIPluginFunction(selector)) {
+            revert IPluginFunctionNotAllowed(selector);
+        }
+
+        // Also make sure it doesn't collide with functions defined by ERC-4337
+        // and called by the entry point. This prevents a malicious plugin from
+        // sneaking in a function with the same selector as e.g.
+        // `validatePaymasterUserOp` and turning the account into their own
+        // personal paymaster.
+        if (KnownSelectors.isErc4337Function(selector)) {
+            revert Erc4337FunctionNotAllowed(selector);
         }
 
         _selectorData.plugin = plugin;
