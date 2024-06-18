@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
-import {FunctionReference} from "./IPluginManager.sol";
 
 // Forge formatter will displace the first comment for the enum field out of the enum itself,
 // so annotating here to prevent that.
