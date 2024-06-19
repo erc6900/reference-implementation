@@ -95,8 +95,11 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: false});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.foo.selector,
+            isPublic: false,
+            allowDefaultValidation: false
+        });
 
         manifest.validationFunctions = new ManifestAssociatedFunction[](1);
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
@@ -134,8 +137,11 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.bar.selector, isPublic: false});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.bar.selector,
+            isPublic: false,
+            allowDefaultValidation: false
+        });
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,
@@ -187,8 +193,11 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.baz.selector, isPublic: false});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.baz.selector,
+            isPublic: false,
+            allowDefaultValidation: false
+        });
 
         ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,

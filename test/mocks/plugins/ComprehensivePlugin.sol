@@ -133,8 +133,11 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.foo.selector, isPublic: false});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.foo.selector,
+            isPublic: false,
+            allowDefaultValidation: false
+        });
 
         ManifestFunction memory fooValidationFunction = ManifestFunction({
             functionType: ManifestAssociatedFunctionType.SELF,

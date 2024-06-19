@@ -30,6 +30,7 @@ import {
 } from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
+import {PluginManager2} from "./PluginManager2.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -41,6 +42,7 @@ contract UpgradeableModularAccount is
     IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
+    PluginManager2,
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -77,6 +79,7 @@ contract UpgradeableModularAccount is
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
+    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isDefault);
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
@@ -155,6 +158,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
+    /// @notice May be validated by a default validation.
     function execute(address target, uint256 value, bytes calldata data)
         external
         payable
@@ -166,6 +170,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
+    /// @notice May be validated by a default validation function.
     function executeBatch(Call[] calldata calls)
         external
         payable
@@ -279,11 +284,12 @@ contract UpgradeableModularAccount is
         if (_storage.selectorData[execSelector].denyExecutionCount > 0) {
             revert AlwaysDenyRule();
         }
-        if (!_storage.selectorData[execSelector].validations.contains(toSetValue(runtimeValidationFunction))) {
-            revert RuntimeValidationFunctionMissing(execSelector);
-        }
 
-        _doRuntimeValidation(runtimeValidationFunction, data, authorization[21:]);
+        // Check if the runtime validation function is allowed to be called
+        bool isDefaultValidation = uint8(authorization[21]) == 1;
+        _checkIfValidationApplies(execSelector, runtimeValidationFunction, isDefaultValidation);
+
+        _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
 
         // If runtime validation passes, execute the call
 
@@ -299,6 +305,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function installPlugin(
         address plugin,
         bytes32 manifestHash,
@@ -309,6 +316,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
     function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
         external
         override
@@ -323,6 +331,42 @@ contract UpgradeableModularAccount is
         }
 
         _uninstallPlugin(plugin, manifest, pluginUninstallData);
+    }
+
+    /// @notice Initializes the account with a validation function added to the default pool.
+    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
+    /// with user install configs.
+    /// @dev This function is only callable once, and only by the EntryPoint.
+
+    function initializeDefaultValidation(address plugin, uint8 functionId, bytes calldata installData)
+        external
+        initializer
+    {
+        _installValidation(plugin, functionId, true, new bytes4[](0), installData);
+        emit ModularAccountInitialized(_ENTRY_POINT);
+    }
+
+    /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
+    function installValidation(
+        address plugin,
+        uint8 functionId,
+        bool isDefault,
+        bytes4[] calldata selectors,
+        bytes calldata installData
+    ) external wrapNativeFunction {
+        _installValidation(plugin, functionId, isDefault, selectors, installData);
+    }
+
+    /// @inheritdoc IPluginManager
+    /// @notice May be validated by a default validation.
+    function uninstallValidation(
+        address plugin,
+        uint8 functionId,
+        bytes4[] calldata selectors,
+        bytes calldata uninstallData
+    ) external wrapNativeFunction {
+        _uninstallValidation(plugin, functionId, selectors, uninstallData);
     }
 
     /// @notice ERC165 introspection
@@ -341,6 +385,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc UUPSUpgradeable
+    /// @notice May be validated by a default validation.
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
@@ -398,14 +443,12 @@ contract UpgradeableModularAccount is
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
+        bool isDefaultValidation = uint8(userOp.signature[21]) == 1;
 
-        if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(userOpValidationFunction)))
-        {
-            revert UserOpValidationFunctionMissing(selector);
-        }
+        _checkIfValidationApplies(selector, userOpValidationFunction, isDefaultValidation);
 
         validationData =
-            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[21:], userOpHash);
+            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
@@ -572,6 +615,41 @@ contract UpgradeableModularAccount is
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    function _checkIfValidationApplies(bytes4 selector, FunctionReference validationFunction, bool isDefault)
+        internal
+        view
+    {
+        AccountStorage storage _storage = getAccountStorage();
+
+        // Check that the provided validation function is applicable to the selector
+        if (isDefault) {
+            if (
+                !_defaultValidationAllowed(selector)
+                    || !_storage.defaultValidations.contains(toSetValue(validationFunction))
+            ) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+        } else {
+            // Not default validation, but per-selector
+            if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(validationFunction))) {
+                revert UserOpValidationFunctionMissing(selector);
+            }
+        }
+    }
+
+    function _defaultValidationAllowed(bytes4 selector) internal view returns (bool) {
+        if (
+            selector == this.execute.selector || selector == this.executeBatch.selector
+                || selector == this.installPlugin.selector || selector == this.uninstallPlugin.selector
+                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
+                || selector == this.upgradeToAndCall.selector
+        ) {
+            return true;
+        }
+
+        return getAccountStorage().selectorData[selector].allowDefaultValidation;
+    }
 
     function _checkPermittedCallerIfNotFromEP() internal view {
         AccountStorage storage _storage = getAccountStorage();

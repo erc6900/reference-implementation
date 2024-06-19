@@ -23,6 +23,9 @@ abstract contract AccountTestBase is OptimizedTest {
     uint256 public owner1Key;
     UpgradeableModularAccount public account1;
 
+    uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
+    uint8 public constant DEFAULT_VALIDATION = 1;
+
     constructor() {
         entryPoint = new EntryPoint();
         (owner1, owner1Key) = makeAddrAndKey("owner1");
@@ -47,7 +50,11 @@ abstract contract AccountTestBase is OptimizedTest {
                     abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
                 )
             ),
-            abi.encodePacked(address(singleOwnerPlugin), ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+            abi.encodePacked(
+                address(singleOwnerPlugin),
+                ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER,
+                SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
     }
 
