@@ -51,7 +51,7 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
     bytes32 private constant UNINSTALL_TYPEHASH =
         keccak256("Uninstall(address account,uint256 accountInstallNonce)");
     bytes32 private constant ALLOW_TRANSFER_TYPEHASH = keccak256(
-        "AllowTransfer(address from,address to,address token,uint256 tokenId,uint256 accountTransferNonce)"
+        "AllowTransfer(address account,address token,address from,address to,uint256 tokenId,uint256 accountPermissionNonce)"
     );
 
     bytes4 private constant SAFE_TRANSFER_FROM_ONE_SELECTOR = 0x42842e0e;
@@ -59,7 +59,7 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
 
     // State
     mapping(address account => uint256 installNonce) internal _accountInstallNonce;
-    mapping(address account => mapping(address token => uint256 tokenNonce)) internal _accountTransferNonce;
+    mapping(address account => mapping(address token => uint256 tokenNonce)) internal _accountPermissionNonce;
 
     mapping(address account => AccountData accountData) internal _accountData;
 
@@ -107,7 +107,7 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
         // Assert length
         require(decodedSignatures.length == uninstallSignersLength, "Invalid number of signatures");
 
-        bytes32 uninstallTypedDataHash = _getUninstallTypedDataHash(msg.sender, accountNonce);
+        bytes32 uninstallTypedDataHash = getUninstallTypedDataHash(msg.sender, _accountInstallNonce[msg.sender]);
 
         // Check signatures, they must be passed in order
         for (uint256 i = 0; i < uninstallSignersLength; ++i) {
@@ -131,7 +131,7 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
         returns (bytes memory)
     {
         if (EXECUTE_HOOK_FUNCTION_ID == functionId) {
-            _handleExecute(data);
+            _handleSingleCall(data);
         } else if (EXECUTE_BATCH_HOOK_FUNCTION_ID == functionId) {} else {
             revert("Invalid functionId");
         }
@@ -175,9 +175,9 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
         return metadata;
     }
 
-    // ┏━━━━━━━━━━━━━━━┓
-    // ┃    EIP-165    ┃
-    // ┗━━━━━━━━━━━━━━━┛
+    // ━━━━━━━━━━━━━━━
+    //     EIP-165
+    // ━━━━━━━━━━━━━━━
 
     /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
@@ -243,40 +243,138 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
         }
     }
 
-    function _getUninstallTypedDataHash(address account, uint256 accountNonce) internal view returns (bytes32) {
-        bytes32 structHash = keccak256(abi.encode(UNINSTALL_TYPEHASH, account, accountNonce));
-        return _hashTypedDataV4(structHash);
-    }
-
-    function _handleExecute(bytes calldata data) internal {
-        (address target,, bytes memory innerCallData) = abi.decode(data[4:], (address, uint256, bytes));
+    function _handleSingleCall(bytes calldata fullCallData) internal {
+        (address target,, bytes memory innerCallData) = abi.decode(fullCallData[4:], (address, uint256, bytes));
 
         bytes4 selector = bytes4(innerCallData);
 
-        if (IERC721.transferFrom.selector == selector) {
-            uint256 tokenId = _extractTokenIdFromTransfer(innerCallData);
+        // The procedure is the same for both transferFrom and safeTransferFrom (without data)
+        if (IERC721.transferFrom.selector == selector || SAFE_TRANSFER_FROM_ONE_SELECTOR == selector) {
+            // TODO: Move require inner calldata out here to prevent redundancy in the next block
+            (address from, address to, uint256 tokenId) = _extractParametersFromTransfer(innerCallData);
             address[] memory signers = _getTransferSigners(target, tokenId);
             if (0 == signers.length) {
                 return; // Token is not locked
             }
 
-            // bytes[] memory signatures = abi.decode()
+            bytes memory rawEncodedSignatures;
 
-            bytes memory encodedSignatures;
-
-            // The offset of the signature is the length of the entire transferFrom call
-            // So, we add the length of the call to the inner call data pointer.
-            // This means that encodedSignatures is a pointer to the length of the signatures.
-            assembly {
-                encodedSignatures := add(innerCallData, 0x84)
+            // The offset of the signature is the length of the entire transferFrom call (84 bytes)
+            assembly ("memory-safe") {
+                // TODO: fix this to read from calldata like all other cases will
+                rawEncodedSignatures := add(innerCallData, 0x84)
             }
 
-            //TODO verify signatures
-        } else if (SAFE_TRANSFER_FROM_ONE_SELECTOR == selector) {}
+            _verifyTransferSignatures(
+                target,
+                from,
+                to,
+                tokenId,
+                _accountPermissionNonce[msg.sender][target]++,
+                signers,
+                rawEncodedSignatures
+            );
+        } else if (SAFE_TRANSFER_FROM_WITH_DATA_SIG == selector) {
+            (address from, address to, uint256 tokenId) = _extractParametersFromTransfer(innerCallData);
+            address[] memory signers = _getTransferSigners(target, tokenId);
+            if (0 == signers.length) {
+                return; // Token is not locked
+            }
+
+            bytes memory rawEncodedSignatures;
+
+            // TODO refactor this signature array extraction into its own function
+
+            // The offset of the signature is the length of the entire call. All we have to do is compute
+            // the length of the abi encoded params, this is the offset of the signatures byte array.
+            // Length is 0x04 (selector) + 0x20(target) + 0x20 (value) + 0x20 (inner call offset) + 0x20 (inner
+            // call length) + inner call length; so 0x84 + mload(innerCallData)
+            // We don't get the inner call length from calldata because it's already been decoded, we would have to
+            // calldataload(calldataload(offset)), whereas we can just mload(innerCallData) for the same result.
+            assembly ("memory-safe") {
+                let signatureOffset := add(0x84, mload(innerCallData))
+
+                let signatureLength := calldataload(signatureOffset)
+
+                let signatureSizeWithLength := add(0x20, signatureLength)
+
+                let fmp := mload(0x40)
+
+                calldatacopy(fmp, signatureOffset, signatureSizeWithLength)
+
+                rawEncodedSignatures := fmp
+
+                mstore(0x40, add(fmp, signatureSizeWithLength))
+            }
+
+            _verifyTransferSignatures(
+                target,
+                from,
+                to,
+                tokenId,
+                _accountPermissionNonce[msg.sender][target]++,
+                signers,
+                rawEncodedSignatures
+            );
+        }
     }
 
     function _getTransferSigners(address token, uint256 tokenId) internal view returns (address[] memory) {
         return _getTokenLockSigners(_accountInstallNonce[msg.sender], token, tokenId);
+    }
+
+    function _verifyTransferSignatures(
+        address token,
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 accountPermissionNonce,
+        address[] memory signers,
+        bytes memory rawEncodedSignatures
+    ) internal view {
+        bytes[] memory signatures = abi.decode(rawEncodedSignatures, (bytes[]));
+
+        require(signers.length == signatures.length, "Invalid number of signatures");
+
+        for (uint256 i = 0; i < signers.length; ++i) {
+            address signer = signers[i];
+
+            bytes32 typedDataHash =
+                getAllowTransferTypedDataHash(msg.sender, token, from, to, tokenId, accountPermissionNonce);
+
+            require(
+                SignatureChecker.isValidSignatureNow(signer, typedDataHash, signatures[i]),
+                "Signature verification failed"
+            );
+        }
+    }
+
+    function getTransferTypedDataStructHelper() external pure returns (string memory) {
+        return
+        "AllowTransfer(address account,address token,address from,address to,uint256 tokenId,uint256 accountPermissionNonce)";
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Getters                                  */
+    /* -------------------------------------------------------------------------- */
+
+    function getAllowTransferTypedDataHash(
+        address account,
+        address token,
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 accountPermissionNonce
+    ) public view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(ALLOW_TRANSFER_TYPEHASH, account, token, from, to, tokenId, accountPermissionNonce)
+        );
+        return _hashTypedDataV4(structHash);
+    }
+
+    function getUninstallTypedDataHash(address account, uint256 accountNonce) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(UNINSTALL_TYPEHASH, account, accountNonce));
+        return _hashTypedDataV4(structHash);
     }
 
     /// Assembly procedure:
@@ -287,10 +385,16 @@ contract ColdStoragePlugin is BasePlugin, IColdStoragePlugin, EIP712 {
     ///         - 0x44: to address
     ///         - 0x64: token ID
     ///     2. Load the token ID from memory (offset 0x64)
-    function _extractTokenIdFromTransfer(bytes memory data) internal pure returns (uint256 tokenId) {
+    function _extractParametersFromTransfer(bytes memory data)
+        internal
+        pure
+        returns (address from, address to, uint256 tokenId)
+    {
         // This short-circuits if data passed isn't big enough to stop potentially undefined behavior
         require(data.length >= 0x84, "Invalid data length");
         assembly ("memory-safe") {
+            from := mload(add(data, 0x24))
+            to := mload(add(data, 0x44))
             tokenId := mload(add(data, 0x64))
         }
     }
