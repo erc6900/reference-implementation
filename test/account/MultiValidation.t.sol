@@ -67,13 +67,21 @@ contract MultiValidationTest is AccountTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER))
+            abi.encodePacked(
+                address(validator2),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+                SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
 
         vm.prank(owner2);
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER))
+            abi.encodePacked(
+                address(validator2),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+                SELECTOR_ASSOCIATED_VALIDATION
+            )
         );
     }
 
@@ -97,8 +105,14 @@ contract MultiValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature =
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), r, s, v);
+        userOp.signature = abi.encodePacked(
+            address(validator2),
+            SELECTOR_ASSOCIATED_VALIDATION,
+            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+            r,
+            s,
+            v
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;

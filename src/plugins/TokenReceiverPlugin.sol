@@ -59,12 +59,21 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
         PluginManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](3);
-        manifest.executionFunctions[0] =
-            ManifestExecutionFunction({executionSelector: this.onERC721Received.selector, isPublic: true});
-        manifest.executionFunctions[1] =
-            ManifestExecutionFunction({executionSelector: this.onERC1155Received.selector, isPublic: true});
-        manifest.executionFunctions[2] =
-            ManifestExecutionFunction({executionSelector: this.onERC1155BatchReceived.selector, isPublic: true});
+        manifest.executionFunctions[0] = ManifestExecutionFunction({
+            executionSelector: this.onERC721Received.selector,
+            isPublic: true,
+            allowDefaultValidation: false
+        });
+        manifest.executionFunctions[1] = ManifestExecutionFunction({
+            executionSelector: this.onERC1155Received.selector,
+            isPublic: true,
+            allowDefaultValidation: false
+        });
+        manifest.executionFunctions[2] = ManifestExecutionFunction({
+            executionSelector: this.onERC1155BatchReceived.selector,
+            isPublic: true,
+            allowDefaultValidation: false
+        });
 
         manifest.interfaceIds = new bytes4[](2);
         manifest.interfaceIds[0] = type(IERC721Receiver).interfaceId;

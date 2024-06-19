@@ -87,7 +87,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -116,7 +116,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -142,7 +142,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -168,7 +168,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -196,7 +196,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -227,7 +227,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, r, s, v);
+        userOp.signature = abi.encodePacked(ownerValidation, SELECTOR_ASSOCIATED_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
