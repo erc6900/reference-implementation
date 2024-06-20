@@ -13,8 +13,8 @@ abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     error DefaultValidationAlreadySet(FunctionReference validationFunction);
-    error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
+    error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
 
     function _installValidation(
@@ -96,7 +96,7 @@ abstract contract PluginManager2 {
             }
         }
 
-        // Because this function also calls `onUninstall`, and removes the shared flag from validation, we must
+        // Because this function also calls `onUninstall`, and removes the default flag from validation, we must
         // assume these selectors passed in to be exhaustive.
         // TODO: consider enforcing this from user-supplied install config.
         for (uint256 i = 0; i < selectors.length; ++i) {

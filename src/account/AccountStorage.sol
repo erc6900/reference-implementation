@@ -48,7 +48,7 @@ struct SelectorData {
 }
 
 struct ValidationData {
-    // Whether or not this validation can be used as a shared validation function.
+    // Whether or not this validation can be used as a default validation function.
     bool isDefault;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
@@ -65,7 +65,7 @@ struct AccountStorage {
     mapping(address => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
-    mapping(FunctionReference => ValidationData) validationData;
+    mapping(FunctionReference validationFunction => ValidationData) validationData;
     mapping(address caller => mapping(bytes4 selector => bool)) callPermitted;
     // key = address(calling plugin) || target address
     mapping(IPlugin => mapping(address => PermittedExternalCallData)) permittedExternalCalls;
