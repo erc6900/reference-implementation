@@ -24,8 +24,8 @@ contract AccountExecHooksTest is AccountTestBase {
     uint8 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
     uint8 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
-    PluginManifest public m1;
-    PluginManifest public m2;
+    PluginManifest internal _m1;
+    PluginManifest internal _m2;
 
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
@@ -35,7 +35,7 @@ contract AccountExecHooksTest is AccountTestBase {
     function setUp() public {
         _transferOwnershipToTest();
 
-        m1.executionFunctions.push(
+        _m1.executionFunctions.push(
             ManifestExecutionFunction({
                 executionSelector: _EXEC_SELECTOR,
                 isPublic: true,
@@ -163,8 +163,8 @@ contract AccountExecHooksTest is AccountTestBase {
     }
 
     function _installPlugin1WithHooks(ManifestExecutionHook memory execHooks) internal {
-        m1.executionHooks.push(execHooks);
-        mockPlugin1 = new MockPlugin(m1);
+        _m1.executionHooks.push(execHooks);
+        mockPlugin1 = new MockPlugin(_m1);
         manifestHash1 = keccak256(abi.encode(mockPlugin1.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
