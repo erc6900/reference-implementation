@@ -113,7 +113,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
         // Fail on duplicate validation functions. Otherwise, dependency validation functions could shadow
-        // non-depdency validation functions. Then, if a either plugin is uninstall, it would cause a partial
+        // non-depdency validation functions. Then, if a either plugin is uninstalled, it would cause a partial
         // uninstall of the other.
         if (!_selectorData.validations.add(toSetValue(validationFunction))) {
             revert ValidationFunctionAlreadySet(selector, validationFunction);
@@ -155,33 +155,6 @@ abstract contract PluginManagerInternals is IPluginManager {
                 ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
         );
-    }
-
-    function _addPreValidationHook(bytes4 selector, FunctionReference preValidationHook)
-        internal
-        notNullFunction(preValidationHook)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-        if (preValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-            // Increment `denyExecutionCount`, because this pre validation hook may be applied multiple times.
-            _selectorData.denyExecutionCount += 1;
-            return;
-        }
-        _selectorData.preValidationHooks.add(toSetValue(preValidationHook));
-    }
-
-    function _removePreValidationHook(bytes4 selector, FunctionReference preValidationHook)
-        internal
-        notNullFunction(preValidationHook)
-    {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
-        if (preValidationHook.eq(FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY)) {
-            // Decrement `denyExecutionCount`, because this pre exec hook may be applied multiple times.
-            _selectorData.denyExecutionCount -= 1;
-            return;
-        }
-        // May ignore return value, as the manifest hash is validated to ensure that the hook exists.
-        _selectorData.preValidationHooks.remove(toSetValue(preValidationHook));
     }
 
     function _installPlugin(
@@ -288,10 +261,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
             _addValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
-                )
+                mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
             );
         }
 
@@ -299,24 +269,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             FunctionReference signatureValidationFunction =
                 FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
-            _storage.signatureValidations.add(toSetValue(signatureValidationFunction));
-        }
-
-        // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
-        FunctionReference[] memory emptyDependencies;
-
-        length = manifest.preValidationHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preValidationHooks[i];
-            _addPreValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
+            _storage.validationData[signatureValidationFunction].isSignatureValidation = true;
         }
 
         length = manifest.executionHooks.length;
@@ -375,9 +328,6 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
 
-        // Hooks are not allowed to be provided as dependencies, so we use an empty array for resolving them.
-        FunctionReference[] memory emptyDependencies;
-
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
@@ -385,35 +335,18 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
-        length = manifest.preValidationHooks.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mh = manifest.preValidationHooks[i];
-            _removePreValidationHook(
-                mh.executionSelector,
-                _resolveManifestFunction(
-                    mh.associatedFunction,
-                    plugin,
-                    emptyDependencies,
-                    ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY
-                )
-            );
-        }
-
         length = manifest.signatureValidationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             FunctionReference signatureValidationFunction =
                 FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
-            _storage.signatureValidations.remove(toSetValue(signatureValidationFunction));
+            _storage.validationData[signatureValidationFunction].isSignatureValidation = false;
         }
 
         length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
             _removeValidationFunction(
-                mv.executionSelector,
-                _resolveManifestFunction(
-                    mv.associatedFunction, plugin, dependencies, ManifestAssociatedFunctionType.NONE
-                )
+                mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
             );
         }
 
@@ -486,9 +419,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _resolveManifestFunction(
         ManifestFunction memory manifestFunction,
         address plugin,
-        FunctionReference[] memory dependencies,
-        // Indicates which magic value, if any, is permissible for the function to resolve.
-        ManifestAssociatedFunctionType allowedMagicValue
+        FunctionReference[] memory dependencies
     ) internal pure returns (FunctionReference) {
         if (manifestFunction.functionType == ManifestAssociatedFunctionType.SELF) {
             return FunctionReferenceLib.pack(plugin, manifestFunction.functionId);
@@ -497,12 +428,6 @@ abstract contract PluginManagerInternals is IPluginManager {
                 revert InvalidPluginManifest();
             }
             return dependencies[manifestFunction.dependencyIndex];
-        } else if (manifestFunction.functionType == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
-            if (allowedMagicValue == ManifestAssociatedFunctionType.PRE_HOOK_ALWAYS_DENY) {
-                return FunctionReferenceLib._PRE_HOOK_ALWAYS_DENY;
-            } else {
-                revert InvalidPluginManifest();
-            }
         }
         return FunctionReferenceLib._EMPTY_FUNCTION_REFERENCE; // Empty checks are done elsewhere
     }

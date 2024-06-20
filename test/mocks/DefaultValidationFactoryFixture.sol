@@ -6,6 +6,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
@@ -55,8 +56,9 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeDefaultValidation(
-                address(singleOwnerPlugin),
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+                FunctionReferenceLib.pack(
+                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
                 pluginInstallData
             );
         }
