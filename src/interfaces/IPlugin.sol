@@ -12,12 +12,7 @@ enum ManifestAssociatedFunctionType {
     // Function belongs to this plugin.
     SELF,
     // Function belongs to an external plugin provided as a dependency during plugin installation.
-    DEPENDENCY,
-    // Resolves to a magic value to always fail in a hook for a given function.
-    // This is only assignable to pre execution hooks. It should not be used on validation functions themselves, because
-    // this is equivalent to leaving the validation functions unset. It should not be used in post-exec hooks, because
-    // if it is known to always revert, that should happen as early as possible to save gas.
-    PRE_HOOK_ALWAYS_DENY
+    DEPENDENCY
 }
 // forgefmt: disable-end
 
@@ -82,7 +77,6 @@ struct PluginManifest {
     // Execution functions defined in this plugin to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
     ManifestAssociatedFunction[] validationFunctions;
-    ManifestAssociatedFunction[] preValidationHooks;
     ManifestExecutionHook[] executionHooks;
     uint8[] signatureValidationFunctions;
     // Plugin execution functions already installed on the MSCA that this plugin will be able to call.

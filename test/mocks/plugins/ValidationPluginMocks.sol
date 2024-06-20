@@ -154,16 +154,6 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
             associatedFunction: userOpValidationFunctionRef
         });
 
-        manifest.preValidationHooks = new ManifestAssociatedFunction[](1);
-        manifest.preValidationHooks[0] = ManifestAssociatedFunction({
-            executionSelector: this.bar.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-
         return manifest;
     }
 }
@@ -208,24 +198,6 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.validationFunctions[0] = ManifestAssociatedFunction({
             executionSelector: this.baz.selector,
             associatedFunction: userOpValidationFunctionRef
-        });
-
-        manifest.preValidationHooks = new ManifestAssociatedFunction[](2);
-        manifest.preValidationHooks[0] = ManifestAssociatedFunction({
-            executionSelector: this.baz.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_1),
-                dependencyIndex: 0 // Unused.
-            })
-        });
-        manifest.preValidationHooks[1] = ManifestAssociatedFunction({
-            executionSelector: this.baz.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.PRE_VALIDATION_HOOK_2),
-                dependencyIndex: 0 // Unused.
-            })
         });
 
         return manifest;
