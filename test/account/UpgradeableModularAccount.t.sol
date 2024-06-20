@@ -37,7 +37,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     address public ethRecipient;
     Counter public counter;
-    PluginManifest internal manifest;
+    PluginManifest internal _manifest;
 
     FunctionReference public ownerValidation;
 
@@ -385,7 +385,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             dependencies: new FunctionReference[](0)
         });
 
-        // Attempt to uninstall with a blank manifest
+        // Attempt to uninstall with a blank _manifest
         PluginManifest memory blankManifest;
 
         vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
@@ -403,7 +403,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
         vm.startPrank(address(entryPoint));
 
-        plugin = new MockPlugin(manifest);
+        plugin = new MockPlugin(_manifest);
         bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
         IPluginManager(account1).installPlugin({
