@@ -10,7 +10,6 @@ import {IPaymaster} from "@eth-infinitism/account-abstraction/interfaces/IPaymas
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
-import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
@@ -32,10 +31,7 @@ library KnownSelectors {
             || selector == UUPSUpgradeable.upgradeToAndCall.selector
         // check against IStandardExecutor methods
         || selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
-        // check against IPluginExecutor methods
-        || selector == IPluginExecutor.executeFromPlugin.selector
-            || selector == IPluginExecutor.executeFromPluginExternal.selector
-            || selector == IPluginExecutor.executeWithAuthorization.selector
+            || selector == IStandardExecutor.executeWithAuthorization.selector
         // check against IAccountLoupe methods
         || selector == IAccountLoupe.getExecutionFunctionHandler.selector
             || selector == IAccountLoupe.getValidations.selector

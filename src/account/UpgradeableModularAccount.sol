@@ -15,7 +15,6 @@ import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPluginExecutor} from "../interfaces/IPluginExecutor.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
@@ -39,7 +38,6 @@ contract UpgradeableModularAccount is
     BaseAccount,
     IERC165,
     IERC1271,
-    IPluginExecutor,
     IStandardExecutor,
     PluginManagerInternals,
     PluginManager2,
@@ -185,88 +183,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    /// @inheritdoc IPluginExecutor
-    function executeFromPlugin(bytes calldata data) external payable override returns (bytes memory) {
-        bytes4 selector = bytes4(data[:4]);
-        address callingPlugin = msg.sender;
-
-        AccountStorage storage _storage = getAccountStorage();
-
-        if (!_storage.callPermitted[callingPlugin][selector]) {
-            revert ExecFromPluginNotPermitted(callingPlugin, selector);
-        }
-
-        address execFunctionPlugin = _storage.selectorData[selector].plugin;
-
-        if (execFunctionPlugin == address(0)) {
-            revert UnrecognizedFunction(selector);
-        }
-
-        PostExecToRun[] memory postExecHooks = _doPreExecHooks(selector, data);
-
-        (bool success, bytes memory returnData) = execFunctionPlugin.call(data);
-
-        if (!success) {
-            assembly ("memory-safe") {
-                revert(add(returnData, 32), mload(returnData))
-            }
-        }
-
-        _doCachedPostExecHooks(postExecHooks);
-
-        return returnData;
-    }
-
-    /// @inheritdoc IPluginExecutor
-    function executeFromPluginExternal(address target, uint256 value, bytes calldata data)
-        external
-        payable
-        returns (bytes memory)
-    {
-        bytes4 selector = bytes4(data);
-        AccountStorage storage _storage = getAccountStorage();
-
-        // Make sure plugin is allowed to spend native token.
-        if (value > 0 && value > msg.value && !_storage.pluginData[msg.sender].canSpendNativeToken) {
-            revert NativeTokenSpendingNotPermitted(msg.sender);
-        }
-
-        // Check the caller plugin's permission to make this call
-
-        // Check the target contract permission.
-        // This first checks that the intended target is permitted at all. If it is, then it checks if any selector
-        // is permitted. If any selector is permitted, then it skips the selector-level permission check.
-        // If only a subset of selectors are permitted, then it also checks the selector-level permission.
-        // By checking in the order of [address specified with any selector allowed], [any address allowed],
-        // [address specified and selector specified], along with the extra bool `permittedCall`, we can
-        // reduce the number of `sload`s in the worst-case from 3 down to 2.
-        bool targetContractPermittedCall = _storage.permittedExternalCalls[IPlugin(msg.sender)][target]
-            .addressPermitted
-            && (
-                _storage.permittedExternalCalls[IPlugin(msg.sender)][target].anySelectorPermitted
-                    || _storage.permittedExternalCalls[IPlugin(msg.sender)][target].permittedSelectors[selector]
-            );
-
-        // If the target contract is not permitted, check if the caller plugin is permitted to make any external
-        // calls.
-        if (!(targetContractPermittedCall || _storage.pluginData[msg.sender].anyExternalExecPermitted)) {
-            revert ExecFromPluginExternalNotPermitted(msg.sender, target, value, data);
-        }
-
-        // Run any pre exec hooks for this selector
-        PostExecToRun[] memory postExecHooks =
-            _doPreExecHooks(IPluginExecutor.executeFromPluginExternal.selector, msg.data);
-
-        // Perform the external call
-        bytes memory returnData = _exec(target, value, data);
-
-        // Run any post exec hooks for this selector
-        _doCachedPostExecHooks(postExecHooks);
-
-        return returnData;
-    }
-
-    /// @inheritdoc IPluginExecutor
+    /// @inheritdoc IStandardExecutor
     function executeWithAuthorization(bytes calldata data, bytes calldata authorization)
         external
         payable

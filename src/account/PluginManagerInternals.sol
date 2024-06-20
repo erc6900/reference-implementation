@@ -11,19 +11,12 @@ import {
     ManifestFunction,
     ManifestAssociatedFunctionType,
     ManifestAssociatedFunction,
-    ManifestExternalCallPermission,
     PluginManifest
 } from "../interfaces/IPlugin.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
-import {
-    AccountStorage,
-    getAccountStorage,
-    SelectorData,
-    toSetValue,
-    PermittedExternalCallData
-} from "./AccountStorage.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
+import {AccountStorage, getAccountStorage, SelectorData, toSetValue} from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -211,11 +204,6 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         // Update components according to the manifest.
 
-        // Mark whether or not this plugin may spend native token amounts
-        if (manifest.canSpendNativeToken) {
-            _storage.pluginData[plugin].canSpendNativeToken = true;
-        }
-
         length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             bytes4 selector = manifest.executionFunctions[i].executionSelector;
@@ -230,31 +218,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             // If there are duplicates, this will just enable the flag again. This is not a problem, since the
             // boolean will be set to false twice during uninstall, which is fine.
             _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = true;
-        }
-
-        // Add the permitted external calls to the account.
-        if (manifest.permitAnyExternalAddress) {
-            _storage.pluginData[plugin].anyExternalExecPermitted = true;
-        } else {
-            // Only store the specific permitted external calls if "permit any" flag was not set.
-            length = manifest.permittedExternalCalls.length;
-            for (uint256 i = 0; i < length; ++i) {
-                ManifestExternalCallPermission memory externalCallPermission = manifest.permittedExternalCalls[i];
-
-                PermittedExternalCallData storage permittedExternalCallData =
-                    _storage.permittedExternalCalls[IPlugin(plugin)][externalCallPermission.externalAddress];
-
-                permittedExternalCallData.addressPermitted = true;
-
-                if (externalCallPermission.permitAnySelector) {
-                    permittedExternalCallData.anySelectorPermitted = true;
-                } else {
-                    uint256 externalContractSelectorsLength = externalCallPermission.selectors.length;
-                    for (uint256 j = 0; j < externalContractSelectorsLength; ++j) {
-                        permittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = true;
-                    }
-                }
-            }
         }
 
         length = manifest.validationFunctions.length;
@@ -348,34 +311,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeValidationFunction(
                 mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
             );
-        }
-
-        // remove external call permissions
-
-        if (manifest.permitAnyExternalAddress) {
-            // Only clear if it was set during install time
-            _storage.pluginData[plugin].anyExternalExecPermitted = false;
-        } else {
-            // Only clear the specific permitted external calls if "permit any" flag was not set.
-            length = manifest.permittedExternalCalls.length;
-            for (uint256 i = 0; i < length; ++i) {
-                ManifestExternalCallPermission memory externalCallPermission = manifest.permittedExternalCalls[i];
-
-                PermittedExternalCallData storage permittedExternalCallData =
-                    _storage.permittedExternalCalls[IPlugin(plugin)][externalCallPermission.externalAddress];
-
-                permittedExternalCallData.addressPermitted = false;
-
-                // Only clear this flag if it was set in the constructor.
-                if (externalCallPermission.permitAnySelector) {
-                    permittedExternalCallData.anySelectorPermitted = false;
-                } else {
-                    uint256 externalContractSelectorsLength = externalCallPermission.selectors.length;
-                    for (uint256 j = 0; j < externalContractSelectorsLength; ++j) {
-                        permittedExternalCallData.permittedSelectors[externalCallPermission.selectors[j]] = false;
-                    }
-                }
-            }
         }
 
         length = manifest.permittedExecutionSelectors.length;

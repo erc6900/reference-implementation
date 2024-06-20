@@ -47,12 +47,6 @@ struct ManifestExecutionHook {
     bool isPostHook;
 }
 
-struct ManifestExternalCallPermission {
-    address externalAddress;
-    bool permitAnySelector;
-    bytes4[] selectors;
-}
-
 struct SelectorPermission {
     bytes4 functionSelector;
     string permissionDescription;
@@ -81,12 +75,6 @@ struct PluginManifest {
     uint8[] signatureValidationFunctions;
     // Plugin execution functions already installed on the MSCA that this plugin will be able to call.
     bytes4[] permittedExecutionSelectors;
-    // Boolean to indicate whether the plugin can call any external address.
-    bool permitAnyExternalAddress;
-    // Boolean to indicate whether the plugin needs access to spend native tokens of the account. If false, the
-    // plugin MUST still be able to spend up to the balance that it sends to the account in the same call.
-    bool canSpendNativeToken;
-    ManifestExternalCallPermission[] permittedExternalCalls;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
     // IPlugin's interface ID.
     bytes4[] interfaceIds;
