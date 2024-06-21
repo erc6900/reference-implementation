@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {
     ManifestFunction,
@@ -17,7 +17,7 @@ import {IPlugin} from "../../interfaces/IPlugin.sol";
 import {IPluginManager} from "../../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
-import {Signer} from "../../validators/ISignatureValidator.sol";
+import {Signer} from "../../validators/IStatelessValidator.sol";
 import {BasePlugin, IERC165} from "../BasePlugin.sol";
 import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
@@ -38,6 +38,8 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
 contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
+    using MessageHashUtils for bytes32;
+
     string public constant NAME = "Single Owner Plugin";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
@@ -100,11 +102,14 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate the user op signature against the owner.
-            (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-            if (signer == address(0) || signer != _owners[msg.sender]) {
+            Signer memory signer = _owners[msg.sender];
+
+            if (address(signer.validator) == address(0)) {
                 return _SIG_VALIDATION_FAILED;
             }
-            return _SIG_VALIDATION_PASSED;
+            (bool isValid,) =
+                signer.validator.validate(signer.data, userOpHash.toEthSignedMessageHash(), userOp.signature);
+            return isValid ? _SIG_VALIDATION_PASSED : _SIG_VALIDATION_FAILED;
         }
         revert NotImplemented();
     }
@@ -128,7 +133,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
             Signer memory signer = _owners[msg.sender];
-            (bool isValid,) = signer.validator.validate(msg.sender, signer.data, digest, signature);
+            (bool isValid,) = signer.validator.validate(signer.data, digest, signature);
             return isValid ? _1271_MAGIC_VALUE : _1271_INVALID;
         }
         revert NotImplemented();

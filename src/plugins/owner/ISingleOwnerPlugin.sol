@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {IValidation} from "../../interfaces/IValidation.sol";
-import {Signer} from "../../validators/ISignatureValidator.sol";
+import {Signer} from "../../validators/IStatelessValidator.sol";
 
 interface ISingleOwnerPlugin is IValidation {
     enum FunctionId {
