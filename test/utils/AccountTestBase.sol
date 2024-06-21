@@ -33,7 +33,7 @@ abstract contract AccountTestBase is OptimizedTest {
     FunctionReference internal _ownerValidation;
 
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
-    uint8 public constant DEFAULT_VALIDATION = 1;
+    uint8 public constant GLOBAL_VALIDATION = 1;
 
     uint256 public constant CALL_GAS_LIMIT = 100000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
@@ -102,7 +102,7 @@ abstract contract AccountTestBase is OptimizedTest {
             FunctionReferenceLib.pack(
                 address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
             ),
-            DEFAULT_VALIDATION,
+            GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
 
@@ -157,7 +157,7 @@ abstract contract AccountTestBase is OptimizedTest {
                 FunctionReferenceLib.pack(
                     address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
                 ),
-                DEFAULT_VALIDATION,
+                GLOBAL_VALIDATION,
                 ""
             )
         );
@@ -174,7 +174,7 @@ abstract contract AccountTestBase is OptimizedTest {
                 FunctionReferenceLib.pack(
                     address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
                 ),
-                DEFAULT_VALIDATION,
+                GLOBAL_VALIDATION,
                 ""
             )
         );
@@ -210,11 +210,11 @@ abstract contract AccountTestBase is OptimizedTest {
     // helper function to encode a signature, according to the per-hook and per-validation data format.
     function _encodeSignature(
         FunctionReference validationFunction,
-        uint8 defaultOrNot,
+        uint8 globalOrNot,
         PreValidationHookData[] memory preValidationHookData,
         bytes memory validationData
     ) internal pure returns (bytes memory) {
-        bytes memory sig = abi.encodePacked(validationFunction, defaultOrNot);
+        bytes memory sig = abi.encodePacked(validationFunction, globalOrNot);
 
         for (uint256 i = 0; i < preValidationHookData.length; ++i) {
             sig = abi.encodePacked(
@@ -233,13 +233,13 @@ abstract contract AccountTestBase is OptimizedTest {
     }
 
     // overload for the case where there are no pre-validation hooks
-    function _encodeSignature(
-        FunctionReference validationFunction,
-        uint8 defaultOrNot,
-        bytes memory validationData
-    ) internal pure returns (bytes memory) {
+    function _encodeSignature(FunctionReference validationFunction, uint8 globalOrNot, bytes memory validationData)
+        internal
+        pure
+        returns (bytes memory)
+    {
         PreValidationHookData[] memory emptyPreValidationHookData = new PreValidationHookData[](0);
-        return _encodeSignature(validationFunction, defaultOrNot, emptyPreValidationHookData, validationData);
+        return _encodeSignature(validationFunction, globalOrNot, emptyPreValidationHookData, validationData);
     }
 
     // helper function to pack validation data with an index, according to the sparse calldata segment spec.

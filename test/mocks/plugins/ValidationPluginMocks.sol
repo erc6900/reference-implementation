@@ -100,7 +100,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: false,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         bytes4[] memory validationSelectors = new bytes4[](1);
@@ -143,7 +143,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
             isPublic: false,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         bytes4[] memory validationSelectors = new bytes4[](1);
@@ -189,7 +189,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.baz.selector,
             isPublic: false,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         bytes4[] memory validationSelectors = new bytes4[](1);

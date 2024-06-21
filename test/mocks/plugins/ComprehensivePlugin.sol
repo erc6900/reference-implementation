@@ -137,7 +137,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: false,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         bytes4[] memory validationSelectors = new bytes4[](1);

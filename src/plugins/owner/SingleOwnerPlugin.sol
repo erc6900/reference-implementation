@@ -151,7 +151,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        // TODO: use default validation instead
+        // TODO: use global validation instead
         bytes4[] memory accountSelectors = new bytes4[](5);
         accountSelectors[0] = IStandardExecutor.execute.selector;
         accountSelectors[1] = IStandardExecutor.executeBatch.selector;

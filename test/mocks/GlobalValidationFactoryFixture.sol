@@ -12,7 +12,7 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract DefaultValidationFactoryFixture is OptimizedTest {
+contract GlobalValidationFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
     SingleOwnerPlugin public singleOwnerPlugin;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
