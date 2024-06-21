@@ -66,10 +66,10 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         external
         pure
         override
-        returns (uint256)
+        returns (uint256, bytes memory)
     {
         if (functionId == uint8(FunctionId.VALIDATION)) {
-            return 0;
+            return (0, "");
         }
         revert NotImplemented();
     }

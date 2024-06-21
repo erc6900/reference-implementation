@@ -52,10 +52,10 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         external
         view
         override
-        returns (uint256)
+        returns (uint256, bytes memory)
     {
         if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
-            return _userOpValidationFunctionData;
+            return (_userOpValidationFunctionData, "");
         }
         revert NotImplemented();
     }

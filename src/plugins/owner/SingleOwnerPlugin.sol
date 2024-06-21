@@ -86,7 +86,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate that the sender is the owner of the account or self.
-            if (sender != _owners[msg.sender] && sender != msg.sender) {
+            if (sender != _owners[msg.sender]) {
                 revert NotAuthorized();
             }
             return;
@@ -99,15 +99,15 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         external
         view
         override
-        returns (uint256)
+        returns (uint256, bytes memory)
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate the user op signature against the owner.
             (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
             if (signer == address(0) || signer != _owners[msg.sender]) {
-                return _SIG_VALIDATION_FAILED;
+                return (_SIG_VALIDATION_FAILED, "");
             }
-            return _SIG_VALIDATION_PASSED;
+            return (_SIG_VALIDATION_PASSED, "");
         }
         revert NotImplemented();
     }

@@ -74,7 +74,11 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
     // Validation function implementations. We only care about the runtime validation function, to authorize
     // itself.
 
-    function validateUserOp(uint8, PackedUserOperation calldata, bytes32) external pure returns (uint256) {
+    function validateUserOp(uint8, PackedUserOperation calldata, bytes32)
+        external
+        pure
+        returns (uint256, bytes memory)
+    {
         revert NotImplemented();
     }
 

@@ -58,6 +58,8 @@ contract UpgradeableModularAccount is
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
+    event GotHere();
+
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromPluginNotPermitted(address plugin, bytes4 selector);
     error ExecFromPluginExternalNotPermitted(address plugin, address target, uint256 value, bytes data);
@@ -410,7 +412,8 @@ contract UpgradeableModularAccount is
             userOp.signature = signatureSegment.getBody();
 
             (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            uint256 currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
+            (uint256 currentValidationData, bytes memory validationComposition) =
+                IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -418,6 +421,52 @@ contract UpgradeableModularAccount is
             } else {
                 validationData = currentValidationData;
             }
+
+            if (validationComposition.length > 0) {
+                // We have additional validations we need to run, in addition to the current one.
+
+                //todo: enforce user op hash uniqueness
+
+                FunctionReference[] memory chainedValidations =
+                    abi.decode(validationComposition, (FunctionReference[]));
+
+                emit GotHere();
+                currentValidationData = _doChainedValidation(chainedValidations, userOp, signatureSegment.getBody(), userOpHash);
+
+                validationData = _coalescePreValidation(validationData, currentValidationData);
+            }
+        }
+
+        return validationData;
+    }
+
+    function _doChainedValidation(
+        FunctionReference[] memory chainedValidations,
+        PackedUserOperation memory userOp,
+        bytes calldata outerSignature,
+        bytes32 userOpHash
+    ) internal returns (uint256) {
+        uint256 validationData;
+        uint256 currentValidationData;
+
+        bytes calldata signatureSegment;
+        (signatureSegment, outerSignature) = outerSignature.getNextSegment();
+
+        for (uint256 i = 0; i < chainedValidations.length; ++i) {
+            if (signatureSegment.getIndex() != i) {
+                // For chained validation, all signature segments must be explicitly given
+                revert SignatureSegmentOutOfOrder();
+            }
+
+            currentValidationData =
+                _doUserOpValidation(chainedValidations[i], userOp, signatureSegment.getBody(), userOpHash);
+            validationData = _coalescePreValidation(validationData, currentValidationData);
+
+            // Load the next per-validation data segment, if one exists
+            if (i + 1 < chainedValidations.length) {
+                (signatureSegment, outerSignature) = outerSignature.getNextSegment();
+            }
+
         }
 
         return validationData;

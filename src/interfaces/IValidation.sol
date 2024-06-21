@@ -14,7 +14,7 @@ interface IValidation is IPlugin {
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
     function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
-        returns (uint256);
+        returns (uint256, bytes memory);
 
     /// @notice Run the runtime validationFunction specified by the `functionId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
