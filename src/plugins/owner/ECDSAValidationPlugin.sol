@@ -2,17 +2,13 @@
 pragma solidity ^0.8.25;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {IPlugin} from "../../interfaces/IPlugin.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
-import {BasePlugin, IERC165} from "../BasePlugin.sol";
-import {
-    PluginManifest,
-    PluginMetadata
-} from "../../interfaces/IPlugin.sol";
+import {BasePlugin} from "../BasePlugin.sol";
+import {PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
 
 contract ECDSAValidationPlugin is IValidation, BasePlugin {
     using ECDSA for bytes32;
@@ -25,14 +21,14 @@ contract ECDSAValidationPlugin is IValidation, BasePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
+    mapping(uint8 id => mapping(address account => address)) public owners;
+
     error AlreadyInitialized();
     error NotAuthorized();
     error NotInitialized();
 
-    mapping(uint8 id => mapping(address account => address)) public owners;
-
     /// @inheritdoc IPlugin
-    function onInstall(bytes calldata data) external override {        
+    function onInstall(bytes calldata data) external override {
         uint8 id = uint8(bytes1(data[:1]));
 
         if (owners[id][msg.sender] != address(0)) {
@@ -106,9 +102,10 @@ contract ECDSAValidationPlugin is IValidation, BasePlugin {
     }
 
     /// @inheritdoc IPlugin
+    // solhint-disable-next-line no-empty-blocks
     function pluginManifest() external pure override returns (PluginManifest memory) {}
 
     /// @inheritdoc IPlugin
+    // solhint-disable-next-line no-empty-blocks
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {}
-
 }

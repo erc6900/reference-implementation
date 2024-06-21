@@ -15,11 +15,10 @@ import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 contract ComposableValidationTest is CustomValidationTestBase {
     using MessageHashUtils for bytes32;
 
-    ECDSAValidationPlugin ecdsaValidationPlugin;
-    ComposableMultisigPlugin composableMultisigPlugin;
+    ECDSAValidationPlugin public ecdsaValidationPlugin;
+    ComposableMultisigPlugin public composableMultisigPlugin;
 
     function setUp() public {
-    
         ecdsaValidationPlugin = new ECDSAValidationPlugin();
         composableMultisigPlugin = new ComposableMultisigPlugin();
 
@@ -27,7 +26,6 @@ contract ComposableValidationTest is CustomValidationTestBase {
     }
 
     function test_basicUserOp_withECDSAValidation() public {
-
         _customValidationSetup();
 
         // Now that the account is set up with the ECDSAValidationPlugin, we can test the basic user op
@@ -46,11 +44,7 @@ contract ComposableValidationTest is CustomValidationTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
-        userOp.signature = _encodeSignature(
-            _ownerValidation,
-            DEFAULT_VALIDATION,
-            abi.encodePacked(r, s, v)
-        );
+        userOp.signature = _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -65,8 +59,9 @@ contract ComposableValidationTest is CustomValidationTestBase {
         _customValidationSetup();
 
         // Install the multisig plugin with signers 2 and 3
-        
-        FunctionReference composableMultisigValidation = FunctionReferenceLib.pack(address(composableMultisigPlugin), uint8(0));
+
+        FunctionReference composableMultisigValidation =
+            FunctionReferenceLib.pack(address(composableMultisigPlugin), uint8(0));
         FunctionReference owner2Validation = FunctionReferenceLib.pack(address(ecdsaValidationPlugin), uint8(2));
         FunctionReference owner3Validation = FunctionReferenceLib.pack(address(ecdsaValidationPlugin), uint8(3));
 
@@ -76,12 +71,36 @@ contract ComposableValidationTest is CustomValidationTestBase {
 
         // Set up the ComposableMultisigPlugin
         Call[] memory calls = new Call[](3);
-        calls[0] = Call(address(ecdsaValidationPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(2), abi.encode(owner2)))));
-        calls[1] = Call(address(ecdsaValidationPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(3), abi.encode(owner3)))));
-        calls[2] = Call(address(account1), 0, abi.encodeCall(UpgradeableModularAccount.installValidation, (composableMultisigValidation, true, new bytes4[](0), abi.encodePacked(uint8(0), abi.encode(multisigSigners)), "")));
+        calls[0] = Call(
+            address(ecdsaValidationPlugin),
+            0,
+            abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(2), abi.encode(owner2))))
+        );
+        calls[1] = Call(
+            address(ecdsaValidationPlugin),
+            0,
+            abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(3), abi.encode(owner3))))
+        );
+        calls[2] = Call(
+            address(account1),
+            0,
+            abi.encodeCall(
+                UpgradeableModularAccount.installValidation,
+                (
+                    composableMultisigValidation,
+                    true,
+                    new bytes4[](0),
+                    abi.encodePacked(uint8(0), abi.encode(multisigSigners)),
+                    ""
+                )
+            )
+        );
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, ""));
+        account1.executeWithAuthorization(
+            abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
+            _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, "")
+        );
 
         // test the multisig validation
 
@@ -108,7 +127,10 @@ contract ComposableValidationTest is CustomValidationTestBase {
         userOp.signature = _encodeSignature(
             composableMultisigValidation,
             DEFAULT_VALIDATION,
-            abi.encodePacked(_packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner2Signature)), _packValidationDataWithIndex(1, _packValidationDataWithIndex(0xff, owner3Signature)))
+            abi.encodePacked(
+                _packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner2Signature)),
+                _packValidationDataWithIndex(1, _packValidationDataWithIndex(0xff, owner3Signature))
+            )
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -135,7 +157,7 @@ contract ComposableValidationTest is CustomValidationTestBase {
         // 4 = owner4Validation
 
         FunctionReference[5] memory validations;
-        
+
         validations[0] = FunctionReferenceLib.pack(address(composableMultisigPlugin), uint8(0));
         validations[1] = FunctionReferenceLib.pack(address(ecdsaValidationPlugin), uint8(2));
         validations[2] = FunctionReferenceLib.pack(address(composableMultisigPlugin), uint8(1));
@@ -152,14 +174,48 @@ contract ComposableValidationTest is CustomValidationTestBase {
 
         // Set up the ComposableMultisigPlugin
         Call[] memory calls = new Call[](5);
-        calls[0] = Call(address(ecdsaValidationPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(2), abi.encode(owner2)))));
-        calls[1] = Call(address(ecdsaValidationPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(3), abi.encode(owner3)))));
-        calls[2] = Call(address(ecdsaValidationPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(4), abi.encode(owner4)))));
-        calls[3] = Call(address(composableMultisigPlugin), 0, abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(1), abi.encode(innerMultisigSigners)))));
-        calls[4] = Call(address(account1), 0, abi.encodeCall(UpgradeableModularAccount.installValidation, (validations[0], true, new bytes4[](0), abi.encodePacked(uint8(0), abi.encode(outerMultisigSigners)), "")));
+        calls[0] = Call(
+            address(ecdsaValidationPlugin),
+            0,
+            abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(2), abi.encode(owner2))))
+        );
+        calls[1] = Call(
+            address(ecdsaValidationPlugin),
+            0,
+            abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(3), abi.encode(owner3))))
+        );
+        calls[2] = Call(
+            address(ecdsaValidationPlugin),
+            0,
+            abi.encodeCall(ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(4), abi.encode(owner4))))
+        );
+        calls[3] = Call(
+            address(composableMultisigPlugin),
+            0,
+            abi.encodeCall(
+                ECDSAValidationPlugin.onInstall, (abi.encodePacked(uint8(1), abi.encode(innerMultisigSigners)))
+            )
+        );
+        calls[4] = Call(
+            address(account1),
+            0,
+            abi.encodeCall(
+                UpgradeableModularAccount.installValidation,
+                (
+                    validations[0],
+                    true,
+                    new bytes4[](0),
+                    abi.encodePacked(uint8(0), abi.encode(outerMultisigSigners)),
+                    ""
+                )
+            )
+        );
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, ""));
+        account1.executeWithAuthorization(
+            abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
+            _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, "")
+        );
 
         // test the multisig of multisigs validation
 
@@ -189,10 +245,19 @@ contract ComposableValidationTest is CustomValidationTestBase {
         userOp.signature = _encodeSignature(
             validations[0],
             DEFAULT_VALIDATION,
-            abi.encodePacked(_packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner2Signature)), _packValidationDataWithIndex(1, _packValidationDataWithIndex(0xff, abi.encodePacked(
-                _packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner3Signature)),
-                _packValidationDataWithIndex(1, _packValidationDataWithIndex(0xff, owner4Signature))
-            ))))
+            abi.encodePacked(
+                _packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner2Signature)),
+                _packValidationDataWithIndex(
+                    1,
+                    _packValidationDataWithIndex(
+                        0xff,
+                        abi.encodePacked(
+                            _packValidationDataWithIndex(0, _packValidationDataWithIndex(0xff, owner3Signature)),
+                            _packValidationDataWithIndex(1, _packValidationDataWithIndex(0xff, owner4Signature))
+                        )
+                    )
+                )
+            )
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -207,6 +272,12 @@ contract ComposableValidationTest is CustomValidationTestBase {
         override
         returns (FunctionReference, bool, bytes4[] memory, bytes memory, bytes memory)
     {
-        return (_ownerValidation, true, new bytes4[](0), abi.encodePacked(uint8(123), abi.encode(owner1)), abi.encodePacked(""));
+        return (
+            _ownerValidation,
+            true,
+            new bytes4[](0),
+            abi.encodePacked(uint8(123), abi.encode(owner1)),
+            abi.encodePacked("")
+        );
     }
 }

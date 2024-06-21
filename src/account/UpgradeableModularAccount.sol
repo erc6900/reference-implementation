@@ -431,7 +431,8 @@ contract UpgradeableModularAccount is
                     abi.decode(validationComposition, (FunctionReference[]));
 
                 emit GotHere();
-                currentValidationData = _doChainedValidation(chainedValidations, userOp, signatureSegment.getBody(), userOpHash);
+                currentValidationData =
+                    _doChainedValidation(chainedValidations, userOp, signatureSegment.getBody(), userOpHash);
 
                 validationData = _coalescePreValidation(validationData, currentValidationData);
             }
@@ -466,7 +467,6 @@ contract UpgradeableModularAccount is
             if (i + 1 < chainedValidations.length) {
                 (signatureSegment, outerSignature) = outerSignature.getNextSegment();
             }
-
         }
 
         return validationData;

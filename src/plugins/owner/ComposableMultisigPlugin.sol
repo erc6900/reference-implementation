@@ -6,33 +6,29 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {FunctionReference} from "../../helpers/FunctionReferenceLib.sol";
 import {IPlugin} from "../../interfaces/IPlugin.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
-import {BasePlugin, IERC165} from "../BasePlugin.sol";
-import {
-    PluginManifest,
-    PluginMetadata
-} from "../../interfaces/IPlugin.sol";
+import {BasePlugin} from "../BasePlugin.sol";
+import {PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
 
 // Non-threshold based multisig plugin - all owners must sign.
 // Supports up to 100 owners per id.
 contract ComposableMultisigPlugin is IValidation, BasePlugin {
+    struct OwnerInfo {
+        uint256 length;
+        FunctionReference[100] validations;
+    }
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
+    mapping(uint8 id => mapping(address account => OwnerInfo)) public ownerInfo;
 
     error AlreadyInitialized();
     error NotAuthorized();
     error NotInitialized();
     error InvalidOwners();
 
-    struct OwnerInfo {
-        uint256 length;
-        FunctionReference[100] validations;
-    }
-
-    mapping(uint8 id => mapping(address account => OwnerInfo)) public ownerInfo;
-
     /// @inheritdoc IPlugin
-    function onInstall(bytes calldata data) external override {        
+    function onInstall(bytes calldata data) external override {
         uint8 id = uint8(bytes1(data[:1]));
 
         if (ownerInfo[id][msg.sender].length != 0) {
@@ -57,7 +53,7 @@ contract ComposableMultisigPlugin is IValidation, BasePlugin {
         uint8 id = uint8(bytes1(data[:1]));
 
         uint256 length = ownerInfo[id][msg.sender].length;
-        
+
         if (length == 0) {
             revert NotInitialized();
         }
@@ -67,15 +63,6 @@ contract ComposableMultisigPlugin is IValidation, BasePlugin {
         }
 
         ownerInfo[id][msg.sender].length = 0;
-    }
-
-    /// @inheritdoc IValidation
-    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata)
-        external
-        pure
-        override
-    {
-        revert NotImplemented();
     }
 
     /// @inheritdoc IValidation
@@ -100,6 +87,11 @@ contract ComposableMultisigPlugin is IValidation, BasePlugin {
         return (_SIG_VALIDATION_PASSED, abi.encode(validations));
     }
 
+    /// @inheritdoc IValidation
+    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata) external pure override {
+        revert NotImplemented();
+    }
+
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -111,18 +103,15 @@ contract ComposableMultisigPlugin is IValidation, BasePlugin {
     /// validation used in `validateUserOp`, this does **not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(uint8, address, bytes32, bytes calldata)
-        external
-        pure
-        override
-        returns (bytes4)
-    {
+    function validateSignature(uint8, address, bytes32, bytes calldata) external pure override returns (bytes4) {
         revert NotImplemented();
     }
 
     /// @inheritdoc IPlugin
+    // solhint-disable-next-line no-empty-blocks
     function pluginManifest() external pure override returns (PluginManifest memory) {}
 
     /// @inheritdoc IPlugin
+    // solhint-disable-next-line no-empty-blocks
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {}
 }
