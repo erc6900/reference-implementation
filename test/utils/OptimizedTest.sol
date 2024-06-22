@@ -55,4 +55,12 @@ abstract contract OptimizedTest is Test {
             ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
             : new TokenReceiverPlugin();
     }
+
+    function _getAccountOwnerAddress(SingleOwnerPlugin singleOwnerPlugin, address account)
+        internal
+        returns (address)
+    {
+        bytes memory signerData = singleOwnerPlugin.ownerOf(account).data;
+        return signerData.length > 0 ? abi.decode(singleOwnerPlugin.ownerOf(account).data, (address)) : address(0);
+    }
 }

@@ -24,6 +24,9 @@ import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
+import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
+
 contract UpgradeableModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
@@ -31,6 +34,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     TokenReceiverPlugin public tokenReceiverPlugin;
 
     // A separate account and owner that isn't deployed yet, used to test initcode
+    Signer public signer2;
     address public owner2;
     uint256 public owner2Key;
     UpgradeableModularAccount public account2;
@@ -52,6 +56,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         tokenReceiverPlugin = _deployTokenReceiverPlugin();
 
         (owner2, owner2Key) = makeAddrAndKey("owner2");
+        signer2 = Signer(ecdsaValidator, abi.encode(address(owner2)));
 
         // Compute counterfactual address
         account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
@@ -104,7 +109,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(
                 UpgradeableModularAccount.execute,
-                (address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2)))
+                (address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (signer2)))
             ),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
@@ -431,14 +436,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_transferOwnership() public {
-        assertEq(singleOwnerPlugin.ownerOf(address(account1)), owner1);
+        assertEq(_getAccountOwnerAddress(singleOwnerPlugin, address(account1)), owner1);
 
         vm.prank(address(entryPoint));
         account1.execute(
-            address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (owner2))
+            address(singleOwnerPlugin), 0, abi.encodeCall(SingleOwnerPlugin.transferOwnership, (signer2))
         );
 
-        assertEq(singleOwnerPlugin.ownerOf(address(account1)), owner2);
+        assertEq(_getAccountOwnerAddress(singleOwnerPlugin, address(account1)), owner2);
     }
 
     function test_isValidSignature() public {

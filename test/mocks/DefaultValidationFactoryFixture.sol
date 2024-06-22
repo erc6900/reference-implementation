@@ -9,6 +9,8 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
+import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
@@ -20,6 +22,7 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
 
     IEntryPoint public entryPoint;
+    EcdsaValidator public ecdsaValidator;
 
     address public self;
 
@@ -27,6 +30,7 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
 
     constructor(IEntryPoint _entryPoint, SingleOwnerPlugin _singleOwnerPlugin) {
         entryPoint = _entryPoint;
+        ecdsaValidator = new EcdsaValidator();
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
@@ -50,7 +54,7 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(owner);
+            bytes memory pluginInstallData = abi.encode(Signer(ecdsaValidator, abi.encode(address(owner))));
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 

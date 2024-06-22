@@ -6,6 +6,8 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
+import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
 
@@ -17,6 +19,7 @@ abstract contract AccountTestBase is OptimizedTest {
     EntryPoint public entryPoint;
     address payable public beneficiary;
     SingleOwnerPlugin public singleOwnerPlugin;
+    EcdsaValidator public ecdsaValidator;
     MSCAFactoryFixture public factory;
 
     address public owner1;
@@ -27,6 +30,8 @@ abstract contract AccountTestBase is OptimizedTest {
     uint8 public constant DEFAULT_VALIDATION = 1;
 
     constructor() {
+        ecdsaValidator = new EcdsaValidator();
+
         entryPoint = new EntryPoint();
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
@@ -47,7 +52,9 @@ abstract contract AccountTestBase is OptimizedTest {
                 (
                     address(singleOwnerPlugin),
                     0,
-                    abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
+                    abi.encodeCall(
+                        SingleOwnerPlugin.transferOwnership, (Signer(ecdsaValidator, abi.encode(address(this))))
+                    )
                 )
             ),
             abi.encodePacked(

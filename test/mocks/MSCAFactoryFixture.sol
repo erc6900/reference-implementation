@@ -7,6 +7,8 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
+import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
@@ -18,6 +20,7 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 contract MSCAFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
     SingleOwnerPlugin public singleOwnerPlugin;
+    EcdsaValidator public ecdsaValidator;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
@@ -35,6 +38,7 @@ contract MSCAFactoryFixture is OptimizedTest {
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
         singleOwnerPlugin = _singleOwnerPlugin;
+        ecdsaValidator = new EcdsaValidator();
         self = address(this);
         // The manifest hash is set this way in this factory just for testing purposes.
         // For production factories the manifest hashes should be passed as a constructor argument.
@@ -58,7 +62,7 @@ contract MSCAFactoryFixture is OptimizedTest {
             bytes32[] memory pluginManifestHashes = new bytes32[](1);
             pluginManifestHashes[0] = keccak256(abi.encode(singleOwnerPlugin.pluginManifest()));
             bytes[] memory pluginInstallData = new bytes[](1);
-            pluginInstallData[0] = abi.encode(owner);
+            pluginInstallData[0] = abi.encode(Signer(ecdsaValidator, abi.encode(address(owner))));
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
