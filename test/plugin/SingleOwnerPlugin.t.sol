@@ -35,7 +35,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
     ContractOwner public contractOwner;
 
     // Event declarations (needed for vm.expectEmit)
-    event OwnershipTransferred(address indexed account, Signer indexed previousOwner, Signer indexed newOwner);
+    event OwnershipTransferred(address indexed account, Signer previousOwner, Signer newOwner);
 
     function setUp() public {
         plugin = _deploySingleOwnerPlugin();
@@ -74,17 +74,17 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(owner1, _getAccountOwnerAddress(plugin, address(a)));
     }
 
-    // function test_ownerInitializationEvent() public {
-    //     vm.startPrank(a);
-    //     assertEq(address(0), _getAccountOwnerAddress(plugin, address(a)));
+    function test_ownerInitializationEvent() public {
+        vm.startPrank(a);
+        assertEq(address(0), _getAccountOwnerAddress(plugin, address(a)));
 
-    //     vm.expectEmit(true, true, true, true);
-    //     emit OwnershipTransferred(a, Signer(IStatelessValidator(address(0)), ""),
-    // signer1);
+        Signer memory emptySigner;
+        vm.expectEmit(true, true, true, true);
+        emit OwnershipTransferred(a, emptySigner, signer1);
 
-    //     plugin.transferOwnership(signer1);
-    //     assertEq(owner1, _getAccountOwnerAddress(plugin, address(a)));
-    // }
+        plugin.transferOwnership(signer1);
+        assertEq(owner1, _getAccountOwnerAddress(plugin, address(a)));
+    }
 
     function test_ownerMigration() public {
         vm.startPrank(a);
@@ -95,22 +95,23 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(owner2, _getAccountOwnerAddress(plugin, address(a)));
     }
 
-    // function test_ownerMigrationEvents() public {
-    //     vm.startPrank(a);
-    //     assertEq(address(0), _getAccountOwnerAddress(plugin, address(a)));
+    function test_ownerMigrationEvents() public {
+        vm.startPrank(a);
+        assertEq(address(0), _getAccountOwnerAddress(plugin, address(a)));
+        Signer memory emptySigner;
 
-    //     vm.expectEmit(true, true, true, true);
-    //     emit OwnershipTransferred(a, Signer(IStatelessValidator(address(0)), abi.encode(address(0))), signer1);
+        vm.expectEmit(true, true, true, true);
+        emit OwnershipTransferred(a, emptySigner, signer1);
 
-    //     plugin.transferOwnership(signer1);
-    //     assertEq(owner1, _getAccountOwnerAddress(plugin, address(a)));
+        plugin.transferOwnership(signer1);
+        assertEq(owner1, _getAccountOwnerAddress(plugin, address(a)));
 
-    //     vm.expectEmit(true, true, true, true);
-    //     emit OwnershipTransferred(a, signer1, signer2);
+        vm.expectEmit(true, true, true, true);
+        emit OwnershipTransferred(a, signer1, signer2);
 
-    //     plugin.transferOwnership(signer2);
-    //     assertEq(owner2, _getAccountOwnerAddress(plugin, address(a)));
-    // }
+        plugin.transferOwnership(signer2);
+        assertEq(owner2, _getAccountOwnerAddress(plugin, address(a)));
+    }
 
     function test_ownerForSender() public {
         vm.startPrank(a);
