@@ -9,6 +9,7 @@ contract Erc1271Validator is IStatelessValidator {
     function validate(bytes memory signerData, bytes32 hash, bytes memory signature)
         external
         view
+        override
         returns (bool isValid, bytes memory)
     {
         if (signerData.length == 0) {

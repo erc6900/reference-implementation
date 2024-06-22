@@ -25,7 +25,6 @@ import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 import {Signer} from "../../src/validators/IStatelessValidator.sol";
-import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 
 contract UpgradeableModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;

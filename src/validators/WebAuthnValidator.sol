@@ -19,7 +19,8 @@ contract WebAuthnValidator is IStatelessValidator {
     function validate(bytes memory signerData, bytes32 hash, bytes memory signature)
         external
         view
-        returns (bool isValid, bytes memory result)
+        override
+        returns (bool isValid, bytes memory)
     {
         (
             bytes memory authenticatorData,

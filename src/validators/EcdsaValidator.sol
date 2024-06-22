@@ -12,6 +12,7 @@ contract EcdsaValidator is IStatelessValidator {
     function validate(bytes memory signerData, bytes32 hash, bytes memory signature)
         external
         view
+        override
         returns (bool isValid, bytes memory result)
     {
         if (signerData.length == 0) {

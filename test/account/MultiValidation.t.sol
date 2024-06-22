@@ -15,6 +15,7 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
 
 contract MultiValidationTest is AccountTestBase {
     using ECDSA for bytes32;
@@ -24,6 +25,7 @@ contract MultiValidationTest is AccountTestBase {
 
     address public owner2;
     uint256 public owner2Key;
+    Signer public signer2;
 
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
@@ -31,13 +33,15 @@ contract MultiValidationTest is AccountTestBase {
     function setUp() public {
         validator2 = new SingleOwnerPlugin();
 
+        (owner1, owner1Key) = makeAddrAndKey("owner1");
         (owner2, owner2Key) = makeAddrAndKey("owner2");
+        signer2 = Signer(ecdsaValidator, abi.encode(address(owner2)));
     }
 
     function test_overlappingValidationInstall() public {
         bytes32 manifestHash = keccak256(abi.encode(validator2.pluginManifest()));
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(validator2), manifestHash, abi.encode(owner2), new FunctionReference[](0));
+        account1.installPlugin(address(validator2), manifestHash, abi.encode(signer2), new FunctionReference[](0));
 
         FunctionReference[] memory validations = new FunctionReference[](2);
         validations[0] = FunctionReferenceLib.pack(
@@ -123,8 +127,14 @@ contract MultiValidationTest is AccountTestBase {
 
         userOp.nonce = 1;
         (v, r, s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature =
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), r, s, v);
+        userOp.signature = abi.encodePacked(
+            address(validator2),
+            SELECTOR_ASSOCIATED_VALIDATION,
+            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
+            r,
+            s,
+            v
+        );
 
         userOps[0] = userOp;
         vm.expectRevert(abi.encodeWithSelector(IEntryPoint.FailedOp.selector, 0, "AA24 signature error"));

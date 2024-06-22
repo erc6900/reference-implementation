@@ -11,7 +11,7 @@ import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-import {Signer, IStatelessValidator} from "../../src/validators/IStatelessValidator.sol";
+import {Signer} from "../../src/validators/IStatelessValidator.sol";
 import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 import {Erc1271Validator} from "../../src/validators/Erc1271Validator.sol";
 
