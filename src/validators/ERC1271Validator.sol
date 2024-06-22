@@ -9,11 +9,15 @@ contract Erc1271Validator is IStatelessValidator {
     function validate(bytes memory signerData, bytes32 hash, bytes memory signature)
         external
         view
-        returns (bool isValid, bytes memory result)
+        returns (bool isValid, bytes memory)
     {
-        address expectedSigner = abi.decode(signerData, (address));
+        if (signerData.length == 0) {
+            isValid = false;
+        } else {
+            address expectedSigner = abi.decode(signerData, (address));
 
-        isValid = SignatureChecker.isValidERC1271SignatureNow(expectedSigner, hash, signature);
+            isValid = SignatureChecker.isValidERC1271SignatureNow(expectedSigner, hash, signature);
+        }
     }
 
     function encodeSignerData(address signer) external pure returns (bytes memory data) {

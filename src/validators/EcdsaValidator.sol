@@ -14,11 +14,15 @@ contract EcdsaValidator is IStatelessValidator {
         view
         returns (bool isValid, bytes memory result)
     {
-        address expectedSigner = abi.decode(signerData, (address));
+        if (signerData.length == 0) {
+            isValid = false;
+        } else {
+            address expectedSigner = abi.decode(signerData, (address));
 
-        address signer = hash.recover(signature);
-        isValid = signer == expectedSigner;
-        result = abi.encode(signer);
+            address signer = hash.recover(signature);
+            isValid = signer == expectedSigner;
+            result = abi.encode(signer);
+        }
     }
 
     function encodeSignerData(address signer) external pure returns (bytes memory data) {

@@ -85,7 +85,13 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             // Validate that the sender is the owner of the account or self.
-            if (sender != abi.decode(_owners[msg.sender].data, (address)) && sender != msg.sender) {
+            if (
+                sender != msg.sender
+                    && (
+                        _owners[msg.sender].data.length == 0
+                            || sender != abi.decode(_owners[msg.sender].data, (address))
+                    )
+            ) {
                 revert NotAuthorized();
             }
             return;
@@ -133,6 +139,10 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     {
         if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
             Signer memory signer = _owners[msg.sender];
+            if (address(signer.validator) == address(0)) {
+                return _1271_INVALID;
+            }
+
             (bool isValid,) = signer.validator.validate(signer.data, digest, signature);
             return isValid ? _1271_MAGIC_VALUE : _1271_INVALID;
         }
