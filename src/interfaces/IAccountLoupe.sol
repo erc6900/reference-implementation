@@ -18,10 +18,10 @@ interface IAccountLoupe {
     /// @return plugin The plugin address for this selector.
     function getExecutionFunctionHandler(bytes4 selector) external view returns (address plugin);
 
-    /// @notice Get the validation functions for a selector.
-    /// @param selector The selector to get the validation functions for.
-    /// @return The validation functions for this selector.
-    function getValidations(bytes4 selector) external view returns (FunctionReference[] memory);
+    /// @notice Get the selectors for a validation function.
+    /// @param validationFunction The validation function to get the selectors for.
+    /// @return The allowed selectors for this validation function.
+    function getSelectors(FunctionReference validationFunction) external view returns (bytes4[] memory);
 
     /// @notice Get the pre and post execution hooks for a selector.
     /// @param selector The selector to get the hooks for.

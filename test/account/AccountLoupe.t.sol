@@ -83,23 +83,15 @@ contract AccountLoupeTest is AccountTestBase {
         }
     }
 
-    function test_pluginLoupe_getValidationFunctions() public {
-        FunctionReference[] memory validations = account1.getValidations(comprehensivePlugin.foo.selector);
-
-        assertEq(validations.length, 1);
-        assertEq(
-            FunctionReference.unwrap(validations[0]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
-                )
-            )
+    function test_pluginLoupe_getSelectors() public {
+        FunctionReference comprehensivePluginValidation = FunctionReferenceLib.pack(
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
         );
 
-        validations = account1.getValidations(account1.execute.selector);
+        bytes4[] memory selectors = account1.getSelectors(comprehensivePluginValidation);
 
-        assertEq(validations.length, 1);
-        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(_ownerValidation));
+        assertEq(selectors.length, 1);
+        assertEq(selectors[0], comprehensivePlugin.foo.selector);
     }
 
     function test_pluginLoupe_getExecutionHooks() public {

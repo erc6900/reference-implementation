@@ -43,12 +43,10 @@ interface IPluginManager {
     /// @notice Uninstall a validation function from a set of execution selectors.
     /// TODO: remove or update.
     /// @param validationFunction The validation function to uninstall.
-    /// @param selectors The selectors to uninstall the validation function for.
     /// @param uninstallData Optional data to be decoded and used by the plugin to clear plugin data for the
     /// account.
     function uninstallValidation(
         FunctionReference validationFunction,
-        bytes4[] calldata selectors,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData
     ) external;
