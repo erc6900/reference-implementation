@@ -29,8 +29,6 @@ struct SelectorData {
     bool allowDefaultValidation;
     // The execution hooks for this function selector.
     EnumerableSet.Bytes32Set executionHooks;
-    // Which validation functions are associated with this function selector.
-    EnumerableSet.Bytes32Set validations;
 }
 
 struct ValidationData {
@@ -44,6 +42,8 @@ struct ValidationData {
     FunctionReference[] preValidationHooks;
     // Permission hooks for this validation function.
     EnumerableSet.Bytes32Set permissionHooks;
+    // The set of selectors that may be validated by this validation function.
+    EnumerableSet.Bytes32Set selectors;
 }
 
 struct AccountStorage {
@@ -94,6 +94,14 @@ function toExecutionHook(bytes32 setValue)
     hookFunction = FunctionReference.wrap(bytes21(setValue));
     isPreHook = (uint256(setValue) >> 80) & 0xFF == 1;
     isPostHook = (uint256(setValue) >> 72) & 0xFF == 1;
+}
+
+function toSetValue(bytes4 selector) pure returns (bytes32) {
+    return bytes32(selector);
+}
+
+function toSelector(bytes32 setValue) pure returns (bytes4) {
+    return bytes4(setValue);
 }
 
 /// @dev Helper function to get all elements of a set into memory.

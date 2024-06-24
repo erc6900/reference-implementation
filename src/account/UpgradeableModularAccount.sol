@@ -309,17 +309,12 @@ contract UpgradeableModularAccount is
     /// @notice May be validated by a default validation.
     function uninstallValidation(
         FunctionReference validationFunction,
-        bytes4[] calldata selectors,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
     ) external wrapNativeFunction {
         _uninstallValidation(
-            validationFunction,
-            selectors,
-            uninstallData,
-            preValidationHookUninstallData,
-            permissionHookUninstallData
+            validationFunction, uninstallData, preValidationHookUninstallData, permissionHookUninstallData
         );
     }
 
@@ -685,7 +680,7 @@ contract UpgradeableModularAccount is
             }
         } else {
             // Not default validation, but per-selector
-            if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(validationFunction))) {
+            if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         }

@@ -42,10 +42,13 @@ contract MultiValidationTest is AccountTestBase {
         );
         validations[1] =
             FunctionReferenceLib.pack(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER));
-        FunctionReference[] memory validations2 = account1.getValidations(IStandardExecutor.execute.selector);
-        assertEq(validations2.length, 2);
-        assertEq(FunctionReference.unwrap(validations2[0]), FunctionReference.unwrap(validations[0]));
-        assertEq(FunctionReference.unwrap(validations2[1]), FunctionReference.unwrap(validations[1]));
+
+        bytes4[] memory selectors0 = account1.getSelectors(validations[0]);
+        bytes4[] memory selectors1 = account1.getSelectors(validations[1]);
+        assertEq(selectors0.length, selectors1.length);
+        for (uint256 i = 0; i < selectors0.length; i++) {
+            assertEq(selectors0[i], selectors1[i]);
+        }
     }
 
     function test_runtimeValidation_specify() public {
