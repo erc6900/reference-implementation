@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-import {Signer} from "../../src/validators/IStatelessValidator.sol";
 import {EcdsaValidator} from "../../src/validators/EcdsaValidator.sol";
 import {Erc1271Validator} from "../../src/validators/Erc1271Validator.sol";
-import {WebAuthnValidator} from "../../src/validators/WebAuthnValidator.sol";
 
 contract EcdsaAndErc1271ValidatorTest is OptimizedTest {
     EcdsaValidator public ecdsaValidator;

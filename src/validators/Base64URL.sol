@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "openzeppelin-contracts/contracts/utils/Base64.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 /// TODO this library is not necessary once Openzeppelin 5.0.2 Base64 is supported
 library Base64URL {
