@@ -80,6 +80,7 @@ function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) 
 // 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Function Reference
 // 0x__________________________________________AA____________________ is pre hook
 // 0x____________________________________________BB__________________ is post hook
+// 0x______________________________________________CC________________ require UO context
 
 function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
     return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
