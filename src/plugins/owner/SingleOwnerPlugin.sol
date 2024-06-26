@@ -9,12 +9,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IPluginManager} from "../../interfaces/IPluginManager.sol";
 import {
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
-    PluginManifest,
-    PluginMetadata,
-    SelectorPermission
+    PluginManifest, ManifestValidation, PluginMetadata, SelectorPermission
 } from "../../interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IPlugin} from "../../interfaces/IPlugin.sol";
@@ -129,7 +124,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         override
         returns (bytes4)
     {
-        if (functionId == uint8(FunctionId.SIG_VALIDATION)) {
+        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
             if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
                 return _1271_MAGIC_VALUE;
             }
@@ -156,35 +151,23 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        ManifestFunction memory ownerValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
+        // TODO: use default validation instead
+        bytes4[] memory accountSelectors = new bytes4[](5);
+        accountSelectors[0] = IStandardExecutor.execute.selector;
+        accountSelectors[1] = IStandardExecutor.executeBatch.selector;
+        accountSelectors[2] = IPluginManager.installPlugin.selector;
+        accountSelectors[3] = IPluginManager.uninstallPlugin.selector;
+        accountSelectors[4] = UUPSUpgradeable.upgradeToAndCall.selector;
+
+        ManifestValidation memory ownerValidationFunction = ManifestValidation({
             functionId: uint8(FunctionId.VALIDATION_OWNER),
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](5);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[1] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.executeBatch.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[2] = ManifestAssociatedFunction({
-            executionSelector: IPluginManager.installPlugin.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[3] = ManifestAssociatedFunction({
-            executionSelector: IPluginManager.uninstallPlugin.selector,
-            associatedFunction: ownerValidationFunction
-        });
-        manifest.validationFunctions[4] = ManifestAssociatedFunction({
-            executionSelector: UUPSUpgradeable.upgradeToAndCall.selector,
-            associatedFunction: ownerValidationFunction
+            isDefault: false,
+            isSignatureValidation: true,
+            selectors: accountSelectors
         });
 
-        manifest.signatureValidationFunctions = new uint8[](1);
-        manifest.signatureValidationFunctions[0] = uint8(FunctionId.SIG_VALIDATION);
+        manifest.validationFunctions = new ManifestValidation[](1);
+        manifest.validationFunctions[0] = ownerValidationFunction;
 
         return manifest;
     }

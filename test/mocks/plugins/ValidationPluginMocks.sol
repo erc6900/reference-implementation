@@ -4,10 +4,8 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
-    ManifestFunction,
     ManifestExecutionFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
+    ManifestValidation,
     PluginMetadata,
     PluginManifest
 } from "../../../src/interfaces/IPlugin.sol";
@@ -105,14 +103,15 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
             allowDefaultValidation: false
         });
 
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(FunctionId.USER_OP_VALIDATION),
-                dependencyIndex: 0 // Unused.
-            })
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = this.foo.selector;
+
+        manifest.validationFunctions = new ManifestValidation[](1);
+        manifest.validationFunctions[0] = ManifestValidation({
+            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            isDefault: false,
+            isSignatureValidation: false,
+            selectors: validationSelectors
         });
 
         return manifest;
@@ -147,15 +146,15 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
             allowDefaultValidation: false
         });
 
-        ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = this.bar.selector;
+
+        manifest.validationFunctions = new ManifestValidation[](2);
+        manifest.validationFunctions[0] = ManifestValidation({
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.bar.selector,
-            associatedFunction: userOpValidationFunctionRef
+            isDefault: false,
+            isSignatureValidation: false,
+            selectors: validationSelectors
         });
 
         return manifest;
@@ -193,15 +192,15 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
             allowDefaultValidation: false
         });
 
-        ManifestFunction memory userOpValidationFunctionRef = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = this.baz.selector;
+
+        manifest.validationFunctions = new ManifestValidation[](1);
+        manifest.validationFunctions[0] = ManifestValidation({
             functionId: uint8(FunctionId.USER_OP_VALIDATION),
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.baz.selector,
-            associatedFunction: userOpValidationFunctionRef
+            isDefault: false,
+            isSignatureValidation: false,
+            selectors: validationSelectors
         });
 
         return manifest;

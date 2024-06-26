@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 type FunctionReference is bytes21;
 
 interface IPluginManager {
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
 
     event PluginUninstalled(address indexed plugin, bool indexed onUninstallSucceeded);
 
@@ -13,14 +13,7 @@ interface IPluginManager {
     /// @param manifestHash The hash of the plugin manifest.
     /// @param pluginInstallData Optional data to be decoded and used by the plugin to setup initial plugin data
     /// for the modular account.
-    /// @param dependencies The dependencies of the plugin, as described in the manifest. Each FunctionReference
-    /// MUST be composed of an installed plugin's address and a function ID of its validation function.
-    function installPlugin(
-        address plugin,
-        bytes32 manifestHash,
-        bytes calldata pluginInstallData,
-        FunctionReference[] calldata dependencies
-    ) external;
+    function installPlugin(address plugin, bytes32 manifestHash, bytes calldata pluginInstallData) external;
 
     /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
     /// path.

@@ -10,7 +10,6 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
@@ -39,7 +38,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     Counter public counter;
     PluginManifest internal _manifest;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -241,12 +240,11 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash, new FunctionReference[](0));
+        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash);
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: abi.encode(uint48(1 days))
         });
 
         address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
@@ -266,8 +264,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(mockPluginWithBadPermittedExec),
             manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
     }
 
@@ -278,8 +275,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: bytes32(0),
-            pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: abi.encode(uint48(1 days))
         });
     }
 
@@ -293,8 +289,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(badPlugin),
             manifestHash: bytes32(0),
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
     }
 
@@ -305,8 +300,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: abi.encode(uint48(1 days))
         });
 
         vm.expectRevert(
@@ -317,8 +311,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days)),
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: abi.encode(uint48(1 days))
         });
     }
 
@@ -330,8 +323,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
@@ -351,8 +343,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
@@ -376,8 +367,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
 
         // Attempt to uninstall with a blank _manifest
@@ -404,8 +394,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
             manifestHash: manifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
 
         vm.stopPrank();
@@ -444,7 +433,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         // singleOwnerPlugin.ownerOf(address(account1));
 
         bytes memory signature = abi.encodePacked(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION), r, s, v
+            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), r, s, v
         );
 
         bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);

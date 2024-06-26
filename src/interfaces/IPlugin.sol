@@ -3,19 +3,6 @@ pragma solidity ^0.8.25;
 
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
-// Forge formatter will displace the first comment for the enum field out of the enum itself,
-// so annotating here to prevent that.
-// forgefmt: disable-start
-enum ManifestAssociatedFunctionType {
-    // Function is not defined.
-    NONE,
-    // Function belongs to this plugin.
-    SELF,
-    // Function belongs to an external plugin provided as a dependency during plugin installation.
-    DEPENDENCY
-}
-// forgefmt: disable-end
-
 struct ManifestExecutionFunction {
     // TODO(erc6900 spec): These fields can be packed into a single word
     // The selector to install
@@ -26,17 +13,12 @@ struct ManifestExecutionFunction {
     bool allowDefaultValidation;
 }
 
-/// @dev For functions of type `ManifestAssociatedFunctionType.DEPENDENCY`, the MSCA MUST find the plugin address
-/// of the function at `dependencies[dependencyIndex]` during the call to `installPlugin(config)`.
-struct ManifestFunction {
-    ManifestAssociatedFunctionType functionType;
+// todo: do we need these at all? Or do we fully switch to `installValidation`?
+struct ManifestValidation {
     uint8 functionId;
-    uint256 dependencyIndex;
-}
-
-struct ManifestAssociatedFunction {
-    bytes4 executionSelector;
-    ManifestFunction associatedFunction;
+    bool isDefault;
+    bool isSignatureValidation;
+    bytes4[] selectors;
 }
 
 struct ManifestExecutionHook {
@@ -72,16 +54,11 @@ struct PluginMetadata {
 struct PluginManifest {
     // Execution functions defined in this plugin to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
-    ManifestAssociatedFunction[] validationFunctions;
+    ManifestValidation[] validationFunctions;
     ManifestExecutionHook[] executionHooks;
-    uint8[] signatureValidationFunctions;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
     // IPlugin's interface ID.
     bytes4[] interfaceIds;
-    // If this plugin depends on other plugins' validation functions, the interface IDs of those plugins MUST be
-    // provided here, with its position in the array matching the `dependencyIndex` members of `ManifestFunction`
-    // structs used in the manifest.
-    bytes4[] dependencyInterfaceIds;
 }
 
 interface IPlugin is IERC165 {

@@ -2,19 +2,13 @@
 pragma solidity ^0.8.25;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
-
-struct PluginData {
-    bytes32 manifestHash;
-    FunctionReference[] dependencies;
-    // Tracks the number of times this plugin has been used as a dependency function
-    uint256 dependentCount;
-}
 
 // Represents data associated with a specifc function selector.
 struct SelectorData {
@@ -51,8 +45,7 @@ struct AccountStorage {
     uint8 initialized;
     bool initializing;
     // Plugin metadata storage
-    EnumerableSet.AddressSet plugins;
-    mapping(address => PluginData) pluginData;
+    EnumerableMap.AddressToUintMap pluginManifestHashes;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     mapping(FunctionReference validationFunction => ValidationData) validationData;

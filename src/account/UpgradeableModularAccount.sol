@@ -102,7 +102,6 @@ contract UpgradeableModularAccount is
     // EXTERNAL FUNCTIONS
 
     /// @notice Initializes the account with a set of plugins
-    /// @dev No dependencies may be provided with this installation.
     /// @param plugins The plugins to install
     /// @param manifestHashes The manifest hashes of the plugins to install
     /// @param pluginInstallDatas The plugin install datas of the plugins to install
@@ -117,10 +116,8 @@ contract UpgradeableModularAccount is
             revert ArrayLengthMismatch();
         }
 
-        FunctionReference[] memory emptyDependencies = new FunctionReference[](0);
-
         for (uint256 i = 0; i < length; ++i) {
-            _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i], emptyDependencies);
+            _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i]);
         }
 
         emit ModularAccountInitialized(_ENTRY_POINT);
@@ -246,13 +243,12 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a default validation.
-    function installPlugin(
-        address plugin,
-        bytes32 manifestHash,
-        bytes calldata pluginInstallData,
-        FunctionReference[] calldata dependencies
-    ) external override wrapNativeFunction {
-        _installPlugin(plugin, manifestHash, pluginInstallData, dependencies);
+    function installPlugin(address plugin, bytes32 manifestHash, bytes calldata pluginInstallData)
+        external
+        override
+        wrapNativeFunction
+    {
+        _installPlugin(plugin, manifestHash, pluginInstallData);
     }
 
     /// @inheritdoc IPluginManager
