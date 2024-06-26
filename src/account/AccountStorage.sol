@@ -51,7 +51,7 @@ struct AccountStorage {
     mapping(address => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
-    mapping(FunctionReference => ValidationData) validationData;
+    mapping(FunctionReference validationFunction => ValidationData) validationData;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
 }
