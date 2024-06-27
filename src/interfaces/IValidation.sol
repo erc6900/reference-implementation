@@ -5,7 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {IPlugin} from "./IPlugin.sol";
 
-interface IValidation is IPlugin {
+interface IValidation {
     /// @notice Run the user operation validationFunction specified by the `functionId`.
     /// @param functionId An identifier that routes the call to different internal implementations, should there be
     /// more than one.
@@ -53,4 +53,7 @@ interface IValidation is IPlugin {
         bytes32 hash,
         bytes calldata signature
     ) external view returns (bytes4);
+
+    function onInstall(bytes32 validationId, bytes calldata data) external;
+    function onUninstall(bytes32 validationId, bytes calldata data) external;
 }
