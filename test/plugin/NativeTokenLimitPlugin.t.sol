@@ -149,10 +149,10 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
     function test_userOp_combinedExecLimit_success() public {
         assertEq(plugin.limits(address(acct), 0), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] = _getPackedUO(100000, 100000, 100000, 1, _getExecuteWithValue(5 ether));
+        uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(5 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(address(acct), 0), 5 ether - 300000);
+        assertEq(plugin.limits(address(acct), 0), 5 ether - 600000);
         assertEq(recipient.balance, 5 ether);
     }
 
@@ -175,10 +175,10 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
     function test_userOp_combinedExecLimit_failExec() public {
         assertEq(plugin.limits(address(acct), 0), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] = _getPackedUO(100000, 100000, 100000, 1, _getExecuteWithValue(10 ether));
+        uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(10 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(address(acct), 0), 10 ether - 300000);
+        assertEq(plugin.limits(address(acct), 0), 10 ether - 600000);
         assertEq(recipient.balance, 0);
     }
 
