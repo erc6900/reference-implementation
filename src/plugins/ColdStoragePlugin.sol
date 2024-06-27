@@ -5,15 +5,18 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {IPlugin, PluginManifest, ManifestExecutionHook, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {BasePlugin} from "./BasePlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
+import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IPermissionHook} from "../interfaces/IPermissionHook.sol";
 
 /// @title Cold Storage Plugin
 /// @author ERC-6900 Authors
 /// @notice This plugin allows modular accounts to add additional restrictions on transferring certain NFTs
-contract ColdStoragePlugin is BasePlugin {
+contract ColdStoragePlugin is IExecutionHook, IPermissionHook, BasePlugin {
     using EnumerableSet for EnumerableSet.UintSet;
 
     struct ColdStorageStruct {
@@ -109,38 +112,31 @@ contract ColdStoragePlugin is BasePlugin {
         }
     }
 
-    function preExecutionHook(uint8, bytes calldata data) external view returns (bytes memory) {
-        bytes calldata topLevelCallData;
-        bytes4 topLevelSelector;
+    function preUserOpExecutionHook(uint8, PackedUserOperation calldata uo) external view returns (bytes memory) {
+        return _parseDataAndCheckColdStorage(uo.callData);
+    }
 
-        topLevelSelector = bytes4(data[52:56]);
-        if (topLevelSelector == IAccountExecute.executeUserOp.selector) {
-            topLevelCallData = data[56:];
-            topLevelSelector = bytes4(topLevelCallData);
-        } else {
-            topLevelCallData = data[52:];
-        }
+    function preExecutionHook(uint8, address, uint256, bytes calldata data) external view returns (bytes memory) {
+        return _parseDataAndCheckColdStorage(data);
+    }
 
-        if (topLevelSelector == IStandardExecutor.execute.selector) {
-            address token = address(uint160(uint256(bytes32(topLevelCallData[4:36]))));
+    function _parseDataAndCheckColdStorage(bytes calldata data) internal view returns (bytes memory) {
+        bytes4 selector = bytes4(data[:4]);
 
-            bytes calldata executeCalldata;
-            uint256 offset = uint256(bytes32(topLevelCallData[68:100]));
-
-            assembly {
-                let relativeOffset := add(add(topLevelCallData.offset, offset), 4)
-                executeCalldata.offset := add(relativeOffset, 32)
-                executeCalldata.length := calldataload(relativeOffset)
-            }
-
-            _checkColdStorage(token, executeCalldata);
-        } else if (topLevelSelector == IStandardExecutor.executeBatch.selector) {
-            Call[] memory calls = abi.decode(topLevelCallData[4:], (Call[]));
+        if (selector == IStandardExecutor.execute.selector) {
+            (address token,, bytes memory innerCalldata) = abi.decode(data[4:], (address, uint256, bytes));
+            _checkColdStorage(token, innerCalldata);
+        } else if (selector == IStandardExecutor.executeBatch.selector) {
+            Call[] memory calls = abi.decode(data[4:], (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 _checkColdStorage(calls[i].target, calls[i].data);
             }
         }
         return "";
+    }
+
+    function postExecutionHook(uint8, bytes calldata) external pure {
+        revert NotImplemented();
     }
 
     function encodeId(address account, address nft, uint256 tokenId) public pure returns (bytes32) {
@@ -189,15 +185,13 @@ contract ColdStoragePlugin is BasePlugin {
             executionSelector: IStandardExecutor.execute.selector,
             functionId: 0,
             isPreHook: true,
-            isPostHook: false,
-            requireUOContext: false
+            isPostHook: false
         });
         manifest.executionHooks[1] = ManifestExecutionHook({
             executionSelector: IStandardExecutor.executeBatch.selector,
             functionId: 0,
             isPreHook: true,
-            isPostHook: false,
-            requireUOContext: false
+            isPostHook: false
         });
 
         return manifest;
