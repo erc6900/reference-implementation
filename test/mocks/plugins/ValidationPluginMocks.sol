@@ -48,7 +48,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(bytes32, uint8 functionId, PackedUserOperation calldata, bytes32)
         external
         view
         override
@@ -60,7 +60,12 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateSignature(uint8, address, bytes32, bytes calldata) external pure override returns (bytes4) {
+    function validateSignature(bytes32, uint8, address, bytes32, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         revert NotImplemented();
     }
 
@@ -71,7 +76,11 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata) external pure override {
+    function validateRuntime(bytes32, uint8, address, uint256, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+    {
         revert NotImplemented();
     }
 }

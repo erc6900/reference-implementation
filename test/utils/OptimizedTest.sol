@@ -7,6 +7,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {EcdsaValidationPlugin} from "../../src/plugins/validation/EcdsaValidationPlugin.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
@@ -48,6 +49,12 @@ abstract contract OptimizedTest is Test {
         return _isOptimizedTest()
             ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
             : new SingleOwnerPlugin();
+    }
+
+    function _deployEcdsaValidationPlugin() internal returns (EcdsaValidationPlugin) {
+        return _isOptimizedTest()
+            ? EcdsaValidationPlugin(deployCode("out-optimized/EcdsaValidationPlugin.sol/EcdsaValidationPlugin.json"))
+            : new EcdsaValidationPlugin();
     }
 
     function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {

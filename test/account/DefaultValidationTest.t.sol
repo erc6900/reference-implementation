@@ -19,8 +19,6 @@ contract DefaultValidationTest is AccountTestBase {
     uint256 public constant CALL_GAS_LIMIT = 50000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
-    FunctionReference public ownerValidation;
-
     address public ethRecipient;
 
     function setUp() public {
@@ -32,10 +30,6 @@ contract DefaultValidationTest is AccountTestBase {
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);
-
-        ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
     }
 
     function test_defaultValidation_userOp_simple() public {
@@ -57,7 +51,7 @@ contract DefaultValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, DEFAULT_VALIDATION, r, s, v);
+        userOp.signature = abi.encodePacked(validationId, DEFAULT_VALIDATION, r, s, v);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -74,7 +68,7 @@ contract DefaultValidationTest is AccountTestBase {
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            abi.encodePacked(ownerValidation, DEFAULT_VALIDATION)
+            abi.encodePacked(validationId, DEFAULT_VALIDATION)
         );
 
         assertEq(ethRecipient.balance, 2 wei);

@@ -15,12 +15,14 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {EcdsaValidationPlugin} from "../../src/plugins/validation/EcdsaValidationPlugin.sol";
 
 contract MultiValidationTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
     SingleOwnerPlugin public validator2;
+    EcdsaValidationPlugin public ecdsaValidationPlugin;
 
     address public owner2;
     uint256 public owner2Key;
@@ -30,25 +32,23 @@ contract MultiValidationTest is AccountTestBase {
 
     function setUp() public {
         validator2 = new SingleOwnerPlugin();
+        ecdsaValidationPlugin = new EcdsaValidationPlugin();
 
         (owner2, owner2Key) = makeAddrAndKey("owner2");
     }
 
     function test_overlappingValidationInstall() public {
-        bytes32 manifestHash = keccak256(abi.encode(validator2.pluginManifest()));
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(validator2), manifestHash, abi.encode(owner2), new FunctionReference[](0));
-
-        FunctionReference[] memory validations = new FunctionReference[](2);
-        validations[0] = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = IStandardExecutor.execute.selector;
+        FunctionReference validationFunction = FunctionReferenceLib.pack(address(ecdsaValidationPlugin), uint8(0));
+        account1.installValidation(
+            bytes32(0), validationFunction, true, false, selectors, abi.encode(owner2), bytes("")
         );
-        validations[1] =
-            FunctionReferenceLib.pack(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER));
-        FunctionReference[] memory validations2 = account1.getValidations(IStandardExecutor.execute.selector);
-        assertEq(validations2.length, 2);
-        assertEq(FunctionReference.unwrap(validations2[0]), FunctionReference.unwrap(validations[0]));
-        assertEq(FunctionReference.unwrap(validations2[1]), FunctionReference.unwrap(validations[1]));
+
+        FunctionReference[] memory validations = account1.getValidations(IStandardExecutor.execute.selector);
+        assertEq(validations.length, 1);
+        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(validationFunction));
     }
 
     function test_runtimeValidation_specify() public {
@@ -68,9 +68,7 @@ contract MultiValidationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             abi.encodePacked(
-                address(validator2),
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                SELECTOR_ASSOCIATED_VALIDATION
+                address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), DEFAULT_VALIDATION
             )
         );
 
@@ -78,9 +76,7 @@ contract MultiValidationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             abi.encodePacked(
-                address(validator2),
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                SELECTOR_ASSOCIATED_VALIDATION
+                address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), DEFAULT_VALIDATION
             )
         );
     }

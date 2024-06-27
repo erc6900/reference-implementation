@@ -16,6 +16,7 @@ contract AccountLoupeTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;
 
     FunctionReference public ownerValidation;
+    bytes32 public ownerValidationId;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -42,18 +43,22 @@ contract AccountLoupeTest is AccountTestBase {
 
         bytes[] memory installDatas = new bytes[](2);
         vm.prank(address(entryPoint));
-        account1.installValidation(
-            ownerValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+        ownerValidationId = account1.installValidation(
+            bytes32(0),
+            ownerValidation,
+            true,
+            true,
+            new bytes4[](0),
+            bytes(""),
+            abi.encode(preValidationHooks, installDatas)
         );
     }
 
     function test_pluginLoupe_getInstalledPlugins_initial() public {
         address[] memory plugins = account1.getInstalledPlugins();
 
-        assertEq(plugins.length, 2);
-
-        assertEq(plugins[0], address(singleOwnerPlugin));
-        assertEq(plugins[1], address(comprehensivePlugin));
+        assertEq(plugins.length, 1);
+        assertEq(plugins[0], address(comprehensivePlugin));
     }
 
     function test_pluginLoupe_getExecutionFunctionHandler_native() public {
@@ -102,11 +107,6 @@ contract AccountLoupeTest is AccountTestBase {
                 )
             )
         );
-
-        validations = account1.getValidations(account1.execute.selector);
-
-        assertEq(validations.length, 1);
-        assertEq(FunctionReference.unwrap(validations[0]), FunctionReference.unwrap(ownerValidation));
     }
 
     function test_pluginLoupe_getExecutionHooks() public {
@@ -147,7 +147,7 @@ contract AccountLoupeTest is AccountTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreValidationHooks(ownerValidation);
+        FunctionReference[] memory hooks = account1.getPreValidationHooks(ownerValidationId);
 
         assertEq(hooks.length, 2);
         assertEq(

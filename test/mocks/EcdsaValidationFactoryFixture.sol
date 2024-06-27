@@ -7,14 +7,13 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {EcdsaValidationPlugin} from "../../src/plugins/validation/EcdsaValidationPlugin.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract DefaultValidationFactoryFixture is OptimizedTest {
+contract EcdsaValidationFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
-    SingleOwnerPlugin public singleOwnerPlugin;
+    EcdsaValidationPlugin public ecdsaValidationPlugin;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
@@ -23,19 +22,14 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
 
     address public self;
 
-    bytes32 public singleOwnerPluginManifestHash;
-
-    constructor(IEntryPoint _entryPoint, SingleOwnerPlugin _singleOwnerPlugin) {
+    constructor(IEntryPoint _entryPoint, EcdsaValidationPlugin _ecdsaValidationPlugin) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
-        singleOwnerPlugin = _singleOwnerPlugin;
+        ecdsaValidationPlugin = _ecdsaValidationPlugin;
         self = address(this);
-        // The manifest hash is set this way in this factory just for testing purposes.
-        // For production factories the manifest hashes should be passed as a constructor argument.
-        singleOwnerPluginManifestHash = keccak256(abi.encode(singleOwnerPlugin.pluginManifest()));
     }
 
     /**
@@ -59,11 +53,7 @@ contract DefaultValidationFactoryFixture is OptimizedTest {
 
             // point proxy to actual implementation and init plugins
             validationId = UpgradeableModularAccount(payable(addr)).initializeDefaultValidation(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
-                true,
-                pluginInstallData
+                FunctionReferenceLib.pack(address(ecdsaValidationPlugin), uint8(0)), true, pluginInstallData
             );
         }
 

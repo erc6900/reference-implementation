@@ -13,6 +13,7 @@ import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {MockERC721} from "../mocks/MockERC721.sol";
 import {MockERC1155} from "../mocks/MockERC1155.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {DefaultValidationFactoryFixture} from "../mocks/DefaultValidationFactoryFixture.sol";
 
 contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     EntryPoint public entryPoint;
@@ -27,6 +28,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     uint256[] public tokenIds;
     uint256[] public tokenAmts;
     uint256[] public zeroTokenAmts;
+    bytes32 public validationId;
 
     uint256 internal constant _TOKEN_AMOUNT = 1 ether;
     uint256 internal constant _TOKEN_ID = 0;
@@ -34,9 +36,11 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
+        // MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
+        DefaultValidationFactoryFixture factory =
+            new DefaultValidationFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
 
-        acct = factory.createAccount(address(this), 0);
+        (acct, validationId) = factory.createAccount(address(this), 0);
         plugin = _deployTokenReceiverPlugin();
 
         t0 = new MockERC721("t0", "t0");

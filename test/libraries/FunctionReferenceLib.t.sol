@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {FunctionReference} from "../../src/interfaces/IPluginManager.sol";

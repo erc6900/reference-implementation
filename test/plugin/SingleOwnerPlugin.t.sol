@@ -114,11 +114,15 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(address(0), plugin.owner());
         plugin.transferOwnership(owner1);
         assertEq(owner1, plugin.owner());
-        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", "");
+        plugin.validateRuntime(
+            bytes32(0), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", ""
+        );
 
         vm.startPrank(b);
         vm.expectRevert(ISingleOwnerPlugin.NotAuthorized.selector);
-        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", "");
+        plugin.validateRuntime(
+            bytes32(0), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", ""
+        );
     }
 
     function testFuzz_validateUserOpSig(string memory salt, PackedUserOperation memory userOp) public {
@@ -133,8 +137,9 @@ contract SingleOwnerPluginTest is OptimizedTest {
         userOp.signature = abi.encodePacked(r, s, v);
 
         // sig check should fail
-        uint256 success =
-            plugin.validateUserOp(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash);
+        uint256 success = plugin.validateUserOp(
+            bytes32(0), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash
+        );
         assertEq(success, 1);
 
         // transfer ownership to signer
@@ -142,7 +147,9 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(signer, plugin.owner());
 
         // sig check should pass
-        success = plugin.validateUserOp(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash);
+        success = plugin.validateUserOp(
+            bytes32(0), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash
+        );
         assertEq(success, 0);
     }
 
@@ -156,6 +163,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should fail
         assertEq(
             plugin.validateSignature(
+                bytes32(0),
                 uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION),
                 address(this),
                 digest,
@@ -171,6 +179,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should pass
         assertEq(
             plugin.validateSignature(
+                bytes32(0),
                 uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION),
                 address(this),
                 digest,
@@ -186,7 +195,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION), address(this), digest, signature
+                bytes32(0), uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION), address(this), digest, signature
             ),
             _1271_MAGIC_VALUE
         );

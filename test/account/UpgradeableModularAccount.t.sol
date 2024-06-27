@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/Test.sol";
-
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -253,9 +252,8 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         });
 
         address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 2);
-        assertEq(plugins[0], address(singleOwnerPlugin));
-        assertEq(plugins[1], address(tokenReceiverPlugin));
+        assertEq(plugins.length, 1);
+        assertEq(plugins[0], address(tokenReceiverPlugin));
     }
 
     function test_installPlugin_PermittedCallSelectorNotInstalled() public {
@@ -343,8 +341,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         emit PluginUninstalled(address(plugin), true);
         IPluginManager(account1).uninstallPlugin({plugin: address(plugin), config: "", pluginUninstallData: ""});
         address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(singleOwnerPlugin));
+        assertEq(plugins.length, 0);
     }
 
     function test_uninstallPlugin_manifestParameter() public {
@@ -368,8 +365,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             pluginUninstallData: ""
         });
         address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(singleOwnerPlugin));
+        assertEq(plugins.length, 0);
     }
 
     function test_uninstallPlugin_invalidManifestFails() public {
@@ -395,9 +391,8 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             pluginUninstallData: ""
         });
         address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 2);
-        assertEq(plugins[0], address(singleOwnerPlugin));
-        assertEq(plugins[1], address(plugin));
+        assertEq(plugins.length, 1);
+        assertEq(plugins[0], address(plugin));
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
