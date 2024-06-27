@@ -9,7 +9,6 @@ struct ExecutionHook {
     FunctionReference hookFunction;
     bool isPreHook;
     bool isPostHook;
-    bool requireUOContext;
 }
 
 interface IAccountLoupe {

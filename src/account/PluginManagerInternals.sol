@@ -128,17 +128,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         EnumerableSet.Bytes32Set storage hooks,
         FunctionReference hookFunction,
         bool isPreExecHook,
-        bool isPostExecHook,
-        bool requireUOContext
+        bool isPostExecHook
     ) internal {
         hooks.add(
             toSetValue(
-                ExecutionHook({
-                    hookFunction: hookFunction,
-                    isPreHook: isPreExecHook,
-                    isPostHook: isPostExecHook,
-                    requireUOContext: requireUOContext
-                })
+                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
         );
     }
@@ -147,17 +141,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         EnumerableSet.Bytes32Set storage hooks,
         FunctionReference hookFunction,
         bool isPreExecHook,
-        bool isPostExecHook,
-        bool requireUOContext
+        bool isPostExecHook
     ) internal {
         hooks.remove(
             toSetValue(
-                ExecutionHook({
-                    hookFunction: hookFunction,
-                    isPreHook: isPreExecHook,
-                    isPostHook: isPostExecHook,
-                    requireUOContext: requireUOContext
-                })
+                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
         );
     }
@@ -244,7 +232,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
-            _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
+            _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.interfaceIds.length;
@@ -300,7 +288,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook, mh.requireUOContext);
+            _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.signatureValidationFunctions.length;

@@ -9,7 +9,6 @@ import {
 } from "../../src/interfaces/IPlugin.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -49,8 +48,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 executionSelector: _EXEC_SELECTOR,
                 functionId: _PRE_HOOK_FUNCTION_ID_1,
                 isPreHook: true,
-                isPostHook: false,
-                requireUOContext: false
+                isPostHook: false
             })
         );
     }
@@ -90,8 +88,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 executionSelector: _EXEC_SELECTOR,
                 functionId: _BOTH_HOOKS_FUNCTION_ID_3,
                 isPreHook: true,
-                isPostHook: true,
-                requireUOContext: false
+                isPostHook: true
             })
         );
     }
@@ -141,8 +138,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 executionSelector: _EXEC_SELECTOR,
                 functionId: _POST_HOOK_FUNCTION_ID_2,
                 isPreHook: false,
-                isPostHook: true,
-                requireUOContext: false
+                isPostHook: true
             })
         );
     }
@@ -166,23 +162,6 @@ contract AccountExecHooksTest is AccountTestBase {
         test_postOnlyExecHook_install();
 
         _uninstallPlugin(mockPlugin1);
-    }
-
-    function test_requireUOContextHook() public {
-        _installPlugin1WithHooks(
-            ManifestExecutionHook({
-                executionSelector: _EXEC_SELECTOR,
-                functionId: _POST_HOOK_FUNCTION_ID_2,
-                isPreHook: false,
-                isPostHook: true,
-                requireUOContext: true
-            })
-        );
-
-        (bool success, bytes memory errMsg) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
-        assertFalse(success);
-        assertEq(errMsg.length, 4);
-        assertEq(bytes4(errMsg), UpgradeableModularAccount.RequireUserOperationContext.selector);
     }
 
     function _installPlugin1WithHooks(ManifestExecutionHook memory execHooks) internal {

@@ -45,7 +45,6 @@ struct ManifestExecutionHook {
     uint8 functionId;
     bool isPreHook;
     bool isPostHook;
-    bool requireUOContext;
 }
 
 struct SelectorPermission {

@@ -117,24 +117,21 @@ contract AccountLoupeTest is AccountTestBase {
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.BOTH_EXECUTION_HOOKS)
                 ),
                 isPreHook: true,
-                isPostHook: true,
-                requireUOContext: false
+                isPostHook: true
             }),
             ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_EXECUTION_HOOK)
                 ),
                 isPreHook: true,
-                isPostHook: false,
-                requireUOContext: false
+                isPostHook: false
             }),
             ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.POST_EXECUTION_HOOK)
                 ),
                 isPreHook: false,
-                isPostHook: true,
-                requireUOContext: false
+                isPostHook: true
             })
         ];
 

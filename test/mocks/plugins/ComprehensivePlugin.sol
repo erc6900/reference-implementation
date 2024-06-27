@@ -149,22 +149,19 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.BOTH_EXECUTION_HOOKS),
             isPreHook: true,
-            isPostHook: true,
-            requireUOContext: false
+            isPostHook: true
         });
         manifest.executionHooks[1] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.PRE_EXECUTION_HOOK),
             isPreHook: true,
-            isPostHook: false,
-            requireUOContext: false
+            isPostHook: false
         });
         manifest.executionHooks[2] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
             functionId: uint8(FunctionId.POST_EXECUTION_HOOK),
             isPreHook: false,
-            isPostHook: true,
-            requireUOContext: false
+            isPostHook: true
         });
 
         return manifest;

@@ -47,8 +47,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
             ExecutionHook memory execHook = execHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook, execHook.requireUOContext) =
-                toExecutionHook(key);
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
         }
     }
 
@@ -66,8 +65,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
             ExecutionHook memory execHook = permissionHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook, execHook.requireUOContext) =
-                toExecutionHook(key);
+            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
         }
     }
 
