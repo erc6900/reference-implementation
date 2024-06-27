@@ -44,8 +44,7 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
         permissionHooks[0] = ExecutionHook({
             hookFunction: FunctionReferenceLib.pack(address(plugin), 0),
             isPreHook: true,
-            isPostHook: false,
-            requireUOContext: false
+            isPostHook: false
         });
 
         // arr idx 0 => functionId of 0 has that spend
