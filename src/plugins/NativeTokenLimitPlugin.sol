@@ -4,12 +4,12 @@ pragma solidity ^0.8.25;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {UserOperationLib} from "@eth-infinitism/account-abstraction/core/UserOperationLib.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 
 import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IPermissionHook} from "../interfaces/IPermissionHook.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {BasePlugin, IERC165} from "./BasePlugin.sol";
 
@@ -18,7 +18,7 @@ import {BasePlugin, IERC165} from "./BasePlugin.sol";
 /// @notice This plugin supports a single total native token spend limit.
 /// It tracks a total spend limit across UserOperation gas limits and native token transfers.
 /// If a paymaster is used, UO gas would not cause the limit to decrease.
-contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
+contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -36,25 +36,30 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     }
 
     /// @inheritdoc IExecutionHook
-    function preExecutionHook(uint8 functionId, bytes calldata data) external override returns (bytes memory) {
-        bytes calldata callData;
-        bytes4 execSelector;
+    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
+        external
+        override
+        returns (bytes memory)
+    {
+        return _checkAndDecrementLimit(functionId, data);
+    }
 
-        // TODO: plugins should never have to do these gymnastics
-        execSelector = bytes4(data[52:56]);
-        if (execSelector == IAccountExecute.executeUserOp.selector) {
-            callData = data[56:];
-            execSelector = bytes4(callData);
-        } else {
-            callData = data[52:];
-        }
+    function preUserOpExecutionHook(uint8 functionId, PackedUserOperation calldata uo)
+        external
+        override
+        returns (bytes memory)
+    {
+        return _checkAndDecrementLimit(functionId, uo.callData);
+    }
 
+    function _checkAndDecrementLimit(uint8 functionId, bytes calldata data) internal returns (bytes memory) {
+        bytes4 execSelector = bytes4(data);
         uint256 value;
         // Get value being sent
         if (execSelector == IStandardExecutor.execute.selector) {
-            value = uint256(bytes32(callData[36:68]));
+            value = uint256(bytes32(data[36:68]));
         } else if (execSelector == IStandardExecutor.executeBatch.selector) {
-            Call[] memory calls = abi.decode(callData[4:], (Call[]));
+            Call[] memory calls = abi.decode(data[4:], (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 value += calls[i].value;
             }
