@@ -220,20 +220,20 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.callPermitted[plugin][manifest.permittedExecutionSelectors[i]] = true;
         }
 
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
-            _addValidationFunction(
-                mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
-            );
-        }
+        // length = manifest.validationFunctions.length;
+        // for (uint256 i = 0; i < length; ++i) {
+        //     ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
+        //     _addValidationFunction(
+        //         mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
+        //     );
+        // }
 
-        length = manifest.signatureValidationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            FunctionReference signatureValidationFunction =
-                FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
-            _storage.validationData[signatureValidationFunction].isSignatureValidation = true;
-        }
+        // length = manifest.signatureValidationFunctions.length;
+        // for (uint256 i = 0; i < length; ++i) {
+        //     FunctionReference signatureValidationFunction =
+        //         FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
+        //     _storage.validationData[signatureValidationFunction].isSignatureValidation = true;
+        // }
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
@@ -298,20 +298,20 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
-        length = manifest.signatureValidationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            FunctionReference signatureValidationFunction =
-                FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
-            _storage.validationData[signatureValidationFunction].isSignatureValidation = false;
-        }
+        // length = manifest.signatureValidationFunctions.length;
+        // for (uint256 i = 0; i < length; ++i) {
+        //     FunctionReference signatureValidationFunction =
+        //         FunctionReferenceLib.pack(plugin, manifest.signatureValidationFunctions[i]);
+        //     _storage.validationData[signatureValidationFunction].isSignatureValidation = false;
+        // }
 
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
-            _removeValidationFunction(
-                mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
-            );
-        }
+        // length = manifest.validationFunctions.length;
+        // for (uint256 i = 0; i < length; ++i) {
+        //     ManifestAssociatedFunction memory mv = manifest.validationFunctions[i];
+        //     _removeValidationFunction(
+        //         mv.executionSelector, _resolveManifestFunction(mv.associatedFunction, plugin, dependencies)
+        //     );
+        // }
 
         length = manifest.permittedExecutionSelectors.length;
         for (uint256 i = 0; i < length; ++i) {
