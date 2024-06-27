@@ -28,26 +28,32 @@ interface IPluginManager {
     /// validation.
     /// TODO: remove or update.
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
+    /// @param validationIdToUpdate The optional validationId if the tx is to update a validation function like
+    /// adding pre-validation-hooks and/or add selectors.
     /// @param validationFunction The validation function to install.
     /// @param isDefault Whether the validation function applies for all selectors in the default pool.
+    /// @param isSignatureValidationAllowed Whether the validation function can validation signature, can be
+    /// updated.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the plugin to setup initial plugin state.
     function installValidation(
+        bytes32 validationIdToUpdate,
         FunctionReference validationFunction,
         bool isDefault,
+        bool isSignatureValidationAllowed,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks
-    ) external;
+    ) external returns (bytes32 validationId);
 
     /// @notice Uninstall a validation function from a set of execution selectors.
     /// TODO: remove or update.
-    /// @param validationFunction The validation function to uninstall.
+    /// @param validationId The validationId to uninstall.
     /// @param selectors The selectors to uninstall the validation function for.
     /// @param uninstallData Optional data to be decoded and used by the plugin to clear plugin data for the
     /// account.
     function uninstallValidation(
-        FunctionReference validationFunction,
+        bytes32 validationId,
         bytes4[] calldata selectors,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData

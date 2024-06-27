@@ -52,14 +52,14 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPreValidationHooks(FunctionReference validationFunction)
+    function getPreValidationHooks(bytes32 validationId)
         external
         view
         override
         returns (FunctionReference[] memory preValidationHooks)
     {
         preValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().validationData[validationFunction].preValidationHooks);
+            toFunctionReferenceArray(getAccountStorage().validationData[validationId].preValidationHooks);
     }
 
     /// @inheritdoc IAccountLoupe

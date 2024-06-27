@@ -34,10 +34,11 @@ struct SelectorData {
 }
 
 struct ValidationData {
+    FunctionReference validationFunction;
     // Whether or not this validation can be used as a default validation function.
     bool isDefault;
     // Whether or not this validation is a signature validator.
-    bool isSignatureValidation;
+    bool isSignatureValidationAllowed;
     // The pre validation hooks for this function selector.
     EnumerableSet.Bytes32Set preValidationHooks;
 }
@@ -51,7 +52,7 @@ struct AccountStorage {
     mapping(address => PluginData) pluginData;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
-    mapping(FunctionReference validationFunction => ValidationData) validationData;
+    mapping(bytes32 validationId => ValidationData) validationData;
     mapping(address caller => mapping(bytes4 selector => bool)) callPermitted;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;

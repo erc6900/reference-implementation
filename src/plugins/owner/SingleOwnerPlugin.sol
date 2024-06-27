@@ -79,7 +79,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(uint8 functionId, address sender, uint256, bytes calldata, bytes calldata)
+    function validateRuntime(bytes32, uint8 functionId, address sender, uint256, bytes calldata, bytes calldata)
         external
         view
         override
@@ -95,7 +95,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateUserOp(uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(bytes32, uint8 functionId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -123,7 +123,7 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(uint8 functionId, address, bytes32 digest, bytes calldata signature)
+    function validateSignature(bytes32, uint8 functionId, address, bytes32 digest, bytes calldata signature)
         external
         view
         override

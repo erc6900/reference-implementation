@@ -25,7 +25,8 @@ import {
     SelectorData,
     toSetValue,
     toFunctionReference,
-    toExecutionHook
+    toExecutionHook,
+    ValidationData
 } from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {PluginManagerInternals} from "./PluginManagerInternals.sol";
@@ -192,13 +193,13 @@ contract UpgradeableModularAccount is
         bytes4 execSelector = bytes4(data[:4]);
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[:21]));
+        bytes32 validationId = bytes32(authorization[:32]);
 
         // Check if the runtime validation function is allowed to be called
-        bool isDefaultValidation = uint8(authorization[21]) == 1;
-        _checkIfValidationApplies(execSelector, runtimeValidationFunction, isDefaultValidation);
+        bool isDefaultValidation = uint8(authorization[32]) == 1;
+        _checkIfValidationApplies(execSelector, validationId, isDefaultValidation);
 
-        _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
+        _doRuntimeValidation(validationId, data, authorization[33:]);
 
         // If runtime validation passes, execute the call
 
@@ -247,35 +248,54 @@ contract UpgradeableModularAccount is
     /// with user install configs.
     /// @dev This function is only callable once, and only by the EntryPoint.
 
-    function initializeDefaultValidation(FunctionReference validationFunction, bytes calldata installData)
-        external
-        initializer
-    {
-        _installValidation(validationFunction, true, new bytes4[](0), installData, bytes(""));
+    function initializeDefaultValidation(
+        FunctionReference validationFunction,
+        bool isSignatureValidationAllowed,
+        bytes calldata installData
+    ) external initializer returns (bytes32 validationId) {
+        validationId = _installValidation(
+            bytes32(0),
+            validationFunction,
+            true,
+            isSignatureValidationAllowed,
+            new bytes4[](0),
+            installData,
+            bytes("")
+        );
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a default validation.
     function installValidation(
+        bytes32 validationIdToUpdate,
         FunctionReference validationFunction,
         bool isDefault,
+        bool isSignatureValidationAllowed,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks
-    ) external wrapNativeFunction {
-        _installValidation(validationFunction, isDefault, selectors, installData, preValidationHooks);
+    ) external wrapNativeFunction returns (bytes32 validationId) {
+        validationId = _installValidation(
+            validationIdToUpdate,
+            validationFunction,
+            isDefault,
+            isSignatureValidationAllowed,
+            selectors,
+            installData,
+            preValidationHooks
+        );
     }
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a default validation.
     function uninstallValidation(
-        FunctionReference validationFunction,
+        bytes32 validationId,
         bytes4[] calldata selectors,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData
     ) external wrapNativeFunction {
-        _uninstallValidation(validationFunction, selectors, uninstallData, preValidationHookUninstallData);
+        _uninstallValidation(validationId, selectors, uninstallData, preValidationHookUninstallData);
     }
 
     /// @notice ERC165 introspection
@@ -308,15 +328,17 @@ contract UpgradeableModularAccount is
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
         AccountStorage storage _storage = getAccountStorage();
 
-        FunctionReference sigValidation = FunctionReference.wrap(bytes21(signature));
+        bytes32 validationId = bytes32(signature);
 
-        (address plugin, uint8 functionId) = sigValidation.unpack();
-        if (!_storage.validationData[sigValidation].isSignatureValidation) {
+        ValidationData storage validationData = _storage.validationData[validationId];
+
+        (address plugin, uint8 functionId) = validationData.validationFunction.unpack();
+        if (!validationData.isSignatureValidationAllowed) {
             revert SignatureValidationInvalid(plugin, functionId);
         }
 
         if (
-            IValidation(plugin).validateSignature(functionId, msg.sender, hash, signature[21:])
+            IValidation(plugin).validateSignature(validationId, functionId, msg.sender, hash, signature[32:])
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
@@ -344,27 +366,26 @@ contract UpgradeableModularAccount is
         }
         bytes4 selector = bytes4(userOp.callData);
 
-        // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
-        bool isDefaultValidation = uint8(userOp.signature[21]) == 1;
+        // Revert if the provided `authorization` less than 32 bytes long, rather than right-padding.
+        bytes32 validationId = bytes32(userOp.signature[:32]);
+        bool isDefaultValidation = uint8(userOp.signature[33]) == 1;
 
-        _checkIfValidationApplies(selector, userOpValidationFunction, isDefaultValidation);
+        _checkIfValidationApplies(selector, validationId, isDefaultValidation);
 
-        validationData =
-            _doUserOpValidation(selector, userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
+        validationData = _doUserOpValidation(selector, validationId, userOp, userOp.signature[33:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
     function _doUserOpValidation(
         bytes4 selector,
-        FunctionReference userOpValidationFunction,
+        bytes32 validationId,
         PackedUserOperation memory userOp,
         bytes calldata signature,
         bytes32 userOpHash
     ) internal returns (uint256 validationData) {
         userOp.signature = signature;
 
-        if (userOpValidationFunction.isEmpty()) {
+        if (validationId == bytes32(0)) {
             // If the validation function is empty, then the call cannot proceed.
             revert UserOpValidationFunctionMissing(selector);
         }
@@ -373,7 +394,7 @@ contract UpgradeableModularAccount is
 
         // Do preUserOpValidation hooks
         EnumerableSet.Bytes32Set storage preUserOpValidationHooks =
-            getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
+            getAccountStorage().validationData[validationId].preValidationHooks;
 
         uint256 preUserOpValidationHooksLength = preUserOpValidationHooks.length();
         for (uint256 i = 0; i < preUserOpValidationHooksLength; ++i) {
@@ -392,8 +413,10 @@ contract UpgradeableModularAccount is
 
         // Run the user op validationFunction
         {
-            (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
+            (address plugin, uint8 functionId) =
+                getAccountStorage().validationData[validationId].validationFunction.unpack();
+            currentValidationData =
+                IValidation(plugin).validateUserOp(validationId, functionId, userOp, userOpHash);
 
             if (preUserOpValidationHooksLength != 0) {
                 // If we have other validation data we need to coalesce with
@@ -404,14 +427,12 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doRuntimeValidation(
-        FunctionReference runtimeValidationFunction,
-        bytes calldata callData,
-        bytes calldata authorizationData
-    ) internal {
+    function _doRuntimeValidation(bytes32 validationId, bytes calldata callData, bytes calldata authorizationData)
+        internal
+    {
         // run all preRuntimeValidation hooks
         EnumerableSet.Bytes32Set storage preRuntimeValidationHooks =
-            getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
+            getAccountStorage().validationData[validationId].preValidationHooks;
 
         uint256 preRuntimeValidationHooksLength = preRuntimeValidationHooks.length();
         for (uint256 i = 0; i < preRuntimeValidationHooksLength; ++i) {
@@ -430,9 +451,12 @@ contract UpgradeableModularAccount is
             }
         }
 
-        (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
+        (address plugin, uint8 functionId) =
+            getAccountStorage().validationData[validationId].validationFunction.unpack();
 
-        try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, callData, authorizationData)
+        try IValidation(plugin).validateRuntime(
+            validationId, functionId, msg.sender, msg.value, callData, authorizationData
+        )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
         {} catch (bytes memory revertReason) {
@@ -519,20 +543,21 @@ contract UpgradeableModularAccount is
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
 
-    function _checkIfValidationApplies(bytes4 selector, FunctionReference validationFunction, bool isDefault)
-        internal
-        view
-    {
+    function _checkIfValidationApplies(bytes4 selector, bytes32 validationId, bool isDefault) internal view {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check that the provided validation function is applicable to the selector
         if (isDefault) {
-            if (!_defaultValidationAllowed(selector) || !_storage.validationData[validationFunction].isDefault) {
+            if (!_defaultValidationAllowed(selector) || !_storage.validationData[validationId].isDefault) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         } else {
             // Not default validation, but per-selector
-            if (!getAccountStorage().selectorData[selector].validations.contains(toSetValue(validationFunction))) {
+            if (
+                !getAccountStorage().selectorData[selector].validations.contains(
+                    toSetValue(_storage.validationData[validationId].validationFunction)
+                )
+            ) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         }
