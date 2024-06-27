@@ -44,8 +44,7 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         permissionHooks[0] = ExecutionHook({
             hookFunction: FunctionReferenceLib.pack(address(plugin), 0),
             isPreHook: true,
-            isPostHook: false,
-            requireUOContext: false
+            isPostHook: false
         });
 
         uint256[] memory spendLimits = new uint256[](1);
