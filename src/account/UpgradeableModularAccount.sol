@@ -368,7 +368,7 @@ contract UpgradeableModularAccount is
 
         // Revert if the provided `authorization` less than 32 bytes long, rather than right-padding.
         bytes32 validationId = bytes32(userOp.signature[:32]);
-        bool isDefaultValidation = uint8(userOp.signature[33]) == 1;
+        bool isDefaultValidation = uint8(userOp.signature[32]) == 1;
 
         _checkIfValidationApplies(selector, validationId, isDefaultValidation);
 

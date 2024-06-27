@@ -51,6 +51,8 @@ abstract contract PluginManager2 {
         // TODO: all fields can be updated on the validation except selectors and hooks are addition only, to
         // update, require uninstall and reinstall of validation
 
+        _storage.validationData[validationId].validationFunction = validationFunction;
+        _storage.validationData[validationId].isDefault = isDefault;
         _storage.validationData[validationId].isSignatureValidationAllowed = isSignatureValidationAllowed;
 
         if (preValidationHooks.length > 0) {
@@ -82,7 +84,7 @@ abstract contract PluginManager2 {
 
         if (installData.length > 0) {
             (address plugin,) = FunctionReferenceLib.unpack(validationFunction);
-            IPlugin(plugin).onInstall(installData);
+            IPlugin(plugin).onInstall(abi.encode(validationId, installData));
         }
         emit ValidationUpdated(validationId);
     }

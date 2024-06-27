@@ -62,7 +62,8 @@ contract EcdsaValidationPlugin is IEcdsaValidationPlugin, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (bytes32 validationId, address newSigner) = abi.decode(data, (bytes32, address));
+        (bytes32 validationId, bytes memory newSignerBytes) = abi.decode(data, (bytes32, bytes));
+        (address newSigner) = abi.decode(newSignerBytes, (address));
         _transferSigner(validationId, newSigner);
     }
 

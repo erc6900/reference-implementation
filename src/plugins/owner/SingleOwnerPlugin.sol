@@ -70,7 +70,9 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        _transferOwnership(abi.decode(data, (address)));
+        (, bytes memory newOwnerBytes) = abi.decode(data, (bytes32, bytes));
+        (address newOwner) = abi.decode(newOwnerBytes, (address));
+        _transferOwnership(newOwner);
     }
 
     /// @inheritdoc IPlugin
