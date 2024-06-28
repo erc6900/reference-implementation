@@ -87,7 +87,7 @@ contract UpgradeableModularAccount is
         _checkPermittedCallerIfNotFromEP();
 
         PostExecToRun[] memory postExecHooks =
-            _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data, false);
+            _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
 
         _;
 
@@ -141,7 +141,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
-        postExecHooks = _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data, false);
+        postExecHooks = _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execPlugin.call(msg.data);
@@ -167,19 +167,8 @@ contract UpgradeableModularAccount is
 
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
 
-        // remove first 4 bytes which is executeUserOp.selector
-        PackedUserOperation memory uo;
-        bytes memory callData = uo.callData;
-        assembly {
-            let len := mload(callData)
-            mstore(add(callData, 4), sub(len, 4))
-            callData := add(callData, 4)
-        }
-        uo.callData = callData;
-
-        PostExecToRun[] memory postPermissionHooks = _doPreHooks(
-            getAccountStorage().validationData[userOpValidationFunction].permissionHooks, abi.encode(uo), true
-        );
+        PostExecToRun[] memory postPermissionHooks =
+            _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].permissionHooks, msg.data);
 
         (bool success, bytes memory result) = address(this).call(userOp.callData[4:]);
 
@@ -241,7 +230,7 @@ contract UpgradeableModularAccount is
 
         // If runtime validation passes, do runtime permission checks
         PostExecToRun[] memory postPermissionHooks =
-            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].permissionHooks, data, false);
+            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].permissionHooks, data);
 
         // Execute the call
         (bool success, bytes memory returnData) = address(this).call(data);
@@ -509,7 +498,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _doPreHooks(EnumerableSet.Bytes32Set storage executionHooks, bytes memory data, bool isPackedUO)
+    function _doPreHooks(EnumerableSet.Bytes32Set storage executionHooks, bytes memory data)
         internal
         returns (PostExecToRun[] memory postHooksToRun)
     {
@@ -536,33 +525,13 @@ contract UpgradeableModularAccount is
             if (isPreHook) {
                 bytes memory preExecHookReturnData;
 
-                // isPackedUO implies it is a permission hook
-                if (isPackedUO) {
-                    preExecHookReturnData = _runPreUserOpExecHook(hookFunction, data);
-                } else {
-                    preExecHookReturnData = _runPreExecHook(hookFunction, data);
-                }
+                preExecHookReturnData = _runPreExecHook(hookFunction, data);
 
                 // If there is an associated post-exec hook, save the return data.
                 if (isPostHook) {
                     postHooksToRun[i].preExecHookReturnData = preExecHookReturnData;
                 }
             }
-        }
-    }
-
-    function _runPreUserOpExecHook(FunctionReference preExecHook, bytes memory data)
-        internal
-        returns (bytes memory preExecHookReturnData)
-    {
-        (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
-            bytes memory returnData
-        ) {
-            preExecHookReturnData = returnData;
-        } catch (bytes memory revertReason) {
-            // TODO: same issue with EP0.6 - we can't do bytes4 error codes in plugins
-            revert PreExecHookReverted(plugin, functionId, revertReason);
         }
     }
 
