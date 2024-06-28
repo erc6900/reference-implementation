@@ -494,8 +494,9 @@ contract UpgradeableModularAccount is
         returns (bytes memory preExecHookReturnData)
     {
         (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data)
-        returns (bytes memory returnData) {
+        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
+            bytes memory returnData
+        ) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
             revert PreExecHookReverted(plugin, functionId, revertReason);

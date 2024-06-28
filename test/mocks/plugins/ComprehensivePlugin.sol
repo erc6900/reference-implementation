@@ -105,7 +105,12 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata) external pure override returns (bytes memory) {
+    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes memory)
+    {
         if (functionId == uint8(FunctionId.PRE_EXECUTION_HOOK)) {
             return "";
         } else if (functionId == uint8(FunctionId.BOTH_EXECUTION_HOOKS)) {
