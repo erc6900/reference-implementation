@@ -9,7 +9,6 @@ import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPermissionHook} from "../interfaces/IPermissionHook.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {BasePlugin, IERC165} from "./BasePlugin.sol";
 
@@ -18,7 +17,8 @@ import {BasePlugin, IERC165} from "./BasePlugin.sol";
 /// @notice This plugin supports a single total native token spend limit.
 /// It tracks a total spend limit across UserOperation gas limits and native token transfers.
 /// If a paymaster is used, UO gas would not cause the limit to decrease.
-contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, IValidationHook {
+
+contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -33,57 +33,6 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, 
 
     function updateLimits(uint8 functionId, uint256 newLimit) external {
         limits[msg.sender][functionId] = newLimit;
-    }
-
-    /// @inheritdoc IExecutionHook
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
-        external
-        override
-        returns (bytes memory)
-    {
-        return _checkAndDecrementLimit(functionId, data);
-    }
-
-    function preUserOpExecutionHook(uint8 functionId, PackedUserOperation calldata uo)
-        external
-        override
-        returns (bytes memory)
-    {
-        return _checkAndDecrementLimit(functionId, uo.callData);
-    }
-
-    function _checkAndDecrementLimit(uint8 functionId, bytes calldata data) internal returns (bytes memory) {
-        bytes4 execSelector = bytes4(data);
-        uint256 value;
-        // Get value being sent
-        if (execSelector == IStandardExecutor.execute.selector) {
-            value = uint256(bytes32(data[36:68]));
-        } else if (execSelector == IStandardExecutor.executeBatch.selector) {
-            Call[] memory calls = abi.decode(data[4:], (Call[]));
-            for (uint256 i = 0; i < calls.length; i++) {
-                value += calls[i].value;
-            }
-        }
-
-        uint256 limit = limits[msg.sender][functionId];
-        if (value > limit) {
-            revert ExceededNativeTokenLimit();
-        }
-        limits[msg.sender][functionId] = limit - value;
-
-        return "";
-    }
-
-    /// @inheritdoc IExecutionHook
-    function postExecutionHook(uint8, bytes calldata) external pure override {
-        revert NotImplemented();
-    }
-
-    // No implementation, no revert
-    // Runtime spends no account gas, and we check native token spend limits in exec hooks
-    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata) external pure override {
-        // silence warnings
-        (functionId);
     }
 
     /// @inheritdoc IValidationHook
@@ -107,6 +56,15 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, 
         return 0;
     }
 
+    /// @inheritdoc IExecutionHook
+    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
+        external
+        override
+        returns (bytes memory)
+    {
+        return _checkAndDecrementLimit(functionId, data);
+    }
+
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
         uint256[] memory spendLimits = abi.decode(data, (uint256[]));
@@ -124,6 +82,18 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, 
     function onUninstall(bytes calldata data) external override {
         uint8 functionId = abi.decode(data, (uint8));
         delete limits[msg.sender][functionId];
+    }
+
+    /// @inheritdoc IExecutionHook
+    function postExecutionHook(uint8, bytes calldata) external pure override {
+        revert NotImplemented();
+    }
+
+    // No implementation, no revert
+    // Runtime spends no account gas, and we check native token spend limits in exec hooks
+    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata) external pure override {
+        // silence warnings
+        (functionId);
     }
 
     /// @inheritdoc IPlugin
@@ -153,5 +123,28 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook, 
     /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function _checkAndDecrementLimit(uint8 functionId, bytes calldata data) internal returns (bytes memory) {
+        (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
+
+        uint256 value;
+        // Get value being sent
+        if (selector == IStandardExecutor.execute.selector) {
+            (, value) = abi.decode(callData, (address, uint256));
+        } else if (selector == IStandardExecutor.executeBatch.selector) {
+            Call[] memory calls = abi.decode(callData, (Call[]));
+            for (uint256 i = 0; i < calls.length; i++) {
+                value += calls[i].value;
+            }
+        }
+
+        uint256 limit = limits[msg.sender][functionId];
+        if (value > limit) {
+            revert ExceededNativeTokenLimit();
+        }
+        limits[msg.sender][functionId] = limit - value;
+
+        return "";
     }
 }
