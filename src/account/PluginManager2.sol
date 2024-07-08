@@ -132,9 +132,7 @@ abstract contract PluginManager2 {
                 FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
                 permissionHooks.remove(toSetValue(permissionHook));
                 (address permissionHookPlugin,) = FunctionReferenceLib.unpack(permissionHook);
-                if (permissionHookUninstallDatas[0].length > 0) {
-                    IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
-                }
+                IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
             }
         }
 
