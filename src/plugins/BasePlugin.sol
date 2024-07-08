@@ -30,7 +30,7 @@ abstract contract BasePlugin is ERC165, IPlugin {
         return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _getSelectorAndCalldata(bytes calldata data) internal view returns (bytes4, bytes memory) {
+    function _getSelectorAndCalldata(bytes calldata data) internal pure returns (bytes4, bytes memory) {
         if (bytes4(data[:4]) == IAccountExecute.executeUserOp.selector) {
             (PackedUserOperation memory uo,) = abi.decode(data[4:], (PackedUserOperation, bytes32));
             bytes4 selector;
