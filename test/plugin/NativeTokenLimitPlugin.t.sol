@@ -54,7 +54,7 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         preValHooksInitDatas[0] = "";
 
         bytes[] memory permissionInitDatas = new bytes[](1);
-        permissionInitDatas[0] = abi.encode(spendLimits);
+        permissionInitDatas[0] = abi.encode(0, spendLimits);
 
         vm.prank(address(acct));
         acct.installValidation(
@@ -95,11 +95,11 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         vm.startPrank(address(entryPoint));
 
         // uses 10e - 200000 of gas
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         uint256 result = acct.validateUserOp(
             _getPackedUO(100000, 100000, 10 ether - 400000, 1, _getExecuteWithValue(0)), bytes32(0), 0
         );
-        assertEq(plugin.limits(address(acct), 0), 200000);
+        assertEq(plugin.limits(0, address(acct)), 200000);
 
         uint256 expected = uint256(type(uint48).max) << 160;
         assertEq(result, expected);
@@ -113,9 +113,9 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         vm.startPrank(address(entryPoint));
 
         // uses 5e of native tokens
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(0, 0, 0, 0, _getExecuteWithValue(5 ether)), bytes32(0));
-        assertEq(plugin.limits(address(acct), 0), 5 ether);
+        assertEq(plugin.limits(0, address(acct)), 5 ether);
 
         // uses 5e + 1wei of native tokens
         vm.expectRevert(
@@ -138,21 +138,21 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
 
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeUserOp(
             _getPackedUO(0, 0, 0, 0, abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0)
         );
-        assertEq(plugin.limits(address(acct), 0), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 100001);
         assertEq(recipient.balance, 6 ether + 100001);
     }
 
     function test_userOp_combinedExecLimit_success() public {
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
         uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(5 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(address(acct), 0), 5 ether - 600000);
+        assertEq(plugin.limits(0, address(acct)), 5 ether - 600000);
         assertEq(recipient.balance, 5 ether);
     }
 
@@ -163,31 +163,31 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
 
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
         uos[0] = _getPackedUO(200000, 200000, 200000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(address(acct), 0), 10 ether - 6 ether - 700001);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 700001);
         assertEq(recipient.balance, 6 ether + 100001);
     }
 
     function test_userOp_combinedExecLimit_failExec() public {
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
         uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(10 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(address(acct), 0), 10 ether - 600000);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 600000);
         assertEq(recipient.balance, 0);
     }
 
     function test_runtime_executeLimit() public {
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeWithAuthorization(
             _getExecuteWithValue(5 ether), abi.encodePacked(validationFunction, uint8(1))
         );
-        assertEq(plugin.limits(address(acct), 0), 5 ether);
+        assertEq(plugin.limits(0, address(acct)), 5 ether);
     }
 
     function test_runtime_executeBatchLimit() public {
@@ -196,10 +196,10 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
         calls[1] = Call({target: recipient, value: 1 ether, data: ""});
         calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
 
-        assertEq(plugin.limits(address(acct), 0), 10 ether);
+        assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)), abi.encodePacked(validationFunction, uint8(1))
         );
-        assertEq(plugin.limits(address(acct), 0), 4 ether - 100001);
+        assertEq(plugin.limits(0, address(acct)), 4 ether - 100001);
     }
 }
