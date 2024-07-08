@@ -35,7 +35,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
     mapping(address account => mapping(address token => uint256[] limits)) public limits;
     mapping(address account => EnumerableSet.AddressSet) internal _tokenList;
 
-    error ExceededNativeTokenLimit();
+    error ExceededTokenLimit();
     error ExceededNumberOfEntities();
     error SelectorNotAllowed();
 
