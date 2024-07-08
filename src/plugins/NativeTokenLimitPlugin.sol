@@ -26,13 +26,13 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
 
-    mapping(address account => uint256[] limits) public limits;
+    mapping(uint256 funcIds => mapping(address account => uint256 limit)) public limits;
 
     error ExceededNativeTokenLimit();
     error ExceededNumberOfEntities();
 
     function updateLimits(uint8 functionId, uint256 newLimit) external {
-        limits[msg.sender][functionId] = newLimit;
+        limits[functionId][msg.sender] = newLimit;
     }
 
     /// @inheritdoc IValidationHook
@@ -47,11 +47,11 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
             uint256 totalGas = userOp.preVerificationGas + vgl + cgl;
             uint256 usage = totalGas * UserOperationLib.unpackMaxFeePerGas(userOp);
 
-            uint256 limit = limits[msg.sender][functionId];
+            uint256 limit = limits[functionId][msg.sender];
             if (usage > limit) {
                 revert ExceededNativeTokenLimit();
             }
-            limits[msg.sender][functionId] = limit - usage;
+            limits[functionId][msg.sender] = limit - usage;
         }
         return 0;
     }
@@ -67,21 +67,24 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        uint256[] memory spendLimits = abi.decode(data, (uint256[]));
+        (uint8 startFunctionId, uint256[] memory spendLimits) = abi.decode(data, (uint8, uint256[]));
 
-        for (uint256 i = 0; i < spendLimits.length; i++) {
-            limits[msg.sender].push(spendLimits[i]);
+        if (startFunctionId + spendLimits.length > type(uint8).max) {
+            revert ExceededNumberOfEntities();
         }
 
-        if (limits[msg.sender].length > type(uint8).max) {
-            revert ExceededNumberOfEntities();
+        for (uint256 i = 0; i < spendLimits.length; i++) {
+            limits[i + startFunctionId][msg.sender] = spendLimits[i];
         }
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata data) external override {
+        // This is the highest functionId that's being used by the account
         uint8 functionId = abi.decode(data, (uint8));
-        delete limits[msg.sender][functionId];
+        for (uint256 i = 0; i < functionId; i++) {
+            delete limits[i][msg.sender];
+        }
     }
 
     /// @inheritdoc IExecutionHook
@@ -139,11 +142,11 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
             }
         }
 
-        uint256 limit = limits[msg.sender][functionId];
+        uint256 limit = limits[functionId][msg.sender];
         if (value > limit) {
             revert ExceededNativeTokenLimit();
         }
-        limits[msg.sender][functionId] = limit - value;
+        limits[functionId][msg.sender] = limit - value;
 
         return "";
     }
