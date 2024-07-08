@@ -16,8 +16,8 @@ import {BasePlugin, IERC165} from "./BasePlugin.sol";
 /// @author ERC-6900 Authors
 /// @notice This plugin supports a single total native token spend limit.
 /// It tracks a total spend limit across UserOperation gas limits and native token transfers.
-/// If a paymaster is used, UO gas would not cause the limit to decrease.
-
+/// If a non whitelisted paymaster is used, UO gas would not cause the limit to decrease.
+/// If a whitelisted paymaster is used, gas is still counted towards the limit
 contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -27,6 +27,9 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     string public constant AUTHOR = "ERC-6900 Authors";
 
     mapping(uint256 funcIds => mapping(address account => uint256 limit)) public limits;
+    // Accounts should add paymasters that still use the accounts tokens here
+    // E.g. ERC20 paymasters that pull funds from the account
+    mapping(address paymaster => mapping(address account => bool allowed)) public specialPaymasters;
 
     error ExceededNativeTokenLimit();
     error ExceededNumberOfEntities();
@@ -35,13 +38,20 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         limits[functionId][msg.sender] = newLimit;
     }
 
+    function updateSpecialPaymaster(address paymaster, bool allowed) external {
+        specialPaymasters[paymaster][msg.sender] = allowed;
+    }
+
     /// @inheritdoc IValidationHook
     function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata userOp, bytes32)
         external
         returns (uint256)
     {
-        // Decrease limit only if no paymaster is used
-        if (userOp.paymasterAndData.length == 0) {
+        // Decrease limit only if no paymaster is used, or if its a special paymaster
+        if (
+            userOp.paymasterAndData.length == 0
+                || specialPaymasters[address(bytes20(userOp.paymasterAndData[:20]))][msg.sender]
+        ) {
             uint256 vgl = UserOperationLib.unpackVerificationGasLimit(userOp);
             uint256 cgl = UserOperationLib.unpackCallGasLimit(userOp);
             uint256 totalGas = userOp.preVerificationGas + vgl + cgl;
