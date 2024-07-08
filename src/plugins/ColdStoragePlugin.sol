@@ -4,18 +4,16 @@ pragma solidity ^0.8.25;
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {IPlugin, PluginManifest, ManifestExecutionHook, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {BasePlugin} from "./BasePlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPermissionHook} from "../interfaces/IPermissionHook.sol";
 
 /// @title Cold Storage Plugin
 /// @author ERC-6900 Authors
 /// @notice This plugin allows modular accounts to add additional restrictions on transferring certain NFTs
-contract ColdStoragePlugin is IExecutionHook, IPermissionHook, BasePlugin {
+contract ColdStoragePlugin is IExecutionHook, BasePlugin {
     using EnumerableSet for EnumerableSet.UintSet;
 
     struct ColdStorageStruct {
@@ -111,22 +109,14 @@ contract ColdStoragePlugin is IExecutionHook, IPermissionHook, BasePlugin {
         }
     }
 
-    function preUserOpExecutionHook(uint8, PackedUserOperation calldata uo) external view returns (bytes memory) {
-        return _parseDataAndCheckColdStorage(uo.callData);
-    }
-
     function preExecutionHook(uint8, address, uint256, bytes calldata data) external view returns (bytes memory) {
-        return _parseDataAndCheckColdStorage(data);
-    }
-
-    function _parseDataAndCheckColdStorage(bytes calldata data) internal view returns (bytes memory) {
-        bytes4 selector = bytes4(data[:4]);
+        (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
 
         if (selector == IStandardExecutor.execute.selector) {
-            (address token,, bytes memory innerCalldata) = abi.decode(data[4:], (address, uint256, bytes));
+            (address token,, bytes memory innerCalldata) = abi.decode(callData, (address, uint256, bytes));
             _checkColdStorage(token, innerCalldata);
         } else if (selector == IStandardExecutor.executeBatch.selector) {
-            Call[] memory calls = abi.decode(data[4:], (Call[]));
+            Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 _checkColdStorage(calls[i].target, calls[i].data);
             }
