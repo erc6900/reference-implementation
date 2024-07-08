@@ -62,7 +62,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         if (selector == IERC20.transfer.selector || selector == IERC20.approve.selector) {
             uint256 limit = limits[msg.sender][token][functionId];
             if (spend > limit) {
-                revert ExceededNativeTokenLimit();
+                revert ExceededTokenLimit();
             }
             limits[msg.sender][token][functionId] = limit - spend;
         } else {
