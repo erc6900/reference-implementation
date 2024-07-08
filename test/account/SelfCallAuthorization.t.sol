@@ -8,6 +8,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {GlobalValidationFactoryFixture} from "../mocks/GlobalValidationFactoryFixture.sol";
@@ -310,7 +311,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.installValidation,
-                (comprehensivePluginValidation, false, selectors, "", "", "")
+                (ValidationConfigLib.pack(comprehensivePluginValidation, false, false), selectors, "", "", "")
             ),
             _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
         );

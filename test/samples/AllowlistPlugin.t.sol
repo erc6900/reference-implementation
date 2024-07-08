@@ -290,7 +290,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (FunctionReference, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
         FunctionReference accessControlHook = FunctionReferenceLib.pack(
             address(allowlistPlugin), uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK)
@@ -305,7 +305,15 @@ contract AllowlistPluginTest is CustomValidationTestBase {
 
         bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
 
-        return (_ownerValidation, true, new bytes4[](0), abi.encode(owner1), packedPreValidationHooks, "");
+        return (
+            _ownerValidation,
+            true,
+            true,
+            new bytes4[](0),
+            abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1),
+            packedPreValidationHooks,
+            ""
+        );
     }
 
     // Unfortunately, this is a feature that solidity has only implemented in via-ir, so we need to do it manually

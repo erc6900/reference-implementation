@@ -3,6 +3,8 @@ pragma solidity ^0.8.25;
 
 type FunctionReference is bytes21;
 
+type ValidationConfig is bytes23;
+
 interface IPluginManager {
     event PluginInstalled(address indexed plugin, bytes32 manifestHash);
 
@@ -21,15 +23,13 @@ interface IPluginManager {
     /// validation.
     /// TODO: remove or update.
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
-    /// @param validationFunction The validation function to install.
-    /// @param isGlobal Whether the validation function applies for all selectors in the global pool.
+    /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the plugin to setup initial plugin state.
     /// @param preValidationHooks Optional pre-validation hooks to install for the validation function.
     /// @param permissionHooks Optional permission hooks to install for the validation function.
     function installValidation(
-        FunctionReference validationFunction,
-        bool isGlobal,
+        ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,

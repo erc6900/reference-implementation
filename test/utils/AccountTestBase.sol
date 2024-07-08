@@ -8,10 +8,10 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
+import {TEST_DEFAULT_OWNER_FUNCTION_ID as EXT_CONST_TEST_DEFAULT_OWNER_FUNCTION_ID} from "./TestConstants.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 
@@ -35,6 +35,9 @@ abstract contract AccountTestBase is OptimizedTest {
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
     uint8 public constant GLOBAL_VALIDATION = 1;
 
+    // Re-declare the constant to prevent derived test contracts from having to import it
+    uint8 public constant TEST_DEFAULT_OWNER_FUNCTION_ID = EXT_CONST_TEST_DEFAULT_OWNER_FUNCTION_ID;
+
     uint256 public constant CALL_GAS_LIMIT = 100000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
@@ -54,9 +57,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _ownerValidation = FunctionReferenceLib.pack(
-            address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-        );
+        _ownerValidation = FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -99,9 +100,7 @@ abstract contract AccountTestBase is OptimizedTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
         userOp.signature = _encodeSignature(
-            FunctionReferenceLib.pack(
-                address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-            ),
+            FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -154,9 +153,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
+                FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -171,9 +168,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
+                FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -189,14 +184,14 @@ abstract contract AccountTestBase is OptimizedTest {
                 (
                     address(singleOwnerPlugin),
                     0,
-                    abi.encodeCall(SingleOwnerPlugin.transferOwnership, (address(this)))
+                    abi.encodeCall(
+                        SingleOwnerPlugin.transferOwnership, (TEST_DEFAULT_OWNER_FUNCTION_ID, address(this))
+                    )
                 )
             ),
             _encodeSignature(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
-                SELECTOR_ASSOCIATED_VALIDATION,
+                FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                GLOBAL_VALIDATION,
                 ""
             )
         );
