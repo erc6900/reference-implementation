@@ -10,7 +10,6 @@ import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {IPlugin} from "../interfaces/IPlugin.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPermissionHook} from "../interfaces/IPermissionHook.sol";
 import {BasePlugin, IERC165} from "./BasePlugin.sol";
 
 /// @title ERC20 Token Limit Plugin
@@ -20,18 +19,18 @@ import {BasePlugin, IERC165} from "./BasePlugin.sol";
 /// Note: this plugin is opinionated on what selectors can be called for token contracts to guard against weird
 /// edge cases like DAI. You wouldn't be able to use uni v2 pairs directly as the pair contract is also the LP
 /// token contract
-contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook {
+contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    string public constant NAME = "ERC20 Token Limit Plugin";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
 
     struct ERC20SpendLimit {
         address token;
         uint256[] limits;
     }
+
+    string public constant NAME = "ERC20 Token Limit Plugin";
+    string public constant VERSION = "1.0.0";
+    string public constant AUTHOR = "ERC-6900 Authors";
 
     mapping(address account => mapping(address => uint256[] limits)) public limits;
     mapping(address account => EnumerableSet.AddressSet) internal _tokenList;
@@ -71,15 +70,6 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook {
         }
     }
 
-    /// @inheritdoc IPermissionHook
-    function preUserOpExecutionHook(uint8 functionId, PackedUserOperation calldata uo)
-        external
-        override
-        returns (bytes memory)
-    {
-        return _checkSelectorAndDecrementLimit(functionId, uo.callData);
-    }
-
     /// @inheritdoc IExecutionHook
     function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
         external
@@ -93,15 +83,15 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook, IPermissionHook {
         internal
         returns (bytes memory)
     {
-        bytes4 selector = bytes4(data[:4]);
+        (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
 
         if (selector == IStandardExecutor.execute.selector) {
-            (address token,, bytes memory innerCalldata) = abi.decode(data[4:], (address, uint256, bytes));
+            (address token,, bytes memory innerCalldata) = abi.decode(callData, (address, uint256, bytes));
             if (_tokenList[msg.sender].contains(token)) {
                 _decrementLimit(functionId, token, innerCalldata);
             }
         } else if (selector == IStandardExecutor.executeBatch.selector) {
-            Call[] memory calls = abi.decode(data[4:], (Call[]));
+            Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 if (_tokenList[msg.sender].contains(calls[i].target)) {
                     _decrementLimit(functionId, calls[i].target, calls[i].data);
