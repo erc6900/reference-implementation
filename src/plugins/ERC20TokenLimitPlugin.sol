@@ -32,7 +32,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
 
-    mapping(address account => mapping(address => uint256[] limits)) public limits;
+    mapping(address account => mapping(address token => uint256[] limits)) public limits;
     mapping(address account => EnumerableSet.AddressSet) internal _tokenList;
 
     error ExceededNativeTokenLimit();
