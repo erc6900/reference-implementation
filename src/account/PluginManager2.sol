@@ -112,11 +112,12 @@ abstract contract PluginManager2 {
             // Clear pre validation hooks
             EnumerableSet.Bytes32Set storage preValidationHooks =
                 _storage.validationData[validationFunction].preValidationHooks;
+            uint256 i = 0;
             while (preValidationHooks.length() > 0) {
                 FunctionReference preValidationFunction = toFunctionReference(preValidationHooks.at(0));
                 preValidationHooks.remove(toSetValue(preValidationFunction));
                 (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
-                IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[i++]);
             }
         }
 
@@ -126,12 +127,13 @@ abstract contract PluginManager2 {
             // Clear permission hooks
             EnumerableSet.Bytes32Set storage permissionHooks =
                 _storage.validationData[validationFunction].permissionHooks;
+            uint256 i = 0;
             while (permissionHooks.length() > 0) {
                 FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
                 permissionHooks.remove(toSetValue(permissionHook));
                 (address permissionHookPlugin,) = FunctionReferenceLib.unpack(permissionHook);
                 if (permissionHookUninstallDatas[0].length > 0) {
-                    IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[0]);
+                    IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
                 }
             }
         }
