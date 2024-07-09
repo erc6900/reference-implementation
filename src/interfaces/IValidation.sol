@@ -23,6 +23,7 @@ interface IValidation is IPlugin {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
+    /// @param authorization Additional data for the validation function to use.
     function validateRuntime(
         uint8 functionId,
         address sender,

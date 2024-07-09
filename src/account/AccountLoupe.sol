@@ -76,8 +76,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         override
         returns (FunctionReference[] memory preValidationHooks)
     {
-        preValidationHooks =
-            toFunctionReferenceArray(getAccountStorage().validationData[validationFunction].preValidationHooks);
+        preValidationHooks = getAccountStorage().validationData[validationFunction].preValidationHooks;
     }
 
     /// @inheritdoc IAccountLoupe

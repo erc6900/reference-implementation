@@ -57,7 +57,7 @@ contract DefaultValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(ownerValidation, DEFAULT_VALIDATION, r, s, v);
+        userOp.signature = _encodeSignature(ownerValidation, DEFAULT_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -74,7 +74,7 @@ contract DefaultValidationTest is AccountTestBase {
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            abi.encodePacked(ownerValidation, DEFAULT_VALIDATION)
+            _encodeSignature(ownerValidation, DEFAULT_VALIDATION, "")
         );
 
         assertEq(ethRecipient.balance, 2 wei);
