@@ -88,7 +88,7 @@ contract UpgradeableModularAccount is
 
         PostExecToRun[] memory postExecHooks =
             _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
-            
+
         _;
 
         _doCachedPostExecHooks(postExecHooks);
