@@ -5,6 +5,7 @@
       "immutable-vars-naming": ["error"],
       "no-unused-import": ["error"],
       "compiler-version": ["error", ">=0.8.19"],
+      "custom-errors": "off",
       "func-visibility": ["error", { "ignoreConstructors": true }],
       "max-line-length": ["error", 120],
       "max-states-count": ["warn", 30],

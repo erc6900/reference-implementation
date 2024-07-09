@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
@@ -59,8 +59,12 @@ contract AccountReturnDataTest is AccountTestBase {
                 account1.execute,
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
-            abi.encodePacked(
-                singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER, SELECTOR_ASSOCIATED_VALIDATION
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                SELECTOR_ASSOCIATED_VALIDATION,
+                ""
             )
         );
 
@@ -85,8 +89,12 @@ contract AccountReturnDataTest is AccountTestBase {
 
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
-            abi.encodePacked(
-                singleOwnerPlugin, ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER, SELECTOR_ASSOCIATED_VALIDATION
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                SELECTOR_ASSOCIATED_VALIDATION,
+                ""
             )
         );
 

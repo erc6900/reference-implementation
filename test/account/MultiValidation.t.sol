@@ -67,20 +67,24 @@ contract MultiValidationTest is AccountTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(
-                address(validator2),
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                SELECTOR_ASSOCIATED_VALIDATION
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                SELECTOR_ASSOCIATED_VALIDATION,
+                ""
             )
         );
 
         vm.prank(owner2);
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
-            abi.encodePacked(
-                address(validator2),
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                SELECTOR_ASSOCIATED_VALIDATION
+            _encodeSignature(
+                FunctionReferenceLib.pack(
+                    address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
+                ),
+                SELECTOR_ASSOCIATED_VALIDATION,
+                ""
             )
         );
     }
@@ -105,13 +109,10 @@ contract MultiValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(
-            address(validator2),
+        userOp.signature = _encodeSignature(
+            FunctionReferenceLib.pack(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)),
             SELECTOR_ASSOCIATED_VALIDATION,
-            uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-            r,
-            s,
-            v
+            abi.encodePacked(r, s, v)
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -123,8 +124,11 @@ contract MultiValidationTest is AccountTestBase {
 
         userOp.nonce = 1;
         (v, r, s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature =
-            abi.encodePacked(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), r, s, v);
+        userOp.signature = _encodeSignature(
+            FunctionReferenceLib.pack(address(validator2), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)),
+            SELECTOR_ASSOCIATED_VALIDATION,
+            abi.encodePacked(r, s, v)
+        );
 
         userOps[0] = userOp;
         vm.expectRevert(abi.encodeWithSelector(IEntryPoint.FailedOp.selector, 0, "AA24 signature error"));
