@@ -67,7 +67,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         });
         bytes[] memory installDatas = new bytes[](1);
         account1.installValidation(
-            oneHookValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+            oneHookValidation,
+            true,
+            new bytes4[](0),
+            bytes(""),
+            abi.encode(preValidationHooks, installDatas),
+            bytes("")
         );
         account1.installPlugin({
             plugin: address(twoHookPlugin),
@@ -87,7 +92,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         });
         installDatas = new bytes[](2);
         account1.installValidation(
-            twoHookValidation, true, new bytes4[](0), bytes(""), abi.encode(preValidationHooks, installDatas)
+            twoHookValidation,
+            true,
+            new bytes4[](0),
+            bytes(""),
+            abi.encode(preValidationHooks, installDatas),
+            bytes("")
         );
         vm.stopPrank();
     }
