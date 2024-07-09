@@ -38,8 +38,12 @@ struct ValidationData {
     bool isDefault;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
+    // How many execution hooks require the UO context.
+    uint8 requireUOHookCount;
     // The pre validation hooks for this function selector.
     EnumerableSet.Bytes32Set preValidationHooks;
+    // Permission hooks for this validation function.
+    EnumerableSet.Bytes32Set permissionHooks;
 }
 
 struct AccountStorage {

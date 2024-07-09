@@ -125,12 +125,12 @@ abstract contract PluginManagerInternals is IPluginManager {
     }
 
     function _addExecHooks(
-        bytes4 selector,
+        EnumerableSet.Bytes32Set storage hooks,
         FunctionReference hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
-        getAccountStorage().selectorData[selector].executionHooks.add(
+        hooks.add(
             toSetValue(
                 ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
@@ -138,12 +138,12 @@ abstract contract PluginManagerInternals is IPluginManager {
     }
 
     function _removeExecHooks(
-        bytes4 selector,
+        EnumerableSet.Bytes32Set storage hooks,
         FunctionReference hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
-        getAccountStorage().selectorData[selector].executionHooks.remove(
+        hooks.remove(
             toSetValue(
                 ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
             )
@@ -230,8 +230,9 @@ abstract contract PluginManagerInternals is IPluginManager {
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
+            EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
-            _addExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
+            _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.interfaceIds.length;
@@ -282,12 +283,12 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
-
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
-            _removeExecHooks(mh.executionSelector, hookFunction, mh.isPreHook, mh.isPostHook);
+            EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
+            _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.signatureValidationFunctions.length;
