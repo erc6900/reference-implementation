@@ -15,7 +15,6 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountExecHooksTest is AccountTestBase {
     MockPlugin public mockPlugin1;
-    MockPlugin public mockPlugin2;
     bytes32 public manifestHash1;
     bytes32 public manifestHash2;
 
@@ -25,7 +24,6 @@ contract AccountExecHooksTest is AccountTestBase {
     uint8 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
     PluginManifest internal _m1;
-    PluginManifest internal _m2;
 
     event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
@@ -66,7 +64,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 IExecutionHook.preExecutionHook.selector,
                 _PRE_HOOK_FUNCTION_ID_1,
                 address(this), // caller
-                0, // msg.value in call to account
+                uint256(0), // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),
             0 // msg value in call to plugin
@@ -105,7 +103,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 IExecutionHook.preExecutionHook.selector,
                 _BOTH_HOOKS_FUNCTION_ID_3,
                 address(this), // caller
-                0, // msg.value in call to account
+                uint256(0), // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),
             0 // msg value in call to plugin
