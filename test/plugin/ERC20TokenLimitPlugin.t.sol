@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -16,10 +15,9 @@ import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.so
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract ERC20TokenLimitPluginTest is OptimizedTest {
-    EntryPoint public entryPoint = new EntryPoint();
+contract ERC20TokenLimitPluginTest is AccountTestBase {
     address public recipient = address(1);
     MockERC20 public erc20;
     address payable public bundler = payable(address(2));
@@ -80,7 +78,7 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
             preVerificationGas: 200000,
             gasFees: bytes32(uint256(uint128(0))),
             paymasterAndData: "",
-            signature: abi.encodePacked(FunctionReferenceLib.pack(address(validationPlugin), 0), uint8(1))
+            signature: _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
         });
     }
 
@@ -158,7 +156,8 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
     function test_runtime_executeLimit() public {
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
-            _getExecuteWithSpend(5 ether), abi.encodePacked(validationFunction, uint8(1))
+            _getExecuteWithSpend(5 ether),
+            _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
         );
         assertEq(plugin.limits(0, address(erc20), address(acct)), 5 ether);
     }
@@ -177,7 +176,8 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
 
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls)), abi.encodePacked(validationFunction, uint8(1))
+            abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
+            _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
         );
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
     }
