@@ -72,6 +72,7 @@ contract UpgradeableModularAccount is
     error RequireUserOperationContext();
     error RuntimeValidationFunctionMissing(bytes4 selector);
     error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
+    error SelfCallRecursionDepthExceeded();
     error SignatureValidationInvalid(address plugin, uint8 functionId);
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
@@ -216,14 +217,12 @@ contract UpgradeableModularAccount is
         payable
         returns (bytes memory)
     {
-        bytes4 execSelector = bytes4(data[:4]);
-
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
         FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[:21]));
 
         // Check if the runtime validation function is allowed to be called
         bool isDefaultValidation = uint8(authorization[21]) == 1;
-        _checkIfValidationApplies(execSelector, runtimeValidationFunction, isDefaultValidation);
+        _checkIfValidationAppliesCallData(data, runtimeValidationFunction, isDefaultValidation);
 
         _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
 
@@ -388,16 +387,12 @@ contract UpgradeableModularAccount is
         if (userOp.callData.length < 4) {
             revert UnrecognizedFunction(bytes4(userOp.callData));
         }
-        bytes4 selector = bytes4(userOp.callData);
-        if (selector == this.executeUserOp.selector) {
-            selector = bytes4(userOp.callData[4:8]);
-        }
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
         bool isDefaultValidation = uint8(userOp.signature[21]) == 1;
 
-        _checkIfValidationApplies(selector, userOpValidationFunction, isDefaultValidation);
+        _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isDefaultValidation);
 
         // Check if there are permission hooks associated with the validator, and revert if the call isn't to
         // `executeUserOp`
@@ -623,10 +618,64 @@ contract UpgradeableModularAccount is
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
 
-    function _checkIfValidationApplies(bytes4 selector, FunctionReference validationFunction, bool isDefault)
-        internal
-        view
-    {
+    function _checkIfValidationAppliesCallData(
+        bytes calldata callData,
+        FunctionReference validationFunction,
+        bool isDefault
+    ) internal view {
+        bytes4 outerSelector = bytes4(callData[:4]);
+        if (outerSelector == this.executeUserOp.selector) {
+            // If the selector is executeUserOp, pull the actual selector from the following data,
+            // and trim the calldata to ensure the self-call decoding is still accurate.
+            callData = callData[4:];
+            outerSelector = bytes4(callData[:4]);
+        }
+
+        _checkIfValidationAppliesSelector(outerSelector, validationFunction, isDefault);
+
+        if (outerSelector == IStandardExecutor.execute.selector) {
+            (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
+
+            if (target == address(this)) {
+                // There is no point to call `execute` to recurse exactly once - this is equivalent to just having
+                // the calldata as a top-level call.
+                revert SelfCallRecursionDepthExceeded();
+            }
+        } else if (outerSelector == IStandardExecutor.executeBatch.selector) {
+            // executeBatch may be used to batch account actions together, by targetting the account itself.
+            // If this is done, we must ensure all of the inner calls are allowed by the provided validation
+            // function.
+
+            (Call[] memory calls) = abi.decode(callData[4:], (Call[]));
+
+            for (uint256 i = 0; i < calls.length; ++i) {
+                if (calls[i].target == address(this)) {
+                    bytes4 nestedSelector = bytes4(calls[i].data);
+
+                    if (
+                        nestedSelector == IStandardExecutor.execute.selector
+                            || nestedSelector == IStandardExecutor.executeBatch.selector
+                    ) {
+                        // To prevent arbitrarily-deep recursive checking, we limit the depth of self-calls to one
+                        // for the purposes of batching.
+                        // This means that all self-calls must occur at the top level of the batch.
+                        // Note that plugins of other contracts using `executeWithAuthorization` may still
+                        // independently call into this account with a different validation function, allowing
+                        // composition of multiple batches.
+                        revert SelfCallRecursionDepthExceeded();
+                    }
+
+                    _checkIfValidationAppliesSelector(nestedSelector, validationFunction, isDefault);
+                }
+            }
+        }
+    }
+
+    function _checkIfValidationAppliesSelector(
+        bytes4 selector,
+        FunctionReference validationFunction,
+        bool isDefault
+    ) internal view {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check that the provided validation function is applicable to the selector
