@@ -9,7 +9,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
@@ -712,10 +711,7 @@ contract UpgradeableModularAccount is
         // If direct calling isn't allowed OR direct calling is allowed, but the plugin is no longer installed,
         // revert. TBD if there's a better way to do this, e.g. deleting this storage or segmenting per
         // installation ID.
-        if (
-            !_storage.directCallData[msg.sender][msg.sig].allowed
-                || !_storage.plugins.contains(msg.sender)
-        ) {
+        if (!_storage.directCallData[msg.sender][msg.sig].allowed || !_storage.plugins.contains(msg.sender)) {
             revert DirectCallDisallowed();
         }
 
