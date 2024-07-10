@@ -40,6 +40,11 @@ struct ValidationData {
     EnumerableSet.Bytes32Set selectors;
 }
 
+struct DirectCallValidationData {
+    bool allowed; // Whether or not this direct call is allowed.
+    FunctionReference[] preValidationHooks; // The set of pre validation hooks for this direct call.
+}
+
 struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;
@@ -51,6 +56,7 @@ struct AccountStorage {
     mapping(FunctionReference validationFunction => ValidationData) validationData;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
+    mapping(address caller => mapping(bytes4 selector => DirectCallValidationData)) directCallData;
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {
