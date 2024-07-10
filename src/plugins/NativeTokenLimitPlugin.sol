@@ -110,8 +110,11 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
 
     // No implementation, no revert
     // Runtime spends no account gas, and we check native token spend limits in exec hooks
-    // solhint-disable-next-line no-empty-blocks
-    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {}
+    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+    {} // solhint-disable-line no-empty-blocks
 
     /// @inheritdoc IPlugin
     // solhint-disable-next-line no-empty-blocks

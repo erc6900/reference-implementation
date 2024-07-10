@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -14,10 +13,9 @@ import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.so
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-contract NativeTokenLimitPluginTest is OptimizedTest {
-    EntryPoint public entryPoint = new EntryPoint();
+contract NativeTokenLimitPluginTest is AccountTestBase {
     address public recipient = address(1);
     address payable public bundler = payable(address(2));
     PluginManifest internal _m;
@@ -87,7 +85,7 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
             preVerificationGas: gas3,
             gasFees: bytes32(uint256(uint128(gasPrice))),
             paymasterAndData: "",
-            signature: abi.encodePacked(FunctionReferenceLib.pack(address(validationPlugin), 0), uint8(1))
+            signature: _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
         });
     }
 
@@ -184,9 +182,7 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
 
     function test_runtime_executeLimit() public {
         assertEq(plugin.limits(0, address(acct)), 10 ether);
-        acct.executeWithAuthorization(
-            _getExecuteWithValue(5 ether), abi.encodePacked(validationFunction, uint8(1))
-        );
+        acct.executeWithAuthorization(_getExecuteWithValue(5 ether), _encodeSignature(validationFunction, 1, ""));
         assertEq(plugin.limits(0, address(acct)), 5 ether);
     }
 
@@ -198,7 +194,7 @@ contract NativeTokenLimitPluginTest is OptimizedTest {
 
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls)), abi.encodePacked(validationFunction, uint8(1))
+            abi.encodeCall(IStandardExecutor.executeBatch, (calls)), _encodeSignature(validationFunction, 1, "")
         );
         assertEq(plugin.limits(0, address(acct)), 4 ether - 100001);
     }
