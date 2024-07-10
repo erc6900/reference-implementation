@@ -34,8 +34,7 @@ library KnownSelectors {
             || selector == IStandardExecutor.executeWithAuthorization.selector
         // check against IAccountLoupe methods
         || selector == IAccountLoupe.getExecutionFunctionHandler.selector
-            || selector == IAccountLoupe.getValidations.selector
-            || selector == IAccountLoupe.getExecutionHooks.selector
+            || selector == IAccountLoupe.getSelectors.selector || selector == IAccountLoupe.getExecutionHooks.selector
             || selector == IAccountLoupe.getPreValidationHooks.selector
             || selector == IAccountLoupe.getInstalledPlugins.selector;
     }

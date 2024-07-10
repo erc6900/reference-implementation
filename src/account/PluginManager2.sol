@@ -89,7 +89,7 @@ abstract contract PluginManager2 {
 
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
-            if (!_storage.selectorData[selector].validations.add(toSetValue(validationFunction))) {
+            if (!_storage.validationData[validationFunction].selectors.add(toSetValue(selector))) {
                 revert ValidationAlreadySet(selector, validationFunction);
             }
         }
@@ -102,7 +102,6 @@ abstract contract PluginManager2 {
 
     function _uninstallValidation(
         FunctionReference validationFunction,
-        bytes4[] calldata selectors,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
@@ -144,14 +143,10 @@ abstract contract PluginManager2 {
         }
         delete _storage.validationData[validationFunction].preValidationHooks;
 
-        // Because this function also calls `onUninstall`, and removes the default flag from validation, we must
-        // assume these selectors passed in to be exhaustive.
-        // TODO: consider enforcing this from user-supplied install config.
-        for (uint256 i = 0; i < selectors.length; ++i) {
-            bytes4 selector = selectors[i];
-            if (!_storage.selectorData[selector].validations.remove(toSetValue(validationFunction))) {
-                revert ValidationNotSet(selector, validationFunction);
-            }
+        // Clear selectors
+        while (_storage.validationData[validationFunction].selectors.length() > 0) {
+            bytes32 selector = _storage.validationData[validationFunction].selectors.at(0);
+            _storage.validationData[validationFunction].selectors.remove(selector);
         }
 
         if (uninstallData.length > 0) {
