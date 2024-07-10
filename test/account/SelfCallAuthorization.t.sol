@@ -10,20 +10,20 @@ import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.so
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {DefaultValidationFactoryFixture} from "../mocks/DefaultValidationFactoryFixture.sol";
+import {GlobalValidationFactoryFixture} from "../mocks/GlobalValidationFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 
 contract SelfCallAuthorizationTest is AccountTestBase {
-    DefaultValidationFactoryFixture public defaultValidationFactoryFixture;
+    GlobalValidationFactoryFixture public globalValidationFactoryFixture;
 
     ComprehensivePlugin public comprehensivePlugin;
 
     FunctionReference public comprehensivePluginValidation;
 
     function setUp() public {
-        defaultValidationFactoryFixture = new DefaultValidationFactoryFixture(entryPoint, singleOwnerPlugin);
+        globalValidationFactoryFixture = new GlobalValidationFactoryFixture(entryPoint, singleOwnerPlugin);
 
-        account1 = UpgradeableModularAccount(payable(defaultValidationFactoryFixture.createAccount(owner1, 0)));
+        account1 = UpgradeableModularAccount(payable(globalValidationFactoryFixture.createAccount(owner1, 0)));
 
         vm.deal(address(account1), 100 ether);
 
@@ -41,7 +41,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallFails_userOp() public {
-        // Uses default validation
+        // Uses global validation
         _runUserOp(
             abi.encodeCall(ComprehensivePlugin.foo, ()),
             abi.encodeWithSelector(
@@ -57,7 +57,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallFails_execUserOp() public {
-        // Uses default validation
+        // Uses global validation
         _runUserOp(
             abi.encodePacked(IAccountExecute.executeUserOp.selector, abi.encodeCall(ComprehensivePlugin.foo, ())),
             abi.encodeWithSelector(
@@ -73,7 +73,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallFails_runtime() public {
-        // Uses default validation
+        // Uses global validation
         _runtimeCall(
             abi.encodeCall(ComprehensivePlugin.foo, ()),
             abi.encodeWithSelector(
@@ -84,7 +84,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallPrivilegeEscalation_prevented_userOp() public {
-        // Using default validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
         _runUserOp(
             abi.encodeCall(
                 UpgradeableModularAccount.execute,
@@ -116,7 +116,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallPrivilegeEscalation_prevented_execUserOp() public {
-        // Using default validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
         _runUserOp(
             abi.encodePacked(
                 IAccountExecute.executeUserOp.selector,
@@ -153,7 +153,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     }
 
     function test_selfCallPrivilegeEscalation_prevented_runtime() public {
-        // Using default validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
         _runtimeCall(
             abi.encodeCall(
                 UpgradeableModularAccount.execute,
@@ -312,7 +312,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 UpgradeableModularAccount.installValidation,
                 (comprehensivePluginValidation, false, selectors, "", "", "")
             ),
-            _encodeSignature(_ownerValidation, DEFAULT_VALIDATION, "")
+            _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
         );
     }
 

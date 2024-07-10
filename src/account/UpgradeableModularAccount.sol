@@ -77,7 +77,7 @@ contract UpgradeableModularAccount is
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
-    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isDefault);
+    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
 
@@ -180,7 +180,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function execute(address target, uint256 value, bytes calldata data)
         external
         payable
@@ -192,7 +192,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IStandardExecutor
-    /// @notice May be validated by a default validation function.
+    /// @notice May be validated by a global validation function.
     function executeBatch(Call[] calldata calls)
         external
         payable
@@ -218,8 +218,8 @@ contract UpgradeableModularAccount is
         FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[:21]));
 
         // Check if the runtime validation function is allowed to be called
-        bool isDefaultValidation = uint8(authorization[21]) == 1;
-        _checkIfValidationAppliesCallData(data, runtimeValidationFunction, isDefaultValidation);
+        bool isGlobalValidation = uint8(authorization[21]) == 1;
+        _checkIfValidationAppliesCallData(data, runtimeValidationFunction, isGlobalValidation);
 
         _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
 
@@ -242,7 +242,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function installPlugin(address plugin, bytes32 manifestHash, bytes calldata pluginInstallData)
         external
         override
@@ -252,7 +252,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc IPluginManager
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
         external
         override
@@ -269,40 +269,41 @@ contract UpgradeableModularAccount is
         _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 
-    /// @notice Initializes the account with a validation function added to the default pool.
+    /// @notice Initializes the account with a validation function added to the global pool.
     /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
     /// with user install configs.
     /// @dev This function is only callable once, and only by the EntryPoint.
-
     function initializeWithValidation(
         FunctionReference validationFunction,
-        bool shared,
+        bool isGlobal,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,
         bytes calldata permissionHooks
     ) external initializer {
-        _installValidation(validationFunction, shared, selectors, installData, preValidationHooks, permissionHooks);
+        _installValidation(
+            validationFunction, isGlobal, selectors, installData, preValidationHooks, permissionHooks
+        );
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
     /// @inheritdoc IPluginManager
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function installValidation(
         FunctionReference validationFunction,
-        bool isDefault,
+        bool isGlobal,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,
         bytes calldata permissionHooks
     ) external wrapNativeFunction {
         _installValidation(
-            validationFunction, isDefault, selectors, installData, preValidationHooks, permissionHooks
+            validationFunction, isGlobal, selectors, installData, preValidationHooks, permissionHooks
         );
     }
 
     /// @inheritdoc IPluginManager
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function uninstallValidation(
         FunctionReference validationFunction,
         bytes calldata uninstallData,
@@ -330,7 +331,7 @@ contract UpgradeableModularAccount is
     }
 
     /// @inheritdoc UUPSUpgradeable
-    /// @notice May be validated by a default validation.
+    /// @notice May be validated by a global validation.
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
@@ -381,9 +382,9 @@ contract UpgradeableModularAccount is
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
         FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
-        bool isDefaultValidation = uint8(userOp.signature[21]) == 1;
+        bool isGlobalValidation = uint8(userOp.signature[21]) == 1;
 
-        _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isDefaultValidation);
+        _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isGlobalValidation);
 
         // Check if there are permission hooks associated with the validator, and revert if the call isn't to
         // `executeUserOp`
@@ -612,7 +613,7 @@ contract UpgradeableModularAccount is
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
         FunctionReference validationFunction,
-        bool isDefault
+        bool isGlobal
     ) internal view {
         bytes4 outerSelector = bytes4(callData[:4]);
         if (outerSelector == this.executeUserOp.selector) {
@@ -622,7 +623,7 @@ contract UpgradeableModularAccount is
             outerSelector = bytes4(callData[:4]);
         }
 
-        _checkIfValidationAppliesSelector(outerSelector, validationFunction, isDefault);
+        _checkIfValidationAppliesSelector(outerSelector, validationFunction, isGlobal);
 
         if (outerSelector == IStandardExecutor.execute.selector) {
             (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
@@ -656,7 +657,7 @@ contract UpgradeableModularAccount is
                         revert SelfCallRecursionDepthExceeded();
                     }
 
-                    _checkIfValidationAppliesSelector(nestedSelector, validationFunction, isDefault);
+                    _checkIfValidationAppliesSelector(nestedSelector, validationFunction, isGlobal);
                 }
             }
         }
@@ -665,24 +666,24 @@ contract UpgradeableModularAccount is
     function _checkIfValidationAppliesSelector(
         bytes4 selector,
         FunctionReference validationFunction,
-        bool isDefault
+        bool isGlobal
     ) internal view {
         AccountStorage storage _storage = getAccountStorage();
 
         // Check that the provided validation function is applicable to the selector
-        if (isDefault) {
-            if (!_defaultValidationAllowed(selector) || !_storage.validationData[validationFunction].isDefault) {
+        if (isGlobal) {
+            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         } else {
-            // Not default validation, but per-selector
+            // Not global validation, but per-selector
             if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
                 revert UserOpValidationFunctionMissing(selector);
             }
         }
     }
 
-    function _defaultValidationAllowed(bytes4 selector) internal view returns (bool) {
+    function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
         if (
             selector == this.execute.selector || selector == this.executeBatch.selector
                 || selector == this.installPlugin.selector || selector == this.uninstallPlugin.selector
@@ -692,7 +693,7 @@ contract UpgradeableModularAccount is
             return true;
         }
 
-        return getAccountStorage().selectorData[selector].allowDefaultValidation;
+        return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
     function _checkPermittedCallerIfNotFromEP() internal view {

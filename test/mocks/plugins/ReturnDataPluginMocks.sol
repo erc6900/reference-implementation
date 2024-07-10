@@ -44,12 +44,12 @@ contract ResultCreatorPlugin is BasePlugin {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
             isPublic: true,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
             isPublic: false,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         return manifest;
@@ -131,12 +131,12 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.checkResultFallback.selector,
             isPublic: true,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.checkResultExecuteWithAuthorization.selector,
             isPublic: true,
-            allowDefaultValidation: false
+            allowGlobalValidation: false
         });
 
         return manifest;

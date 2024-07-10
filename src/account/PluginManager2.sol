@@ -16,7 +16,7 @@ abstract contract PluginManager2 {
     // Index marking the start of the data for the validation function.
     uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
 
-    error DefaultValidationAlreadySet(FunctionReference validationFunction);
+    error GlobalValidationAlreadySet(FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
     error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
@@ -25,7 +25,7 @@ abstract contract PluginManager2 {
 
     function _installValidation(
         FunctionReference validationFunction,
-        bool isDefault,
+        bool isGlobal,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes memory preValidationHooks,
@@ -80,11 +80,11 @@ abstract contract PluginManager2 {
             }
         }
 
-        if (isDefault) {
-            if (_storage.validationData[validationFunction].isDefault) {
-                revert DefaultValidationAlreadySet(validationFunction);
+        if (isGlobal) {
+            if (_storage.validationData[validationFunction].isGlobal) {
+                revert GlobalValidationAlreadySet(validationFunction);
             }
-            _storage.validationData[validationFunction].isDefault = true;
+            _storage.validationData[validationFunction].isGlobal = true;
         }
 
         for (uint256 i = 0; i < selectors.length; ++i) {
@@ -108,7 +108,7 @@ abstract contract PluginManager2 {
     ) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        _storage.validationData[validationFunction].isDefault = false;
+        _storage.validationData[validationFunction].isGlobal = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
 
         {
