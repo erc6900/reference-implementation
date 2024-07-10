@@ -22,9 +22,9 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    string internal constant NAME = "Native Token Limit";
-    string internal constant VERSION = "1.0.0";
-    string internal constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "Native Token Limit";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     mapping(uint256 funcIds => mapping(address account => uint256 limit)) public limits;
     // Accounts should add paymasters that still use the accounts tokens here
@@ -54,7 +54,13 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         ) {
             uint256 vgl = UserOperationLib.unpackVerificationGasLimit(userOp);
             uint256 cgl = UserOperationLib.unpackCallGasLimit(userOp);
-            uint256 totalGas = userOp.preVerificationGas + vgl + cgl;
+            uint256 pvgl;
+            uint256 ppogl;
+            if (userOp.paymasterAndData.length > 0) {
+                // Can skip the EP length check here since it would have reverted there if it was invalid
+                (, pvgl, ppogl) = UserOperationLib.unpackPaymasterStaticFields(userOp.paymasterAndData);
+            }
+            uint256 totalGas = userOp.preVerificationGas + vgl + cgl + pvgl + ppogl;
             uint256 usage = totalGas * UserOperationLib.unpackMaxFeePerGas(userOp);
 
             uint256 limit = limits[functionId][msg.sender];
@@ -104,21 +110,19 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
 
     // No implementation, no revert
     // Runtime spends no account gas, and we check native token spend limits in exec hooks
+    // solhint-disable-next-line no-empty-blocks
     function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {}
 
     /// @inheritdoc IPlugin
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        // silence warnings
-        PluginManifest memory manifest;
-        return manifest;
-    }
+    // solhint-disable-next-line no-empty-blocks
+    function pluginManifest() external pure override returns (PluginManifest memory) {}
 
     /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
 
         metadata.permissionRequest = new string[](2);
         metadata.permissionRequest[0] = "native-token-limit";
