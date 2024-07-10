@@ -22,9 +22,9 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    string public constant NAME = "Native Token Limit";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant NAME = "Native Token Limit";
+    string internal constant VERSION = "1.0.0";
+    string internal constant AUTHOR = "ERC-6900 Authors";
 
     mapping(uint256 funcIds => mapping(address account => uint256 limit)) public limits;
     // Accounts should add paymasters that still use the accounts tokens here
@@ -104,10 +104,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
 
     // No implementation, no revert
     // Runtime spends no account gas, and we check native token spend limits in exec hooks
-    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata) external pure override {
-        // silence warnings
-        (functionId);
-    }
+    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata) external pure override {}
 
     /// @inheritdoc IPlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
@@ -135,7 +132,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
 
     /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == type(IExecutionHook).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _checkAndDecrementLimit(uint8 functionId, bytes calldata data) internal returns (bytes memory) {
