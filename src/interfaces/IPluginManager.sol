@@ -17,19 +17,19 @@ interface IPluginManager {
 
     /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
     /// path.
-    /// Installs a validation function across a set of execution selectors, and optionally mark it as a default
+    /// Installs a validation function across a set of execution selectors, and optionally mark it as a global
     /// validation.
     /// TODO: remove or update.
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param validationFunction The validation function to install.
-    /// @param isDefault Whether the validation function applies for all selectors in the default pool.
+    /// @param isGlobal Whether the validation function applies for all selectors in the global pool.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the plugin to setup initial plugin state.
     /// @param preValidationHooks Optional pre-validation hooks to install for the validation function.
     /// @param permissionHooks Optional permission hooks to install for the validation function.
     function installValidation(
         FunctionReference validationFunction,
-        bool isDefault,
+        bool isGlobal,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,

@@ -19,15 +19,15 @@ struct SelectorData {
     // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
     // drain the account of native tokens by wasting gas.
     bool isPublic;
-    // Whether or not a default validation function may be used to validate this function.
-    bool allowDefaultValidation;
+    // Whether or not a global validation function may be used to validate this function.
+    bool allowGlobalValidation;
     // The execution hooks for this function selector.
     EnumerableSet.Bytes32Set executionHooks;
 }
 
 struct ValidationData {
-    // Whether or not this validation can be used as a default validation function.
-    bool isDefault;
+    // Whether or not this validation can be used as a global validation function.
+    bool isGlobal;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
     // How many execution hooks require the UO context.

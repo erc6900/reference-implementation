@@ -9,8 +9,8 @@ struct ManifestExecutionFunction {
     bytes4 executionSelector;
     // If true, the function won't need runtime validation, and can be called by anyone.
     bool isPublic;
-    // If true, the function can be validated by a default validation function.
-    bool allowDefaultValidation;
+    // If true, the function can be validated by a global validation function.
+    bool allowGlobalValidation;
 }
 
 // todo: do we need these at all? Or do we fully switch to `installValidation`?

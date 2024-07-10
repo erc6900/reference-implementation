@@ -33,7 +33,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowDefaultValidation, address plugin)
+    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowGlobalValidation, address plugin)
         internal
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
@@ -64,7 +64,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         _selectorData.plugin = plugin;
         _selectorData.isPublic = isPublic;
-        _selectorData.allowDefaultValidation = allowDefaultValidation;
+        _selectorData.allowGlobalValidation = allowGlobalValidation;
     }
 
     function _removeExecutionFunction(bytes4 selector) internal {
@@ -72,7 +72,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         _selectorData.plugin = address(0);
         _selectorData.isPublic = false;
-        _selectorData.allowDefaultValidation = false;
+        _selectorData.allowGlobalValidation = false;
     }
 
     function _addValidationFunction(address plugin, ManifestValidation memory mv) internal {
@@ -81,7 +81,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.functionId);
 
         if (mv.isDefault) {
-            _storage.validationData[validationFunction].isDefault = true;
+            _storage.validationData[validationFunction].isGlobal = true;
         }
 
         if (mv.isSignatureValidation) {
@@ -101,7 +101,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.functionId);
 
-        _storage.validationData[validationFunction].isDefault = false;
+        _storage.validationData[validationFunction].isGlobal = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
 
         // Clear the selectors
@@ -168,8 +168,8 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             bytes4 selector = manifest.executionFunctions[i].executionSelector;
             bool isPublic = manifest.executionFunctions[i].isPublic;
-            bool allowDefaultValidation = manifest.executionFunctions[i].allowDefaultValidation;
-            _setExecutionFunction(selector, isPublic, allowDefaultValidation, plugin);
+            bool allowGlobalValidation = manifest.executionFunctions[i].allowGlobalValidation;
+            _setExecutionFunction(selector, isPublic, allowGlobalValidation, plugin);
         }
 
         length = manifest.validationFunctions.length;
