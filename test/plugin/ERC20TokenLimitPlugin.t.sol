@@ -55,7 +55,7 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
         limit[0] = ERC20TokenLimitPlugin.ERC20SpendLimit({token: address(erc20), limits: limits});
 
         bytes[] memory permissionInitDatas = new bytes[](1);
-        permissionInitDatas[0] = abi.encode(limit);
+        permissionInitDatas[0] = abi.encode(uint8(0), limit);
 
         vm.prank(address(acct));
         acct.installValidation(
@@ -93,9 +93,9 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
 
     function test_userOp_executeLimit() public {
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(_getExecuteWithSpend(5 ether)), bytes32(0));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 5 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 5 ether);
     }
 
     function test_userOp_executeBatchLimit() public {
@@ -111,9 +111,9 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit() public {
@@ -129,9 +129,9 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit_fail() public {
@@ -147,20 +147,20 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
         uos[0] = _getPackedUO(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
         // no spend consumed
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
     }
 
     function test_runtime_executeLimit() public {
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
             _getExecuteWithSpend(5 ether), abi.encodePacked(validationFunction, uint8(1))
         );
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 5 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 5 ether);
     }
 
     function test_runtime_executeBatchLimit() public {
@@ -175,10 +175,10 @@ contract ERC20TokenLimitPluginTest is OptimizedTest {
             data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100000))
         });
 
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)), abi.encodePacked(validationFunction, uint8(1))
         );
-        assertEq(plugin.limits(address(acct), address(erc20), 0), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
     }
 }
