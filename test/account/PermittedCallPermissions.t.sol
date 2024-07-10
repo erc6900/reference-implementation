@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
 import {PermittedCallerPlugin} from "../mocks/plugins/PermittedCallMocks.sol";
@@ -27,8 +26,7 @@ contract PermittedCallPermissionsTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
         // Add the permitted caller plugin to the account
         bytes32 permittedCallerManifestHash = keccak256(abi.encode(permittedCallerPlugin.pluginManifest()));
@@ -36,8 +34,7 @@ contract PermittedCallPermissionsTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(permittedCallerPlugin),
             manifestHash: permittedCallerManifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
     }
 

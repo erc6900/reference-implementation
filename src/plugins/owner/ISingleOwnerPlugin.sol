@@ -5,8 +5,7 @@ import {IValidation} from "../../interfaces/IValidation.sol";
 
 interface ISingleOwnerPlugin is IValidation {
     enum FunctionId {
-        VALIDATION_OWNER,
-        SIG_VALIDATION
+        VALIDATION_OWNER
     }
 
     /// @notice This event is emitted when ownership of the account changes.

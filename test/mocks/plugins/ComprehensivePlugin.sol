@@ -6,9 +6,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {
     ManifestExecutionHook,
     ManifestExecutionFunction,
-    ManifestFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
+    ManifestValidation,
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
@@ -142,15 +140,15 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
             allowDefaultValidation: false
         });
 
-        ManifestFunction memory fooValidationFunction = ManifestFunction({
-            functionType: ManifestAssociatedFunctionType.SELF,
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = this.foo.selector;
+
+        manifest.validationFunctions = new ManifestValidation[](1);
+        manifest.validationFunctions[0] = ManifestValidation({
             functionId: uint8(FunctionId.VALIDATION),
-            dependencyIndex: 0 // Unused.
-        });
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: this.foo.selector,
-            associatedFunction: fooValidationFunction
+            isDefault: true,
+            isSignatureValidation: false,
+            selectors: validationSelectors
         });
 
         manifest.executionHooks = new ManifestExecutionHook[](3);

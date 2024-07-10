@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
@@ -11,7 +12,7 @@ import {getAccountStorage, toExecutionHook, toSelector} from "./AccountStorage.s
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     /// @inheritdoc IAccountLoupe
     function getExecutionFunctionHandler(bytes4 selector) external view override returns (address plugin) {
@@ -89,6 +90,6 @@ abstract contract AccountLoupe is IAccountLoupe {
 
     /// @inheritdoc IAccountLoupe
     function getInstalledPlugins() external view override returns (address[] memory pluginAddresses) {
-        pluginAddresses = getAccountStorage().plugins.values();
+        pluginAddresses = getAccountStorage().pluginManifestHashes.keys();
     }
 }

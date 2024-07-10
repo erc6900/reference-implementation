@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
@@ -31,8 +31,7 @@ contract AccountReturnDataTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(resultCreatorPlugin),
             manifestHash: resultCreatorManifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
         // Add the result consumer plugin to the account
         bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
@@ -40,8 +39,7 @@ contract AccountReturnDataTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(resultConsumerPlugin),
             manifestHash: resultConsumerManifestHash,
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
     }
 
