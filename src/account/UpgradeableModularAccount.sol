@@ -279,11 +279,15 @@ contract UpgradeableModularAccount is
     /// with user install configs.
     /// @dev This function is only callable once, and only by the EntryPoint.
 
-    function initializeDefaultValidation(FunctionReference validationFunction, bytes calldata installData)
-        external
-        initializer
-    {
-        _installValidation(validationFunction, true, new bytes4[](0), installData, bytes(""), bytes(""));
+    function initializeWithValidation(
+        FunctionReference validationFunction,
+        bool shared,
+        bytes4[] memory selectors,
+        bytes calldata installData,
+        bytes calldata preValidationHooks,
+        bytes calldata permissionHooks
+    ) external initializer {
+        _installValidation(validationFunction, shared, selectors, installData, preValidationHooks, permissionHooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
