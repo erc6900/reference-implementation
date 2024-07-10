@@ -35,7 +35,7 @@ abstract contract AccountTestBase is OptimizedTest {
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
     uint8 public constant DEFAULT_VALIDATION = 1;
 
-    uint256 public constant CALL_GAS_LIMIT = 50000;
+    uint256 public constant CALL_GAS_LIMIT = 100000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
 
     struct PreValidationHookData {
