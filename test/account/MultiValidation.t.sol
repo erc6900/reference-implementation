@@ -34,7 +34,7 @@ contract MultiValidationTest is AccountTestBase {
     function test_overlappingValidationInstall() public {
         bytes32 manifestHash = keccak256(abi.encode(validator2.pluginManifest()));
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(validator2), manifestHash, abi.encode(owner2), new FunctionReference[](0));
+        account1.installPlugin(address(validator2), manifestHash, abi.encode(owner2));
 
         FunctionReference[] memory validations = new FunctionReference[](2);
         validations[0] = FunctionReferenceLib.pack(

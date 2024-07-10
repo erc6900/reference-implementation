@@ -49,14 +49,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(noHookPlugin),
             manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
         account1.installPlugin({
             plugin: address(oneHookPlugin),
             manifestHash: keccak256(abi.encode(oneHookPlugin.pluginManifest())),
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
         // TODO: change with new install flow
         // temporary fix to add the pre-validation hook
@@ -77,8 +75,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         account1.installPlugin({
             plugin: address(twoHookPlugin),
             manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
-            pluginInstallData: "",
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: ""
         });
         // temporary fix to add the pre-validation hook
         preValidationHooks = new FunctionReference[](2);

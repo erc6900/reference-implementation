@@ -33,7 +33,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(comprehensivePlugin), manifestHash, "", new FunctionReference[](0));
+        account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
 
         comprehensivePluginValidation = FunctionReferenceLib.pack(
             address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)

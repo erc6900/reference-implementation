@@ -8,7 +8,6 @@ import {
     PluginManifest
 } from "../../src/interfaces/IPlugin.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -25,7 +24,7 @@ contract AccountExecHooksTest is AccountTestBase {
 
     PluginManifest internal _m1;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash, FunctionReference[] dependencies);
+    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     // emitted by MockPlugin
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -168,14 +167,13 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin1), manifestHash1, new FunctionReference[](0));
+        emit PluginInstalled(address(mockPlugin1), manifestHash1);
 
         vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(mockPlugin1),
             manifestHash: manifestHash1,
-            pluginInstallData: bytes(""),
-            dependencies: new FunctionReference[](0)
+            pluginInstallData: bytes("")
         });
     }
 

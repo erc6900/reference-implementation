@@ -5,9 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {
     ManifestExecutionFunction,
-    ManifestAssociatedFunctionType,
-    ManifestAssociatedFunction,
-    ManifestFunction,
+    ManifestValidation,
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
@@ -117,14 +115,16 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        manifest.validationFunctions = new ManifestAssociatedFunction[](1);
-        manifest.validationFunctions[0] = ManifestAssociatedFunction({
-            executionSelector: IStandardExecutor.execute.selector,
-            associatedFunction: ManifestFunction({
-                functionType: ManifestAssociatedFunctionType.SELF,
-                functionId: uint8(0),
-                dependencyIndex: 0
-            })
+        // todo: this is the exact workflow that would benefit from a "permiteed call" setup in the manifest.
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = IStandardExecutor.execute.selector;
+
+        manifest.validationFunctions = new ManifestValidation[](1);
+        manifest.validationFunctions[0] = ManifestValidation({
+            functionId: 0,
+            isDefault: true,
+            isSignatureValidation: false,
+            selectors: validationSelectors
         });
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);

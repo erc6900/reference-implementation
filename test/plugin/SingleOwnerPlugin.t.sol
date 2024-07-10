@@ -156,7 +156,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should fail
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
                 address(this),
                 digest,
                 abi.encodePacked(r, s, v)
@@ -171,7 +171,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should pass
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION),
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
                 address(this),
                 digest,
                 abi.encodePacked(r, s, v)
@@ -186,7 +186,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.SIG_VALIDATION), address(this), digest, signature
+                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), address(this), digest, signature
             ),
             _1271_MAGIC_VALUE
         );
