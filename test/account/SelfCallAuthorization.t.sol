@@ -28,7 +28,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
 
         comprehensivePluginValidation = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.VALIDATION)
         );
     }
 

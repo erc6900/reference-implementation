@@ -68,18 +68,18 @@ contract UpgradeableModularAccount is
     error NativeTokenSpendingNotPermitted(address plugin);
     error NonCanonicalEncoding();
     error NotEntryPoint();
-    error PostExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
-    error PreExecHookReverted(address plugin, uint8 functionId, bytes revertReason);
-    error PreRuntimeValidationHookFailed(address plugin, uint8 functionId, bytes revertReason);
+    error PostExecHookReverted(address plugin, uint8 validationId, bytes revertReason);
+    error PreExecHookReverted(address plugin, uint8 validationId, bytes revertReason);
+    error PreRuntimeValidationHookFailed(address plugin, uint8 validationId, bytes revertReason);
     error RequireUserOperationContext();
     error RuntimeValidationFunctionMissing(bytes4 selector);
-    error RuntimeValidationFunctionReverted(address plugin, uint8 functionId, bytes revertReason);
+    error RuntimeValidationFunctionReverted(address plugin, uint8 validationId, bytes revertReason);
     error SelfCallRecursionDepthExceeded();
-    error SignatureValidationInvalid(address plugin, uint8 functionId);
-    error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
+    error SignatureValidationInvalid(address plugin, uint8 validationId);
+    error UnexpectedAggregator(address plugin, uint8 validationId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
-    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isGlobal);
+    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 validationId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
 
@@ -343,13 +343,13 @@ contract UpgradeableModularAccount is
 
         FunctionReference sigValidation = FunctionReference.wrap(bytes21(signature));
 
-        (address plugin, uint8 functionId) = sigValidation.unpack();
+        (address plugin, uint8 validationId) = sigValidation.unpack();
         if (!_storage.validationData[sigValidation].isSignatureValidation) {
-            revert SignatureValidationInvalid(plugin, functionId);
+            revert SignatureValidationInvalid(plugin, validationId);
         }
 
         if (
-            IValidation(plugin).validateSignature(functionId, msg.sender, hash, signature[21:])
+            IValidation(plugin).validateSignature(validationId, msg.sender, hash, signature[21:])
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
@@ -434,13 +434,13 @@ contract UpgradeableModularAccount is
                 userOp.signature = "";
             }
 
-            (address plugin, uint8 functionId) = preUserOpValidationHooks[i].unpack();
+            (address plugin, uint8 validationId) = preUserOpValidationHooks[i].unpack();
             uint256 currentValidationData =
-                IValidationHook(plugin).preUserOpValidationHook(functionId, userOp, userOpHash);
+                IValidationHook(plugin).preUserOpValidationHook(validationId, userOp, userOpHash);
 
             if (uint160(currentValidationData) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
-                revert UnexpectedAggregator(plugin, functionId, address(uint160(currentValidationData)));
+                revert UnexpectedAggregator(plugin, validationId, address(uint160(currentValidationData)));
             }
             validationData = _coalescePreValidation(validationData, currentValidationData);
         }
@@ -453,8 +453,8 @@ contract UpgradeableModularAccount is
 
             userOp.signature = signatureSegment.getBody();
 
-            (address plugin, uint8 functionId) = userOpValidationFunction.unpack();
-            uint256 currentValidationData = IValidation(plugin).validateUserOp(functionId, userOp, userOpHash);
+            (address plugin, uint8 validationId) = userOpValidationFunction.unpack();
+            uint256 currentValidationData = IValidation(plugin).validateUserOp(validationId, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -501,15 +501,15 @@ contract UpgradeableModularAccount is
                 currentAuthData = "";
             }
 
-            (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHooks[i].unpack();
+            (address hookPlugin, uint8 hookValidationId) = preRuntimeValidationHooks[i].unpack();
             try IValidationHook(hookPlugin).preRuntimeValidationHook(
-                hookFunctionId, msg.sender, msg.value, callData, currentAuthData
+                hookValidationId, msg.sender, msg.value, callData, currentAuthData
             )
             // forgefmt: disable-start
             // solhint-disable-next-line no-empty-blocks
             {} catch (bytes memory revertReason) {
             // forgefmt: disable-end
-                revert PreRuntimeValidationHookFailed(hookPlugin, hookFunctionId, revertReason);
+                revert PreRuntimeValidationHookFailed(hookPlugin, hookValidationId, revertReason);
             }
         }
 
@@ -517,14 +517,16 @@ contract UpgradeableModularAccount is
             revert ValidationSignatureSegmentMissing();
         }
 
-        (address plugin, uint8 functionId) = runtimeValidationFunction.unpack();
+        (address plugin, uint8 validationId) = runtimeValidationFunction.unpack();
 
-        try IValidation(plugin).validateRuntime(functionId, msg.sender, msg.value, callData, authSegment.getBody())
+        try IValidation(plugin).validateRuntime(
+            validationId, msg.sender, msg.value, callData, authSegment.getBody()
+        )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
         {} catch (bytes memory revertReason) {
         // forgefmt: disable-end
-            revert RuntimeValidationFunctionReverted(plugin, functionId, revertReason);
+            revert RuntimeValidationFunctionReverted(plugin, validationId, revertReason);
         }
     }
 
@@ -569,14 +571,14 @@ contract UpgradeableModularAccount is
         internal
         returns (bytes memory preExecHookReturnData)
     {
-        (address plugin, uint8 functionId) = preExecHook.unpack();
-        try IExecutionHook(plugin).preExecutionHook(functionId, msg.sender, msg.value, data) returns (
+        (address plugin, uint8 validationId) = preExecHook.unpack();
+        try IExecutionHook(plugin).preExecutionHook(validationId, msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
         } catch (bytes memory revertReason) {
             // TODO: same issue with EP0.6 - we can't do bytes4 error codes in plugins
-            revert PreExecHookReverted(plugin, functionId, revertReason);
+            revert PreExecHookReverted(plugin, validationId, revertReason);
         }
     }
 
@@ -594,11 +596,11 @@ contract UpgradeableModularAccount is
                 continue;
             }
 
-            (address plugin, uint8 functionId) = postHookToRun.postExecHook.unpack();
+            (address plugin, uint8 validationId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
-            try IExecutionHook(plugin).postExecutionHook(functionId, postHookToRun.preExecHookReturnData) {}
+            try IExecutionHook(plugin).postExecutionHook(validationId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
-                revert PostExecHookReverted(plugin, functionId, revertReason);
+                revert PostExecHookReverted(plugin, validationId, revertReason);
             }
         }
     }

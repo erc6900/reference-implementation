@@ -14,7 +14,7 @@ import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {
-    enum FunctionId {
+    enum ValidationId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2
@@ -32,27 +32,27 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function preUserOpValidationHook(uint8 validationId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_1)) {
+        if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_1)) {
             return _preUserOpValidationHook1Data;
-        } else if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_2)) {
+        } else if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_2)) {
             return _preUserOpValidationHook2Data;
         }
         revert NotImplemented();
     }
 
-    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint8 validationId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
+        if (validationId == uint8(ValidationId.USER_OP_VALIDATION)) {
             return _userOpValidationFunctionData;
         }
         revert NotImplemented();
@@ -108,7 +108,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            validationId: uint8(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -151,7 +151,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](2);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            validationId: uint8(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -197,7 +197,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            validationId: uint8(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors

@@ -184,7 +184,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                     return abi.encodeWithSelector(
                         UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                         address(allowlistPlugin),
-                        uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK),
+                        uint8(AllowlistPlugin.ValidationId.PRE_VALIDATION_HOOK),
                         abi.encodeWithSelector(AllowlistPlugin.SelectorNotAllowed.selector)
                     );
                 }
@@ -192,7 +192,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                 return abi.encodeWithSelector(
                     UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                     address(allowlistPlugin),
-                    uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK),
+                    uint8(AllowlistPlugin.ValidationId.PRE_VALIDATION_HOOK),
                     abi.encodeWithSelector(AllowlistPlugin.TargetNotAllowed.selector)
                 );
             }
@@ -293,7 +293,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
         FunctionReference accessControlHook = FunctionReferenceLib.pack(
-            address(allowlistPlugin), uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK)
+            address(allowlistPlugin), uint8(AllowlistPlugin.ValidationId.PRE_VALIDATION_HOOK)
         );
 
         FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
