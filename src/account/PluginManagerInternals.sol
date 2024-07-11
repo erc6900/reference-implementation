@@ -78,7 +78,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _addValidationFunction(address plugin, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.functionId);
+        FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.validationId);
 
         if (mv.isDefault) {
             _storage.validationData[validationFunction].isGlobal = true;
@@ -99,7 +99,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _removeValidationFunction(address plugin, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.functionId);
+        FunctionReference validationFunction = FunctionReferenceLib.pack(plugin, mv.validationId);
 
         _storage.validationData[validationFunction].isGlobal = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
@@ -183,7 +183,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
+            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.validationId);
             _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
@@ -223,7 +223,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.functionId);
+            FunctionReference hookFunction = FunctionReferenceLib.pack(plugin, mh.validationId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }

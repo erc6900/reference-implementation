@@ -121,7 +121,7 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: 0,
+            validationId: 0,
             isDefault: true,
             isSignatureValidation: false,
             selectors: validationSelectors

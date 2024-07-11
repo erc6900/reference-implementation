@@ -9,16 +9,16 @@ import {FunctionReference} from "../../src/interfaces/IPluginManager.sol";
 contract FunctionReferenceLibTest is Test {
     using FunctionReferenceLib for FunctionReference;
 
-    function testFuzz_functionReference_packing(address addr, uint8 functionId) public {
+    function testFuzz_functionReference_packing(address addr, uint8 validationId) public {
         // console.log("addr: ", addr);
-        // console.log("functionId: ", vm.toString(functionId));
-        FunctionReference fr = FunctionReferenceLib.pack(addr, functionId);
+        // console.log("validationId: ", vm.toString(validationId));
+        FunctionReference fr = FunctionReferenceLib.pack(addr, validationId);
         // console.log("packed: ", vm.toString(FunctionReference.unwrap(fr)));
-        (address addr2, uint8 functionId2) = FunctionReferenceLib.unpack(fr);
+        (address addr2, uint8 validationId2) = FunctionReferenceLib.unpack(fr);
         // console.log("addr2: ", addr2);
-        // console.log("functionId2: ", vm.toString(functionId2));
+        // console.log("validationId2: ", vm.toString(validationId2));
         assertEq(addr, addr2);
-        assertEq(functionId, functionId2);
+        assertEq(validationId, validationId2);
     }
 
     function testFuzz_functionReference_operators(FunctionReference a, FunctionReference b) public {

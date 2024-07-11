@@ -33,17 +33,17 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         noHookValidation = FunctionReferenceLib.pack({
             addr: address(noHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.USER_OP_VALIDATION)
         });
 
         oneHookValidation = FunctionReferenceLib.pack({
             addr: address(oneHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.USER_OP_VALIDATION)
         });
 
         twoHookValidation = FunctionReferenceLib.pack({
             addr: address(twoHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.USER_OP_VALIDATION)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.USER_OP_VALIDATION)
         });
 
         vm.startPrank(address(entryPoint));
@@ -62,7 +62,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
         preValidationHooks[0] = FunctionReferenceLib.pack({
             addr: address(oneHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.PRE_VALIDATION_HOOK_1)
         });
         bytes[] memory installDatas = new bytes[](1);
         account1.installValidation(
@@ -81,11 +81,11 @@ contract ValidationIntersectionTest is AccountTestBase {
         preValidationHooks = new FunctionReference[](2);
         preValidationHooks[0] = FunctionReferenceLib.pack({
             addr: address(twoHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.PRE_VALIDATION_HOOK_1)
         });
         preValidationHooks[1] = FunctionReferenceLib.pack({
             addr: address(twoHookPlugin),
-            functionId: uint8(MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_2)
+            validationId: uint8(MockBaseUserOpValidationPlugin.ValidationId.PRE_VALIDATION_HOOK_2)
         });
         installDatas = new bytes[](2);
         account1.installValidation(
@@ -211,7 +211,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.UnexpectedAggregator.selector,
                 address(oneHookPlugin),
-                MockBaseUserOpValidationPlugin.FunctionId.PRE_VALIDATION_HOOK_1,
+                MockBaseUserOpValidationPlugin.ValidationId.PRE_VALIDATION_HOOK_1,
                 badAuthorizer
             )
         );
