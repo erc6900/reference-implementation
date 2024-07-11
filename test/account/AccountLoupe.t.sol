@@ -70,7 +70,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
     function test_pluginLoupe_getSelectors() public {
         FunctionReference comprehensivePluginValidation = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.VALIDATION)
+            address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.VALIDATION)
         );
 
         bytes4[] memory selectors = account1.getSelectors(comprehensivePluginValidation);
@@ -84,21 +84,21 @@ contract AccountLoupeTest is CustomValidationTestBase {
         ExecutionHook[3] memory expectedHooks = [
             ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.BOTH_EXECUTION_HOOKS)
+                    address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.BOTH_EXECUTION_HOOKS)
                 ),
                 isPreHook: true,
                 isPostHook: true
             }),
             ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.PRE_EXECUTION_HOOK)
+                    address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.PRE_EXECUTION_HOOK)
                 ),
                 isPreHook: true,
                 isPostHook: false
             }),
             ExecutionHook({
                 hookFunction: FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.POST_EXECUTION_HOOK)
+                    address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.POST_EXECUTION_HOOK)
                 ),
                 isPreHook: false,
                 isPostHook: true
@@ -124,7 +124,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
             FunctionReference.unwrap(hooks[0]),
             FunctionReference.unwrap(
                 FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_1)
+                    address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_1)
                 )
             )
         );
@@ -132,7 +132,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
             FunctionReference.unwrap(hooks[1]),
             FunctionReference.unwrap(
                 FunctionReferenceLib.pack(
-                    address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_2)
+                    address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_2)
                 )
             )
         );
@@ -148,10 +148,10 @@ contract AccountLoupeTest is CustomValidationTestBase {
     {
         FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
         preValidationHooks[0] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_1)
+            address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_1)
         );
         preValidationHooks[1] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_2)
+            address(comprehensivePlugin), uint32(ComprehensivePlugin.ValidationId.PRE_VALIDATION_HOOK_2)
         );
 
         bytes[] memory installDatas = new bytes[](2);

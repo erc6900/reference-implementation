@@ -14,7 +14,7 @@ interface IValidationHook is IPlugin {
     /// @param userOp The user operation.
     /// @param userOpHash The user operation hash.
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function preUserOpValidationHook(uint8 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function preUserOpValidationHook(uint32 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         returns (uint256);
 
@@ -27,7 +27,7 @@ interface IValidationHook is IPlugin {
     /// @param value The call value.
     /// @param data The calldata sent.
     function preRuntimeValidationHook(
-        uint8 validationId,
+        uint32 validationId,
         address sender,
         uint256 value,
         bytes calldata data,
@@ -44,7 +44,7 @@ interface IValidationHook is IPlugin {
     /// @param sender The caller address.
     /// @param hash The hash of the message being signed.
     /// @param signature The signature of the message.
-    // function preSignatureValidationHook(uint8 validationId, address sender, bytes32 hash, bytes calldata
+    // function preSignatureValidationHook(uint32 validationId, address sender, bytes32 hash, bytes calldata
     // signature)
     //     external
     //     view

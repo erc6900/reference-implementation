@@ -66,7 +66,7 @@ function toSetValue(FunctionReference functionReference) pure returns (bytes32) 
 }
 
 function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) {
-    return FunctionReference.wrap(bytes21(setValue));
+    return FunctionReference.wrap(bytes24(setValue));
 }
 
 // ExecutionHook layout:
@@ -76,17 +76,17 @@ function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) 
 
 function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
     return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
-        | bytes32(executionHook.isPreHook ? uint256(1) << 80 : 0)
-        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0);
+        | bytes32(executionHook.isPreHook ? uint256(1) << 56 : 0)
+        | bytes32(executionHook.isPostHook ? uint256(1) << 48 : 0);
 }
 
 function toExecutionHook(bytes32 setValue)
     pure
     returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook)
 {
-    hookFunction = FunctionReference.wrap(bytes21(setValue));
-    isPreHook = (uint256(setValue) >> 80) & 0xFF == 1;
-    isPostHook = (uint256(setValue) >> 72) & 0xFF == 1;
+    hookFunction = FunctionReference.wrap(bytes24(setValue));
+    isPreHook = (uint256(setValue) >> 56) & 0xFF == 1;
+    isPostHook = (uint256(setValue) >> 48) & 0xFF == 1;
 }
 
 function toSetValue(bytes4 selector) pure returns (bytes32) {
@@ -106,7 +106,7 @@ function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
     FunctionReference[] memory result = new FunctionReference[](length);
     for (uint256 i = 0; i < length; ++i) {
         bytes32 key = set.at(i);
-        result[i] = FunctionReference.wrap(bytes21(key));
+        result[i] = FunctionReference.wrap(bytes24(key));
     }
     return result;
 }

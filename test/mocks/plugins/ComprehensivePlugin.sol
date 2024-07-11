@@ -46,85 +46,85 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(uint8 validationId, PackedUserOperation calldata, bytes32)
+    function preUserOpValidationHook(uint32 validationId, PackedUserOperation calldata, bytes32)
         external
         pure
         override
         returns (uint256)
     {
-        if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_1)) {
+        if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_1)) {
             return 0;
-        } else if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_2)) {
+        } else if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_2)) {
             return 0;
         }
         revert NotImplemented();
     }
 
-    function validateUserOp(uint8 validationId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint32 validationId, PackedUserOperation calldata, bytes32)
         external
         pure
         override
         returns (uint256)
     {
-        if (validationId == uint8(ValidationId.VALIDATION)) {
+        if (validationId == uint32(ValidationId.VALIDATION)) {
             return 0;
         }
         revert NotImplemented();
     }
 
-    function preRuntimeValidationHook(uint8 validationId, address, uint256, bytes calldata, bytes calldata)
+    function preRuntimeValidationHook(uint32 validationId, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override
     {
-        if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_1)) {
+        if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_1)) {
             return;
-        } else if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_2)) {
+        } else if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_2)) {
             return;
         }
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8 validationId, address, uint256, bytes calldata, bytes calldata)
+    function validateRuntime(uint32 validationId, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override
     {
-        if (validationId == uint8(ValidationId.VALIDATION)) {
+        if (validationId == uint32(ValidationId.VALIDATION)) {
             return;
         }
         revert NotImplemented();
     }
 
-    function validateSignature(uint8 validationId, address, bytes32, bytes calldata)
+    function validateSignature(uint32 validationId, address, bytes32, bytes calldata)
         external
         pure
         returns (bytes4)
     {
-        if (validationId == uint8(ValidationId.SIG_VALIDATION)) {
+        if (validationId == uint32(ValidationId.SIG_VALIDATION)) {
             return 0xffffffff;
         }
         revert NotImplemented();
     }
 
-    function preExecutionHook(uint8 validationId, address, uint256, bytes calldata)
+    function preExecutionHook(uint32 validationId, address, uint256, bytes calldata)
         external
         pure
         override
         returns (bytes memory)
     {
-        if (validationId == uint8(ValidationId.PRE_EXECUTION_HOOK)) {
+        if (validationId == uint32(ValidationId.PRE_EXECUTION_HOOK)) {
             return "";
-        } else if (validationId == uint8(ValidationId.BOTH_EXECUTION_HOOKS)) {
+        } else if (validationId == uint32(ValidationId.BOTH_EXECUTION_HOOKS)) {
             return "";
         }
         revert NotImplemented();
     }
 
-    function postExecutionHook(uint8 validationId, bytes calldata) external pure override {
-        if (validationId == uint8(ValidationId.POST_EXECUTION_HOOK)) {
+    function postExecutionHook(uint32 validationId, bytes calldata) external pure override {
+        if (validationId == uint32(ValidationId.POST_EXECUTION_HOOK)) {
             return;
-        } else if (validationId == uint8(ValidationId.BOTH_EXECUTION_HOOKS)) {
+        } else if (validationId == uint32(ValidationId.BOTH_EXECUTION_HOOKS)) {
             return;
         }
         revert NotImplemented();
@@ -145,7 +145,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            validationId: uint8(ValidationId.VALIDATION),
+            validationId: uint32(ValidationId.VALIDATION),
             isDefault: true,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -154,19 +154,19 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         manifest.executionHooks = new ManifestExecutionHook[](3);
         manifest.executionHooks[0] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            validationId: uint8(ValidationId.BOTH_EXECUTION_HOOKS),
+            validationId: uint32(ValidationId.BOTH_EXECUTION_HOOKS),
             isPreHook: true,
             isPostHook: true
         });
         manifest.executionHooks[1] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            validationId: uint8(ValidationId.PRE_EXECUTION_HOOK),
+            validationId: uint32(ValidationId.PRE_EXECUTION_HOOK),
             isPreHook: true,
             isPostHook: false
         });
         manifest.executionHooks[2] = ManifestExecutionHook({
             executionSelector: this.foo.selector,
-            validationId: uint8(ValidationId.POST_EXECUTION_HOOK),
+            validationId: uint32(ValidationId.POST_EXECUTION_HOOK),
             isPreHook: false,
             isPostHook: true
         });

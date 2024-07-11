@@ -18,9 +18,9 @@ contract AccountExecHooksTest is AccountTestBase {
     bytes32 public manifestHash2;
 
     bytes4 internal constant _EXEC_SELECTOR = bytes4(uint32(1));
-    uint8 internal constant _PRE_HOOK_FUNCTION_ID_1 = 1;
-    uint8 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
-    uint8 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
+    uint32 internal constant _PRE_HOOK_FUNCTION_ID_1 = 1;
+    uint32 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
+    uint32 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
     PluginManifest internal _m1;
 
