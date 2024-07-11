@@ -4,19 +4,20 @@ pragma solidity ^0.8.25;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
+import {FunctionReference, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
-import {AccountStorage, getAccountStorage, toSetValue, toFunctionReference} from "./AccountStorage.sol";
+import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
+import {ValidationData, getAccountStorage, toSetValue, toFunctionReference} from "./AccountStorage.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 
 // Temporary additional functions for a user-controlled install flow for validation functions.
 abstract contract PluginManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using ValidationConfigLib for ValidationConfig;
 
     // Index marking the start of the data for the validation function.
     uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
 
-    error GlobalValidationAlreadySet(FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
     error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
     error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
@@ -24,17 +25,14 @@ abstract contract PluginManager2 {
     error PreValidationHookLimitExceeded();
 
     function _installValidation(
-        FunctionReference validationFunction,
-        bool isGlobal,
+        ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes memory preValidationHooks,
         bytes memory permissionHooks
-    )
-        // TODO: flag for signature validation
-        internal
-    {
-        AccountStorage storage _storage = getAccountStorage();
+    ) internal {
+        ValidationData storage _validationData =
+            getAccountStorage().validationData[validationConfig.functionReference()];
 
         if (preValidationHooks.length > 0) {
             (FunctionReference[] memory preValidationFunctions, bytes[] memory initDatas) =
@@ -43,7 +41,7 @@ abstract contract PluginManager2 {
             for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
                 FunctionReference preValidationFunction = preValidationFunctions[i];
 
-                _storage.validationData[validationFunction].preValidationHooks.push(preValidationFunction);
+                _validationData.preValidationHooks.push(preValidationFunction);
 
                 if (initDatas[i].length > 0) {
                     (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
@@ -52,10 +50,7 @@ abstract contract PluginManager2 {
             }
 
             // Avoid collision between reserved index and actual indices
-            if (
-                _storage.validationData[validationFunction].preValidationHooks.length
-                    > _RESERVED_VALIDATION_DATA_INDEX
-            ) {
+            if (_validationData.preValidationHooks.length > _RESERVED_VALIDATION_DATA_INDEX) {
                 revert PreValidationHookLimitExceeded();
             }
         }
@@ -67,10 +62,8 @@ abstract contract PluginManager2 {
             for (uint256 i = 0; i < permissionFunctions.length; ++i) {
                 ExecutionHook memory permissionFunction = permissionFunctions[i];
 
-                if (
-                    !_storage.validationData[validationFunction].permissionHooks.add(toSetValue(permissionFunction))
-                ) {
-                    revert PermissionAlreadySet(validationFunction, permissionFunction);
+                if (!_validationData.permissionHooks.add(toSetValue(permissionFunction))) {
+                    revert PermissionAlreadySet(validationConfig.functionReference(), permissionFunction);
                 }
 
                 if (initDatas[i].length > 0) {
@@ -80,22 +73,18 @@ abstract contract PluginManager2 {
             }
         }
 
-        if (isGlobal) {
-            if (_storage.validationData[validationFunction].isGlobal) {
-                revert GlobalValidationAlreadySet(validationFunction);
-            }
-            _storage.validationData[validationFunction].isGlobal = true;
-        }
+        _validationData.isGlobal = validationConfig.isGlobal();
+        _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
 
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
-            if (!_storage.validationData[validationFunction].selectors.add(toSetValue(selector))) {
-                revert ValidationAlreadySet(selector, validationFunction);
+            if (!_validationData.selectors.add(toSetValue(selector))) {
+                revert ValidationAlreadySet(selector, validationConfig.functionReference());
             }
         }
 
         if (installData.length > 0) {
-            (address plugin,) = FunctionReferenceLib.unpack(validationFunction);
+            address plugin = validationConfig.plugin();
             IPlugin(plugin).onInstall(installData);
         }
     }
@@ -106,17 +95,16 @@ abstract contract PluginManager2 {
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
     ) internal {
-        AccountStorage storage _storage = getAccountStorage();
+        ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
 
-        _storage.validationData[validationFunction].isGlobal = false;
-        _storage.validationData[validationFunction].isSignatureValidation = false;
+        _validationData.isGlobal = false;
+        _validationData.isSignatureValidation = false;
 
         {
             bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
 
             // Clear pre validation hooks
-            FunctionReference[] storage preValidationHooks =
-                _storage.validationData[validationFunction].preValidationHooks;
+            FunctionReference[] storage preValidationHooks = _validationData.preValidationHooks;
             for (uint256 i = 0; i < preValidationHooks.length; ++i) {
                 FunctionReference preValidationFunction = preValidationHooks[i];
                 if (preValidationHookUninstallDatas[0].length > 0) {
@@ -124,15 +112,14 @@ abstract contract PluginManager2 {
                     IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
                 }
             }
-            delete _storage.validationData[validationFunction].preValidationHooks;
+            delete _validationData.preValidationHooks;
         }
 
         {
             bytes[] memory permissionHookUninstallDatas = abi.decode(permissionHookUninstallData, (bytes[]));
 
             // Clear permission hooks
-            EnumerableSet.Bytes32Set storage permissionHooks =
-                _storage.validationData[validationFunction].permissionHooks;
+            EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
             uint256 i = 0;
             while (permissionHooks.length() > 0) {
                 FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
@@ -141,12 +128,12 @@ abstract contract PluginManager2 {
                 IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
             }
         }
-        delete _storage.validationData[validationFunction].preValidationHooks;
+        delete _validationData.preValidationHooks;
 
         // Clear selectors
-        while (_storage.validationData[validationFunction].selectors.length() > 0) {
-            bytes32 selector = _storage.validationData[validationFunction].selectors.at(0);
-            _storage.validationData[validationFunction].selectors.remove(selector);
+        while (_validationData.selectors.length() > 0) {
+            bytes32 selector = _validationData.selectors.at(0);
+            _validationData.selectors.remove(selector);
         }
 
         if (uninstallData.length > 0) {

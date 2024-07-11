@@ -7,9 +7,10 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
+
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
 
 contract SingleOwnerPluginTest is OptimizedTest {
     using ECDSA for bytes32;
@@ -51,74 +52,74 @@ contract SingleOwnerPluginTest is OptimizedTest {
 
     function test_uninitializedOwner() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
     }
 
     function test_ownerInitialization() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
     }
 
     function test_ownerInitializationEvent() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
 
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(a, address(0), owner1);
 
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
     }
 
     function test_ownerMigration() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
-        plugin.transferOwnership(owner2);
-        assertEq(owner2, plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner2);
+        assertEq(owner2, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
     }
 
     function test_ownerMigrationEvents() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
 
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(a, address(0), owner1);
 
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
 
         vm.expectEmit(true, true, true, true);
         emit OwnershipTransferred(a, owner1, owner2);
 
-        plugin.transferOwnership(owner2);
-        assertEq(owner2, plugin.owner());
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner2);
+        assertEq(owner2, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
     }
 
     function test_ownerForSender() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
         vm.startPrank(b);
-        assertEq(address(0), plugin.owner());
-        plugin.transferOwnership(owner2);
-        assertEq(owner2, plugin.owner());
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, b));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner2);
+        assertEq(owner2, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, b));
     }
 
     function test_requireOwner() public {
         vm.startPrank(a);
-        assertEq(address(0), plugin.owner());
-        plugin.transferOwnership(owner1);
-        assertEq(owner1, plugin.owner());
-        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", "");
+        assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
+        assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
+        plugin.validateRuntime(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
 
         vm.startPrank(b);
-        vm.expectRevert(ISingleOwnerPlugin.NotAuthorized.selector);
-        plugin.validateRuntime(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), owner1, 0, "", "");
+        vm.expectRevert(SingleOwnerPlugin.NotAuthorized.selector);
+        plugin.validateRuntime(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
     }
 
     function testFuzz_validateUserOpSig(string memory salt, PackedUserOperation memory userOp) public {
@@ -133,16 +134,15 @@ contract SingleOwnerPluginTest is OptimizedTest {
         userOp.signature = abi.encodePacked(r, s, v);
 
         // sig check should fail
-        uint256 success =
-            plugin.validateUserOp(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash);
+        uint256 success = plugin.validateUserOp(TEST_DEFAULT_OWNER_FUNCTION_ID, userOp, userOpHash);
         assertEq(success, 1);
 
         // transfer ownership to signer
-        plugin.transferOwnership(signer);
-        assertEq(signer, plugin.owner());
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
+        assertEq(signer, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
 
         // sig check should pass
-        success = plugin.validateUserOp(uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), userOp, userOpHash);
+        success = plugin.validateUserOp(TEST_DEFAULT_OWNER_FUNCTION_ID, userOp, userOpHash);
         assertEq(success, 0);
     }
 
@@ -156,25 +156,19 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should fail
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                address(this),
-                digest,
-                abi.encodePacked(r, s, v)
+                TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             bytes4(0xFFFFFFFF)
         );
 
         // transfer ownership to signer
-        plugin.transferOwnership(signer);
-        assertEq(signer, plugin.owner());
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
+        assertEq(signer, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
 
         // sig check should pass
         assertEq(
             plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER),
-                address(this),
-                digest,
-                abi.encodePacked(r, s, v)
+                TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             _1271_MAGIC_VALUE
         );
@@ -182,12 +176,10 @@ contract SingleOwnerPluginTest is OptimizedTest {
 
     function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
         vm.startPrank(a);
-        plugin.transferOwnership(address(contractOwner));
+        plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
-            plugin.validateSignature(
-                uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER), address(this), digest, signature
-            ),
+            plugin.validateSignature(TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature),
             _1271_MAGIC_VALUE
         );
     }

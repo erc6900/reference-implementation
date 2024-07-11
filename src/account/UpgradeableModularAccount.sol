@@ -11,13 +11,14 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {FunctionReference, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {FunctionReference, IPluginManager, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
@@ -41,6 +42,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using FunctionReferenceLib for FunctionReference;
+    using ValidationConfigLib for ValidationConfig;
     using SparseCalldataSegmentLib for bytes;
 
     struct PostExecToRun {
@@ -274,32 +276,26 @@ contract UpgradeableModularAccount is
     /// with user install configs.
     /// @dev This function is only callable once, and only by the EntryPoint.
     function initializeWithValidation(
-        FunctionReference validationFunction,
-        bool isGlobal,
+        ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,
         bytes calldata permissionHooks
     ) external initializer {
-        _installValidation(
-            validationFunction, isGlobal, selectors, installData, preValidationHooks, permissionHooks
-        );
+        _installValidation(validationConfig, selectors, installData, preValidationHooks, permissionHooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a global validation.
     function installValidation(
-        FunctionReference validationFunction,
-        bool isGlobal,
+        ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
         bytes calldata preValidationHooks,
         bytes calldata permissionHooks
     ) external wrapNativeFunction {
-        _installValidation(
-            validationFunction, isGlobal, selectors, installData, preValidationHooks, permissionHooks
-        );
+        _installValidation(validationConfig, selectors, installData, preValidationHooks, permissionHooks);
     }
 
     /// @inheritdoc IPluginManager
