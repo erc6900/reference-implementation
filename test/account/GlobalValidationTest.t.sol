@@ -5,23 +5,28 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {GlobalValidationFactoryFixture} from "../mocks/GlobalValidationFactoryFixture.sol";
 
 contract GlobalValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
-    GlobalValidationFactoryFixture public globalValidationFactoryFixture;
-
     address public ethRecipient;
 
+    // A separate account and owner that isn't deployed yet, used to test initcode
+    address public owner2;
+    uint256 public owner2Key;
+    UpgradeableModularAccount public account2;
+
     function setUp() public {
-        globalValidationFactoryFixture = new GlobalValidationFactoryFixture(entryPoint, singleOwnerPlugin);
+        (owner2, owner2Key) = makeAddrAndKey("owner2");
 
-        account1 = UpgradeableModularAccount(payable(globalValidationFactoryFixture.getAddress(owner1, 0)));
+        // Compute counterfactual address
+        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
+        vm.deal(address(account2), 100 ether);
 
-        vm.deal(address(account1), 100 ether);
+        _ownerValidation = FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);
@@ -29,12 +34,9 @@ contract GlobalValidationTest is AccountTestBase {
 
     function test_globalValidation_userOp_simple() public {
         PackedUserOperation memory userOp = PackedUserOperation({
-            sender: address(account1),
+            sender: address(account2),
             nonce: 0,
-            initCode: abi.encodePacked(
-                globalValidationFactoryFixture,
-                abi.encodeCall(globalValidationFactoryFixture.createAccount, (owner1, 0))
-            ),
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
@@ -45,7 +47,7 @@ contract GlobalValidationTest is AccountTestBase {
 
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -58,10 +60,10 @@ contract GlobalValidationTest is AccountTestBase {
 
     function test_globalValidation_runtime_simple() public {
         // Deploy the account first
-        globalValidationFactoryFixture.createAccount(owner1, 0);
+        factory.createAccount(owner2, 0);
 
-        vm.prank(owner1);
-        account1.executeWithAuthorization(
+        vm.prank(owner2);
+        account2.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
         );
