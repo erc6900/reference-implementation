@@ -10,7 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {PackedPluginEntityLib} from "../helpers/PackedPluginEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
@@ -18,7 +18,7 @@ import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {FunctionReference, IPluginManager, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {PackedPluginEntity, IPluginManager, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
@@ -41,13 +41,13 @@ contract UpgradeableModularAccount is
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using FunctionReferenceLib for FunctionReference;
+    using PackedPluginEntityLib for PackedPluginEntity;
     using ValidationConfigLib for ValidationConfig;
     using SparseCalldataSegmentLib for bytes;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
-        FunctionReference postExecHook;
+        PackedPluginEntity postExecHook;
     }
 
     IEntryPoint private immutable _ENTRY_POINT;
@@ -164,7 +164,7 @@ contract UpgradeableModularAccount is
             revert NotEntryPoint();
         }
 
-        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes24(userOp.signature[:24]));
+        PackedPluginEntity userOpValidationFunction = PackedPluginEntity.wrap(bytes24(userOp.signature[:24]));
 
         PostExecToRun[] memory postPermissionHooks =
             _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].permissionHooks, msg.data);
@@ -217,7 +217,7 @@ contract UpgradeableModularAccount is
         returns (bytes memory)
     {
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes24(authorization[:24]));
+        PackedPluginEntity runtimeValidationFunction = PackedPluginEntity.wrap(bytes24(authorization[:24]));
 
         // Check if the runtime validation function is allowed to be called
         bool isGlobalValidation = uint8(authorization[24]) == 1;
@@ -301,7 +301,7 @@ contract UpgradeableModularAccount is
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a global validation.
     function uninstallValidation(
-        FunctionReference validationFunction,
+        PackedPluginEntity validationFunction,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
@@ -341,7 +341,7 @@ contract UpgradeableModularAccount is
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
         AccountStorage storage _storage = getAccountStorage();
 
-        FunctionReference sigValidation = FunctionReference.wrap(bytes24(signature));
+        PackedPluginEntity sigValidation = PackedPluginEntity.wrap(bytes24(signature));
 
         (address plugin, uint32 entityId) = sigValidation.unpack();
         if (!_storage.validationData[sigValidation].isSignatureValidation) {
@@ -375,7 +375,7 @@ contract UpgradeableModularAccount is
         }
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes24(userOp.signature[:24]));
+        PackedPluginEntity userOpValidationFunction = PackedPluginEntity.wrap(bytes24(userOp.signature[:24]));
         bool isGlobalValidation = uint8(userOp.signature[24]) == 1;
 
         _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isGlobalValidation);
@@ -396,7 +396,7 @@ contract UpgradeableModularAccount is
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
     function _doUserOpValidation(
-        FunctionReference userOpValidationFunction,
+        PackedPluginEntity userOpValidationFunction,
         PackedUserOperation memory userOp,
         bytes calldata signature,
         bytes32 userOpHash
@@ -408,7 +408,7 @@ contract UpgradeableModularAccount is
         uint256 validationData;
 
         // Do preUserOpValidation hooks
-        FunctionReference[] memory preUserOpValidationHooks =
+        PackedPluginEntity[] memory preUserOpValidationHooks =
             getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
 
         for (uint256 i = 0; i < preUserOpValidationHooks.length; ++i) {
@@ -466,7 +466,7 @@ contract UpgradeableModularAccount is
     }
 
     function _doRuntimeValidation(
-        FunctionReference runtimeValidationFunction,
+        PackedPluginEntity runtimeValidationFunction,
         bytes calldata callData,
         bytes calldata authorizationData
     ) internal {
@@ -475,7 +475,7 @@ contract UpgradeableModularAccount is
         (authSegment, authorizationData) = authorizationData.getNextSegment();
 
         // run all preRuntimeValidation hooks
-        FunctionReference[] memory preRuntimeValidationHooks =
+        PackedPluginEntity[] memory preRuntimeValidationHooks =
             getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
 
         for (uint256 i = 0; i < preRuntimeValidationHooks.length; ++i) {
@@ -538,7 +538,7 @@ contract UpgradeableModularAccount is
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
             bytes32 key = executionHooks.at(i);
-            (FunctionReference hookFunction,, bool isPostHook) = toExecutionHook(key);
+            (PackedPluginEntity hookFunction,, bool isPostHook) = toExecutionHook(key);
             if (isPostHook) {
                 postHooksToRun[i].postExecHook = hookFunction;
             }
@@ -548,7 +548,7 @@ contract UpgradeableModularAccount is
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
             bytes32 key = executionHooks.at(i);
-            (FunctionReference hookFunction, bool isPreHook, bool isPostHook) = toExecutionHook(key);
+            (PackedPluginEntity hookFunction, bool isPreHook, bool isPostHook) = toExecutionHook(key);
 
             if (isPreHook) {
                 bytes memory preExecHookReturnData;
@@ -563,7 +563,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _runPreExecHook(FunctionReference preExecHook, bytes memory data)
+    function _runPreExecHook(PackedPluginEntity preExecHook, bytes memory data)
         internal
         returns (bytes memory preExecHookReturnData)
     {
@@ -606,7 +606,7 @@ contract UpgradeableModularAccount is
 
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
-        FunctionReference validationFunction,
+        PackedPluginEntity validationFunction,
         bool isGlobal
     ) internal view {
         bytes4 outerSelector = bytes4(callData[:4]);
@@ -659,7 +659,7 @@ contract UpgradeableModularAccount is
 
     function _checkIfValidationAppliesSelector(
         bytes4 selector,
-        FunctionReference validationFunction,
+        PackedPluginEntity validationFunction,
         bool isGlobal
     ) internal view {
         AccountStorage storage _storage = getAccountStorage();

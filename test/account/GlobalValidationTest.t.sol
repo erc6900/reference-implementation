@@ -5,7 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
@@ -26,7 +26,7 @@ contract GlobalValidationTest is AccountTestBase {
         account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
-        _ownerValidation = FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
+        _ownerValidation = PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);

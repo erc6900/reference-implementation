@@ -4,10 +4,10 @@ pragma solidity ^0.8.25;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IPlugin} from "../interfaces/IPlugin.sol";
-import {FunctionReference, ValidationConfig} from "../interfaces/IPluginManager.sol";
-import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
+import {PackedPluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {PackedPluginEntityLib} from "../helpers/PackedPluginEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {ValidationData, getAccountStorage, toSetValue, toFunctionReference} from "./AccountStorage.sol";
+import {ValidationData, getAccountStorage, toSetValue, toPackedPluginEntity} from "./AccountStorage.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 
 // Temporary additional functions for a user-controlled install flow for validation functions.
@@ -18,10 +18,10 @@ abstract contract PluginManager2 {
     // Index marking the start of the data for the validation function.
     uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
 
-    error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
-    error ValidationAlreadySet(bytes4 selector, FunctionReference validationFunction);
-    error ValidationNotSet(bytes4 selector, FunctionReference validationFunction);
-    error PermissionAlreadySet(FunctionReference validationFunction, ExecutionHook hook);
+    error PreValidationAlreadySet(PackedPluginEntity validationFunction, PackedPluginEntity preValidationFunction);
+    error ValidationAlreadySet(bytes4 selector, PackedPluginEntity validationFunction);
+    error ValidationNotSet(bytes4 selector, PackedPluginEntity validationFunction);
+    error PermissionAlreadySet(PackedPluginEntity validationFunction, ExecutionHook hook);
     error PreValidationHookLimitExceeded();
 
     function _installValidation(
@@ -35,16 +35,16 @@ abstract contract PluginManager2 {
             getAccountStorage().validationData[validationConfig.functionReference()];
 
         if (preValidationHooks.length > 0) {
-            (FunctionReference[] memory preValidationFunctions, bytes[] memory initDatas) =
-                abi.decode(preValidationHooks, (FunctionReference[], bytes[]));
+            (PackedPluginEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
+                abi.decode(preValidationHooks, (PackedPluginEntity[], bytes[]));
 
             for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
-                FunctionReference preValidationFunction = preValidationFunctions[i];
+                PackedPluginEntity preValidationFunction = preValidationFunctions[i];
 
                 _validationData.preValidationHooks.push(preValidationFunction);
 
                 if (initDatas[i].length > 0) {
-                    (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
+                    (address preValidationPlugin,) = PackedPluginEntityLib.unpack(preValidationFunction);
                     IPlugin(preValidationPlugin).onInstall(initDatas[i]);
                 }
             }
@@ -67,7 +67,7 @@ abstract contract PluginManager2 {
                 }
 
                 if (initDatas[i].length > 0) {
-                    (address executionPlugin,) = FunctionReferenceLib.unpack(permissionFunction.hookFunction);
+                    (address executionPlugin,) = PackedPluginEntityLib.unpack(permissionFunction.hookFunction);
                     IPlugin(executionPlugin).onInstall(initDatas[i]);
                 }
             }
@@ -90,7 +90,7 @@ abstract contract PluginManager2 {
     }
 
     function _uninstallValidation(
-        FunctionReference validationFunction,
+        PackedPluginEntity validationFunction,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
@@ -104,11 +104,11 @@ abstract contract PluginManager2 {
             bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
 
             // Clear pre validation hooks
-            FunctionReference[] storage preValidationHooks = _validationData.preValidationHooks;
+            PackedPluginEntity[] storage preValidationHooks = _validationData.preValidationHooks;
             for (uint256 i = 0; i < preValidationHooks.length; ++i) {
-                FunctionReference preValidationFunction = preValidationHooks[i];
+                PackedPluginEntity preValidationFunction = preValidationHooks[i];
                 if (preValidationHookUninstallDatas[0].length > 0) {
-                    (address preValidationPlugin,) = FunctionReferenceLib.unpack(preValidationFunction);
+                    (address preValidationPlugin,) = PackedPluginEntityLib.unpack(preValidationFunction);
                     IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
                 }
             }
@@ -122,9 +122,9 @@ abstract contract PluginManager2 {
             EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
             uint256 i = 0;
             while (permissionHooks.length() > 0) {
-                FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
+                PackedPluginEntity permissionHook = toPackedPluginEntity(permissionHooks.at(0));
                 permissionHooks.remove(toSetValue(permissionHook));
-                (address permissionHookPlugin,) = FunctionReferenceLib.unpack(permissionHook);
+                (address permissionHookPlugin,) = PackedPluginEntityLib.unpack(permissionHook);
                 IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
             }
         }
@@ -137,7 +137,7 @@ abstract contract PluginManager2 {
         }
 
         if (uninstallData.length > 0) {
-            (address plugin,) = FunctionReferenceLib.unpack(validationFunction);
+            (address plugin,) = PackedPluginEntityLib.unpack(validationFunction);
             IPlugin(plugin).onUninstall(uninstallData);
         }
     }

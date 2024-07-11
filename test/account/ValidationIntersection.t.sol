@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PackedPluginEntity, PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {
@@ -22,26 +22,26 @@ contract ValidationIntersectionTest is AccountTestBase {
     MockUserOpValidation1HookPlugin public oneHookPlugin;
     MockUserOpValidation2HookPlugin public twoHookPlugin;
 
-    FunctionReference public noHookValidation;
-    FunctionReference public oneHookValidation;
-    FunctionReference public twoHookValidation;
+    PackedPluginEntity public noHookValidation;
+    PackedPluginEntity public oneHookValidation;
+    PackedPluginEntity public twoHookValidation;
 
     function setUp() public {
         noHookPlugin = new MockUserOpValidationPlugin();
         oneHookPlugin = new MockUserOpValidation1HookPlugin();
         twoHookPlugin = new MockUserOpValidation2HookPlugin();
 
-        noHookValidation = FunctionReferenceLib.pack({
+        noHookValidation = PackedPluginEntityLib.pack({
             addr: address(noHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
         });
 
-        oneHookValidation = FunctionReferenceLib.pack({
+        oneHookValidation = PackedPluginEntityLib.pack({
             addr: address(oneHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
         });
 
-        twoHookValidation = FunctionReferenceLib.pack({
+        twoHookValidation = PackedPluginEntityLib.pack({
             addr: address(twoHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
         });
@@ -59,8 +59,8 @@ contract ValidationIntersectionTest is AccountTestBase {
         });
         // TODO: change with new install flow
         // temporary fix to add the pre-validation hook
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
-        preValidationHooks[0] = FunctionReferenceLib.pack({
+        PackedPluginEntity[] memory preValidationHooks = new PackedPluginEntity[](1);
+        preValidationHooks[0] = PackedPluginEntityLib.pack({
             addr: address(oneHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_1)
         });
@@ -78,12 +78,12 @@ contract ValidationIntersectionTest is AccountTestBase {
             pluginInstallData: ""
         });
         // temporary fix to add the pre-validation hook
-        preValidationHooks = new FunctionReference[](2);
-        preValidationHooks[0] = FunctionReferenceLib.pack({
+        preValidationHooks = new PackedPluginEntity[](2);
+        preValidationHooks[0] = PackedPluginEntityLib.pack({
             addr: address(twoHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_1)
         });
-        preValidationHooks[1] = FunctionReferenceLib.pack({
+        preValidationHooks[1] = PackedPluginEntityLib.pack({
             addr: address(twoHookPlugin),
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_2)
         });

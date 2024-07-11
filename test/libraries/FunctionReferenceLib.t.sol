@@ -3,29 +3,29 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {FunctionReference} from "../../src/interfaces/IPluginManager.sol";
+import {PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
+import {PackedPluginEntity} from "../../src/interfaces/IPluginManager.sol";
 
-contract FunctionReferenceLibTest is Test {
-    using FunctionReferenceLib for FunctionReference;
+contract PackedPluginEntityLibTest is Test {
+    using PackedPluginEntityLib for PackedPluginEntity;
 
     function testFuzz_functionReference_packing(address addr, uint32 entityId) public {
         // console.log("addr: ", addr);
         // console.log("entityId: ", vm.toString(entityId));
-        FunctionReference fr = FunctionReferenceLib.pack(addr, entityId);
-        // console.log("packed: ", vm.toString(FunctionReference.unwrap(fr)));
-        (address addr2, uint32 entityId2) = FunctionReferenceLib.unpack(fr);
+        PackedPluginEntity fr = PackedPluginEntityLib.pack(addr, entityId);
+        // console.log("packed: ", vm.toString(PackedPluginEntity.unwrap(fr)));
+        (address addr2, uint32 entityId2) = PackedPluginEntityLib.unpack(fr);
         // console.log("addr2: ", addr2);
         // console.log("entityId2: ", vm.toString(entityId2));
         assertEq(addr, addr2);
         assertEq(entityId, entityId2);
     }
 
-    function testFuzz_functionReference_operators(FunctionReference a, FunctionReference b) public {
+    function testFuzz_functionReference_operators(PackedPluginEntity a, PackedPluginEntity b) public {
         assertTrue(a.eq(a));
         assertTrue(b.eq(b));
 
-        if (FunctionReference.unwrap(a) == FunctionReference.unwrap(b)) {
+        if (PackedPluginEntity.unwrap(a) == PackedPluginEntity.unwrap(b)) {
             assertTrue(a.eq(b));
             assertTrue(b.eq(a));
             assertFalse(a.notEq(b));

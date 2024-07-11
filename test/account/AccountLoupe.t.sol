@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PackedPluginEntity, PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
@@ -69,7 +69,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_pluginLoupe_getSelectors() public {
-        FunctionReference comprehensivePluginValidation = FunctionReferenceLib.pack(
+        PackedPluginEntity comprehensivePluginValidation = PackedPluginEntityLib.pack(
             address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION)
         );
 
@@ -83,21 +83,21 @@ contract AccountLoupeTest is CustomValidationTestBase {
         ExecutionHook[] memory hooks = account1.getExecutionHooks(comprehensivePlugin.foo.selector);
         ExecutionHook[3] memory expectedHooks = [
             ExecutionHook({
-                hookFunction: FunctionReferenceLib.pack(
+                hookFunction: PackedPluginEntityLib.pack(
                     address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.BOTH_EXECUTION_HOOKS)
                 ),
                 isPreHook: true,
                 isPostHook: true
             }),
             ExecutionHook({
-                hookFunction: FunctionReferenceLib.pack(
+                hookFunction: PackedPluginEntityLib.pack(
                     address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_EXECUTION_HOOK)
                 ),
                 isPreHook: true,
                 isPostHook: false
             }),
             ExecutionHook({
-                hookFunction: FunctionReferenceLib.pack(
+                hookFunction: PackedPluginEntityLib.pack(
                     address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.POST_EXECUTION_HOOK)
                 ),
                 isPreHook: false,
@@ -108,8 +108,8 @@ contract AccountLoupeTest is CustomValidationTestBase {
         assertEq(hooks.length, 3);
         for (uint256 i = 0; i < hooks.length; i++) {
             assertEq(
-                FunctionReference.unwrap(hooks[i].hookFunction),
-                FunctionReference.unwrap(expectedHooks[i].hookFunction)
+                PackedPluginEntity.unwrap(hooks[i].hookFunction),
+                PackedPluginEntity.unwrap(expectedHooks[i].hookFunction)
             );
             assertEq(hooks[i].isPreHook, expectedHooks[i].isPreHook);
             assertEq(hooks[i].isPostHook, expectedHooks[i].isPostHook);
@@ -117,21 +117,21 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        FunctionReference[] memory hooks = account1.getPreValidationHooks(_ownerValidation);
+        PackedPluginEntity[] memory hooks = account1.getPreValidationHooks(_ownerValidation);
 
         assertEq(hooks.length, 2);
         assertEq(
-            FunctionReference.unwrap(hooks[0]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
+            PackedPluginEntity.unwrap(hooks[0]),
+            PackedPluginEntity.unwrap(
+                PackedPluginEntityLib.pack(
                     address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_VALIDATION_HOOK_1)
                 )
             )
         );
         assertEq(
-            FunctionReference.unwrap(hooks[1]),
-            FunctionReference.unwrap(
-                FunctionReferenceLib.pack(
+            PackedPluginEntity.unwrap(hooks[1]),
+            PackedPluginEntity.unwrap(
+                PackedPluginEntityLib.pack(
                     address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_VALIDATION_HOOK_2)
                 )
             )
@@ -144,13 +144,13 @@ contract AccountLoupeTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (PackedPluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
-        preValidationHooks[0] = FunctionReferenceLib.pack(
+        PackedPluginEntity[] memory preValidationHooks = new PackedPluginEntity[](2);
+        preValidationHooks[0] = PackedPluginEntityLib.pack(
             address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_VALIDATION_HOOK_1)
         );
-        preValidationHooks[1] = FunctionReferenceLib.pack(
+        preValidationHooks[1] = PackedPluginEntityLib.pack(
             address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_VALIDATION_HOOK_2)
         );
 

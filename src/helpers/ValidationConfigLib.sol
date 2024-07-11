@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {FunctionReference, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {PackedPluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
 
 // Validation config is a packed representation of a validation function and flags for its configuration.
 // Layout:
@@ -12,14 +12,14 @@ import {FunctionReference, ValidationConfig} from "../interfaces/IPluginManager.
 // 0x______________________________________________000000000000000000 // unused
 
 library ValidationConfigLib {
-    function pack(FunctionReference _validationFunction, bool _isGlobal, bool _isSignatureValidation)
+    function pack(PackedPluginEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
         internal
         pure
         returns (ValidationConfig)
     {
         return ValidationConfig.wrap(
             bytes26(
-                bytes26(FunctionReference.unwrap(_validationFunction))
+                bytes26(PackedPluginEntity.unwrap(_validationFunction))
                 // isGlobal flag stored in the 25th byte
                 | bytes26(bytes32(_isGlobal ? uint256(1) << 56 : 0))
                 // isSignatureValidation flag stored in the 26th byte
@@ -62,10 +62,10 @@ library ValidationConfigLib {
     function unpack(ValidationConfig config)
         internal
         pure
-        returns (FunctionReference _validationFunction, bool _isGlobal, bool _isSignatureValidation)
+        returns (PackedPluginEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
     {
         bytes26 configBytes = ValidationConfig.unwrap(config);
-        _validationFunction = FunctionReference.wrap(bytes24(configBytes));
+        _validationFunction = PackedPluginEntity.wrap(bytes24(configBytes));
         _isGlobal = uint8(configBytes[24]) == 1;
         _isSignatureValidation = uint8(configBytes[25]) == 1;
     }
@@ -78,8 +78,8 @@ library ValidationConfigLib {
         return uint32(bytes4(ValidationConfig.unwrap(config) << 160));
     }
 
-    function functionReference(ValidationConfig config) internal pure returns (FunctionReference) {
-        return FunctionReference.wrap(bytes24(ValidationConfig.unwrap(config)));
+    function functionReference(ValidationConfig config) internal pure returns (PackedPluginEntity) {
+        return PackedPluginEntity.wrap(bytes24(ValidationConfig.unwrap(config)));
     }
 
     function isGlobal(ValidationConfig config) internal pure returns (bool) {
