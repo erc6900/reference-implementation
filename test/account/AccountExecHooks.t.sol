@@ -45,7 +45,7 @@ contract AccountExecHooksTest is AccountTestBase {
         _installPlugin1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
-                validationId: _PRE_HOOK_FUNCTION_ID_1,
+                entityId: _PRE_HOOK_FUNCTION_ID_1,
                 isPreHook: true,
                 isPostHook: false
             })
@@ -83,7 +83,7 @@ contract AccountExecHooksTest is AccountTestBase {
         _installPlugin1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
-                validationId: _BOTH_HOOKS_FUNCTION_ID_3,
+                entityId: _BOTH_HOOKS_FUNCTION_ID_3,
                 isPreHook: true,
                 isPostHook: true
             })
@@ -131,7 +131,7 @@ contract AccountExecHooksTest is AccountTestBase {
         _installPlugin1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
-                validationId: _POST_HOOK_FUNCTION_ID_2,
+                entityId: _POST_HOOK_FUNCTION_ID_2,
                 isPreHook: false,
                 isPostHook: true
             })

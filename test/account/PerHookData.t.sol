@@ -213,7 +213,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.ValidationId.PRE_VALIDATION_HOOK),
+                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -232,7 +232,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.ValidationId.PRE_VALIDATION_HOOK),
+                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -274,7 +274,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.ValidationId.PRE_VALIDATION_HOOK),
+                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Target not allowed")
             )
         );
@@ -328,7 +328,7 @@ contract PerHookDataTest is CustomValidationTestBase {
         returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
         FunctionReference accessControlHook = FunctionReferenceLib.pack(
-            address(_accessControlHookPlugin), uint32(MockAccessControlHookPlugin.ValidationId.PRE_VALIDATION_HOOK)
+            address(_accessControlHookPlugin), uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK)
         );
 
         FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
