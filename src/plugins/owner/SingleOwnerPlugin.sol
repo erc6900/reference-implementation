@@ -82,20 +82,20 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(uint32 validationId, address sender, uint256, bytes calldata, bytes calldata)
+    function validateRuntime(uint32 entityId, address sender, uint256, bytes calldata, bytes calldata)
         external
         view
         override
     {
         // Validate that the sender is the owner of the account or self.
-        if (sender != owners[validationId][msg.sender]) {
+        if (sender != owners[entityId][msg.sender]) {
             revert NotAuthorized();
         }
         return;
     }
 
     /// @inheritdoc IValidation
-    function validateUserOp(uint32 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -104,7 +104,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
         // Validate the user op signature against the owner.
         if (
             SignatureChecker.isValidSignatureNow(
-                owners[validationId][msg.sender], userOpHash.toEthSignedMessageHash(), userOp.signature
+                owners[entityId][msg.sender], userOpHash.toEthSignedMessageHash(), userOp.signature
             )
         ) {
             return _SIG_VALIDATION_PASSED;
@@ -123,13 +123,13 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(uint32 validationId, address, bytes32 digest, bytes calldata signature)
+    function validateSignature(uint32 entityId, address, bytes32 digest, bytes calldata signature)
         external
         view
         override
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(owners[validationId][msg.sender], digest, signature)) {
+        if (SignatureChecker.isValidSignatureNow(owners[entityId][msg.sender], digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;

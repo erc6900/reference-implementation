@@ -13,7 +13,7 @@ import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 // This is just a mock - it does not enforce this over `executeBatch` and other methods of making calls, and should
 // not be used in production..
 contract MockAccessControlHookPlugin is IValidationHook, BasePlugin {
-    enum ValidationId {
+    enum EntityId {
         PRE_VALIDATION_HOOK
     }
 
@@ -28,13 +28,13 @@ contract MockAccessControlHookPlugin is IValidationHook, BasePlugin {
         delete allowedTargets[msg.sender];
     }
 
-    function preUserOpValidationHook(uint32 validationId, PackedUserOperation calldata userOp, bytes32)
+    function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK)) {
+        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
             if (bytes4(userOp.callData[:4]) == IStandardExecutor.execute.selector) {
                 address target = abi.decode(userOp.callData[4:36], (address));
 
@@ -49,13 +49,13 @@ contract MockAccessControlHookPlugin is IValidationHook, BasePlugin {
     }
 
     function preRuntimeValidationHook(
-        uint32 validationId,
+        uint32 entityId,
         address,
         uint256,
         bytes calldata data,
         bytes calldata authorization
     ) external view override {
-        if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK)) {
+        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
             if (bytes4(data[:4]) == IStandardExecutor.execute.selector) {
                 address target = abi.decode(data[4:36], (address));
 

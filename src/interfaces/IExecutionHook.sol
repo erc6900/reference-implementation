@@ -4,24 +4,24 @@ pragma solidity ^0.8.25;
 import {IPlugin} from "./IPlugin.sol";
 
 interface IExecutionHook is IPlugin {
-    /// @notice Run the pre execution hook specified by the `validationId`.
+    /// @notice Run the pre execution hook specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param validationId An identifier that routes the call to different internal implementations, should there
+    /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be
     /// more than one.
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
     /// @return Context to pass to a post execution hook, if present. An empty bytes array MAY be returned.
-    function preExecutionHook(uint32 validationId, address sender, uint256 value, bytes calldata data)
+    function preExecutionHook(uint32 entityId, address sender, uint256 value, bytes calldata data)
         external
         returns (bytes memory);
 
-    /// @notice Run the post execution hook specified by the `validationId`.
+    /// @notice Run the post execution hook specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
-    /// @param validationId An identifier that routes the call to different internal implementations, should there
+    /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be
     /// more than one.
     /// @param preExecHookData The context returned by its associated pre execution hook.
-    function postExecutionHook(uint32 validationId, bytes calldata preExecHookData) external;
+    function postExecutionHook(uint32 entityId, bytes calldata preExecHookData) external;
 }

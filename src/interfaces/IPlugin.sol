@@ -15,7 +15,7 @@ struct ManifestExecutionFunction {
 
 // todo: do we need these at all? Or do we fully switch to `installValidation`?
 struct ManifestValidation {
-    uint32 validationId;
+    uint32 entityId;
     bool isDefault;
     bool isSignatureValidation;
     bytes4[] selectors;
@@ -24,7 +24,7 @@ struct ManifestValidation {
 struct ManifestExecutionHook {
     // TODO(erc6900 spec): These fields can be packed into a single word
     bytes4 executionSelector;
-    uint32 validationId;
+    uint32 entityId;
     bool isPreHook;
     bool isPostHook;
 }

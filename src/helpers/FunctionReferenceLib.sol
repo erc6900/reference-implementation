@@ -9,14 +9,14 @@ library FunctionReferenceLib {
     // Magic value for hooks that should always revert.
     FunctionReference internal constant _PRE_HOOK_ALWAYS_DENY = FunctionReference.wrap(bytes24(uint192(2)));
 
-    function pack(address addr, uint32 validationId) internal pure returns (FunctionReference) {
-        return FunctionReference.wrap(bytes24(bytes20(addr)) | bytes24(uint192(validationId)));
+    function pack(address addr, uint32 entityId) internal pure returns (FunctionReference) {
+        return FunctionReference.wrap(bytes24(bytes20(addr)) | bytes24(uint192(entityId)));
     }
 
-    function unpack(FunctionReference fr) internal pure returns (address addr, uint32 validationId) {
+    function unpack(FunctionReference fr) internal pure returns (address addr, uint32 entityId) {
         bytes24 underlying = FunctionReference.unwrap(fr);
         addr = address(bytes20(underlying));
-        validationId = uint32(bytes4(underlying << 160));
+        entityId = uint32(bytes4(underlying << 160));
     }
 
     function isEmpty(FunctionReference fr) internal pure returns (bool) {
