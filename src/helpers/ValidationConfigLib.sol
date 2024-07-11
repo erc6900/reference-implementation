@@ -18,31 +18,31 @@ library ValidationConfigLib {
         returns (ValidationConfig)
     {
         return ValidationConfig.wrap(
-            bytes23(
-                bytes23(FunctionReference.unwrap(_validationFunction))
-                // isGlobal flag stored in the 22nd byte
-                | bytes23(bytes32(_isGlobal ? uint256(1) << 80 : 0))
-                // isSignatureValidation flag stored in the 23rd byte
-                | bytes23(bytes32(_isSignatureValidation ? uint256(1) << 72 : 0))
+            bytes26(
+                bytes26(FunctionReference.unwrap(_validationFunction))
+                // isGlobal flag stored in the 25th byte
+                | bytes26(bytes32(_isGlobal ? uint256(1) << 56 : 0))
+                // isSignatureValidation flag stored in the 26th byte
+                | bytes26(bytes32(_isSignatureValidation ? uint256(1) << 48 : 0))
             )
         );
     }
 
-    function pack(address _plugin, uint8 _validationId, bool _isGlobal, bool _isSignatureValidation)
+    function pack(address _plugin, uint32 _validationId, bool _isGlobal, bool _isSignatureValidation)
         internal
         pure
         returns (ValidationConfig)
     {
         return ValidationConfig.wrap(
-            bytes23(
+            bytes26(
                 // plugin address stored in the first 20 bytes
-                bytes23(bytes20(_plugin))
-                // validationId stored in the 21st byte
-                | bytes23(bytes32(uint256(_validationId) << 168))
-                // isGlobal flag stored in the 22nd byte
-                | bytes23(bytes32(_isGlobal ? uint256(1) << 80 : 0))
-                // isSignatureValidation flag stored in the 23rd byte
-                | bytes23(bytes32(_isSignatureValidation ? uint256(1) << 72 : 0))
+                bytes26(bytes20(_plugin))
+                // validationId stored in the 21st - 24th byte
+                | bytes26(bytes32(uint256(_validationId) << 168))
+                // isGlobal flag stored in the 25th byte
+                | bytes26(bytes32(_isGlobal ? uint256(1) << 56 : 0))
+                // isSignatureValidation flag stored in the 26th byte
+                | bytes26(bytes32(_isSignatureValidation ? uint256(1) << 48 : 0))
             )
         );
     }
@@ -50,13 +50,13 @@ library ValidationConfigLib {
     function unpackUnderlying(ValidationConfig config)
         internal
         pure
-        returns (address _plugin, uint8 _validationId, bool _isGlobal, bool _isSignatureValidation)
+        returns (address _plugin, uint32 _validationId, bool _isGlobal, bool _isSignatureValidation)
     {
-        bytes23 configBytes = ValidationConfig.unwrap(config);
+        bytes26 configBytes = ValidationConfig.unwrap(config);
         _plugin = address(bytes20(configBytes));
-        _validationId = uint8(configBytes[20]);
-        _isGlobal = uint8(configBytes[21]) == 1;
-        _isSignatureValidation = uint8(configBytes[22]) == 1;
+        _validationId = uint32(bytes4(configBytes << 160));
+        _isGlobal = uint8(configBytes[24]) == 1;
+        _isSignatureValidation = uint8(configBytes[25]) == 1;
     }
 
     function unpack(ValidationConfig config)
@@ -64,29 +64,29 @@ library ValidationConfigLib {
         pure
         returns (FunctionReference _validationFunction, bool _isGlobal, bool _isSignatureValidation)
     {
-        bytes23 configBytes = ValidationConfig.unwrap(config);
-        _validationFunction = FunctionReference.wrap(bytes21(configBytes));
-        _isGlobal = uint8(configBytes[21]) == 1;
-        _isSignatureValidation = uint8(configBytes[22]) == 1;
+        bytes26 configBytes = ValidationConfig.unwrap(config);
+        _validationFunction = FunctionReference.wrap(bytes24(configBytes));
+        _isGlobal = uint8(configBytes[24]) == 1;
+        _isSignatureValidation = uint8(configBytes[25]) == 1;
     }
 
     function plugin(ValidationConfig config) internal pure returns (address) {
         return address(bytes20(ValidationConfig.unwrap(config)));
     }
 
-    function validationId(ValidationConfig config) internal pure returns (uint8) {
-        return uint8(ValidationConfig.unwrap(config)[20]);
+    function validationId(ValidationConfig config) internal pure returns (uint32) {
+        return uint32(bytes4(ValidationConfig.unwrap(config) << 160));
     }
 
     function functionReference(ValidationConfig config) internal pure returns (FunctionReference) {
-        return FunctionReference.wrap(bytes21(ValidationConfig.unwrap(config)));
+        return FunctionReference.wrap(bytes24(ValidationConfig.unwrap(config)));
     }
 
     function isGlobal(ValidationConfig config) internal pure returns (bool) {
-        return uint8(ValidationConfig.unwrap(config)[21]) == 1;
+        return uint8(ValidationConfig.unwrap(config)[24]) == 1;
     }
 
     function isSignatureValidation(ValidationConfig config) internal pure returns (bool) {
-        return uint8(ValidationConfig.unwrap(config)[22]) == 1;
+        return uint8(ValidationConfig.unwrap(config)[25]) == 1;
     }
 }

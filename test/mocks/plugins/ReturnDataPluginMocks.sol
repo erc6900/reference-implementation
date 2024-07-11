@@ -72,17 +72,17 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
     // Validation function implementations. We only care about the runtime validation function, to authorize
     // itself.
 
-    function validateUserOp(uint8, PackedUserOperation calldata, bytes32) external pure returns (uint256) {
+    function validateUserOp(uint32, PackedUserOperation calldata, bytes32) external pure returns (uint256) {
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8, address sender, uint256, bytes calldata, bytes calldata) external view {
+    function validateRuntime(uint32, address sender, uint256, bytes calldata, bytes calldata) external view {
         if (sender != address(this)) {
             revert NotAuthorized();
         }
     }
 
-    function validateSignature(uint8, address, bytes32, bytes calldata) external pure returns (bytes4) {
+    function validateSignature(uint32, address, bytes32, bytes calldata) external pure returns (bytes4) {
         revert NotImplemented();
     }
 
@@ -99,7 +99,7 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         // This result should be allowed based on the manifest permission request
         bytes memory returnData = IStandardExecutor(msg.sender).executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
-            abi.encodePacked(this, uint8(0), uint8(0), uint32(1), uint8(255)) // Validation function of self,
+            abi.encodePacked(this, uint32(0), uint8(0), uint32(1), uint8(255)) // Validation function of self,
                 // selector-associated, with no auth data
         );
 

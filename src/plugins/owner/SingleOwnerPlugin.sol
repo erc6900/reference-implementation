@@ -42,7 +42,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    mapping(uint8 id => mapping(address account => address)) public owners;
+    mapping(uint32 id => mapping(address account => address)) public owners;
 
     /// @notice This event is emitted when ownership of the account changes.
     /// @param account The account whose ownership changed.
@@ -61,7 +61,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     /// @notice Transfer ownership of an account and ID to `newOwner`. The caller address (`msg.sender`) is user to
     /// identify the account.
     /// @param newOwner The address of the new owner.
-    function transferOwnership(uint8 id, address newOwner) external {
+    function transferOwnership(uint32 id, address newOwner) external {
         _transferOwnership(id, newOwner);
     }
 
@@ -71,18 +71,18 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (uint8 id, address owner) = abi.decode(data, (uint8, address));
+        (uint32 id, address owner) = abi.decode(data, (uint32, address));
         _transferOwnership(id, owner);
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata data) external override {
-        uint8 id = abi.decode(data, (uint8));
+        uint32 id = abi.decode(data, (uint32));
         _transferOwnership(id, address(0));
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(uint8 validationId, address sender, uint256, bytes calldata, bytes calldata)
+    function validateRuntime(uint32 validationId, address sender, uint256, bytes calldata, bytes calldata)
         external
         view
         override
@@ -95,7 +95,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateUserOp(uint8 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint32 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -123,7 +123,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(uint8 validationId, address, bytes32 digest, bytes calldata signature)
+    function validateSignature(uint32 validationId, address, bytes32 digest, bytes calldata signature)
         external
         view
         override
@@ -179,7 +179,7 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     // Transfers ownership and emits and event.
-    function _transferOwnership(uint8 id, address newOwner) internal {
+    function _transferOwnership(uint32 id, address newOwner) internal {
         address previousOwner = owners[id][msg.sender];
         owners[id][msg.sender] = newOwner;
         // Todo: include id in event

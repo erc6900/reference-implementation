@@ -13,7 +13,7 @@ interface IValidation is IPlugin {
     /// @param userOp The user operation.
     /// @param userOpHash The user operation hash.
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function validateUserOp(uint8 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint32 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         returns (uint256);
 
@@ -27,7 +27,7 @@ interface IValidation is IPlugin {
     /// @param data The calldata sent.
     /// @param authorization Additional data for the validation function to use.
     function validateRuntime(
-        uint8 validationId,
+        uint32 validationId,
         address sender,
         uint256 value,
         bytes calldata data,
@@ -43,7 +43,7 @@ interface IValidation is IPlugin {
     /// @param hash the hash of the ERC-1271 request
     /// @param signature the signature of the ERC-1271 request
     /// @return the ERC-1271 `MAGIC_VALUE` if the signature is valid, or 0xFFFFFFFF if invalid.
-    function validateSignature(uint8 validationId, address sender, bytes32 hash, bytes calldata signature)
+    function validateSignature(uint32 validationId, address sender, bytes32 hash, bytes calldata signature)
         external
         view
         returns (bytes4);

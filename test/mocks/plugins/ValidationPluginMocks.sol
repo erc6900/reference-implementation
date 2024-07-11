@@ -32,40 +32,40 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(uint8 validationId, PackedUserOperation calldata, bytes32)
+    function preUserOpValidationHook(uint32 validationId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_1)) {
+        if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_1)) {
             return _preUserOpValidationHook1Data;
-        } else if (validationId == uint8(ValidationId.PRE_VALIDATION_HOOK_2)) {
+        } else if (validationId == uint32(ValidationId.PRE_VALIDATION_HOOK_2)) {
             return _preUserOpValidationHook2Data;
         }
         revert NotImplemented();
     }
 
-    function validateUserOp(uint8 validationId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint32 validationId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (validationId == uint8(ValidationId.USER_OP_VALIDATION)) {
+        if (validationId == uint32(ValidationId.USER_OP_VALIDATION)) {
             return _userOpValidationFunctionData;
         }
         revert NotImplemented();
     }
 
-    function validateSignature(uint8, address, bytes32, bytes calldata) external pure override returns (bytes4) {
+    function validateSignature(uint32, address, bytes32, bytes calldata) external pure override returns (bytes4) {
         revert NotImplemented();
     }
 
     // Empty stubs
     function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 
-    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata, bytes calldata)
+    function preRuntimeValidationHook(uint32, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override
@@ -73,7 +73,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata) external pure override {
+    function validateRuntime(uint32, address, uint256, bytes calldata, bytes calldata) external pure override {
         revert NotImplemented();
     }
 }
@@ -108,7 +108,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            validationId: uint8(ValidationId.USER_OP_VALIDATION),
+            validationId: uint32(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -151,7 +151,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](2);
         manifest.validationFunctions[0] = ManifestValidation({
-            validationId: uint8(ValidationId.USER_OP_VALIDATION),
+            validationId: uint32(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -197,7 +197,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            validationId: uint8(ValidationId.USER_OP_VALIDATION),
+            validationId: uint32(ValidationId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors

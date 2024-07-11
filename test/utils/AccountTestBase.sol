@@ -36,7 +36,7 @@ abstract contract AccountTestBase is OptimizedTest {
     uint8 public constant GLOBAL_VALIDATION = 1;
 
     // Re-declare the constant to prevent derived test contracts from having to import it
-    uint8 public constant TEST_DEFAULT_OWNER_FUNCTION_ID = EXT_CONST_TEST_DEFAULT_OWNER_FUNCTION_ID;
+    uint32 public constant TEST_DEFAULT_OWNER_FUNCTION_ID = EXT_CONST_TEST_DEFAULT_OWNER_FUNCTION_ID;
 
     uint256 public constant CALL_GAS_LIMIT = 100000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;

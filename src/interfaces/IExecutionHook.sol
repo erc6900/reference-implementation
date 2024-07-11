@@ -13,7 +13,7 @@ interface IExecutionHook is IPlugin {
     /// @param value The call value.
     /// @param data The calldata sent.
     /// @return Context to pass to a post execution hook, if present. An empty bytes array MAY be returned.
-    function preExecutionHook(uint8 validationId, address sender, uint256 value, bytes calldata data)
+    function preExecutionHook(uint32 validationId, address sender, uint256 value, bytes calldata data)
         external
         returns (bytes memory);
 
@@ -23,5 +23,5 @@ interface IExecutionHook is IPlugin {
     /// be
     /// more than one.
     /// @param preExecHookData The context returned by its associated pre execution hook.
-    function postExecutionHook(uint8 validationId, bytes calldata preExecHookData) external;
+    function postExecutionHook(uint32 validationId, bytes calldata preExecHookData) external;
 }

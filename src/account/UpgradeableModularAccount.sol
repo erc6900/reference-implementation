@@ -68,18 +68,18 @@ contract UpgradeableModularAccount is
     error NativeTokenSpendingNotPermitted(address plugin);
     error NonCanonicalEncoding();
     error NotEntryPoint();
-    error PostExecHookReverted(address plugin, uint8 validationId, bytes revertReason);
-    error PreExecHookReverted(address plugin, uint8 validationId, bytes revertReason);
-    error PreRuntimeValidationHookFailed(address plugin, uint8 validationId, bytes revertReason);
+    error PostExecHookReverted(address plugin, uint32 validationId, bytes revertReason);
+    error PreExecHookReverted(address plugin, uint32 validationId, bytes revertReason);
+    error PreRuntimeValidationHookFailed(address plugin, uint32 validationId, bytes revertReason);
     error RequireUserOperationContext();
     error RuntimeValidationFunctionMissing(bytes4 selector);
-    error RuntimeValidationFunctionReverted(address plugin, uint8 validationId, bytes revertReason);
+    error RuntimeValidationFunctionReverted(address plugin, uint32 validationId, bytes revertReason);
     error SelfCallRecursionDepthExceeded();
-    error SignatureValidationInvalid(address plugin, uint8 validationId);
-    error UnexpectedAggregator(address plugin, uint8 validationId, address aggregator);
+    error SignatureValidationInvalid(address plugin, uint32 validationId);
+    error UnexpectedAggregator(address plugin, uint32 validationId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error UserOpValidationFunctionMissing(bytes4 selector);
-    error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 validationId, bool isGlobal);
+    error ValidationDoesNotApply(bytes4 selector, address plugin, uint32 validationId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
 
@@ -164,7 +164,7 @@ contract UpgradeableModularAccount is
             revert NotEntryPoint();
         }
 
-        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
+        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes24(userOp.signature[:24]));
 
         PostExecToRun[] memory postPermissionHooks =
             _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].permissionHooks, msg.data);
@@ -217,13 +217,13 @@ contract UpgradeableModularAccount is
         returns (bytes memory)
     {
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes21(authorization[:21]));
+        FunctionReference runtimeValidationFunction = FunctionReference.wrap(bytes24(authorization[:24]));
 
         // Check if the runtime validation function is allowed to be called
-        bool isGlobalValidation = uint8(authorization[21]) == 1;
+        bool isGlobalValidation = uint8(authorization[24]) == 1;
         _checkIfValidationAppliesCallData(data, runtimeValidationFunction, isGlobalValidation);
 
-        _doRuntimeValidation(runtimeValidationFunction, data, authorization[22:]);
+        _doRuntimeValidation(runtimeValidationFunction, data, authorization[25:]);
 
         // If runtime validation passes, do runtime permission checks
         PostExecToRun[] memory postPermissionHooks =
@@ -341,15 +341,15 @@ contract UpgradeableModularAccount is
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
         AccountStorage storage _storage = getAccountStorage();
 
-        FunctionReference sigValidation = FunctionReference.wrap(bytes21(signature));
+        FunctionReference sigValidation = FunctionReference.wrap(bytes24(signature));
 
-        (address plugin, uint8 validationId) = sigValidation.unpack();
+        (address plugin, uint32 validationId) = sigValidation.unpack();
         if (!_storage.validationData[sigValidation].isSignatureValidation) {
             revert SignatureValidationInvalid(plugin, validationId);
         }
 
         if (
-            IValidation(plugin).validateSignature(validationId, msg.sender, hash, signature[21:])
+            IValidation(plugin).validateSignature(validationId, msg.sender, hash, signature[24:])
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
@@ -377,8 +377,8 @@ contract UpgradeableModularAccount is
         }
 
         // Revert if the provided `authorization` less than 21 bytes long, rather than right-padding.
-        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes21(userOp.signature[:21]));
-        bool isGlobalValidation = uint8(userOp.signature[21]) == 1;
+        FunctionReference userOpValidationFunction = FunctionReference.wrap(bytes24(userOp.signature[:24]));
+        bool isGlobalValidation = uint8(userOp.signature[24]) == 1;
 
         _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isGlobalValidation);
 
@@ -393,7 +393,7 @@ contract UpgradeableModularAccount is
             revert RequireUserOperationContext();
         }
 
-        validationData = _doUserOpValidation(userOpValidationFunction, userOp, userOp.signature[22:], userOpHash);
+        validationData = _doUserOpValidation(userOpValidationFunction, userOp, userOp.signature[25:], userOpHash);
     }
 
     // To support gas estimation, we don't fail early when the failure is caused by a signature failure
@@ -434,7 +434,7 @@ contract UpgradeableModularAccount is
                 userOp.signature = "";
             }
 
-            (address plugin, uint8 validationId) = preUserOpValidationHooks[i].unpack();
+            (address plugin, uint32 validationId) = preUserOpValidationHooks[i].unpack();
             uint256 currentValidationData =
                 IValidationHook(plugin).preUserOpValidationHook(validationId, userOp, userOpHash);
 
@@ -453,7 +453,7 @@ contract UpgradeableModularAccount is
 
             userOp.signature = signatureSegment.getBody();
 
-            (address plugin, uint8 validationId) = userOpValidationFunction.unpack();
+            (address plugin, uint32 validationId) = userOpValidationFunction.unpack();
             uint256 currentValidationData = IValidation(plugin).validateUserOp(validationId, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
@@ -501,7 +501,7 @@ contract UpgradeableModularAccount is
                 currentAuthData = "";
             }
 
-            (address hookPlugin, uint8 hookValidationId) = preRuntimeValidationHooks[i].unpack();
+            (address hookPlugin, uint32 hookValidationId) = preRuntimeValidationHooks[i].unpack();
             try IValidationHook(hookPlugin).preRuntimeValidationHook(
                 hookValidationId, msg.sender, msg.value, callData, currentAuthData
             )
@@ -517,7 +517,7 @@ contract UpgradeableModularAccount is
             revert ValidationSignatureSegmentMissing();
         }
 
-        (address plugin, uint8 validationId) = runtimeValidationFunction.unpack();
+        (address plugin, uint32 validationId) = runtimeValidationFunction.unpack();
 
         try IValidation(plugin).validateRuntime(
             validationId, msg.sender, msg.value, callData, authSegment.getBody()
@@ -571,7 +571,7 @@ contract UpgradeableModularAccount is
         internal
         returns (bytes memory preExecHookReturnData)
     {
-        (address plugin, uint8 validationId) = preExecHook.unpack();
+        (address plugin, uint32 validationId) = preExecHook.unpack();
         try IExecutionHook(plugin).preExecutionHook(validationId, msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
@@ -596,7 +596,7 @@ contract UpgradeableModularAccount is
                 continue;
             }
 
-            (address plugin, uint8 validationId) = postHookToRun.postExecHook.unpack();
+            (address plugin, uint32 validationId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
             try IExecutionHook(plugin).postExecutionHook(validationId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
