@@ -59,6 +59,7 @@ struct PluginManifest {
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
     // IPlugin's interface ID.
     bytes4[] interfaceIds;
+    bytes4[] DirectCallSelectors;
 }
 
 interface IPlugin is IERC165 {
