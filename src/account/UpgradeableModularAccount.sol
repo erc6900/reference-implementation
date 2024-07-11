@@ -9,6 +9,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
@@ -41,6 +42,7 @@ contract UpgradeableModularAccount is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using FunctionReferenceLib for FunctionReference;
     using SparseCalldataSegmentLib for bytes;
 
@@ -81,7 +83,6 @@ contract UpgradeableModularAccount is
     error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
-    error DirectCallDisallowed();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
@@ -506,17 +507,7 @@ contract UpgradeableModularAccount is
             } else {
                 currentAuthData = "";
             }
-
-            (address hookPlugin, uint8 hookFunctionId) = preRuntimeValidationHooks[i].unpack();
-            try IValidationHook(hookPlugin).preRuntimeValidationHook(
-                hookFunctionId, msg.sender, msg.value, callData, currentAuthData
-            )
-            // forgefmt: disable-start
-            // solhint-disable-next-line no-empty-blocks
-            {} catch (bytes memory revertReason) {
-            // forgefmt: disable-end
-                revert PreRuntimeValidationHookFailed(hookPlugin, hookFunctionId, revertReason);
-            }
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthData);
         }
 
         if (authSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
@@ -606,6 +597,23 @@ contract UpgradeableModularAccount is
             catch (bytes memory revertReason) {
                 revert PostExecHookReverted(plugin, functionId, revertReason);
             }
+        }
+    }
+
+    function _doPreRuntimeValidationHook(
+        FunctionReference validationHook,
+        bytes memory callData,
+        bytes memory currentAuthData
+    ) internal {
+        (address hookPlugin, uint8 hookFunctionId) = validationHook.unpack();
+        try IValidationHook(hookPlugin).preRuntimeValidationHook(
+            hookFunctionId, msg.sender, msg.value, callData, currentAuthData
+        )
+        // forgefmt: disable-start
+        // solhint-disable-next-line no-empty-blocks
+        {} catch (bytes memory revertReason) {
+        // forgefmt: disable-end
+            revert PreRuntimeValidationHookFailed(hookPlugin, hookFunctionId, revertReason);
         }
     }
 
@@ -702,33 +710,27 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         if (
-            msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
-                && !_storage.selectorData[msg.sig].isPublic
+            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
+                || _storage.selectorData[msg.sig].isPublic
         ) {
-            revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
+            return;
         }
 
         // If direct calling isn't allowed OR direct calling is allowed, but the plugin is no longer installed,
         // revert. TBD if there's a better way to do this, e.g. deleting this storage or segmenting per
         // installation ID.
-        if (!_storage.directCallData[msg.sender][msg.sig].allowed || !_storage.plugins.contains(msg.sender)) {
-            revert DirectCallDisallowed();
+        if (
+            !_storage.directCallData[msg.sender][msg.sig].allowed
+                || !_storage.pluginManifestHashes.contains(msg.sender)
+        ) {
+            revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
         }
 
         FunctionReference[] storage hooks = _storage.directCallData[msg.sender][msg.sig].preValidationHooks;
 
         uint256 hookLen = hooks.length;
         for (uint256 i = 0; i < hookLen; ++i) {
-            (address hookPlugin, uint8 hookFunctionId) = hooks[i].unpack();
-            try IValidationHook(hookPlugin).preRuntimeValidationHook(
-                hookFunctionId, msg.sender, msg.value, msg.data, ""
-            )
-            // forgefmt: disable-start
-            // solhint-disable-next-line no-empty-blocks
-            {} catch (bytes memory revertReason) {
-            // forgefmt: disable-end
-                revert PreRuntimeValidationHookFailed(hookPlugin, hookFunctionId, revertReason);
-            }
+            _doPreRuntimeValidationHook(hooks[i], msg.data, "");
         }
     }
 }
