@@ -42,14 +42,14 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         account1.executeBatch(calls);
     }
 
-    function test_Pass_DirectCallFromPlugin_MockFlow() external {
+    function test_Pass_DirectCallFromPluginPrank() external {
         _installPlugin();
 
         vm.prank(address(plugin));
         account1.execute(address(0), 0, "");
     }
 
-    function test_Pass_DirectCallFromPlugin_NormalFlow() external {
+    function test_Pass_DirectCallFromPluginCallback() external {
         _installPlugin();
 
         bytes memory encodedCall = abi.encodeCall(DirectCallPlugin.directCall, ());
@@ -57,7 +57,25 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         vm.prank(address(entryPoint));
         bytes memory result = account1.execute(address(plugin), 0, encodedCall);
 
+        // the directCall() function in the plugin calls back into `execute()` with an encoded call back into the
+        // plugin's getData() function.
         assertEq(abi.decode(result, (bytes)), abi.encode(plugin.getData()));
+    }
+
+    function test_Flow_DirectCallFromPluginSequence() external {
+        // Install => Succeesfully call => uninstall => fail to call
+
+        _installPlugin();
+
+        vm.prank(address(plugin));
+        account1.execute(address(0), 0, "");
+
+        vm.prank(address(entryPoint));
+        account1.uninstallPlugin(address(plugin), "", "");
+
+        vm.prank(address(plugin));
+        vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
+        account1.execute(address(0), 0, "");
     }
 
     /* -------------------------------------------------------------------------- */
