@@ -5,6 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {
     MockBaseUserOpValidationPlugin,
@@ -65,8 +66,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         });
         bytes[] memory installDatas = new bytes[](1);
         account1.installValidation(
-            oneHookValidation,
-            true,
+            ValidationConfigLib.pack(oneHookValidation, true, true),
             new bytes4[](0),
             bytes(""),
             abi.encode(preValidationHooks, installDatas),
@@ -89,8 +89,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         });
         installDatas = new bytes[](2);
         account1.installValidation(
-            twoHookValidation,
-            true,
+            ValidationConfigLib.pack(twoHookValidation, true, true),
             new bytes4[](0),
             bytes(""),
             abi.encode(preValidationHooks, installDatas),

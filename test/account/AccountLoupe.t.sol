@@ -9,49 +9,29 @@ import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
-contract AccountLoupeTest is AccountTestBase {
+contract AccountLoupeTest is CustomValidationTestBase {
     ComprehensivePlugin public comprehensivePlugin;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
-        _transferOwnershipToTest();
-
         comprehensivePlugin = new ComprehensivePlugin();
+
+        _customValidationSetup();
 
         bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
         vm.prank(address(entryPoint));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
-
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
-        preValidationHooks[0] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_1)
-        );
-        preValidationHooks[1] = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_2)
-        );
-
-        bytes[] memory installDatas = new bytes[](2);
-        vm.prank(address(entryPoint));
-        account1.installValidation(
-            _ownerValidation,
-            true,
-            new bytes4[](0),
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            bytes("")
-        );
     }
 
     function test_pluginLoupe_getInstalledPlugins_initial() public {
         address[] memory plugins = account1.getInstalledPlugins();
 
-        assertEq(plugins.length, 2);
+        assertEq(plugins.length, 1);
 
-        assertEq(plugins[0], address(singleOwnerPlugin));
-        assertEq(plugins[1], address(comprehensivePlugin));
+        assertEq(plugins[0], address(comprehensivePlugin));
     }
 
     function test_pluginLoupe_getExecutionFunctionHandler_native() public {
@@ -155,6 +135,34 @@ contract AccountLoupeTest is AccountTestBase {
                     address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_2)
                 )
             )
+        );
+    }
+
+    // Test config
+
+    function _initialValidationConfig()
+        internal
+        virtual
+        override
+        returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+    {
+        FunctionReference[] memory preValidationHooks = new FunctionReference[](2);
+        preValidationHooks[0] = FunctionReferenceLib.pack(
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_1)
+        );
+        preValidationHooks[1] = FunctionReferenceLib.pack(
+            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.PRE_VALIDATION_HOOK_2)
+        );
+
+        bytes[] memory installDatas = new bytes[](2);
+        return (
+            _ownerValidation,
+            true,
+            true,
+            new bytes4[](0),
+            bytes(""),
+            abi.encode(preValidationHooks, installDatas),
+            ""
         );
     }
 }

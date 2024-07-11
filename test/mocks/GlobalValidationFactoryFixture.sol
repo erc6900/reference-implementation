@@ -6,11 +6,11 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
 
 contract GlobalValidationFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
@@ -50,16 +50,13 @@ contract GlobalValidationFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(owner);
+            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
-                true,
+                ValidationConfigLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID, true, true),
                 new bytes4[](0),
                 pluginInstallData,
                 "",

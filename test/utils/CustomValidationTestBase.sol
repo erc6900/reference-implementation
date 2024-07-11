@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
@@ -16,7 +17,8 @@ abstract contract CustomValidationTestBase is AccountTestBase {
     function _customValidationSetup() internal {
         (
             FunctionReference validationFunction,
-            bool shared,
+            bool isGlobal,
+            bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
             bytes memory preValidationHooks,
@@ -28,7 +30,11 @@ abstract contract CustomValidationTestBase is AccountTestBase {
         account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
         account1.initializeWithValidation(
-            validationFunction, shared, selectors, installData, preValidationHooks, permissionHooks
+            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
+            selectors,
+            installData,
+            preValidationHooks,
+            permissionHooks
         );
 
         vm.deal(address(account1), 100 ether);
@@ -40,6 +46,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
         returns (
             FunctionReference validationFunction,
             bool shared,
+            bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
             bytes memory preValidationHooks,

@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {ISingleOwnerPlugin} from "../../src/plugins/owner/ISingleOwnerPlugin.sol";
 
 import {
     RegularResultContract,
@@ -11,6 +10,7 @@ import {
     ResultConsumerPlugin
 } from "../mocks/plugins/ReturnDataPluginMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
 
 // Tests all the different ways that return data can be read from plugins through an account
 contract AccountReturnDataTest is AccountTestBase {
@@ -58,10 +58,8 @@ contract AccountReturnDataTest is AccountTestBase {
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
             _encodeSignature(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
-                SELECTOR_ASSOCIATED_VALIDATION,
+                FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                GLOBAL_VALIDATION,
                 ""
             )
         );
@@ -88,10 +86,8 @@ contract AccountReturnDataTest is AccountTestBase {
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
             _encodeSignature(
-                FunctionReferenceLib.pack(
-                    address(singleOwnerPlugin), uint8(ISingleOwnerPlugin.FunctionId.VALIDATION_OWNER)
-                ),
-                SELECTOR_ASSOCIATED_VALIDATION,
+                FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                GLOBAL_VALIDATION,
                 ""
             )
         );
