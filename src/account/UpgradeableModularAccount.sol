@@ -13,7 +13,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
-import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationDataHelpers.sol";
+import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
@@ -405,7 +405,7 @@ contract UpgradeableModularAccount is
         bytes calldata signatureSegment;
         (signatureSegment, signature) = signature.getNextSegment();
 
-        uint256 validationData;
+        uint256 validationRes;
 
         // Do preUserOpValidation hooks
         PluginEntity[] memory preUserOpValidationHooks =
@@ -433,14 +433,14 @@ contract UpgradeableModularAccount is
             }
 
             (address plugin, uint32 entityId) = preUserOpValidationHooks[i].unpack();
-            uint256 currentValidationData =
+            uint256 currentValidationRes =
                 IValidationHook(plugin).preUserOpValidationHook(entityId, userOp, userOpHash);
 
-            if (uint160(currentValidationData) > 1) {
+            if (uint160(currentValidationRes) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
-                revert UnexpectedAggregator(plugin, entityId, address(uint160(currentValidationData)));
+                revert UnexpectedAggregator(plugin, entityId, address(uint160(currentValidationRes)));
             }
-            validationData = _coalescePreValidation(validationData, currentValidationData);
+            validationRes = _coalescePreValidation(validationRes, currentValidationRes);
         }
 
         // Run the user op validationFunction
@@ -452,17 +452,17 @@ contract UpgradeableModularAccount is
             userOp.signature = signatureSegment.getBody();
 
             (address plugin, uint32 entityId) = userOpValidationFunction.unpack();
-            uint256 currentValidationData = IValidation(plugin).validateUserOp(entityId, userOp, userOpHash);
+            uint256 currentValidationRes = IValidation(plugin).validateUserOp(entityId, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
-                validationData = _coalesceValidation(validationData, currentValidationData);
+                validationRes = _coalesceValidation(validationRes, currentValidationRes);
             } else {
-                validationData = currentValidationData;
+                validationRes = currentValidationRes;
             }
         }
 
-        return validationData;
+        return validationRes;
     }
 
     function _doRuntimeValidation(
