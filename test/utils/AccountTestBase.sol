@@ -214,7 +214,7 @@ abstract contract AccountTestBase is OptimizedTest {
         for (uint256 i = 0; i < preValidationHookData.length; ++i) {
             sig = abi.encodePacked(
                 sig,
-                _packValidationDataWithIndex(
+                _packValidationResWithIndex(
                     preValidationHookData[i].index, preValidationHookData[i].validationData
                 )
             );
@@ -222,7 +222,7 @@ abstract contract AccountTestBase is OptimizedTest {
 
         // Index of the actual validation data is the length of the preValidationHooksRetrieved - aka
         // one-past-the-end
-        sig = abi.encodePacked(sig, _packValidationDataWithIndex(255, validationData));
+        sig = abi.encodePacked(sig, _packValidationResWithIndex(255, validationData));
 
         return sig;
     }
@@ -238,7 +238,7 @@ abstract contract AccountTestBase is OptimizedTest {
     }
 
     // helper function to pack validation data with an index, according to the sparse calldata segment spec.
-    function _packValidationDataWithIndex(uint8 index, bytes memory validationData)
+    function _packValidationResWithIndex(uint8 index, bytes memory validationData)
         internal
         pure
         returns (bytes memory)
