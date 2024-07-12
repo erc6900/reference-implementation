@@ -6,7 +6,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {PackedPluginEntity, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {PluginEntity, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {getAccountStorage, toExecutionHook, toSelector} from "./AccountStorage.sol";
 
@@ -29,7 +29,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getSelectors(PackedPluginEntity validationFunction) external view returns (bytes4[] memory) {
+    function getSelectors(PluginEntity validationFunction) external view returns (bytes4[] memory) {
         uint256 length = getAccountStorage().validationData[validationFunction].selectors.length();
 
         bytes4[] memory selectors = new bytes4[](length);
@@ -61,7 +61,7 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPermissionHooks(PackedPluginEntity validationFunction)
+    function getPermissionHooks(PluginEntity validationFunction)
         external
         view
         override
@@ -79,11 +79,11 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPreValidationHooks(PackedPluginEntity validationFunction)
+    function getPreValidationHooks(PluginEntity validationFunction)
         external
         view
         override
-        returns (PackedPluginEntity[] memory preValidationHooks)
+        returns (PluginEntity[] memory preValidationHooks)
     {
         preValidationHooks = getAccountStorage().validationData[validationFunction].preValidationHooks;
     }

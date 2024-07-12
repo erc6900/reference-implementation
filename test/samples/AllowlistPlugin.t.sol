@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {PackedPluginEntity, PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {AllowlistPlugin} from "../../src/samples/permissionhooks/AllowlistPlugin.sol";
 
@@ -290,13 +290,12 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (PackedPluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (PluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
-        PackedPluginEntity accessControlHook = PackedPluginEntityLib.pack(
-            address(allowlistPlugin), uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK)
-        );
+        PluginEntity accessControlHook =
+            PluginEntityLib.pack(address(allowlistPlugin), uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK));
 
-        PackedPluginEntity[] memory preValidationHooks = new PackedPluginEntity[](1);
+        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
         preValidationHooks[0] = accessControlHook;
 
         bytes[] memory preValidationHookData = new bytes[](1);

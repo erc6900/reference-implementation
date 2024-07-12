@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {PackedPluginEntity} from "../../src/helpers/PackedPluginEntityLib.sol";
+import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
@@ -16,7 +16,7 @@ import {AccountTestBase} from "./AccountTestBase.sol";
 abstract contract CustomValidationTestBase is AccountTestBase {
     function _customValidationSetup() internal {
         (
-            PackedPluginEntity validationFunction,
+            PluginEntity validationFunction,
             bool isGlobal,
             bool isSignatureValidation,
             bytes4[] memory selectors,
@@ -44,7 +44,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
         internal
         virtual
         returns (
-            PackedPluginEntity validationFunction,
+            PluginEntity validationFunction,
             bool shared,
             bool isSignatureValidation,
             bytes4[] memory selectors,

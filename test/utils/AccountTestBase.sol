@@ -5,7 +5,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {PackedPluginEntity, PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
@@ -18,7 +18,7 @@ import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 /// @dev This contract handles common boilerplate setup for tests using UpgradeableModularAccount with
 /// SingleOwnerPlugin.
 abstract contract AccountTestBase is OptimizedTest {
-    using PackedPluginEntityLib for PackedPluginEntity;
+    using PluginEntityLib for PluginEntity;
     using MessageHashUtils for bytes32;
 
     EntryPoint public entryPoint;
@@ -30,7 +30,7 @@ abstract contract AccountTestBase is OptimizedTest {
     uint256 public owner1Key;
     UpgradeableModularAccount public account1;
 
-    PackedPluginEntity internal _ownerValidation;
+    PluginEntity internal _ownerValidation;
 
     uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
     uint8 public constant GLOBAL_VALIDATION = 1;
@@ -57,7 +57,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _ownerValidation = PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
+        _ownerValidation = PluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -100,7 +100,7 @@ abstract contract AccountTestBase is OptimizedTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
         userOp.signature = _encodeSignature(
-            PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+            PluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -153,7 +153,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                PluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -168,7 +168,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                PluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -190,7 +190,7 @@ abstract contract AccountTestBase is OptimizedTest {
                 )
             ),
             _encodeSignature(
-                PackedPluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
+                PluginEntityLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -204,7 +204,7 @@ abstract contract AccountTestBase is OptimizedTest {
 
     // helper function to encode a signature, according to the per-hook and per-validation data format.
     function _encodeSignature(
-        PackedPluginEntity validationFunction,
+        PluginEntity validationFunction,
         uint8 globalOrNot,
         PreValidationHookData[] memory preValidationHookData,
         bytes memory validationData
@@ -228,11 +228,11 @@ abstract contract AccountTestBase is OptimizedTest {
     }
 
     // overload for the case where there are no pre-validation hooks
-    function _encodeSignature(
-        PackedPluginEntity validationFunction,
-        uint8 globalOrNot,
-        bytes memory validationData
-    ) internal pure returns (bytes memory) {
+    function _encodeSignature(PluginEntity validationFunction, uint8 globalOrNot, bytes memory validationData)
+        internal
+        pure
+        returns (bytes memory)
+    {
         PreValidationHookData[] memory emptyPreValidationHookData = new PreValidationHookData[](0);
         return _encodeSignature(validationFunction, globalOrNot, emptyPreValidationHookData, validationData);
     }
