@@ -192,12 +192,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
         }
 
-        length = manifest.DirectCallSelectors.length;
-        for (uint256 i = 0; i < length; ++i) {
-            _storage.directCallData[plugin][manifest.DirectCallSelectors[i]].allowed = true;
-        }
-        //TODO: Associate hooks with the direct call, but these should most likely be user-provided
-
         // Initialize the plugin storage for the account.
         // solhint-disable-next-line no-empty-blocks
         try IPlugin(plugin).onInstall(pluginInstallData) {}

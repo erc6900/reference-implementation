@@ -15,6 +15,7 @@ abstract contract PluginManager2 {
 
     // Index marking the start of the data for the validation function.
     uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
+    uint8 internal constant _SELF_PERMIT_VALIDATION_FUNCTIONID = type(uint8).max;
 
     error GlobalValidationAlreadySet(FunctionReference validationFunction);
     error PreValidationAlreadySet(FunctionReference validationFunction, FunctionReference preValidationFunction);
@@ -80,12 +81,9 @@ abstract contract PluginManager2 {
             }
         }
 
-        if (isGlobal) {
-            if (_storage.validationData[validationFunction].isGlobal) {
-                revert GlobalValidationAlreadySet(validationFunction);
-            }
-            _storage.validationData[validationFunction].isGlobal = true;
-        }
+        (address plugin, uint8 functionId) = FunctionReferenceLib.unpack(validationFunction);
+        // If the functionId indicates a self-permit for direct runtime calls from plugins, we don't need to
+        // install a function as the functionReference will consist of the msg.sender + constant_functionId
 
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
@@ -94,9 +92,18 @@ abstract contract PluginManager2 {
             }
         }
 
-        if (installData.length > 0) {
-            (address plugin,) = FunctionReferenceLib.unpack(validationFunction);
-            IPlugin(plugin).onInstall(installData);
+        if (functionId != _SELF_PERMIT_VALIDATION_FUNCTIONID) {
+            // Only allow global validations if they're not direct-calls.
+            if (isGlobal) {
+                if (_storage.validationData[validationFunction].isGlobal) {
+                    revert GlobalValidationAlreadySet(validationFunction);
+                }
+                _storage.validationData[validationFunction].isGlobal = true;
+            }
+
+            if (installData.length > 0) {
+                IPlugin(plugin).onInstall(installData);
+            }
         }
     }
 

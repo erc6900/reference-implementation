@@ -12,14 +12,7 @@ contract DirectCallPlugin is BasePlugin {
 
     function onUninstall(bytes calldata) external override {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-
-        manifest.DirectCallSelectors = new bytes4[](1);
-        manifest.DirectCallSelectors[0] = IStandardExecutor.execute.selector;
-
-        return manifest;
-    }
+    function pluginManifest() external pure override returns (PluginManifest memory) {}
 
     function directCall() external returns (bytes memory) {
         return IStandardExecutor(msg.sender).execute(address(this), 0, abi.encodeCall(this.getData, ()));

@@ -4,15 +4,18 @@ import {DirectCallPlugin} from "../mocks/plugins/DirectCallPlugin.sol";
 import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
+import {FunctionReferenceLib, FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract DirectCallsFromPluginTest is AccountTestBase {
     DirectCallPlugin plugin;
+    FunctionReference pluginFunctionReference;
 
     function setUp() public {
         plugin = new DirectCallPlugin();
+        pluginFunctionReference = FunctionReferenceLib.pack(address(plugin), type(uint8).max);
     }
 
     function test_Fail_DirectCallPluginNotInstalled() external {
@@ -24,8 +27,7 @@ contract DirectCallsFromPluginTest is AccountTestBase {
     function test_Fail_DirectCallPluginUninstalled() external {
         _installPlugin();
 
-        vm.prank(address(entryPoint));
-        account1.uninstallPlugin(address(plugin), "", "");
+        _uninstallPlugin();
 
         vm.prank(address(plugin));
         vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
@@ -70,8 +72,7 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         vm.prank(address(plugin));
         account1.execute(address(0), 0, "");
 
-        vm.prank(address(entryPoint));
-        account1.uninstallPlugin(address(plugin), "", "");
+        _uninstallPlugin();
 
         vm.prank(address(plugin));
         vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
@@ -83,10 +84,23 @@ contract DirectCallsFromPluginTest is AccountTestBase {
     /* -------------------------------------------------------------------------- */
 
     function _installPlugin() internal {
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
+        // bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
+
+        // vm.prank(address(entryPoint));
+        // account1.installPlugin(address(plugin), manifestHash, "");
+
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = IStandardExecutor.execute.selector;
 
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(plugin), manifestHash, "");
+        account1.installValidation(pluginFunctionReference, false, selectors, "", "", "");
+    }
+
+    function _uninstallPlugin() internal {
+        vm.prank(address(entryPoint));
+        account1.uninstallValidation(
+            pluginFunctionReference, "", abi.encode(new bytes[](0)), abi.encode(new bytes[](0))
+        );
     }
 
     function _buildDirectCallDisallowedError(bytes4 selector) internal view returns (bytes memory) {

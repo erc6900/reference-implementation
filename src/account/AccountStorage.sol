@@ -32,7 +32,7 @@ struct ValidationData {
     bool isSignatureValidation;
     // How many execution hooks require the UO context.
     uint8 requireUOHookCount;
-    // The pre validation hooks for this function selector.
+    // The pre validation hooks for this validation function.
     FunctionReference[] preValidationHooks;
     // Permission hooks for this validation function.
     EnumerableSet.Bytes32Set permissionHooks;
@@ -56,7 +56,6 @@ struct AccountStorage {
     mapping(FunctionReference validationFunction => ValidationData) validationData;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
-    mapping(address caller => mapping(bytes4 selector => DirectCallValidationData)) directCallData;
 }
 
 function getAccountStorage() pure returns (AccountStorage storage _storage) {

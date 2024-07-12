@@ -87,7 +87,7 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        _checkPermittedCallerIfNotFromEP();
+        PostExecToRun[] memory postPermissionHooks = _checkPermittedCallerIfNotFromEP();
 
         PostExecToRun[] memory postExecHooks =
             _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
@@ -95,6 +95,7 @@ contract UpgradeableModularAccount is
         _;
 
         _doCachedPostExecHooks(postExecHooks);
+        _doCachedPostExecHooks(postPermissionHooks);
     }
 
     constructor(IEntryPoint anEntryPoint) {
@@ -706,31 +707,53 @@ contract UpgradeableModularAccount is
         return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
-    function _checkPermittedCallerIfNotFromEP() internal {
+    function _checkPermittedCallerIfNotFromEP() internal returns (PostExecToRun[] memory) {
         AccountStorage storage _storage = getAccountStorage();
 
         if (
             msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
                 || _storage.selectorData[msg.sig].isPublic
         ) {
-            return;
+            return new PostExecToRun[](0);
         }
 
         // If direct calling isn't allowed OR direct calling is allowed, but the plugin is no longer installed,
         // revert. TBD if there's a better way to do this, e.g. deleting this storage or segmenting per
         // installation ID.
-        if (
-            !_storage.directCallData[msg.sender][msg.sig].allowed
-                || !_storage.pluginManifestHashes.contains(msg.sender)
-        ) {
+        // if (
+        //     !_storage.directCallData[msg.sender][msg.sig].allowed
+        //         || !_storage.pluginManifestHashes.contains(msg.sender)
+        // ) {
+        //     revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
+        // }
+
+        // FunctionReference[] storage hooks = _storage.directCallData[msg.sender][msg.sig].preValidationHooks;
+
+        // uint256 hookLen = hooks.length;
+        // for (uint256 i = 0; i < hookLen; ++i) {
+        //     _doPreRuntimeValidationHook(hooks[i], msg.data, "");
+        // }
+        FunctionReference directCallValidationKey =
+            FunctionReferenceLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
+
+        if (!_storage.validationData[directCallValidationKey].selectors.contains(toSetValue(msg.sig))) {
             revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
         }
 
-        FunctionReference[] storage hooks = _storage.directCallData[msg.sender][msg.sig].preValidationHooks;
+        // Direct call is allowed, run associated permission & validation hooks
+        //TODO: handle uninstallation
 
-        uint256 hookLen = hooks.length;
+        // Validation hooks
+        FunctionReference[] memory preRuntimeValidationHooks =
+            _storage.validationData[directCallValidationKey].preValidationHooks;
+
+        uint256 hookLen = preRuntimeValidationHooks.length;
         for (uint256 i = 0; i < hookLen; ++i) {
-            _doPreRuntimeValidationHook(hooks[i], msg.data, "");
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
         }
+
+        PostExecToRun[] memory postPermissionHooks =
+            _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
+        return postPermissionHooks;
     }
 }
