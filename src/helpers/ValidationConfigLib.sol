@@ -38,7 +38,7 @@ library ValidationConfigLib {
                 // plugin address stored in the first 20 bytes
                 bytes26(bytes20(_plugin))
                 // entityId stored in the 21st - 24th byte
-                | bytes26(bytes32(uint256(_entityId) << 168))
+                | bytes26(bytes24(uint192(_entityId)))
                 // isGlobal flag stored in the 25th byte
                 | bytes26(bytes32(_isGlobal ? uint256(1) << 56 : 0))
                 // isSignatureValidation flag stored in the 26th byte
