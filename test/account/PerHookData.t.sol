@@ -6,7 +6,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PackedPluginEntity, PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 
 import {MockAccessControlHookPlugin} from "../mocks/plugins/MockAccessControlHookPlugin.sol";
 import {Counter} from "../mocks/Counter.sol";
@@ -325,13 +325,13 @@ contract PerHookDataTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (PackedPluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (PluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
-        PackedPluginEntity accessControlHook = PackedPluginEntityLib.pack(
+        PluginEntity accessControlHook = PluginEntityLib.pack(
             address(_accessControlHookPlugin), uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK)
         );
 
-        PackedPluginEntity[] memory preValidationHooks = new PackedPluginEntity[](1);
+        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
         preValidationHooks[0] = accessControlHook;
 
         bytes[] memory preValidationHookData = new bytes[](1);

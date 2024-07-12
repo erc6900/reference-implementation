@@ -5,17 +5,17 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import {PackedPluginEntityLib} from "../helpers/PackedPluginEntityLib.sol";
+import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
 import {IPlugin, ManifestExecutionHook, ManifestValidation, PluginManifest} from "../interfaces/IPlugin.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {PackedPluginEntity, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {PluginEntity, IPluginManager} from "../interfaces/IPluginManager.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {AccountStorage, getAccountStorage, SelectorData, toSetValue} from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
-    using PackedPluginEntityLib for PackedPluginEntity;
+    using PluginEntityLib for PluginEntity;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
@@ -23,13 +23,13 @@ abstract contract PluginManagerInternals is IPluginManager {
     error InvalidPluginManifest();
     error IPluginFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
-    error NullPackedPluginEntity();
+    error NullPluginEntity();
     error NullPlugin();
     error PluginAlreadyInstalled(address plugin);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
-    error ValidationFunctionAlreadySet(bytes4 selector, PackedPluginEntity validationFunction);
+    error ValidationFunctionAlreadySet(bytes4 selector, PluginEntity validationFunction);
 
     // Storage update operations
 
@@ -78,7 +78,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _addValidationFunction(address plugin, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        PackedPluginEntity validationFunction = PackedPluginEntityLib.pack(plugin, mv.entityId);
+        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
 
         if (mv.isDefault) {
             _storage.validationData[validationFunction].isGlobal = true;
@@ -99,7 +99,7 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _removeValidationFunction(address plugin, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        PackedPluginEntity validationFunction = PackedPluginEntityLib.pack(plugin, mv.entityId);
+        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
 
         _storage.validationData[validationFunction].isGlobal = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
@@ -113,7 +113,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _addExecHooks(
         EnumerableSet.Bytes32Set storage hooks,
-        PackedPluginEntity hookFunction,
+        PluginEntity hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
@@ -126,7 +126,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _removeExecHooks(
         EnumerableSet.Bytes32Set storage hooks,
-        PackedPluginEntity hookFunction,
+        PluginEntity hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
@@ -183,7 +183,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            PackedPluginEntity hookFunction = PackedPluginEntityLib.pack(plugin, mh.entityId);
+            PluginEntity hookFunction = PluginEntityLib.pack(plugin, mh.entityId);
             _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
@@ -223,7 +223,7 @@ abstract contract PluginManagerInternals is IPluginManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            PackedPluginEntity hookFunction = PackedPluginEntityLib.pack(plugin, mh.entityId);
+            PluginEntity hookFunction = PluginEntityLib.pack(plugin, mh.entityId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }

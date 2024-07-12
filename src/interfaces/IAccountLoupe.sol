@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {PackedPluginEntity} from "../interfaces/IPluginManager.sol";
+import {PluginEntity} from "../interfaces/IPluginManager.sol";
 
 /// @notice Pre and post hooks for a given selector.
 /// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
 struct ExecutionHook {
-    PackedPluginEntity hookFunction;
+    PluginEntity hookFunction;
     bool isPreHook;
     bool isPostHook;
 }
@@ -21,7 +21,7 @@ interface IAccountLoupe {
     /// @notice Get the selectors for a validation function.
     /// @param validationFunction The validation function to get the selectors for.
     /// @return The allowed selectors for this validation function.
-    function getSelectors(PackedPluginEntity validationFunction) external view returns (bytes4[] memory);
+    function getSelectors(PluginEntity validationFunction) external view returns (bytes4[] memory);
 
     /// @notice Get the pre and post execution hooks for a selector.
     /// @param selector The selector to get the hooks for.
@@ -31,18 +31,15 @@ interface IAccountLoupe {
     /// @notice Get the pre and post execution hooks for a validation function.
     /// @param validationFunction The validation function to get the hooks for.
     /// @return The pre and post execution hooks for this validation function.
-    function getPermissionHooks(PackedPluginEntity validationFunction)
-        external
-        view
-        returns (ExecutionHook[] memory);
+    function getPermissionHooks(PluginEntity validationFunction) external view returns (ExecutionHook[] memory);
 
     /// @notice Get the pre user op and runtime validation hooks associated with a selector.
     /// @param validationFunction The validation function to get the hooks for.
     /// @return preValidationHooks The pre validation hooks for this selector.
-    function getPreValidationHooks(PackedPluginEntity validationFunction)
+    function getPreValidationHooks(PluginEntity validationFunction)
         external
         view
-        returns (PackedPluginEntity[] memory preValidationHooks);
+        returns (PluginEntity[] memory preValidationHooks);
 
     /// @notice Get an array of all installed plugins.
     /// @return The addresses of all installed plugins.
