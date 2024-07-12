@@ -7,7 +7,6 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PackedPluginEntityLib} from "../../src/helpers/PackedPluginEntityLib.sol";
 import {EcdsaValidation} from "../../src/plugins/validation/EcdsaValidation.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -52,7 +51,7 @@ contract EcdsaFactoryFixture is OptimizedTest {
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID, true, true),
+                ValidationConfigLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID, true, false),
                 new bytes4[](0),
                 pluginInstallData,
                 "",

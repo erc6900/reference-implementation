@@ -10,11 +10,18 @@ import {IValidation} from "../../interfaces/IValidation.sol";
 import {BasePlugin} from "../BasePlugin.sol";
 import {IEcdsaValidation} from "./IEcdsaValidation.sol";
 
+/// @title ECSDA Validation
+/// @author ERC-6900 Authors
+/// @notice This validation enables any ECDSA (secp256k1 curve) signature validation. It handles installation by
+/// each entity (validationId). Uninstallation will NOT disable all installed validation entities. None of the
+/// functions are installed on the account. Account states are to be retrieved from this global singleton directly.
+/// Note: This validation also support composition that other validation can relay on entities in this validation
+/// to validate partially or fully.
 contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    string public constant NAME = "Ecdsa Validation Plugin";
+    string public constant NAME = "Ecdsa Validation";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
 
@@ -74,7 +81,7 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     {
         // Validate the user op signature against the owner.
         (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != signer[validationId][msg.sender]) {
+        if (sigSigner == address(0) || sigSigner != signer[validationId][userOp.sender]) {
             return _SIG_VALIDATION_FAILED;
         }
         return _SIG_VALIDATION_PASSED;
@@ -87,7 +94,7 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
         override
     {
         // Validate that the sender is the owner of the account or self.
-        if (sender != signer[validationId][msg.sender] && sender != msg.sender) {
+        if (sender != signer[validationId][msg.sender]) {
             revert NotAuthorized();
         }
         return;

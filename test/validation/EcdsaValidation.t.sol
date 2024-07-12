@@ -1,53 +1,34 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {console} from "forge-std/Test.sol";
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {EcdsaValidation} from "../../src/plugins/validation/EcdsaValidation.sol";
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
-import {OptimizedTest} from "../utils/OptimizedTest.sol";
-import {EcdsaFactoryFixture} from "../mocks/EcdsaFactoryFixture.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
 
-contract EcdsaValidationTest is OptimizedTest {
+contract EcdsaValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
-    EntryPoint public entryPoint;
-    EcdsaValidation public ecdsaValidation;
-    address payable public beneficiary;
     address public ethRecipient;
-
-    address public owner1;
-    uint256 public owner1Key;
-    EcdsaFactoryFixture public factory;
-    UpgradeableModularAccount public account1;
-    bytes32 public validationId1;
-
-    uint256 public constant CALL_GAS_LIMIT = 50000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
-    uint8 public constant SELECTOR_ASSOCIATED_VALIDATION = 0;
-    uint8 public constant DEFAULT_VALIDATION = 1;
+    address public owner2;
+    uint256 public owner2Key;
+    UpgradeableModularAccount public account;
 
     function setUp() public {
-        entryPoint = new EntryPoint();
-        (owner1, owner1Key) = makeAddrAndKey("owner1");
-        beneficiary = payable(makeAddr("beneficiary"));
         ethRecipient = makeAddr("ethRecipient");
-
-        ecdsaValidation = _deployEcdsaValidation();
-        factory = new EcdsaFactoryFixture(entryPoint, ecdsaValidation);
-
-        account1 = factory.createAccount(owner1, 0);
-        vm.deal(address(account1), 100 ether);
+        (owner2, owner2Key) = makeAddrAndKey("owner2");
+        account = ecdsaFactory.createAccount(owner1, 0);
+        vm.deal(address(account), 100 ether);
     }
 
     function test_userOpValidation() public {
         PackedUserOperation memory userOp = PackedUserOperation({
-            sender: address(account1),
+            sender: address(account),
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
@@ -61,7 +42,11 @@ contract EcdsaValidationTest is OptimizedTest {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = abi.encodePacked(TEST_DEFAULT_VALIDATION_ID, DEFAULT_VALIDATION, r, s, v);
+        userOp.signature = _encodeSignature(
+            PluginEntityLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID),
+            GLOBAL_VALIDATION,
+            abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -71,8 +56,35 @@ contract EcdsaValidationTest is OptimizedTest {
         assertEq(ethRecipient.balance, 1 wei);
     }
 
-    // helper function to compress 2 gas values into a single bytes32
-    function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {
-        return bytes32(uint256((g1 << 128) + uint128(g2)));
+    function test_runtime() public {
+        vm.prank(owner1);
+        account.executeWithAuthorization(
+            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            _encodeSignature(
+                PluginEntityLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID), GLOBAL_VALIDATION, ""
+            )
+        );
+        assertEq(ethRecipient.balance, 1 wei);
+    }
+
+    function test_runtime_with2ndValidation() public {
+        uint32 newValidationId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
+        vm.prank(address(entryPoint));
+        account.installValidation(
+            ValidationConfigLib.pack(address(ecdsaValidation), newValidationId, true, false),
+            new bytes4[](0),
+            abi.encode(newValidationId, owner2),
+            "",
+            ""
+        );
+
+        vm.prank(owner2);
+        account.executeWithAuthorization(
+            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            _encodeSignature(
+                PluginEntityLib.pack(address(ecdsaValidation), newValidationId), GLOBAL_VALIDATION, ""
+            )
+        );
+        assertEq(ethRecipient.balance, 1 wei);
     }
 }
