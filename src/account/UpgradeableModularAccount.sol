@@ -741,7 +741,6 @@ contract UpgradeableModularAccount is
         }
 
         // Direct call is allowed, run associated permission & validation hooks
-        //TODO: handle uninstallation
 
         // Validation hooks
         FunctionReference[] memory preRuntimeValidationHooks =
@@ -752,6 +751,7 @@ contract UpgradeableModularAccount is
             _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
         }
 
+        // Permission hooks
         PostExecToRun[] memory postPermissionHooks =
             _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
         return postPermissionHooks;
