@@ -87,7 +87,7 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        PostExecToRun[] memory postPermissionHooks = _checkPermittedCallerIfNotFromEP();
+        PostExecToRun[] memory postPermissionHooks = _checkPermittedCallerAndAssociatedHooks();
 
         PostExecToRun[] memory postExecHooks =
             _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
@@ -138,7 +138,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(msg.sig);
         }
 
-        _checkPermittedCallerIfNotFromEP();
+        _checkPermittedCallerAndAssociatedHooks();
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
@@ -707,7 +707,7 @@ contract UpgradeableModularAccount is
         return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
-    function _checkPermittedCallerIfNotFromEP() internal returns (PostExecToRun[] memory) {
+    function _checkPermittedCallerAndAssociatedHooks() internal returns (PostExecToRun[] memory) {
         AccountStorage storage _storage = getAccountStorage();
 
         if (
@@ -717,22 +717,6 @@ contract UpgradeableModularAccount is
             return new PostExecToRun[](0);
         }
 
-        // If direct calling isn't allowed OR direct calling is allowed, but the plugin is no longer installed,
-        // revert. TBD if there's a better way to do this, e.g. deleting this storage or segmenting per
-        // installation ID.
-        // if (
-        //     !_storage.directCallData[msg.sender][msg.sig].allowed
-        //         || !_storage.pluginManifestHashes.contains(msg.sender)
-        // ) {
-        //     revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
-        // }
-
-        // FunctionReference[] storage hooks = _storage.directCallData[msg.sender][msg.sig].preValidationHooks;
-
-        // uint256 hookLen = hooks.length;
-        // for (uint256 i = 0; i < hookLen; ++i) {
-        //     _doPreRuntimeValidationHook(hooks[i], msg.data, "");
-        // }
         FunctionReference directCallValidationKey =
             FunctionReferenceLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
 
