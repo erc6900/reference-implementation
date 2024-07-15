@@ -348,8 +348,10 @@ contract UpgradeableModularAccount is
             revert SignatureValidationInvalid(plugin, entityId);
         }
 
-        if (IValidation(plugin).validateSignature(entityId, msg.sender, hash, signature[24:]) == _1271_MAGIC_VALUE)
-        {
+        if (
+            IValidation(plugin).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
+                == _1271_MAGIC_VALUE
+        ) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;

@@ -96,7 +96,11 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function validateSignature(uint32 entityId, address, bytes32, bytes calldata) external pure returns (bytes4) {
+    function validateSignature(address, uint32 entityId, address, bytes32, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
         if (entityId == uint32(EntityId.SIG_VALIDATION)) {
             return 0xffffffff;
         }

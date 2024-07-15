@@ -58,7 +58,12 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateSignature(uint32, address, bytes32, bytes calldata) external pure override returns (bytes4) {
+    function validateSignature(address, uint32, address, bytes32, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         revert NotImplemented();
     }
 

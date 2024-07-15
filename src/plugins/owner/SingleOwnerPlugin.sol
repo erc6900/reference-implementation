@@ -126,13 +126,13 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(uint32 entityId, address, bytes32 digest, bytes calldata signature)
+    function validateSignature(address account, uint32 entityId, address, bytes32 digest, bytes calldata signature)
         external
         view
         override
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(owners[entityId][msg.sender], digest, signature)) {
+        if (SignatureChecker.isValidSignatureNow(owners[entityId][account], digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;

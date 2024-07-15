@@ -156,7 +156,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should fail
         assertEq(
             plugin.validateSignature(
-                TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                a, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             bytes4(0xFFFFFFFF)
         );
@@ -168,7 +168,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         // sig check should pass
         assertEq(
             plugin.validateSignature(
-                TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                a, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             _1271_MAGIC_VALUE
         );
@@ -179,7 +179,7 @@ contract SingleOwnerPluginTest is OptimizedTest {
         plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
-            plugin.validateSignature(TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature),
+            plugin.validateSignature(a, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature),
             _1271_MAGIC_VALUE
         );
     }

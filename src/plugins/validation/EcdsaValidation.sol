@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IPlugin, PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
@@ -13,9 +14,15 @@ import {IEcdsaValidation} from "./IEcdsaValidation.sol";
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
 /// @notice This validation enables any ECDSA (secp256k1 curve) signature validation. It handles installation by
-/// each entity (validationId). Uninstallation will NOT disable all installed validation entities. None of the
-/// functions are installed on the account. Account states are to be retrieved from this global singleton directly.
-/// Note: This validation also support composition that other validation can relay on entities in this validation
+/// each entity (validationId).
+/// Note: Uninstallation will NOT disable all installed validation entities. None of the functions are installed on
+/// the account. Account states are to be retrieved from this global singleton directly.
+///
+/// - This validation supports ERC-1271. The signature is valid if it is signed by the owner's private key
+/// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
+/// owner (if the owner is a contract).
+///
+/// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
 contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     using ECDSA for bytes32;
@@ -27,6 +34,10 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
+    // bytes4(keccak256("isValidSignature(bytes32,bytes)"))
+    bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
+    bytes4 internal constant _1271_INVALID = 0xffffffff;
 
     mapping(uint32 validationId => mapping(address account => address)) public signer;
 
@@ -104,8 +115,23 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateSignature(uint32, address, bytes32, bytes calldata) external pure override returns (bytes4) {
-        revert NotImplemented();
+    /// @dev The signature is valid if it is signed by the owner's private key
+    /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
+    /// owner (if the owner is a contract). Note that unlike the signature
+    /// validation used in `validateUserOp`, this does///*not** wrap the digest in
+    /// an "Ethereum Signed Message" envelope before checking the signature in
+    /// the EOA-owner case.
+    function validateSignature(
+        address account,
+        uint32 validationId,
+        address,
+        bytes32 digest,
+        bytes calldata signature
+    ) external view override returns (bytes4) {
+        if (SignatureChecker.isValidSignatureNow(signer[validationId][account], digest, signature)) {
+            return _1271_MAGIC_VALUE;
+        }
+        return _1271_INVALID;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

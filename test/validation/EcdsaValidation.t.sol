@@ -10,20 +10,27 @@ import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
+import {ContractOwner} from "../mocks/ContractOwner.sol";
 
 contract EcdsaValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
+
+    bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
 
     address public ethRecipient;
     address public owner2;
     uint256 public owner2Key;
     UpgradeableModularAccount public account;
 
+    ContractOwner public contractOwner;
+
     function setUp() public {
         ethRecipient = makeAddr("ethRecipient");
         (owner2, owner2Key) = makeAddrAndKey("owner2");
         account = ecdsaFactory.createAccount(owner1, 0);
         vm.deal(address(account), 100 ether);
+
+        contractOwner = new ContractOwner();
     }
 
     function test_userOpValidation() public {
@@ -56,7 +63,7 @@ contract EcdsaValidationTest is AccountTestBase {
         assertEq(ethRecipient.balance, 1 wei);
     }
 
-    function test_runtime() public {
+    function test_runtimeValidate() public {
         vm.prank(owner1);
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
@@ -67,7 +74,7 @@ contract EcdsaValidationTest is AccountTestBase {
         assertEq(ethRecipient.balance, 1 wei);
     }
 
-    function test_runtime_with2ndValidation() public {
+    function test_runtime_with2SameValidationInstalled() public {
         uint32 newValidationId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
         vm.prank(address(entryPoint));
         account.installValidation(
@@ -86,5 +93,48 @@ contract EcdsaValidationTest is AccountTestBase {
             )
         );
         assertEq(ethRecipient.balance, 1 wei);
+    }
+
+    function testFuzz_isValidSignatureForEOAOwner(string memory salt, bytes32 digest) public {
+        // range bound the possible set of priv keys
+        (address signer, uint256 privateKey) = makeAddrAndKey(salt);
+
+        address accountAddr = address(account);
+
+        vm.startPrank(accountAddr);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+
+        // sig check should fail
+        assertEq(
+            ecdsaValidation.validateSignature(
+                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+            ),
+            bytes4(0xFFFFFFFF)
+        );
+
+        // transfer ownership to signer
+        ecdsaValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
+        assertEq(signer, ecdsaValidation.signerOf(TEST_DEFAULT_OWNER_FUNCTION_ID, accountAddr));
+
+        // sig check should pass
+        assertEq(
+            ecdsaValidation.validateSignature(
+                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+            ),
+            _1271_MAGIC_VALUE
+        );
+    }
+
+    function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
+        address accountAddr = address(account);
+        vm.startPrank(accountAddr);
+        ecdsaValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
+        bytes memory signature = contractOwner.sign(digest);
+        assertEq(
+            ecdsaValidation.validateSignature(
+                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature
+            ),
+            _1271_MAGIC_VALUE
+        );
     }
 }

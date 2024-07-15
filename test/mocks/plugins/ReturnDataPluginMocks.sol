@@ -85,7 +85,7 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         }
     }
 
-    function validateSignature(uint32, address, bytes32, bytes calldata) external pure returns (bytes4) {
+    function validateSignature(address, uint32, address, bytes32, bytes calldata) external pure returns (bytes4) {
         revert NotImplemented();
     }
 
