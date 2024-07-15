@@ -142,9 +142,9 @@ abstract contract PluginManager2 {
                 _storage.validationData[validationFunction].permissionHooks;
             uint256 i = 0;
             while (permissionHooks.length() > 0) {
-                FunctionReference permissionHook = toFunctionReference(permissionHooks.at(0));
-                permissionHooks.remove(toSetValue(permissionHook));
-                (address permissionHookPlugin,) = FunctionReferenceLib.unpack(permissionHook);
+                bytes32 permissionHook = permissionHooks.at(0);
+                permissionHooks.remove(permissionHook);
+                address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
                 IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
             }
         }
