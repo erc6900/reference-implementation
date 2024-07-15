@@ -88,13 +88,16 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(uint32 validationId, address sender, uint256, bytes calldata, bytes calldata)
-        external
-        view
-        override
-    {
+    function validateRuntime(
+        address account,
+        uint32 validationId,
+        address sender,
+        uint256,
+        bytes calldata,
+        bytes calldata
+    ) external view override {
         // Validate that the sender is the owner of the account or self.
-        if (sender != signer[validationId][msg.sender]) {
+        if (sender != signer[validationId][account]) {
             revert NotAuthorized();
         }
         return;

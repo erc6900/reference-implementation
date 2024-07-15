@@ -85,7 +85,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function validateRuntime(uint32 entityId, address, uint256, bytes calldata, bytes calldata)
+    function validateRuntime(address, uint32 entityId, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override

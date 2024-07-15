@@ -18,6 +18,7 @@ interface IValidation is IPlugin {
 
     /// @notice Run the runtime validationFunction specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
+    /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param sender The caller address.
@@ -25,6 +26,7 @@ interface IValidation is IPlugin {
     /// @param data The calldata sent.
     /// @param authorization Additional data for the validation function to use.
     function validateRuntime(
+        address account,
         uint32 entityId,
         address sender,
         uint256 value,

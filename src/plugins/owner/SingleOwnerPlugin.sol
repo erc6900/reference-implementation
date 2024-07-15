@@ -82,13 +82,16 @@ contract SingleOwnerPlugin is IValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(uint32 entityId, address sender, uint256, bytes calldata, bytes calldata)
-        external
-        view
-        override
-    {
+    function validateRuntime(
+        address account,
+        uint32 entityId,
+        address sender,
+        uint256,
+        bytes calldata,
+        bytes calldata
+    ) external view override {
         // Validate that the sender is the owner of the account or self.
-        if (sender != owners[entityId][msg.sender]) {
+        if (sender != owners[entityId][account]) {
             revert NotAuthorized();
         }
         return;

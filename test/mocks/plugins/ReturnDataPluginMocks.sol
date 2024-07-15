@@ -76,7 +76,10 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         revert NotImplemented();
     }
 
-    function validateRuntime(uint32, address sender, uint256, bytes calldata, bytes calldata) external view {
+    function validateRuntime(address, uint32, address sender, uint256, bytes calldata, bytes calldata)
+        external
+        view
+    {
         if (sender != address(this)) {
             revert NotAuthorized();
         }

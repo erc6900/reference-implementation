@@ -115,11 +115,11 @@ contract SingleOwnerPluginTest is OptimizedTest {
         assertEq(address(0), plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
         plugin.transferOwnership(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1);
         assertEq(owner1, plugin.owners(TEST_DEFAULT_OWNER_FUNCTION_ID, a));
-        plugin.validateRuntime(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
+        plugin.validateRuntime(a, TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
 
         vm.startPrank(b);
         vm.expectRevert(SingleOwnerPlugin.NotAuthorized.selector);
-        plugin.validateRuntime(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
+        plugin.validateRuntime(b, TEST_DEFAULT_OWNER_FUNCTION_ID, owner1, 0, "", "");
     }
 
     function testFuzz_validateUserOpSig(string memory salt, PackedUserOperation memory userOp) public {

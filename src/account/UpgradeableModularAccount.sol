@@ -517,7 +517,9 @@ contract UpgradeableModularAccount is
 
         (address plugin, uint32 entityId) = runtimeValidationFunction.unpack();
 
-        try IValidation(plugin).validateRuntime(entityId, msg.sender, msg.value, callData, authSegment.getBody())
+        try IValidation(plugin).validateRuntime(
+            address(this), entityId, msg.sender, msg.value, callData, authSegment.getBody()
+        )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
         {} catch (bytes memory revertReason) {
