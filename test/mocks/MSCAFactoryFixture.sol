@@ -6,9 +6,11 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
+import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
 
 /**
  * @title MSCAFactoryFixture
@@ -24,10 +26,6 @@ contract MSCAFactoryFixture is OptimizedTest {
 
     IEntryPoint public entryPoint;
 
-    address public self;
-
-    bytes32 public singleOwnerPluginManifestHash;
-
     constructor(IEntryPoint _entryPoint, SingleOwnerPlugin _singleOwnerPlugin) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
@@ -35,10 +33,6 @@ contract MSCAFactoryFixture is OptimizedTest {
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
         singleOwnerPlugin = _singleOwnerPlugin;
-        self = address(this);
-        // The manifest hash is set this way in this factory just for testing purposes.
-        // For production factories the manifest hashes should be passed as a constructor argument.
-        singleOwnerPluginManifestHash = keccak256(abi.encode(singleOwnerPlugin.pluginManifest()));
     }
 
     /**
@@ -53,17 +47,18 @@ contract MSCAFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            address[] memory plugins = new address[](1);
-            plugins[0] = address(singleOwnerPlugin);
-            bytes32[] memory pluginManifestHashes = new bytes32[](1);
-            pluginManifestHashes[0] = keccak256(abi.encode(singleOwnerPlugin.pluginManifest()));
-            bytes[] memory pluginInstallData = new bytes[](1);
-            pluginInstallData[0] = abi.encode(owner);
+            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
-            UpgradeableModularAccount(payable(addr)).initialize(plugins, pluginManifestHashes, pluginInstallData);
+            UpgradeableModularAccount(payable(addr)).initializeWithValidation(
+                ValidationConfigLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID, true, true),
+                new bytes4[](0),
+                pluginInstallData,
+                "",
+                ""
+            );
         }
 
         return UpgradeableModularAccount(payable(addr));

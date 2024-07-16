@@ -8,25 +8,17 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {GlobalValidationFactoryFixture} from "../mocks/GlobalValidationFactoryFixture.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 
 contract SelfCallAuthorizationTest is AccountTestBase {
-    GlobalValidationFactoryFixture public globalValidationFactoryFixture;
-
     ComprehensivePlugin public comprehensivePlugin;
 
     FunctionReference public comprehensivePluginValidation;
 
     function setUp() public {
-        globalValidationFactoryFixture = new GlobalValidationFactoryFixture(entryPoint, singleOwnerPlugin);
-
-        account1 = UpgradeableModularAccount(payable(globalValidationFactoryFixture.createAccount(owner1, 0)));
-
-        vm.deal(address(account1), 100 ether);
-
         // install the comprehensive plugin to get new exec functions with different validations configured.
 
         comprehensivePlugin = new ComprehensivePlugin();
@@ -310,7 +302,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.installValidation,
-                (comprehensivePluginValidation, false, selectors, "", "", "")
+                (ValidationConfigLib.pack(comprehensivePluginValidation, false, false), selectors, "", "", "")
             ),
             _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
         );

@@ -6,11 +6,14 @@ import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReferenceLib, FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract DirectCallsFromPluginTest is AccountTestBase {
+    using ValidationConfigLib for ValidationConfig;
+
     DirectCallPlugin plugin;
     FunctionReference pluginFunctionReference;
 
@@ -119,7 +122,10 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         bytes memory encodedPermissionHooks = abi.encode(permissionHooks, permissionHookInitDatas);
 
         vm.prank(address(entryPoint));
-        account1.installValidation(pluginFunctionReference, false, selectors, "", "", encodedPermissionHooks);
+
+        ValidationConfig validationConfig = ValidationConfigLib.pack(pluginFunctionReference, false, false);
+
+        account1.installValidation(validationConfig, selectors, "", "", encodedPermissionHooks);
     }
 
     function _uninstallPlugin() internal {

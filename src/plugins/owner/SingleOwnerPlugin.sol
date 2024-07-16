@@ -6,16 +6,10 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {IPluginManager} from "../../interfaces/IPluginManager.sol";
-import {
-    PluginManifest, ManifestValidation, PluginMetadata, SelectorPermission
-} from "../../interfaces/IPlugin.sol";
-import {IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
+import {PluginManifest, PluginMetadata, SelectorPermission} from "../../interfaces/IPlugin.sol";
 import {IPlugin} from "../../interfaces/IPlugin.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
 import {BasePlugin, IERC165} from "../BasePlugin.sol";
-import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 
 /// @title Single Owner Plugin
 /// @author ERC-6900 Authors
@@ -33,13 +27,13 @@ import {ISingleOwnerPlugin} from "./ISingleOwnerPlugin.sol";
 /// the account, violating storage access rules. This also means that the
 /// owner of a modular account may not be another modular account if you want to
 /// send user operations through a bundler.
-contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
+contract SingleOwnerPlugin is IValidation, BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    string public constant NAME = "Single Owner Plugin";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "Single Owner Plugin";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
@@ -48,15 +42,27 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    mapping(address => address) internal _owners;
+    mapping(uint8 id => mapping(address account => address)) public owners;
+
+    /// @notice This event is emitted when ownership of the account changes.
+    /// @param account The account whose ownership changed.
+    /// @param previousOwner The address of the previous owner.
+    /// @param newOwner The address of the new owner.
+    event OwnershipTransferred(address indexed account, address indexed previousOwner, address indexed newOwner);
+
+    error AlreadyInitialized();
+    error NotAuthorized();
+    error NotInitialized();
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISingleOwnerPlugin
-    function transferOwnership(address newOwner) external {
-        _transferOwnership(newOwner);
+    /// @notice Transfer ownership of an account and ID to `newOwner`. The caller address (`msg.sender`) is user to
+    /// identify the account.
+    /// @param newOwner The address of the new owner.
+    function transferOwnership(uint8 id, address newOwner) external {
+        _transferOwnership(id, newOwner);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -65,12 +71,14 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        _transferOwnership(abi.decode(data, (address)));
+        (uint8 id, address owner) = abi.decode(data, (uint8, address));
+        _transferOwnership(id, owner);
     }
 
     /// @inheritdoc IPlugin
-    function onUninstall(bytes calldata) external override {
-        _transferOwnership(address(0));
+    function onUninstall(bytes calldata data) external override {
+        uint8 id = abi.decode(data, (uint8));
+        _transferOwnership(id, address(0));
     }
 
     /// @inheritdoc IValidation
@@ -79,14 +87,11 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         view
         override
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
-            // Validate that the sender is the owner of the account or self.
-            if (sender != _owners[msg.sender] && sender != msg.sender) {
-                revert NotAuthorized();
-            }
-            return;
+        // Validate that the sender is the owner of the account or self.
+        if (sender != owners[functionId][msg.sender]) {
+            revert NotAuthorized();
         }
-        revert NotImplemented();
+        return;
     }
 
     /// @inheritdoc IValidation
@@ -96,15 +101,15 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
-            // Validate the user op signature against the owner.
-            (address signer,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-            if (signer == address(0) || signer != _owners[msg.sender]) {
-                return _SIG_VALIDATION_FAILED;
-            }
+        // Validate the user op signature against the owner.
+        if (
+            SignatureChecker.isValidSignatureNow(
+                owners[functionId][msg.sender], userOpHash.toEthSignedMessageHash(), userOp.signature
+            )
+        ) {
             return _SIG_VALIDATION_PASSED;
         }
-        revert NotImplemented();
+        return _SIG_VALIDATION_FAILED;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -124,60 +129,28 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
         override
         returns (bytes4)
     {
-        if (functionId == uint8(FunctionId.VALIDATION_OWNER)) {
-            if (SignatureChecker.isValidSignatureNow(_owners[msg.sender], digest, signature)) {
-                return _1271_MAGIC_VALUE;
-            }
-            return _1271_INVALID;
+        if (SignatureChecker.isValidSignatureNow(owners[functionId][msg.sender], digest, signature)) {
+            return _1271_MAGIC_VALUE;
         }
-        revert NotImplemented();
-    }
-
-    /// @inheritdoc ISingleOwnerPlugin
-    function owner() external view returns (address) {
-        return _owners[msg.sender];
+        return _1271_INVALID;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Plugin view functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc ISingleOwnerPlugin
-    function ownerOf(address account) external view returns (address) {
-        return _owners[account];
-    }
-
     /// @inheritdoc IPlugin
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
-
-        // TODO: use global validation instead
-        bytes4[] memory accountSelectors = new bytes4[](5);
-        accountSelectors[0] = IStandardExecutor.execute.selector;
-        accountSelectors[1] = IStandardExecutor.executeBatch.selector;
-        accountSelectors[2] = IPluginManager.installPlugin.selector;
-        accountSelectors[3] = IPluginManager.uninstallPlugin.selector;
-        accountSelectors[4] = UUPSUpgradeable.upgradeToAndCall.selector;
-
-        ManifestValidation memory ownerValidationFunction = ManifestValidation({
-            functionId: uint8(FunctionId.VALIDATION_OWNER),
-            isDefault: false,
-            isSignatureValidation: true,
-            selectors: accountSelectors
-        });
-
-        manifest.validationFunctions = new ManifestValidation[](1);
-        manifest.validationFunctions[0] = ownerValidationFunction;
-
         return manifest;
     }
 
     /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
 
         // Permission strings
         string memory modifyOwnershipPermission = "Modify Ownership";
@@ -198,16 +171,18 @@ contract SingleOwnerPlugin is ISingleOwnerPlugin, BasePlugin {
 
     /// @inheritdoc BasePlugin
     function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
-        return interfaceId == type(ISingleOwnerPlugin).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IValidation).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function _transferOwnership(address newOwner) internal {
-        address previousOwner = _owners[msg.sender];
-        _owners[msg.sender] = newOwner;
+    // Transfers ownership and emits and event.
+    function _transferOwnership(uint8 id, address newOwner) internal {
+        address previousOwner = owners[id][msg.sender];
+        owners[id][msg.sender] = newOwner;
+        // Todo: include id in event
         emit OwnershipTransferred(msg.sender, previousOwner, newOwner);
     }
 }
