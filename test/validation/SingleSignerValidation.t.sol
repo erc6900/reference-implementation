@@ -27,7 +27,7 @@ contract SingleSignerValidationTest is AccountTestBase {
     function setUp() public {
         ethRecipient = makeAddr("ethRecipient");
         (owner2, owner2Key) = makeAddrAndKey("owner2");
-        account = singleSignerFactory.createAccount(owner1, 0);
+        account = factory.createAccount(owner1, 0);
         vm.deal(address(account), 100 ether);
 
         contractOwner = new ContractOwner();
@@ -77,7 +77,7 @@ contract SingleSignerValidationTest is AccountTestBase {
     }
 
     function test_runtime_with2SameValidationInstalled() public {
-        uint32 newEntityId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
+        uint32 newEntityId = TEST_DEFAULT_VALIDATION_ENTITY_ID + 1;
         vm.prank(address(entryPoint));
         account.installValidation(
             ValidationConfigLib.pack(address(singleSignerValidation), newEntityId, true, false),
@@ -109,19 +109,19 @@ contract SingleSignerValidationTest is AccountTestBase {
         // sig check should fail
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             bytes4(0xFFFFFFFF)
         );
 
         // transfer ownership to signer
-        singleSignerValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
-        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_OWNER_FUNCTION_ID, accountAddr));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ID, signer);
+        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ID, accountAddr));
 
         // sig check should pass
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             _1271_MAGIC_VALUE
         );
@@ -130,11 +130,11 @@ contract SingleSignerValidationTest is AccountTestBase {
     function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
         address accountAddr = address(account);
         vm.startPrank(accountAddr);
-        singleSignerValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ID, address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature
+                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, signature
             ),
             _1271_MAGIC_VALUE
         );

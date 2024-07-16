@@ -51,7 +51,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID, true, false),
+                ValidationConfigLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID, true, true),
                 new bytes4[](0),
                 pluginInstallData,
                 "",

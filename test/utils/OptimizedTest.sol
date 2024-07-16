@@ -6,7 +6,6 @@ import {Test} from "forge-std/Test.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
@@ -43,12 +42,6 @@ abstract contract OptimizedTest is Test {
                 )
             )
             : new UpgradeableModularAccount(entryPoint);
-    }
-
-    function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
-        return _isOptimizedTest()
-            ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
-            : new SingleOwnerPlugin();
     }
 
     function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {

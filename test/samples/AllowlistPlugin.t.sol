@@ -305,11 +305,11 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
 
         return (
-            _ownerValidation,
+            _signerValidation,
             true,
             true,
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1),
+            abi.encode(TEST_DEFAULT_VALIDATION_ID, owner1),
             packedPreValidationHooks,
             ""
         );

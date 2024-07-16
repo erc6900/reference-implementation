@@ -115,7 +115,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        PluginEntity[] memory hooks = account1.getPreValidationHooks(_ownerValidation);
+        PluginEntity[] memory hooks = account1.getPreValidationHooks(_signerValidation);
 
         assertEq(hooks.length, 2);
         assertEq(
@@ -154,7 +154,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
         bytes[] memory installDatas = new bytes[](2);
         return (
-            _ownerValidation,
+            _signerValidation,
             true,
             true,
             new bytes4[](0),

@@ -303,7 +303,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 UpgradeableModularAccount.installValidation,
                 (ValidationConfigLib.pack(comprehensivePluginValidation, false, false), selectors, "", "", "")
             ),
-            _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
 
