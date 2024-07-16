@@ -11,6 +11,7 @@ import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -56,8 +57,7 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
 
         vm.prank(address(acct));
         acct.installValidation(
-            FunctionReferenceLib.pack(address(validationPlugin), 0),
-            true,
+            ValidationConfigLib.pack(address(validationPlugin), 0, true, true),
             new bytes4[](0),
             new bytes(0),
             abi.encode(preValidationHooks, preValHooksInitDatas),
