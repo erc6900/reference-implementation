@@ -7,7 +7,7 @@ import {IPlugin} from "../interfaces/IPlugin.sol";
 import {FunctionReference, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {ValidationData, getAccountStorage, toSetValue, toFunctionReference} from "./AccountStorage.sol";
+import {ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 
 // Temporary additional functions for a user-controlled install flow for validation functions.
