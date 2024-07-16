@@ -12,7 +12,7 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 
-contract EcdsaValidationTest is AccountTestBase {
+contract SingleSignerValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
@@ -27,7 +27,7 @@ contract EcdsaValidationTest is AccountTestBase {
     function setUp() public {
         ethRecipient = makeAddr("ethRecipient");
         (owner2, owner2Key) = makeAddrAndKey("owner2");
-        account = ecdsaFactory.createAccount(owner1, 0);
+        account = singleSignerFactory.createAccount(owner1, 0);
         vm.deal(address(account), 100 ether);
 
         contractOwner = new ContractOwner();
@@ -50,7 +50,7 @@ contract EcdsaValidationTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID),
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -68,7 +68,9 @@ contract EcdsaValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID), GLOBAL_VALIDATION, ""
+                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+                GLOBAL_VALIDATION,
+                ""
             )
         );
         assertEq(ethRecipient.balance, 1 wei);
@@ -78,7 +80,7 @@ contract EcdsaValidationTest is AccountTestBase {
         uint32 newValidationId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
         vm.prank(address(entryPoint));
         account.installValidation(
-            ValidationConfigLib.pack(address(ecdsaValidation), newValidationId, true, false),
+            ValidationConfigLib.pack(address(singleSignerValidation), newValidationId, true, false),
             new bytes4[](0),
             abi.encode(newValidationId, owner2),
             "",
@@ -89,7 +91,7 @@ contract EcdsaValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(ecdsaValidation), newValidationId), GLOBAL_VALIDATION, ""
+                PluginEntityLib.pack(address(singleSignerValidation), newValidationId), GLOBAL_VALIDATION, ""
             )
         );
         assertEq(ethRecipient.balance, 1 wei);
@@ -106,19 +108,19 @@ contract EcdsaValidationTest is AccountTestBase {
 
         // sig check should fail
         assertEq(
-            ecdsaValidation.validateSignature(
+            singleSignerValidation.validateSignature(
                 accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             bytes4(0xFFFFFFFF)
         );
 
         // transfer ownership to signer
-        ecdsaValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
-        assertEq(signer, ecdsaValidation.signerOf(TEST_DEFAULT_OWNER_FUNCTION_ID, accountAddr));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, signer);
+        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_OWNER_FUNCTION_ID, accountAddr));
 
         // sig check should pass
         assertEq(
-            ecdsaValidation.validateSignature(
+            singleSignerValidation.validateSignature(
                 accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             _1271_MAGIC_VALUE
@@ -128,10 +130,10 @@ contract EcdsaValidationTest is AccountTestBase {
     function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
         address accountAddr = address(account);
         vm.startPrank(accountAddr);
-        ecdsaValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_OWNER_FUNCTION_ID, address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
-            ecdsaValidation.validateSignature(
+            singleSignerValidation.validateSignature(
                 accountAddr, TEST_DEFAULT_OWNER_FUNCTION_ID, address(this), digest, signature
             ),
             _1271_MAGIC_VALUE

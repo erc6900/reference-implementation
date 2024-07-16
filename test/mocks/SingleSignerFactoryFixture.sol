@@ -7,14 +7,14 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {EcdsaValidation} from "../../src/plugins/validation/EcdsaValidation.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
 
-contract EcdsaFactoryFixture is OptimizedTest {
+contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
-    EcdsaValidation public ecdsaValidation;
+    SingleSignerValidation public singleSignerValidation;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
@@ -23,13 +23,13 @@ contract EcdsaFactoryFixture is OptimizedTest {
 
     address public self;
 
-    constructor(IEntryPoint _entryPoint, EcdsaValidation _ecdsaValidation) {
+    constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
-        ecdsaValidation = _ecdsaValidation;
+        singleSignerValidation = _singleSignerValidation;
         self = address(this);
     }
 
@@ -51,7 +51,7 @@ contract EcdsaFactoryFixture is OptimizedTest {
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(address(ecdsaValidation), TEST_DEFAULT_VALIDATION_ID, true, false),
+                ValidationConfigLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID, true, false),
                 new bytes4[](0),
                 pluginInstallData,
                 "",

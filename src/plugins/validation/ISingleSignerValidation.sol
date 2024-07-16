@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {IValidation} from "../../interfaces/IValidation.sol";
 
-interface IEcdsaValidation is IValidation {
+interface ISingleSignerValidation is IValidation {
     /// @notice This event is emitted when Signer of the account's validation changes.
     /// @param account The account whose validation Signer changed.
     /// @param validationId The validationId for the account and the signer.

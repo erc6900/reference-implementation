@@ -9,7 +9,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {IPlugin, PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
 import {BasePlugin} from "../BasePlugin.sol";
-import {IEcdsaValidation} from "./IEcdsaValidation.sol";
+import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
@@ -24,11 +24,11 @@ import {IEcdsaValidation} from "./IEcdsaValidation.sol";
 ///
 /// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
-contract EcdsaValidation is IEcdsaValidation, BasePlugin {
+contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    string public constant NAME = "Ecdsa Validation";
+    string public constant NAME = "SingleSigner Validation";
     string public constant VERSION = "1.0.0";
     string public constant AUTHOR = "ERC-6900 Authors";
 
@@ -41,12 +41,12 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
 
     mapping(uint32 validationId => mapping(address account => address)) public signer;
 
-    /// @inheritdoc IEcdsaValidation
+    /// @inheritdoc ISingleSignerValidation
     function signerOf(uint32 validationId, address account) external view returns (address) {
         return signer[validationId][account];
     }
 
-    /// @inheritdoc IEcdsaValidation
+    /// @inheritdoc ISingleSignerValidation
     function transferSigner(uint32 validationId, address newSigner) external {
         _transferSigner(validationId, newSigner);
     }
@@ -79,7 +79,7 @@ contract EcdsaValidation is IEcdsaValidation, BasePlugin {
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata data) external override {
         // ToDo: what does it mean in the world of composable validation world to uninstall one type of validation
-        // We can either get rid of all Ecdsa signers. What about the nested ones?
+        // We can either get rid of all SingleSigner signers. What about the nested ones?
         _transferSigner(abi.decode(data, (uint32)), address(0));
     }
 

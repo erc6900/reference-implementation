@@ -5,7 +5,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {EcdsaValidation} from "../../src/plugins/validation/EcdsaValidation.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
@@ -14,7 +14,7 @@ import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
 import {OptimizedTest} from "./OptimizedTest.sol";
 import {TEST_DEFAULT_OWNER_FUNCTION_ID as EXT_CONST_TEST_DEFAULT_OWNER_FUNCTION_ID} from "./TestConstants.sol";
 
-import {EcdsaFactoryFixture} from "../mocks/EcdsaFactoryFixture.sol";
+import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 
 /// @dev This contract handles common boilerplate setup for tests using UpgradeableModularAccount with
@@ -28,8 +28,8 @@ abstract contract AccountTestBase is OptimizedTest {
     SingleOwnerPlugin public singleOwnerPlugin;
     MSCAFactoryFixture public factory;
 
-    EcdsaValidation public ecdsaValidation;
-    EcdsaFactoryFixture public ecdsaFactory;
+    SingleSignerValidation public singleSignerValidation;
+    SingleSignerFactoryFixture public singleSignerFactory;
 
     address public owner1;
     uint256 public owner1Key;
@@ -58,8 +58,8 @@ abstract contract AccountTestBase is OptimizedTest {
 
         singleOwnerPlugin = _deploySingleOwnerPlugin();
         factory = new MSCAFactoryFixture(entryPoint, singleOwnerPlugin);
-        ecdsaValidation = _deployEcdsaValidation();
-        ecdsaFactory = new EcdsaFactoryFixture(entryPoint, ecdsaValidation);
+        singleSignerValidation = _deploySingleSignerValidation();
+        singleSignerFactory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
