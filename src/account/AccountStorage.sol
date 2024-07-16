@@ -40,11 +40,6 @@ struct ValidationData {
     EnumerableSet.Bytes32Set selectors;
 }
 
-struct DirectCallValidationData {
-    bool allowed; // Whether or not this direct call is allowed.
-    FunctionReference[] preValidationHooks; // The set of pre validation hooks for this direct call.
-}
-
 struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;

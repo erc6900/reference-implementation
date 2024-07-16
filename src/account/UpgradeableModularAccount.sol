@@ -9,7 +9,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {FunctionReferenceLib} from "../helpers/FunctionReferenceLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
@@ -42,8 +41,6 @@ contract UpgradeableModularAccount is
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using FunctionReferenceLib for FunctionReference;
     using ValidationConfigLib for ValidationConfig;
     using SparseCalldataSegmentLib for bytes;
