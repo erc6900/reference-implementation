@@ -7,3 +7,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/modular-account-libs"]
+	path = lib/modular-account-libs
+	url = https://github.com/erc6900/modular-account-libs
