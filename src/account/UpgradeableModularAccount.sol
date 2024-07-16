@@ -707,6 +707,19 @@ contract UpgradeableModularAccount is
         return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
+    /**
+     * Order of operations:
+     *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
+     *          - Yes: Return an empty array, there are no post-permissionHooks.
+     *          - No: Continue
+     *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
+     *         directly call.
+     *          - Yes: Continue
+     *          - No: Revert, the caller is not allowed to call this selector
+     *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
+     *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
+     *         post-permissionHooks to run later.
+     */
     function _checkPermittedCallerAndAssociatedHooks() internal returns (PostExecToRun[] memory) {
         AccountStorage storage _storage = getAccountStorage();
 
