@@ -140,12 +140,12 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
             selector := mload(add(innerCalldata, 32)) // 0:32 is arr len, 32:36 is selector
             spend := mload(add(innerCalldata, 68)) // 36:68 is recipient, 68:100 is spend
         }
-        // transfer.selector = 0xa9059cbb. Using `transfer.selector` causes solhint to throw a warning
-        if (selector == 0xa9059cbb || selector == IERC20.approve.selector) {
+        if (selector == IERC20.transfer.selector || selector == IERC20.approve.selector) {
             uint256 limit = limits[functionId][token][msg.sender];
             if (spend > limit) {
                 revert ExceededTokenLimit();
             }
+            // solhint-disable-next-line reentrancy
             limits[functionId][token][msg.sender] = limit - spend;
         } else {
             revert SelectorNotAllowed();
