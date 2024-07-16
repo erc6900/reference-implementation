@@ -4,8 +4,6 @@ pragma solidity ^0.8.25;
 import {PluginEntity} from "../interfaces/IPluginManager.sol";
 
 library PluginEntityLib {
-    // Empty or unset PluginEntity.
-    PluginEntity internal constant _EMPTY_PACKED_PLUGIN_ENTITY = PluginEntity.wrap(bytes24(0));
     // Magic value for hooks that should always revert.
     PluginEntity internal constant _PRE_HOOK_ALWAYS_DENY = PluginEntity.wrap(bytes24(uint192(2)));
 

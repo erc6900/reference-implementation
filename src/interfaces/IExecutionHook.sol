@@ -7,8 +7,7 @@ interface IExecutionHook is IPlugin {
     /// @notice Run the pre execution hook specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
-    /// be
-    /// more than one.
+    /// be more than one.
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
@@ -20,8 +19,7 @@ interface IExecutionHook is IPlugin {
     /// @notice Run the post execution hook specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
-    /// be
-    /// more than one.
+    /// be more than one.
     /// @param preExecHookData The context returned by its associated pre execution hook.
     function postExecutionHook(uint32 entityId, bytes calldata preExecHookData) external;
 }

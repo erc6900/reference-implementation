@@ -8,8 +8,7 @@ import {IPlugin} from "./IPlugin.sol";
 interface IValidation is IPlugin {
     /// @notice Run the user operation validationFunction specified by the `entityId`.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
-    /// be
-    /// more than one.
+    /// be more than one.
     /// @param userOp The user operation.
     /// @param userOpHash The user operation hash.
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
@@ -20,8 +19,7 @@ interface IValidation is IPlugin {
     /// @notice Run the runtime validationFunction specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
-    /// be
-    /// more than one.
+    /// be more than one.
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
@@ -37,8 +35,7 @@ interface IValidation is IPlugin {
     /// @notice Validates a signature using ERC-1271.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
-    /// be
-    /// more than one.
+    /// be more than one.
     /// @param sender the address that sent the ERC-1271 request to the smart account
     /// @param hash the hash of the ERC-1271 request
     /// @param signature the signature of the ERC-1271 request
