@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
+import {PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
 
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
-import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
 
 contract DirectCallPlugin is BasePlugin, IExecutionHook {
     bool public preHookRan = false;

@@ -2,8 +2,6 @@ pragma solidity ^0.8.19;
 
 import {DirectCallPlugin} from "../mocks/plugins/DirectCallPlugin.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {IPlugin, PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {FunctionReferenceLib, FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
@@ -14,8 +12,8 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 contract DirectCallsFromPluginTest is AccountTestBase {
     using ValidationConfigLib for ValidationConfig;
 
-    DirectCallPlugin plugin;
-    FunctionReference pluginFunctionReference;
+    DirectCallPlugin internal plugin;
+    FunctionReference internal pluginFunctionReference;
 
     function setUp() public {
         plugin = new DirectCallPlugin();
