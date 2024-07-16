@@ -156,7 +156,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         uint48 end2 = uint48(25);
 
         oneHookPlugin.setValidationData(
-            _packValidationData(address(0), start1, end1), _packValidationData(address(0), start2, end2)
+            _packValidationRes(address(0), start1, end1), _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
@@ -167,7 +167,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.prank(address(entryPoint));
         uint256 returnedValidationData = account1.validateUserOp(userOp, uoHash, 1 wei);
 
-        assertEq(returnedValidationData, _packValidationData(address(0), start2, end1));
+        assertEq(returnedValidationData, _packValidationRes(address(0), start2, end1));
     }
 
     function test_validationIntersect_timeBounds_intersect_2() public {
@@ -178,7 +178,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         uint48 end2 = uint48(25);
 
         oneHookPlugin.setValidationData(
-            _packValidationData(address(0), start2, end2), _packValidationData(address(0), start1, end1)
+            _packValidationRes(address(0), start2, end2), _packValidationRes(address(0), start1, end1)
         );
 
         PackedUserOperation memory userOp;
@@ -189,7 +189,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.prank(address(entryPoint));
         uint256 returnedValidationData = account1.validateUserOp(userOp, uoHash, 1 wei);
 
-        assertEq(returnedValidationData, _packValidationData(address(0), start2, end1));
+        assertEq(returnedValidationData, _packValidationRes(address(0), start2, end1));
     }
 
     function test_validationIntersect_revert_unexpectedAuthorizer() public {
@@ -247,7 +247,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         address goodAuthorizer = makeAddr("goodAuthorizer");
 
         oneHookPlugin.setValidationData(
-            _packValidationData(goodAuthorizer, start1, end1), _packValidationData(address(0), start2, end2)
+            _packValidationRes(goodAuthorizer, start1, end1), _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
@@ -258,7 +258,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.prank(address(entryPoint));
         uint256 returnedValidationData = account1.validateUserOp(userOp, uoHash, 1 wei);
 
-        assertEq(returnedValidationData, _packValidationData(goodAuthorizer, start2, end1));
+        assertEq(returnedValidationData, _packValidationRes(goodAuthorizer, start2, end1));
     }
 
     function test_validationIntersect_multiplePreValidationHooksIntersect() public {
@@ -270,8 +270,8 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         twoHookPlugin.setValidationData(
             0, // returns OK
-            _packValidationData(address(0), start1, end1),
-            _packValidationData(address(0), start2, end2)
+            _packValidationRes(address(0), start1, end1),
+            _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
@@ -282,7 +282,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.prank(address(entryPoint));
         uint256 returnedValidationData = account1.validateUserOp(userOp, uoHash, 1 wei);
 
-        assertEq(returnedValidationData, _packValidationData(address(0), start2, end1));
+        assertEq(returnedValidationData, _packValidationRes(address(0), start2, end1));
     }
 
     function test_validationIntersect_multiplePreValidationHooksSigFail() public {
@@ -318,7 +318,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         validAfter = uint48(validationData >> (48 + 160));
     }
 
-    function _packValidationData(address authorizer, uint48 validAfter, uint48 validUntil)
+    function _packValidationRes(address authorizer, uint48 validAfter, uint48 validUntil)
         internal
         pure
         returns (uint256)
