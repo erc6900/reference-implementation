@@ -675,7 +675,8 @@ contract UpgradeableModularAccount is
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
             if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
-                revert UserOpValidationFunctionMissing(selector);
+                revert UserOpValidationFunctionMissing(selector); //TODO: Update this error as it can be runtime
+                    // validation too
             }
         } else {
             // Not global validation, but per-selector
@@ -727,9 +728,7 @@ contract UpgradeableModularAccount is
         FunctionReference directCallValidationKey =
             FunctionReferenceLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
 
-        if (!_storage.validationData[directCallValidationKey].selectors.contains(toSetValue(msg.sig))) {
-            revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
-        }
+        _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
 
         // Direct call is allowed, run associated permission & validation hooks
 

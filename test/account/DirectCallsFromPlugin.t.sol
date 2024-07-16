@@ -133,9 +133,7 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         );
     }
 
-    function _buildDirectCallDisallowedError(bytes4 selector) internal view returns (bytes memory) {
-        return abi.encodeWithSelector(
-            UpgradeableModularAccount.ExecFromPluginNotPermitted.selector, address(_plugin), selector
-        );
+    function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(UpgradeableModularAccount.UserOpValidationFunctionMissing.selector, selector);
     }
 }

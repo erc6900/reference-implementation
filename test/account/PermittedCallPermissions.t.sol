@@ -48,8 +48,7 @@ contract PermittedCallPermissionsTest is AccountTestBase {
     function test_permittedCall_NotAllowed() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ExecFromPluginNotPermitted.selector,
-                address(permittedCallerPlugin),
+                UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
                 ResultCreatorPlugin.bar.selector
             )
         );
