@@ -6,10 +6,10 @@ import {PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
 // Validation config is a packed representation of a validation function and flags for its configuration.
 // Layout:
 // 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
-// 0x________________________________________BB______________________ // Function ID
-// 0x__________________________________________CC____________________ // isGlobal
-// 0x____________________________________________DD__________________ // isSignatureValidation
-// 0x______________________________________________000000000000000000 // unused
+// 0x________________________________________BBBBBBBB________________ // Entity ID
+// 0x________________________________________________CC______________ // isGlobal
+// 0x__________________________________________________DD____________ // isSignatureValidation
+// 0x____________________________________________________000000000000 // unused
 
 library ValidationConfigLib {
     function pack(PluginEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)

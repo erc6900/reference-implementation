@@ -68,9 +68,9 @@ function toPluginEntity(bytes32 setValue) pure returns (PluginEntity) {
 }
 
 // ExecutionHook layout:
-// 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Function Reference
-// 0x__________________________________________AA____________________ is pre hook
-// 0x____________________________________________BB__________________ is post hook
+// 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Plugin Entity
+// 0x________________________________________________AA____________________ is pre hook
+// 0x__________________________________________________BB__________________ is post hook
 
 function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
     return bytes32(PluginEntity.unwrap(executionHook.hookFunction))
