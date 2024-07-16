@@ -140,12 +140,13 @@ abstract contract PluginManager2 {
             // Clear permission hooks
             EnumerableSet.Bytes32Set storage permissionHooks =
                 _storage.validationData[validationFunction].permissionHooks;
-            uint256 i = 0;
-            while (permissionHooks.length() > 0) {
+
+            uint256 len = permissionHooks.length();
+            for (uint256 i = 0; i < len; ++i) {
                 bytes32 permissionHook = permissionHooks.at(0);
                 permissionHooks.remove(permissionHook);
                 address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
-                IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i++]);
+                IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i]);
             }
         }
         delete _storage.validationData[validationFunction].preValidationHooks;
