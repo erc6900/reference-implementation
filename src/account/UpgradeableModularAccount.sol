@@ -87,10 +87,8 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        PostExecToRun[] memory postPermissionHooks = _checkPermittedCallerAndAssociatedHooks();
-
-        PostExecToRun[] memory postExecHooks =
-            _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
+        (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
+            _checkPermittedCallerAndAssociatedHooks();
 
         _;
 
@@ -720,14 +718,17 @@ contract UpgradeableModularAccount is
      *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
      *         post-permissionHooks to run later.
      */
-    function _checkPermittedCallerAndAssociatedHooks() internal returns (PostExecToRun[] memory) {
+    function _checkPermittedCallerAndAssociatedHooks()
+        internal
+        returns (PostExecToRun[] memory, PostExecToRun[] memory)
+    {
         AccountStorage storage _storage = getAccountStorage();
 
         if (
             msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
                 || _storage.selectorData[msg.sig].isPublic
         ) {
-            return new PostExecToRun[](0);
+            return (new PostExecToRun[](0), new PostExecToRun[](0));
         }
 
         FunctionReference directCallValidationKey =
@@ -751,6 +752,11 @@ contract UpgradeableModularAccount is
         // Permission hooks
         PostExecToRun[] memory postPermissionHooks =
             _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
-        return postPermissionHooks;
+
+        // Exec hooks
+        PostExecToRun[] memory postExecutionHooks =
+            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
+
+        return (postPermissionHooks, postExecutionHooks);
     }
 }
