@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
 import {_ACCOUNT_STORAGE_SLOT} from "../../src/account/AccountStorage.sol";
 import {AccountStorageInitializable} from "../../src/account/AccountStorageInitializable.sol";
 import {MockDiamondStorageContract} from "../mocks/MockDiamondStorageContract.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {Test} from "forge-std/Test.sol";
 
 // Test implementation of AccountStorageInitializable which is contained in UpgradeableModularAccount
 contract AccountStorageTest is Test {

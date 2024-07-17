@@ -2,11 +2,12 @@
 pragma solidity ^0.8.25;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import {IAccountLoupe, ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {PluginEntity, IPluginManager} from "../interfaces/IPluginManager.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+import {ExecutionHook, IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
+import {IPluginManager, PluginEntity} from "../interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {getAccountStorage, toExecutionHook, toSelector} from "./AccountStorage.sol";
 

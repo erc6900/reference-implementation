@@ -2,30 +2,35 @@
 pragma solidity ^0.8.25;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
+
+import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
+
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
-import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
+
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
+import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
+
+import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPluginManager, PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
-import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {PluginEntity, IPluginManager, ValidationConfig} from "../interfaces/IPluginManager.sol";
-import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, toSetValue, toExecutionHook} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, toExecutionHook, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
-import {PluginManagerInternals} from "./PluginManagerInternals.sol";
+
 import {PluginManager2} from "./PluginManager2.sol";
+import {PluginManagerInternals} from "./PluginManagerInternals.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,

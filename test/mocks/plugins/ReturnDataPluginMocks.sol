@@ -9,8 +9,9 @@ import {
     PluginManifest,
     PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
-import {IValidation} from "../../../src/interfaces/IValidation.sol";
+
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
+import {IValidation} from "../../../src/interfaces/IValidation.sol";
 
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 

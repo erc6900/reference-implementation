@@ -6,12 +6,13 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
+
 import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract SelfCallAuthorizationTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;

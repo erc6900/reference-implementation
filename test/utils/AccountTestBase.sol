@@ -5,10 +5,10 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
-import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from
@@ -40,8 +40,8 @@ abstract contract AccountTestBase is OptimizedTest {
     // Re-declare the constant to prevent derived test contracts from having to import it
     uint32 public constant TEST_DEFAULT_VALIDATION_ENTITY_ID = EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID;
 
-    uint256 public constant CALL_GAS_LIMIT = 100000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
+    uint256 public constant CALL_GAS_LIMIT = 100_000;
+    uint256 public constant VERIFICATION_GAS_LIMIT = 1_200_000;
 
     struct PreValidationHookData {
         uint8 index;
