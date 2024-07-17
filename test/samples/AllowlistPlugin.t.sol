@@ -3,13 +3,14 @@ pragma solidity ^0.8.25;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {Call} from "../../src/interfaces/IStandardExecutor.sol";
+
 import {AllowlistPlugin} from "../../src/samples/permissionhooks/AllowlistPlugin.sol";
 
-import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 import {Counter} from "../mocks/Counter.sol";
+import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
 contract AllowlistPluginTest is CustomValidationTestBase {
     AllowlistPlugin public allowlistPlugin;

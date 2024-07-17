@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IPlugin, PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
@@ -28,9 +28,9 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    string public constant NAME = "SingleSigner Validation";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "SingleSigner Validation";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
@@ -42,32 +42,8 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     mapping(uint32 entityId => mapping(address account => address)) public signer;
 
     /// @inheritdoc ISingleSignerValidation
-    function signerOf(uint32 entityId, address account) external view returns (address) {
-        return signer[entityId][account];
-    }
-
-    /// @inheritdoc ISingleSignerValidation
     function transferSigner(uint32 entityId, address newSigner) external {
         _transferSigner(entityId, newSigner);
-    }
-
-    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
-    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-    /// @inheritdoc IPlugin
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
-        return manifest;
-    }
-
-    /// @inheritdoc IPlugin
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
-        return metadata;
     }
 
     /// @inheritdoc IPlugin
@@ -81,6 +57,11 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         // ToDo: what does it mean in the world of composable validation world to uninstall one type of validation
         // We can either get rid of all SingleSigner signers. What about the nested ones?
         _transferSigner(abi.decode(data, (uint32)), address(0));
+    }
+
+    /// @inheritdoc ISingleSignerValidation
+    function signerOf(uint32 entityId, address account) external view returns (address) {
+        return signer[entityId][account];
     }
 
     /// @inheritdoc IValidation
@@ -131,6 +112,25 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
+    }
+
+    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    // ┃    Plugin interface functions    ┃
+    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+    /// @inheritdoc IPlugin
+    function pluginManifest() external pure override returns (PluginManifest memory) {
+        PluginManifest memory manifest;
+        return manifest;
+    }
+
+    /// @inheritdoc IPlugin
+    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
+        PluginMetadata memory metadata;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
+        return metadata;
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

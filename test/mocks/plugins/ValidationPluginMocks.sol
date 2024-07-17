@@ -6,8 +6,8 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {
     ManifestExecutionFunction,
     ManifestValidation,
-    PluginMetadata,
-    PluginManifest
+    PluginManifest,
+    PluginMetadata
 } from "../../../src/interfaces/IPlugin.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";

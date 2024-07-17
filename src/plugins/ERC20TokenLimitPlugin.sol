@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {UserOperationLib} from "@eth-infinitism/account-abstraction/core/UserOperationLib.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    SetValue,
-    AssociatedLinkedListSet,
-    AssociatedLinkedListSetLib
-} from "@modular-account-libs/libraries/AssociatedLinkedListSetLib.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {IStandardExecutor, Call} from "../interfaces/IStandardExecutor.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
+import {
+    AssociatedLinkedListSet,
+    AssociatedLinkedListSetLib,
+    SetValue
+} from "@modular-account-libs/libraries/AssociatedLinkedListSetLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
+import {IPlugin} from "../interfaces/IPlugin.sol";
+import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
+
 import {BasePlugin, IERC165} from "./BasePlugin.sol";
 
 /// @title ERC20 Token Limit Plugin

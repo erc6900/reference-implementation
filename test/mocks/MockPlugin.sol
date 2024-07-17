@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-import {PluginManifest, IPlugin, PluginMetadata} from "../../src/interfaces/IPlugin.sol";
-import {IValidation} from "../../src/interfaces/IValidation.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
+import {IPlugin, PluginManifest, PluginMetadata} from "../../src/interfaces/IPlugin.sol";
+import {IValidation} from "../../src/interfaces/IValidation.sol";
 
 contract MockPlugin is ERC165 {
     // It's super inefficient to hold the entire abi-encoded manifest in storage, but this is fine since it's
@@ -17,9 +17,9 @@ contract MockPlugin is ERC165 {
     // struct ManifestAssociatedFunction memory[] memory to storage not yet supported.
     bytes internal _manifest;
 
-    string public constant NAME = "Mock Plugin Modifiable";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "Mock Plugin Modifiable";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -52,9 +52,9 @@ contract MockPlugin is ERC165 {
 
     function pluginMetadata() external pure returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
         return metadata;
     }
 

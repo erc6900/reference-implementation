@@ -8,9 +8,9 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
+import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
-import {ContractOwner} from "../mocks/ContractOwner.sol";
 
 contract SingleSignerValidationTest is AccountTestBase {
     using MessageHashUtils for bytes32;
