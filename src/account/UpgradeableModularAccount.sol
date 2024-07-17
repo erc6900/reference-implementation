@@ -612,6 +612,59 @@ contract UpgradeableModularAccount is
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
 
+    /**
+     * Order of operations:
+     *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
+     *          - Yes: Return an empty array, there are no post-permissionHooks.
+     *          - No: Continue
+     *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
+     *         directly call.
+     *          - Yes: Continue
+     *          - No: Revert, the caller is not allowed to call this selector
+     *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
+     *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
+     *         post-permissionHooks to run later.
+     */
+    function _checkPermittedCallerAndAssociatedHooks()
+        internal
+        returns (PostExecToRun[] memory, PostExecToRun[] memory)
+    {
+        AccountStorage storage _storage = getAccountStorage();
+
+        if (
+            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
+                || _storage.selectorData[msg.sig].isPublic
+        ) {
+            return (new PostExecToRun[](0), new PostExecToRun[](0));
+        }
+
+        FunctionReference directCallValidationKey =
+            FunctionReferenceLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
+
+        _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
+
+        // Direct call is allowed, run associated permission & validation hooks
+
+        // Validation hooks
+        FunctionReference[] memory preRuntimeValidationHooks =
+            _storage.validationData[directCallValidationKey].preValidationHooks;
+
+        uint256 hookLen = preRuntimeValidationHooks.length;
+        for (uint256 i = 0; i < hookLen; ++i) {
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
+        }
+
+        // Permission hooks
+        PostExecToRun[] memory postPermissionHooks =
+            _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
+
+        // Exec hooks
+        PostExecToRun[] memory postExecutionHooks =
+            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
+
+        return (postPermissionHooks, postExecutionHooks);
+    }
+
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
         FunctionReference validationFunction,
@@ -665,6 +718,19 @@ contract UpgradeableModularAccount is
         }
     }
 
+    function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
+        if (
+            selector == this.execute.selector || selector == this.executeBatch.selector
+                || selector == this.installPlugin.selector || selector == this.uninstallPlugin.selector
+                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
+                || selector == this.upgradeToAndCall.selector
+        ) {
+            return true;
+        }
+
+        return getAccountStorage().selectorData[selector].allowGlobalValidation;
+    }
+
     function _checkIfValidationAppliesSelector(
         bytes4 selector,
         FunctionReference validationFunction,
@@ -683,71 +749,5 @@ contract UpgradeableModularAccount is
                 revert ValidationFunctionMissing(selector);
             }
         }
-    }
-
-    function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
-        if (
-            selector == this.execute.selector || selector == this.executeBatch.selector
-                || selector == this.installPlugin.selector || selector == this.uninstallPlugin.selector
-                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
-                || selector == this.upgradeToAndCall.selector
-        ) {
-            return true;
-        }
-
-        return getAccountStorage().selectorData[selector].allowGlobalValidation;
-    }
-
-    /**
-     * Order of operations:
-     *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
-     *          - Yes: Return an empty array, there are no post-permissionHooks.
-     *          - No: Continue
-     *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
-     *         directly call.
-     *          - Yes: Continue
-     *          - No: Revert, the caller is not allowed to call this selector
-     *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
-     *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
-     *         post-permissionHooks to run later.
-     */
-    function _checkPermittedCallerAndAssociatedHooks()
-        internal
-        returns (PostExecToRun[] memory, PostExecToRun[] memory)
-    {
-        AccountStorage storage _storage = getAccountStorage();
-
-        if (
-            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
-                || _storage.selectorData[msg.sig].isPublic
-        ) {
-            return (new PostExecToRun[](0), new PostExecToRun[](0));
-        }
-
-        FunctionReference directCallValidationKey =
-            FunctionReferenceLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
-
-        _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
-
-        // Direct call is allowed, run associated permission & validation hooks
-
-        // Validation hooks
-        FunctionReference[] memory preRuntimeValidationHooks =
-            _storage.validationData[directCallValidationKey].preValidationHooks;
-
-        uint256 hookLen = preRuntimeValidationHooks.length;
-        for (uint256 i = 0; i < hookLen; ++i) {
-            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
-        }
-
-        // Permission hooks
-        PostExecToRun[] memory postPermissionHooks =
-            _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
-
-        // Exec hooks
-        PostExecToRun[] memory postExecutionHooks =
-            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
-
-        return (postPermissionHooks, postExecutionHooks);
     }
 }
