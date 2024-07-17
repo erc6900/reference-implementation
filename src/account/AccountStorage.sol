@@ -15,7 +15,8 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
-    // Whether or not the function needs runtime validation, or can be called by anyone.
+    // Whether or not the function needs runtime validation, or can be called by anyone. The function can still be
+    // state changing if this flag is set to true.
     // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
     // drain the account of native tokens by wasting gas.
     bool isPublic;
@@ -59,8 +60,8 @@ function getAccountStorage() pure returns (AccountStorage storage _storage) {
 
 using EnumerableSet for EnumerableSet.Bytes32Set;
 
-function toSetValue(PluginEntity functionReference) pure returns (bytes32) {
-    return bytes32(PluginEntity.unwrap(functionReference));
+function toSetValue(PluginEntity pluginEntity) pure returns (bytes32) {
+    return bytes32(PluginEntity.unwrap(pluginEntity));
 }
 
 function toPluginEntity(bytes32 setValue) pure returns (PluginEntity) {
