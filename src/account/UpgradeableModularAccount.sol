@@ -19,7 +19,7 @@ import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IModule, ModuleManifest} from "../interfaces/IModule.sol";
+import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
@@ -109,21 +109,21 @@ contract UpgradeableModularAccount is
 
     /// @notice Initializes the account with a set of modules
     /// @param modules The modules to install
-    /// @param manifestHashes The manifest hashes of the modules to install
+    /// @param manifests The manifests of the modules to install
     /// @param moduleInstallDatas The module install datas of the modules to install
     function initialize(
         address[] memory modules,
-        bytes32[] memory manifestHashes,
+        ModuleManifest[] calldata manifests,
         bytes[] memory moduleInstallDatas
     ) external initializer {
         uint256 length = modules.length;
 
-        if (length != manifestHashes.length || length != moduleInstallDatas.length) {
+        if (length != manifests.length || length != moduleInstallDatas.length) {
             revert ArrayLengthMismatch();
         }
 
         for (uint256 i = 0; i < length; ++i) {
-            _installModule(modules[i], manifestHashes[i], moduleInstallDatas[i]);
+            _installModule(modules[i], manifests[i], moduleInstallDatas[i]);
         }
 
         emit ModularAccountInitialized(_ENTRY_POINT);
@@ -249,29 +249,21 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function installModule(address module, bytes32 manifestHash, bytes calldata moduleInstallData)
+    function installModule(address module, ModuleManifest calldata manifest, bytes calldata moduleInstallData)
         external
         override
         wrapNativeFunction
     {
-        _installModule(module, manifestHash, moduleInstallData);
+        _installModule(module, manifest, moduleInstallData);
     }
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function uninstallModule(address module, bytes calldata config, bytes calldata moduleUninstallData)
+    function uninstallModule(address module, ModuleManifest calldata manifest, bytes calldata moduleUninstallData)
         external
         override
         wrapNativeFunction
     {
-        ModuleManifest memory manifest;
-
-        if (config.length > 0) {
-            manifest = abi.decode(config, (ModuleManifest));
-        } else {
-            manifest = IModule(module).moduleManifest();
-        }
-
         _uninstallModule(module, manifest, moduleUninstallData);
     }
 

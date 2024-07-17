@@ -26,21 +26,19 @@ contract AccountReturnDataTest is AccountTestBase {
         resultConsumerModule = new ResultConsumerModule(resultCreatorModule, regularResultContract);
 
         // Add the result creator module to the account
-        bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorModule.moduleManifest()));
-        vm.prank(address(entryPoint));
+        vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(resultCreatorModule),
-            manifestHash: resultCreatorManifestHash,
+            manifest: resultCreatorModule.moduleManifest(),
             moduleInstallData: ""
         });
         // Add the result consumer module to the account
-        bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerModule.moduleManifest()));
-        vm.prank(address(entryPoint));
         account1.installModule({
             module: address(resultConsumerModule),
-            manifestHash: resultConsumerManifestHash,
+            manifest: resultConsumerModule.moduleManifest(),
             moduleInstallData: ""
         });
+        vm.stopPrank();
     }
 
     // Tests the ability to read the result of module execution functions via the account's fallback
