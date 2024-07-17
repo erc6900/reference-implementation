@@ -309,7 +309,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
             true,
             true,
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_VALIDATION_ID, owner1),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
             packedPreValidationHooks,
             ""
         );

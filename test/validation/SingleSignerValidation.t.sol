@@ -9,7 +9,7 @@ import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 
 contract SingleSignerValidationTest is AccountTestBase {
@@ -50,7 +50,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -68,7 +68,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -109,19 +109,19 @@ contract SingleSignerValidationTest is AccountTestBase {
         // sig check should fail
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                accountAddr, TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             bytes4(0xFFFFFFFF)
         );
 
         // transfer ownership to signer
-        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ID, signer);
-        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ID, accountAddr));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ENTITY_ID, signer);
+        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, accountAddr));
 
         // sig check should pass
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, abi.encodePacked(r, s, v)
+                accountAddr, TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this), digest, abi.encodePacked(r, s, v)
             ),
             _1271_MAGIC_VALUE
         );
@@ -130,11 +130,11 @@ contract SingleSignerValidationTest is AccountTestBase {
     function testFuzz_isValidSignatureForContractOwner(bytes32 digest) public {
         address accountAddr = address(account);
         vm.startPrank(accountAddr);
-        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ID, address(contractOwner));
+        singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(contractOwner));
         bytes memory signature = contractOwner.sign(digest);
         assertEq(
             singleSignerValidation.validateSignature(
-                accountAddr, TEST_DEFAULT_VALIDATION_ID, address(this), digest, signature
+                accountAddr, TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this), digest, signature
             ),
             _1271_MAGIC_VALUE
         );

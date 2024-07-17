@@ -11,7 +11,8 @@ import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.so
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
-import {TEST_DEFAULT_VALIDATION_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ID} from "./TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from
+    "./TestConstants.sol";
 
 import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 
@@ -37,7 +38,7 @@ abstract contract AccountTestBase is OptimizedTest {
     uint8 public constant GLOBAL_VALIDATION = 1;
 
     // Re-declare the constant to prevent derived test contracts from having to import it
-    uint32 public constant TEST_DEFAULT_VALIDATION_ID = EXT_CONST_TEST_DEFAULT_VALIDATION_ID;
+    uint32 public constant TEST_DEFAULT_VALIDATION_ENTITY_ID = EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID;
 
     uint256 public constant CALL_GAS_LIMIT = 100000;
     uint256 public constant VERIFICATION_GAS_LIMIT = 1200000;
@@ -58,7 +59,8 @@ abstract contract AccountTestBase is OptimizedTest {
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _signerValidation = PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID);
+        _signerValidation =
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -101,7 +103,7 @@ abstract contract AccountTestBase is OptimizedTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -154,7 +156,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -169,7 +171,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -186,12 +188,12 @@ abstract contract AccountTestBase is OptimizedTest {
                     address(singleSignerValidation),
                     0,
                     abi.encodeCall(
-                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ID, address(this))
+                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
                     )
                 )
             ),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID),
+                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )

@@ -10,7 +10,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
-import {TEST_DEFAULT_VALIDATION_ID} from "../utils/TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
@@ -45,13 +45,15 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ID, owner);
+            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ID, true, true),
+                ValidationConfigLib.pack(
+                    address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
+                ),
                 new bytes4[](0),
                 pluginInstallData,
                 "",
