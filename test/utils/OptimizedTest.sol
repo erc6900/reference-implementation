@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
@@ -44,15 +44,17 @@ abstract contract OptimizedTest is Test {
             : new UpgradeableModularAccount(entryPoint);
     }
 
-    function _deploySingleOwnerPlugin() internal returns (SingleOwnerPlugin) {
-        return _isOptimizedTest()
-            ? SingleOwnerPlugin(deployCode("out-optimized/SingleOwnerPlugin.sol/SingleOwnerPlugin.json"))
-            : new SingleOwnerPlugin();
-    }
-
     function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
         return _isOptimizedTest()
             ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
             : new TokenReceiverPlugin();
+    }
+
+    function _deploySingleSignerValidation() internal returns (SingleSignerValidation) {
+        return _isOptimizedTest()
+            ? SingleSignerValidation(
+                deployCode("out-optimized/SingleSignerValidation.sol/SingleSignerValidation.json")
+            )
+            : new SingleSignerValidation();
     }
 }

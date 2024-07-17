@@ -4,16 +4,15 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
 import {NativeTokenLimitPlugin} from "../../src/plugins/NativeTokenLimitPlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract NativeTokenLimitPluginTest is AccountTestBase {
@@ -21,7 +20,7 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
     address payable public bundler = payable(address(2));
     PluginManifest internal _m;
     MockPlugin public validationPlugin = new MockPlugin(_m);
-    FunctionReference public validationFunction;
+    PluginEntity public validationFunction;
 
     UpgradeableModularAccount public acct;
     NativeTokenLimitPlugin public plugin = new NativeTokenLimitPlugin();
@@ -30,18 +29,16 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
     function setUp() public {
         // Set up a validator with hooks from the gas spend limit plugin attached
 
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
-
         acct = factory.createAccount(address(this), 0);
 
         vm.deal(address(acct), 10 ether);
 
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
-        preValidationHooks[0] = FunctionReferenceLib.pack(address(plugin), 0);
+        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
+        preValidationHooks[0] = PluginEntityLib.pack(address(plugin), 0);
 
         ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
         permissionHooks[0] = ExecutionHook({
-            hookFunction: FunctionReferenceLib.pack(address(plugin), 0),
+            hookFunction: PluginEntityLib.pack(address(plugin), 0),
             isPreHook: true,
             isPostHook: false
         });
@@ -64,7 +61,7 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
             abi.encode(permissionHooks, permissionInitDatas)
         );
 
-        validationFunction = FunctionReferenceLib.pack(address(validationPlugin), 0);
+        validationFunction = PluginEntityLib.pack(address(validationPlugin), 0);
     }
 
     function _getExecuteWithValue(uint256 value) internal view returns (bytes memory) {
@@ -85,7 +82,7 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
             preVerificationGas: gas3,
             gasFees: bytes32(uint256(uint128(gasPrice))),
             paymasterAndData: "",
-            signature: _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
+            signature: _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
         });
     }
 

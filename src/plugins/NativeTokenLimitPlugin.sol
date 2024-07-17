@@ -34,8 +34,8 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     error ExceededNativeTokenLimit();
     error ExceededNumberOfEntities();
 
-    function updateLimits(uint8 functionId, uint256 newLimit) external {
-        limits[functionId][msg.sender] = newLimit;
+    function updateLimits(uint32 entityId, uint256 newLimit) external {
+        limits[entityId][msg.sender] = newLimit;
     }
 
     function updateSpecialPaymaster(address paymaster, bool allowed) external {
@@ -43,7 +43,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     }
 
     /// @inheritdoc IValidationHook
-    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata userOp, bytes32)
+    function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32)
         external
         returns (uint256)
     {
@@ -63,54 +63,54 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
             uint256 totalGas = userOp.preVerificationGas + vgl + cgl + pvgl + ppogl;
             uint256 usage = totalGas * UserOperationLib.unpackMaxFeePerGas(userOp);
 
-            uint256 limit = limits[functionId][msg.sender];
+            uint256 limit = limits[entityId][msg.sender];
             if (usage > limit) {
                 revert ExceededNativeTokenLimit();
             }
-            limits[functionId][msg.sender] = limit - usage;
+            limits[entityId][msg.sender] = limit - usage;
         }
         return 0;
     }
 
     /// @inheritdoc IExecutionHook
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
+    function preExecutionHook(uint32 entityId, address, uint256, bytes calldata data)
         external
         override
         returns (bytes memory)
     {
-        return _checkAndDecrementLimit(functionId, data);
+        return _checkAndDecrementLimit(entityId, data);
     }
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (uint8 startFunctionId, uint256[] memory spendLimits) = abi.decode(data, (uint8, uint256[]));
+        (uint32 startEntityId, uint256[] memory spendLimits) = abi.decode(data, (uint32, uint256[]));
 
-        if (startFunctionId + spendLimits.length > type(uint8).max) {
+        if (startEntityId + spendLimits.length > type(uint32).max) {
             revert ExceededNumberOfEntities();
         }
 
         for (uint256 i = 0; i < spendLimits.length; i++) {
-            limits[i + startFunctionId][msg.sender] = spendLimits[i];
+            limits[i + startEntityId][msg.sender] = spendLimits[i];
         }
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata data) external override {
-        // This is the highest functionId that's being used by the account
-        uint8 functionId = abi.decode(data, (uint8));
-        for (uint256 i = 0; i < functionId; i++) {
+        // This is the highest entityId that's being used by the account
+        uint32 entityId = abi.decode(data, (uint32));
+        for (uint256 i = 0; i < entityId; i++) {
             delete limits[i][msg.sender];
         }
     }
 
     /// @inheritdoc IExecutionHook
-    function postExecutionHook(uint8, bytes calldata) external pure override {
+    function postExecutionHook(uint32, bytes calldata) external pure override {
         revert NotImplemented();
     }
 
     // No implementation, no revert
     // Runtime spends no account gas, and we check native token spend limits in exec hooks
-    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata, bytes calldata)
+    function preRuntimeValidationHook(uint32, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override
@@ -142,7 +142,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         return interfaceId == type(IExecutionHook).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _checkAndDecrementLimit(uint8 functionId, bytes calldata data) internal returns (bytes memory) {
+    function _checkAndDecrementLimit(uint32 entityId, bytes calldata data) internal returns (bytes memory) {
         (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
 
         uint256 value;
@@ -156,11 +156,11 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
             }
         }
 
-        uint256 limit = limits[functionId][msg.sender];
+        uint256 limit = limits[entityId][msg.sender];
         if (value > limit) {
             revert ExceededNativeTokenLimit();
         }
-        limits[functionId][msg.sender] = limit - value;
+        limits[entityId][msg.sender] = limit - value;
 
         return "";
     }
