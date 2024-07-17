@@ -41,7 +41,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector,
                     ComprehensivePlugin.foo.selector
                 )
             )
@@ -57,7 +57,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector,
                     ComprehensivePlugin.foo.selector
                 )
             )
@@ -69,7 +69,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _runtimeCall(
             abi.encodeCall(ComprehensivePlugin.foo, ()),
             abi.encodeWithSelector(
-                UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                UpgradeableModularAccount.ValidationFunctionMissing.selector,
                 ComprehensivePlugin.foo.selector
             )
         );
@@ -100,7 +100,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector,
                     ComprehensivePlugin.foo.selector
                 )
             )
@@ -137,7 +137,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector,
                     ComprehensivePlugin.foo.selector
                 )
             )
@@ -160,7 +160,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _runtimeExecBatchExpFail(
             calls,
             abi.encodeWithSelector(
-                UpgradeableModularAccount.UserOpValidationFunctionMissing.selector,
+                UpgradeableModularAccount.ValidationFunctionMissing.selector,
                 ComprehensivePlugin.foo.selector
             )
         );

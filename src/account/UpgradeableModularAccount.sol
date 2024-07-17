@@ -78,7 +78,7 @@ contract UpgradeableModularAccount is
     error SignatureValidationInvalid(address plugin, uint8 functionId);
     error UnexpectedAggregator(address plugin, uint8 functionId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
-    error UserOpValidationFunctionMissing(bytes4 selector);
+    error ValidationFunctionMissing(bytes4 selector);
     error ValidationDoesNotApply(bytes4 selector, address plugin, uint8 functionId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
@@ -675,13 +675,12 @@ contract UpgradeableModularAccount is
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
             if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
-                revert UserOpValidationFunctionMissing(selector); //TODO: Update this error as it can be runtime
-                    // validation too
+                revert ValidationFunctionMissing(selector);
             }
         } else {
             // Not global validation, but per-selector
             if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
-                revert UserOpValidationFunctionMissing(selector);
+                revert ValidationFunctionMissing(selector);
             }
         }
     }

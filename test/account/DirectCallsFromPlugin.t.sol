@@ -134,6 +134,6 @@ contract DirectCallsFromPluginTest is AccountTestBase {
     }
 
     function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(UpgradeableModularAccount.UserOpValidationFunctionMissing.selector, selector);
+        return abi.encodeWithSelector(UpgradeableModularAccount.ValidationFunctionMissing.selector, selector);
     }
 }
