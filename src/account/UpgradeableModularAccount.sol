@@ -348,8 +348,10 @@ contract UpgradeableModularAccount is
             revert SignatureValidationInvalid(plugin, entityId);
         }
 
-        if (IValidation(plugin).validateSignature(entityId, msg.sender, hash, signature[24:]) == _1271_MAGIC_VALUE)
-        {
+        if (
+            IValidation(plugin).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
+                == _1271_MAGIC_VALUE
+        ) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
@@ -517,7 +519,9 @@ contract UpgradeableModularAccount is
 
         (address plugin, uint32 entityId) = runtimeValidationFunction.unpack();
 
-        try IValidation(plugin).validateRuntime(entityId, msg.sender, msg.value, callData, authSegment.getBody())
+        try IValidation(plugin).validateRuntime(
+            address(this), entityId, msg.sender, msg.value, callData, authSegment.getBody()
+        )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
         {} catch (bytes memory revertReason) {

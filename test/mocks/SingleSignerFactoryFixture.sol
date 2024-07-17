@@ -5,34 +5,32 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
-import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
-/**
- * @title MSCAFactoryFixture
- * @dev a factory that initializes UpgradeableModularAccounts with a single plugin, SingleOwnerPlugin
- * intended for unit tests and local development, not for production.
- */
-contract MSCAFactoryFixture is OptimizedTest {
+contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
-    SingleOwnerPlugin public singleOwnerPlugin;
+    SingleSignerValidation public singleSignerValidation;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
 
     IEntryPoint public entryPoint;
 
-    constructor(IEntryPoint _entryPoint, SingleOwnerPlugin _singleOwnerPlugin) {
+    address public self;
+
+    constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
-        singleOwnerPlugin = _singleOwnerPlugin;
+        singleSignerValidation = _singleSignerValidation;
+        self = address(this);
     }
 
     /**
@@ -47,13 +45,15 @@ contract MSCAFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner);
+            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID, true, true),
+                ValidationConfigLib.pack(
+                    address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
+                ),
                 new bytes4[](0),
                 pluginInstallData,
                 "",

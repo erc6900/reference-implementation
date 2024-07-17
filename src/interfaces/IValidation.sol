@@ -18,6 +18,7 @@ interface IValidation is IPlugin {
 
     /// @notice Run the runtime validationFunction specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
+    /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param sender The caller address.
@@ -25,6 +26,7 @@ interface IValidation is IPlugin {
     /// @param data The calldata sent.
     /// @param authorization Additional data for the validation function to use.
     function validateRuntime(
+        address account,
         uint32 entityId,
         address sender,
         uint256 value,
@@ -34,14 +36,18 @@ interface IValidation is IPlugin {
 
     /// @notice Validates a signature using ERC-1271.
     /// @dev To indicate the entire call should revert, the function MUST revert.
+    /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param sender the address that sent the ERC-1271 request to the smart account
     /// @param hash the hash of the ERC-1271 request
     /// @param signature the signature of the ERC-1271 request
     /// @return the ERC-1271 `MAGIC_VALUE` if the signature is valid, or 0xFFFFFFFF if invalid.
-    function validateSignature(uint32 entityId, address sender, bytes32 hash, bytes calldata signature)
-        external
-        view
-        returns (bytes4);
+    function validateSignature(
+        address account,
+        uint32 entityId,
+        address sender,
+        bytes32 hash,
+        bytes calldata signature
+    ) external view returns (bytes4);
 }

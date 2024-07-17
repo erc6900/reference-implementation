@@ -8,7 +8,7 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
 
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
+import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 import {MockERC721} from "../mocks/MockERC721.sol";
 import {MockERC1155} from "../mocks/MockERC1155.sol";
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
@@ -33,7 +33,8 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
+        SingleSignerFactoryFixture factory =
+            new SingleSignerFactoryFixture(entryPoint, _deploySingleSignerValidation());
 
         acct = factory.createAccount(address(this), 0);
         plugin = _deployTokenReceiverPlugin();
