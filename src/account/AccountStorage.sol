@@ -59,8 +59,8 @@ function getAccountStorage() pure returns (AccountStorage storage _storage) {
 
 using EnumerableSet for EnumerableSet.Bytes32Set;
 
-function toSetValue(PluginEntity functionReference) pure returns (bytes32) {
-    return bytes32(PluginEntity.unwrap(functionReference));
+function toSetValue(PluginEntity pluginEntity) pure returns (bytes32) {
+    return bytes32(PluginEntity.unwrap(pluginEntity));
 }
 
 function toPluginEntity(bytes32 setValue) pure returns (PluginEntity) {
