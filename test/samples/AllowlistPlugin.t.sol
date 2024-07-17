@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {AllowlistPlugin} from "../../src/samples/permissionhooks/AllowlistPlugin.sol";
 
@@ -184,7 +184,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                     return abi.encodeWithSelector(
                         UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                         address(allowlistPlugin),
-                        uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK),
+                        uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK),
                         abi.encodeWithSelector(AllowlistPlugin.SelectorNotAllowed.selector)
                     );
                 }
@@ -192,7 +192,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                 return abi.encodeWithSelector(
                     UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                     address(allowlistPlugin),
-                    uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK),
+                    uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK),
                     abi.encodeWithSelector(AllowlistPlugin.TargetNotAllowed.selector)
                 );
             }
@@ -290,13 +290,12 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (FunctionReference, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (PluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
-        FunctionReference accessControlHook = FunctionReferenceLib.pack(
-            address(allowlistPlugin), uint8(AllowlistPlugin.FunctionId.PRE_VALIDATION_HOOK)
-        );
+        PluginEntity accessControlHook =
+            PluginEntityLib.pack(address(allowlistPlugin), uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK));
 
-        FunctionReference[] memory preValidationHooks = new FunctionReference[](1);
+        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
         preValidationHooks[0] = accessControlHook;
 
         bytes[] memory preValidationHookData = new bytes[](1);
@@ -306,11 +305,11 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
 
         return (
-            _ownerValidation,
+            _signerValidation,
             true,
             true,
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner1),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
             packedPreValidationHooks,
             ""
         );
