@@ -27,7 +27,7 @@ contract DirectCallPlugin is BasePlugin, IExecutionHook {
 
     function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 
-    function preExecutionHook(uint8, address sender, uint256, bytes calldata)
+    function preExecutionHook(uint32, address sender, uint256, bytes calldata)
         external
         override
         returns (bytes memory)
@@ -37,7 +37,7 @@ contract DirectCallPlugin is BasePlugin, IExecutionHook {
         return abi.encode(keccak256(hex"04546b"));
     }
 
-    function postExecutionHook(uint8, bytes calldata preExecHookData) external override {
+    function postExecutionHook(uint32, bytes calldata preExecHookData) external override {
         require(
             abi.decode(preExecHookData, (bytes32)) == keccak256(hex"04546b"),
             "mock direct call post permission hook failed"

@@ -5,7 +5,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {FunctionReference} from "../interfaces/IPluginManager.sol";
+import {PluginEntity} from "../interfaces/IPluginManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -30,10 +30,8 @@ struct ValidationData {
     bool isGlobal;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
-    // How many execution hooks require the UO context.
-    uint8 requireUOHookCount;
     // The pre validation hooks for this validation function.
-    FunctionReference[] preValidationHooks;
+    PluginEntity[] preValidationHooks;
     // Permission hooks for this validation function.
     EnumerableSet.Bytes32Set permissionHooks;
     // The set of selectors that may be validated by this validation function.
@@ -48,7 +46,7 @@ struct AccountStorage {
     EnumerableMap.AddressToUintMap pluginManifestHashes;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
-    mapping(FunctionReference validationFunction => ValidationData) validationData;
+    mapping(PluginEntity validationFunction => ValidationData) validationData;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
 }
@@ -61,32 +59,32 @@ function getAccountStorage() pure returns (AccountStorage storage _storage) {
 
 using EnumerableSet for EnumerableSet.Bytes32Set;
 
-function toSetValue(FunctionReference functionReference) pure returns (bytes32) {
-    return bytes32(FunctionReference.unwrap(functionReference));
+function toSetValue(PluginEntity functionReference) pure returns (bytes32) {
+    return bytes32(PluginEntity.unwrap(functionReference));
 }
 
-function toFunctionReference(bytes32 setValue) pure returns (FunctionReference) {
-    return FunctionReference.wrap(bytes21(setValue));
+function toPluginEntity(bytes32 setValue) pure returns (PluginEntity) {
+    return PluginEntity.wrap(bytes24(setValue));
 }
 
 // ExecutionHook layout:
-// 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Function Reference
-// 0x__________________________________________AA____________________ is pre hook
-// 0x____________________________________________BB__________________ is post hook
+// 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF______________________ Hook Plugin Entity
+// 0x________________________________________________AA____________________ is pre hook
+// 0x__________________________________________________BB__________________ is post hook
 
 function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
-    return bytes32(FunctionReference.unwrap(executionHook.hookFunction))
-        | bytes32(executionHook.isPreHook ? uint256(1) << 80 : 0)
-        | bytes32(executionHook.isPostHook ? uint256(1) << 72 : 0);
+    return bytes32(PluginEntity.unwrap(executionHook.hookFunction))
+        | bytes32(executionHook.isPreHook ? uint256(1) << 56 : 0)
+        | bytes32(executionHook.isPostHook ? uint256(1) << 48 : 0);
 }
 
 function toExecutionHook(bytes32 setValue)
     pure
-    returns (FunctionReference hookFunction, bool isPreHook, bool isPostHook)
+    returns (PluginEntity hookFunction, bool isPreHook, bool isPostHook)
 {
-    hookFunction = FunctionReference.wrap(bytes21(setValue));
-    isPreHook = (uint256(setValue) >> 80) & 0xFF == 1;
-    isPostHook = (uint256(setValue) >> 72) & 0xFF == 1;
+    hookFunction = PluginEntity.wrap(bytes24(setValue));
+    isPreHook = (uint256(setValue) >> 56) & 0xFF == 1;
+    isPostHook = (uint256(setValue) >> 48) & 0xFF == 1;
 }
 
 function toSetValue(bytes4 selector) pure returns (bytes32) {
@@ -98,15 +96,12 @@ function toSelector(bytes32 setValue) pure returns (bytes4) {
 }
 
 /// @dev Helper function to get all elements of a set into memory.
-function toFunctionReferenceArray(EnumerableSet.Bytes32Set storage set)
-    view
-    returns (FunctionReference[] memory)
-{
+function toPluginEntityArray(EnumerableSet.Bytes32Set storage set) view returns (PluginEntity[] memory) {
     uint256 length = set.length();
-    FunctionReference[] memory result = new FunctionReference[](length);
+    PluginEntity[] memory result = new PluginEntity[](length);
     for (uint256 i = 0; i < length; ++i) {
         bytes32 key = set.at(i);
-        result[i] = FunctionReference.wrap(bytes21(key));
+        result[i] = PluginEntity.wrap(bytes24(key));
     }
     return result;
 }

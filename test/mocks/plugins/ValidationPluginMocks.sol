@@ -14,7 +14,7 @@ import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
 abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {
-    enum FunctionId {
+    enum EntityId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2
@@ -32,40 +32,45 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
 
     function onUninstall(bytes calldata) external override {}
 
-    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_1)) {
+        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK_1)) {
             return _preUserOpValidationHook1Data;
-        } else if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK_2)) {
+        } else if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK_2)) {
             return _preUserOpValidationHook2Data;
         }
         revert NotImplemented();
     }
 
-    function validateUserOp(uint8 functionId, PackedUserOperation calldata, bytes32)
+    function validateUserOp(uint32 entityId, PackedUserOperation calldata, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.USER_OP_VALIDATION)) {
+        if (entityId == uint32(EntityId.USER_OP_VALIDATION)) {
             return _userOpValidationFunctionData;
         }
         revert NotImplemented();
     }
 
-    function validateSignature(uint8, address, bytes32, bytes calldata) external pure override returns (bytes4) {
+    function validateSignature(address, uint32, address, bytes32, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         revert NotImplemented();
     }
 
     // Empty stubs
     function pluginMetadata() external pure override returns (PluginMetadata memory) {}
 
-    function preRuntimeValidationHook(uint8, address, uint256, bytes calldata, bytes calldata)
+    function preRuntimeValidationHook(uint32, address, uint256, bytes calldata, bytes calldata)
         external
         pure
         override
@@ -73,7 +78,11 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
         revert NotImplemented();
     }
 
-    function validateRuntime(uint8, address, uint256, bytes calldata, bytes calldata) external pure override {
+    function validateRuntime(address, uint32, address, uint256, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+    {
         revert NotImplemented();
     }
 }
@@ -108,7 +117,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            entityId: uint32(EntityId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -151,7 +160,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](2);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            entityId: uint32(EntityId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors
@@ -197,7 +206,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
 
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
-            functionId: uint8(FunctionId.USER_OP_VALIDATION),
+            entityId: uint32(EntityId.USER_OP_VALIDATION),
             isDefault: false,
             isSignatureValidation: false,
             selectors: validationSelectors

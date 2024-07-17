@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 import {DirectCallPlugin} from "../mocks/plugins/DirectCallPlugin.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {FunctionReferenceLib, FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntityLib, PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
@@ -13,13 +13,13 @@ contract DirectCallsFromPluginTest is AccountTestBase {
     using ValidationConfigLib for ValidationConfig;
 
     DirectCallPlugin internal _plugin;
-    FunctionReference internal _pluginFunctionReference;
+    PluginEntity internal _pluginEntity;
 
     function setUp() public {
         _plugin = new DirectCallPlugin();
         assertFalse(_plugin.preHookRan());
         assertFalse(_plugin.postHookRan());
-        _pluginFunctionReference = FunctionReferenceLib.pack(address(_plugin), type(uint8).max);
+        _pluginEntity = PluginEntityLib.pack(address(_plugin), type(uint32).max);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -111,26 +111,20 @@ contract DirectCallsFromPluginTest is AccountTestBase {
         ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
         bytes[] memory permissionHookInitDatas = new bytes[](1);
 
-        permissionHooks[0] = ExecutionHook({
-            hookFunction: FunctionReferenceLib.pack(address(_plugin), 0xff),
-            isPreHook: true,
-            isPostHook: true
-        });
+        permissionHooks[0] = ExecutionHook({hookFunction: _pluginEntity, isPreHook: true, isPostHook: true});
 
         bytes memory encodedPermissionHooks = abi.encode(permissionHooks, permissionHookInitDatas);
 
         vm.prank(address(entryPoint));
 
-        ValidationConfig validationConfig = ValidationConfigLib.pack(_pluginFunctionReference, false, false);
+        ValidationConfig validationConfig = ValidationConfigLib.pack(_pluginEntity, false, false);
 
         account1.installValidation(validationConfig, selectors, "", "", encodedPermissionHooks);
     }
 
     function _uninstallPlugin() internal {
         vm.prank(address(entryPoint));
-        account1.uninstallValidation(
-            _pluginFunctionReference, "", abi.encode(new bytes[](0)), abi.encode(new bytes[](1))
-        );
+        account1.uninstallValidation(_pluginEntity, "", abi.encode(new bytes[](0)), abi.encode(new bytes[](1)));
     }
 
     function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {

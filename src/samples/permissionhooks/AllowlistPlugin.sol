@@ -9,7 +9,7 @@ import {IStandardExecutor, Call} from "../../interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../plugins/BasePlugin.sol";
 
 contract AllowlistPlugin is IValidationHook, BasePlugin {
-    enum FunctionId {
+    enum EntityId {
         PRE_VALIDATION_HOOK
     }
 
@@ -68,25 +68,25 @@ contract AllowlistPlugin is IValidationHook, BasePlugin {
         selectorAllowlist[target][selector][msg.sender] = allowed;
     }
 
-    function preUserOpValidationHook(uint8 functionId, PackedUserOperation calldata userOp, bytes32)
+    function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32)
         external
         view
         override
         returns (uint256)
     {
-        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK)) {
+        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
             _checkAllowlistCalldata(userOp.callData);
             return 0;
         }
         revert NotImplemented();
     }
 
-    function preRuntimeValidationHook(uint8 functionId, address, uint256, bytes calldata data, bytes calldata)
+    function preRuntimeValidationHook(uint32 entityId, address, uint256, bytes calldata data, bytes calldata)
         external
         view
         override
     {
-        if (functionId == uint8(FunctionId.PRE_VALIDATION_HOOK)) {
+        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
             _checkAllowlistCalldata(data);
             return;
         }

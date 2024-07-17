@@ -5,7 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
@@ -26,7 +26,8 @@ contract GlobalValidationTest is AccountTestBase {
         account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
-        _ownerValidation = FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
+        _signerValidation =
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);
@@ -48,7 +49,7 @@ contract GlobalValidationTest is AccountTestBase {
         // Generate signature
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
-        userOp.signature = _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(_signerValidation, GLOBAL_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -65,7 +66,7 @@ contract GlobalValidationTest is AccountTestBase {
         vm.prank(owner2);
         account2.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 
         assertEq(ethRecipient.balance, 2 wei);
