@@ -3,9 +3,9 @@ pragma solidity ^0.8.25;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
 

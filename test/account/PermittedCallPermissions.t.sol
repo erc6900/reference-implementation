@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
 import {PermittedCallerPlugin} from "../mocks/plugins/PermittedCallMocks.sol";
+import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract PermittedCallPermissionsTest is AccountTestBase {
