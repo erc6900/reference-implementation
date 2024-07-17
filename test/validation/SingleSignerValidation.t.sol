@@ -77,12 +77,12 @@ contract SingleSignerValidationTest is AccountTestBase {
     }
 
     function test_runtime_with2SameValidationInstalled() public {
-        uint32 newValidationId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
+        uint32 newEntityId = TEST_DEFAULT_OWNER_FUNCTION_ID + 1;
         vm.prank(address(entryPoint));
         account.installValidation(
-            ValidationConfigLib.pack(address(singleSignerValidation), newValidationId, true, false),
+            ValidationConfigLib.pack(address(singleSignerValidation), newEntityId, true, false),
             new bytes4[](0),
-            abi.encode(newValidationId, owner2),
+            abi.encode(newEntityId, owner2),
             "",
             ""
         );
@@ -91,7 +91,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), newValidationId), GLOBAL_VALIDATION, ""
+                PluginEntityLib.pack(address(singleSignerValidation), newEntityId), GLOBAL_VALIDATION, ""
             )
         );
         assertEq(ethRecipient.balance, 1 wei);

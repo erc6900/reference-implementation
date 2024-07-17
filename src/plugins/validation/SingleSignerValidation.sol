@@ -14,7 +14,7 @@ import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
 /// @notice This validation enables any ECDSA (secp256k1 curve) signature validation. It handles installation by
-/// each entity (validationId).
+/// each entity (entityId).
 /// Note: Uninstallation will NOT disable all installed validation entities. None of the functions are installed on
 /// the account. Account states are to be retrieved from this global singleton directly.
 ///
@@ -39,16 +39,16 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    mapping(uint32 validationId => mapping(address account => address)) public signer;
+    mapping(uint32 entityId => mapping(address account => address)) public signer;
 
     /// @inheritdoc ISingleSignerValidation
-    function signerOf(uint32 validationId, address account) external view returns (address) {
-        return signer[validationId][account];
+    function signerOf(uint32 entityId, address account) external view returns (address) {
+        return signer[entityId][account];
     }
 
     /// @inheritdoc ISingleSignerValidation
-    function transferSigner(uint32 validationId, address newSigner) external {
-        _transferSigner(validationId, newSigner);
+    function transferSigner(uint32 entityId, address newSigner) external {
+        _transferSigner(entityId, newSigner);
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -72,8 +72,8 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (uint32 validationId, address newSigner) = abi.decode(data, (uint32, address));
-        _transferSigner(validationId, newSigner);
+        (uint32 entityId, address newSigner) = abi.decode(data, (uint32, address));
+        _transferSigner(entityId, newSigner);
     }
 
     /// @inheritdoc IPlugin
@@ -84,7 +84,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     }
 
     /// @inheritdoc IValidation
-    function validateUserOp(uint32 validationId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
         override
@@ -92,7 +92,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     {
         // Validate the user op signature against the owner.
         (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != signer[validationId][userOp.sender]) {
+        if (sigSigner == address(0) || sigSigner != signer[entityId][userOp.sender]) {
             return _SIG_VALIDATION_FAILED;
         }
         return _SIG_VALIDATION_PASSED;
@@ -101,14 +101,14 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     /// @inheritdoc IValidation
     function validateRuntime(
         address account,
-        uint32 validationId,
+        uint32 entityId,
         address sender,
         uint256,
         bytes calldata,
         bytes calldata
     ) external view override {
         // Validate that the sender is the owner of the account or self.
-        if (sender != signer[validationId][account]) {
+        if (sender != signer[entityId][account]) {
             revert NotAuthorized();
         }
         return;
@@ -121,14 +121,13 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     /// validation used in `validateUserOp`, this does///*not** wrap the digest in
     /// an "Ethereum Signed Message" envelope before checking the signature in
     /// the EOA-owner case.
-    function validateSignature(
-        address account,
-        uint32 validationId,
-        address,
-        bytes32 digest,
-        bytes calldata signature
-    ) external view override returns (bytes4) {
-        if (SignatureChecker.isValidSignatureNow(signer[validationId][account], digest, signature)) {
+    function validateSignature(address account, uint32 entityId, address, bytes32 digest, bytes calldata signature)
+        external
+        view
+        override
+        returns (bytes4)
+    {
+        if (SignatureChecker.isValidSignatureNow(signer[entityId][account], digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
@@ -138,9 +137,9 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     // ┃    Internal / Private functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function _transferSigner(uint32 validationId, address newSigner) internal {
-        address previousSigner = signer[validationId][msg.sender];
-        signer[validationId][msg.sender] = newSigner;
-        emit SignerTransferred(msg.sender, validationId, previousSigner, newSigner);
+    function _transferSigner(uint32 entityId, address newSigner) internal {
+        address previousSigner = signer[entityId][msg.sender];
+        signer[entityId][msg.sender] = newSigner;
+        emit SignerTransferred(msg.sender, entityId, previousSigner, newSigner);
     }
 }
