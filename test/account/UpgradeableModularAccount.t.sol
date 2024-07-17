@@ -42,7 +42,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     Counter public counter;
     PluginManifest internal _manifest;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
+    event PluginInstalled(address indexed plugin);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -239,19 +239,17 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_installPlugin() public {
         vm.startPrank(address(entryPoint));
 
-        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
-
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash);
+        emit PluginInstalled(address(tokenReceiverPlugin));
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
-            manifestHash: manifestHash,
+            manifest: tokenReceiverPlugin.pluginManifest(),
             pluginInstallData: abi.encode(uint48(1 days))
         });
 
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(tokenReceiverPlugin));
+        address handler =
+            IAccountLoupe(account1).getExecutionFunctionHandler(TokenReceiverPlugin.onERC721Received.selector);
+        assertEq(handler, address(tokenReceiverPlugin));
     }
 
     function test_installPlugin_PermittedCallSelectorNotInstalled() public {
@@ -260,23 +258,11 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         PluginManifest memory m;
 
         MockPlugin mockPluginWithBadPermittedExec = new MockPlugin(m);
-        bytes32 manifestHash = keccak256(abi.encode(mockPluginWithBadPermittedExec.pluginManifest()));
 
         IPluginManager(account1).installPlugin({
             plugin: address(mockPluginWithBadPermittedExec),
-            manifestHash: manifestHash,
+            manifest: mockPluginWithBadPermittedExec.pluginManifest(),
             pluginInstallData: ""
-        });
-    }
-
-    function test_installPlugin_invalidManifest() public {
-        vm.startPrank(address(entryPoint));
-
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account1).installPlugin({
-            plugin: address(tokenReceiverPlugin),
-            manifestHash: bytes32(0),
-            pluginInstallData: abi.encode(uint48(1 days))
         });
     }
 
@@ -287,31 +273,32 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.expectRevert(
             abi.encodeWithSelector(PluginManagerInternals.PluginInterfaceNotSupported.selector, address(badPlugin))
         );
-        IPluginManager(account1).installPlugin({
-            plugin: address(badPlugin),
-            manifestHash: bytes32(0),
-            pluginInstallData: ""
-        });
+
+        PluginManifest memory m;
+
+        IPluginManager(account1).installPlugin({plugin: address(badPlugin), manifest: m, pluginInstallData: ""});
     }
 
     function test_installPlugin_alreadyInstalled() public {
-        vm.startPrank(address(entryPoint));
+        PluginManifest memory m = tokenReceiverPlugin.pluginManifest();
 
-        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
+        vm.prank(address(entryPoint));
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
-            manifestHash: manifestHash,
+            manifest: m,
             pluginInstallData: abi.encode(uint48(1 days))
         });
 
+        vm.prank(address(entryPoint));
         vm.expectRevert(
             abi.encodeWithSelector(
-                PluginManagerInternals.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
+                PluginManagerInternals.ExecutionFunctionAlreadySet.selector,
+                TokenReceiverPlugin.onERC721Received.selector
             )
         );
         IPluginManager(account1).installPlugin({
             plugin: address(tokenReceiverPlugin),
-            manifestHash: manifestHash,
+            manifest: m,
             pluginInstallData: abi.encode(uint48(1 days))
         });
     }
@@ -320,29 +307,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
 
         ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
-            manifestHash: manifestHash,
-            pluginInstallData: ""
-        });
-
-        vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), true);
-        IPluginManager(account1).uninstallPlugin({plugin: address(plugin), config: "", pluginUninstallData: ""});
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 0);
-    }
-
-    function test_uninstallPlugin_manifestParameter() public {
-        vm.startPrank(address(entryPoint));
-
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
-        bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
-            manifestHash: manifestHash,
+            manifest: plugin.pluginManifest(),
             pluginInstallData: ""
         });
 
@@ -350,48 +317,22 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         emit PluginUninstalled(address(plugin), true);
         IPluginManager(account1).uninstallPlugin({
             plugin: address(plugin),
-            config: serializedManifest,
+            manifest: plugin.pluginManifest(),
             pluginUninstallData: ""
         });
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 0);
-    }
 
-    function test_uninstallPlugin_invalidManifestFails() public {
-        vm.startPrank(address(entryPoint));
-
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
-        bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
-            manifestHash: manifestHash,
-            pluginInstallData: ""
-        });
-
-        // Attempt to uninstall with a blank _manifest
-        PluginManifest memory blankManifest;
-
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account1).uninstallPlugin({
-            plugin: address(plugin),
-            config: abi.encode(blankManifest),
-            pluginUninstallData: ""
-        });
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(plugin));
+        address handler = IAccountLoupe(account1).getExecutionFunctionHandler(plugin.foo.selector);
+        assertEq(handler, address(0));
     }
 
     function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
         vm.startPrank(address(entryPoint));
 
         plugin = new MockPlugin(_manifest);
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
 
         IPluginManager(account1).installPlugin({
             plugin: address(plugin),
-            manifestHash: manifestHash,
+            manifest: plugin.pluginManifest(),
             pluginInstallData: ""
         });
 

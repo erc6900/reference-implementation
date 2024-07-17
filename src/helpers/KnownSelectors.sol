@@ -35,8 +35,7 @@ library KnownSelectors {
         // check against IAccountLoupe methods
         || selector == IAccountLoupe.getExecutionFunctionHandler.selector
             || selector == IAccountLoupe.getSelectors.selector || selector == IAccountLoupe.getExecutionHooks.selector
-            || selector == IAccountLoupe.getPreValidationHooks.selector
-            || selector == IAccountLoupe.getInstalledPlugins.selector;
+            || selector == IAccountLoupe.getPreValidationHooks.selector;
     }
 
     function isErc4337Function(bytes4 selector) internal pure returns (bool) {

@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
@@ -15,18 +14,14 @@ import {AccountStorage, SelectorData, getAccountStorage, toSetValue} from "./Acc
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using PluginEntityLib for PluginEntity;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
     error ExecutionFunctionAlreadySet(bytes4 selector);
-    error InvalidPluginManifest();
     error IPluginFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
-    error NullPluginEntity();
     error NullPlugin();
-    error PluginAlreadyInstalled(address plugin);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
@@ -138,31 +133,20 @@ abstract contract PluginManagerInternals is IPluginManager {
         );
     }
 
-    function _installPlugin(address plugin, bytes32 manifestHash, bytes memory pluginInstallData) internal {
+    function _installPlugin(address plugin, PluginManifest calldata manifest, bytes memory pluginInstallData)
+        internal
+    {
         AccountStorage storage _storage = getAccountStorage();
 
         if (plugin == address(0)) {
             revert NullPlugin();
         }
 
-        // Check if the plugin exists.
-        if (_storage.pluginManifestHashes.contains(plugin)) {
-            revert PluginAlreadyInstalled(plugin);
-        }
-
+        // TODO: do we need this check? Or switch to a non-165 checking function?
         // Check that the plugin supports the IPlugin interface.
         if (!ERC165Checker.supportsInterface(plugin, type(IPlugin).interfaceId)) {
             revert PluginInterfaceNotSupported(plugin);
         }
-
-        // Check manifest hash.
-        PluginManifest memory manifest = IPlugin(plugin).pluginManifest();
-        if (!_isValidPluginManifest(manifest, manifestHash)) {
-            revert InvalidPluginManifest();
-        }
-
-        // Add the plugin metadata to the account
-        _storage.pluginManifestHashes.set(plugin, uint256(manifestHash));
 
         // Update components according to the manifest.
         uint256 length = manifest.executionFunctions.length;
@@ -200,24 +184,13 @@ abstract contract PluginManagerInternals is IPluginManager {
             revert PluginInstallCallbackFailed(plugin, revertReason);
         }
 
-        emit PluginInstalled(plugin, manifestHash);
+        emit PluginInstalled(plugin);
     }
 
-    function _uninstallPlugin(address plugin, PluginManifest memory manifest, bytes memory uninstallData)
+    function _uninstallPlugin(address plugin, PluginManifest calldata manifest, bytes memory uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
-
-        // Check if the plugin exists.
-        if (!_storage.pluginManifestHashes.contains(plugin)) {
-            revert PluginNotInstalled(plugin);
-        }
-
-        // Check manifest hash.
-        bytes32 manifestHash = bytes32(_storage.pluginManifestHashes.get(plugin));
-        if (!_isValidPluginManifest(manifest, manifestHash)) {
-            revert InvalidPluginManifest();
-        }
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
 
@@ -245,9 +218,6 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.supportedIfaces[manifest.interfaceIds[i]] -= 1;
         }
 
-        // Remove the plugin metadata from the account.
-        _storage.pluginManifestHashes.remove(plugin);
-
         // Clear the plugin storage for the account.
         bool onUninstallSuccess = true;
         // solhint-disable-next-line no-empty-blocks
@@ -257,13 +227,5 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
-    }
-
-    function _isValidPluginManifest(PluginManifest memory manifest, bytes32 manifestHash)
-        internal
-        pure
-        returns (bool)
-    {
-        return manifestHash == keccak256(abi.encode(manifest));
     }
 }

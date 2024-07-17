@@ -21,17 +21,9 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
         _customValidationSetup();
 
-        bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
-        account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
-    }
-
-    function test_pluginLoupe_getInstalledPlugins_initial() public {
-        address[] memory plugins = account1.getInstalledPlugins();
-
-        assertEq(plugins.length, 1);
-
-        assertEq(plugins[0], address(comprehensivePlugin));
+        vm.startPrank(address(entryPoint));
+        account1.installPlugin(address(comprehensivePlugin), comprehensivePlugin.pluginManifest(), "");
+        vm.stopPrank();
     }
 
     function test_pluginLoupe_getExecutionFunctionHandler_native() public {

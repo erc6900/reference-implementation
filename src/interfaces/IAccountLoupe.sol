@@ -40,8 +40,4 @@ interface IAccountLoupe {
         external
         view
         returns (PluginEntity[] memory preValidationHooks);
-
-    /// @notice Get an array of all installed plugins.
-    /// @return The addresses of all installed plugins.
-    function getInstalledPlugins() external view returns (address[] memory);
 }

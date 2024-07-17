@@ -88,9 +88,4 @@ abstract contract AccountLoupe is IAccountLoupe {
     {
         preValidationHooks = getAccountStorage().validationData[validationFunction].preValidationHooks;
     }
-
-    /// @inheritdoc IAccountLoupe
-    function getInstalledPlugins() external view override returns (address[] memory pluginAddresses) {
-        pluginAddresses = getAccountStorage().pluginManifestHashes.keys();
-    }
 }

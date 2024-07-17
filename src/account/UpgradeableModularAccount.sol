@@ -19,7 +19,7 @@ import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPlugin, PluginManifest} from "../interfaces/IPlugin.sol";
+import {PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginManager, PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
@@ -109,21 +109,21 @@ contract UpgradeableModularAccount is
 
     /// @notice Initializes the account with a set of plugins
     /// @param plugins The plugins to install
-    /// @param manifestHashes The manifest hashes of the plugins to install
+    /// @param manifests The manifests of the plugins to install
     /// @param pluginInstallDatas The plugin install datas of the plugins to install
     function initialize(
         address[] memory plugins,
-        bytes32[] memory manifestHashes,
+        PluginManifest[] calldata manifests,
         bytes[] memory pluginInstallDatas
     ) external initializer {
         uint256 length = plugins.length;
 
-        if (length != manifestHashes.length || length != pluginInstallDatas.length) {
+        if (length != manifests.length || length != pluginInstallDatas.length) {
             revert ArrayLengthMismatch();
         }
 
         for (uint256 i = 0; i < length; ++i) {
-            _installPlugin(plugins[i], manifestHashes[i], pluginInstallDatas[i]);
+            _installPlugin(plugins[i], manifests[i], pluginInstallDatas[i]);
         }
 
         emit ModularAccountInitialized(_ENTRY_POINT);
@@ -249,29 +249,21 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a global validation.
-    function installPlugin(address plugin, bytes32 manifestHash, bytes calldata pluginInstallData)
+    function installPlugin(address plugin, PluginManifest calldata manifest, bytes calldata pluginInstallData)
         external
         override
         wrapNativeFunction
     {
-        _installPlugin(plugin, manifestHash, pluginInstallData);
+        _installPlugin(plugin, manifest, pluginInstallData);
     }
 
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a global validation.
-    function uninstallPlugin(address plugin, bytes calldata config, bytes calldata pluginUninstallData)
+    function uninstallPlugin(address plugin, PluginManifest calldata manifest, bytes calldata pluginUninstallData)
         external
         override
         wrapNativeFunction
     {
-        PluginManifest memory manifest;
-
-        if (config.length > 0) {
-            manifest = abi.decode(config, (PluginManifest));
-        } else {
-            manifest = IPlugin(plugin).pluginManifest();
-        }
-
         _uninstallPlugin(plugin, manifest, pluginUninstallData);
     }
 

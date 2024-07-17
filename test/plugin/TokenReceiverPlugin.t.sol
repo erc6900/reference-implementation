@@ -55,10 +55,9 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     }
 
     function _initPlugin() internal {
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
-
-        vm.prank(address(entryPoint));
-        acct.installPlugin(address(plugin), manifestHash, "");
+        vm.startPrank(address(entryPoint));
+        acct.installPlugin(address(plugin), plugin.pluginManifest(), "");
+        vm.stopPrank();
     }
 
     function test_failERC721Transfer() public {

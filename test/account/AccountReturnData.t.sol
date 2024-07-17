@@ -26,21 +26,19 @@ contract AccountReturnDataTest is AccountTestBase {
         resultConsumerPlugin = new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract);
 
         // Add the result creator plugin to the account
-        bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
+        vm.startPrank(address(entryPoint));
         account1.installPlugin({
             plugin: address(resultCreatorPlugin),
-            manifestHash: resultCreatorManifestHash,
+            manifest: resultCreatorPlugin.pluginManifest(),
             pluginInstallData: ""
         });
         // Add the result consumer plugin to the account
-        bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
         account1.installPlugin({
             plugin: address(resultConsumerPlugin),
-            manifestHash: resultConsumerManifestHash,
+            manifest: resultConsumerPlugin.pluginManifest(),
             pluginInstallData: ""
         });
+        vm.stopPrank();
     }
 
     // Tests the ability to read the result of plugin execution functions via the account's fallback

@@ -14,8 +14,6 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountExecHooksTest is AccountTestBase {
     MockPlugin public mockPlugin1;
-    bytes32 public manifestHash1;
-    bytes32 public manifestHash2;
 
     bytes4 internal constant _EXEC_SELECTOR = bytes4(uint32(1));
     uint32 internal constant _PRE_HOOK_FUNCTION_ID_1 = 1;
@@ -24,7 +22,7 @@ contract AccountExecHooksTest is AccountTestBase {
 
     PluginManifest internal _m1;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
+    event PluginInstalled(address indexed plugin);
     event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
     // emitted by MockPlugin
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -162,19 +160,19 @@ contract AccountExecHooksTest is AccountTestBase {
     function _installPlugin1WithHooks(ManifestExecutionHook memory execHooks) internal {
         _m1.executionHooks.push(execHooks);
         mockPlugin1 = new MockPlugin(_m1);
-        manifestHash1 = keccak256(abi.encode(mockPlugin1.pluginManifest()));
 
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin1), manifestHash1);
+        emit PluginInstalled(address(mockPlugin1));
 
-        vm.prank(address(entryPoint));
+        vm.startPrank(address(entryPoint));
         account1.installPlugin({
             plugin: address(mockPlugin1),
-            manifestHash: manifestHash1,
+            manifest: mockPlugin1.pluginManifest(),
             pluginInstallData: bytes("")
         });
+        vm.stopPrank();
     }
 
     function _uninstallPlugin(MockPlugin plugin) internal {
@@ -183,7 +181,8 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit PluginUninstalled(address(plugin), true);
 
-        vm.prank(address(entryPoint));
-        account1.uninstallPlugin(address(plugin), bytes(""), bytes(""));
+        vm.startPrank(address(entryPoint));
+        account1.uninstallPlugin(address(plugin), plugin.pluginManifest(), bytes(""));
+        vm.stopPrank();
     }
 }

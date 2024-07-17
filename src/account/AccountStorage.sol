@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
@@ -42,8 +41,6 @@ struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;
     bool initializing;
-    // Plugin metadata storage
-    EnumerableMap.AddressToUintMap pluginManifestHashes;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
     mapping(PluginEntity validationFunction => ValidationData) validationData;
