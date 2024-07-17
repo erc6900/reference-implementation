@@ -15,7 +15,8 @@ struct SelectorData {
     // The plugin that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address plugin;
-    // Whether or not the function needs runtime validation, or can be called by anyone.
+    // Whether or not the function needs runtime validation, or can be called by anyone. The function can still be
+    // state changing if this flag is set to true.
     // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
     // drain the account of native tokens by wasting gas.
     bool isPublic;
