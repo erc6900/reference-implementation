@@ -33,7 +33,7 @@ abstract contract PluginManager2 {
         bytes memory permissionHooks
     ) internal {
         ValidationData storage _validationData =
-            getAccountStorage().validationData[validationConfig.functionReference()];
+            getAccountStorage().validationData[validationConfig.pluginEntity()];
 
         if (preValidationHooks.length > 0) {
             (PluginEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
@@ -64,7 +64,7 @@ abstract contract PluginManager2 {
                 ExecutionHook memory permissionFunction = permissionFunctions[i];
 
                 if (!_validationData.permissionHooks.add(toSetValue(permissionFunction))) {
-                    revert PermissionAlreadySet(validationConfig.functionReference(), permissionFunction);
+                    revert PermissionAlreadySet(validationConfig.pluginEntity(), permissionFunction);
                 }
 
                 if (initDatas[i].length > 0) {
@@ -77,7 +77,7 @@ abstract contract PluginManager2 {
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
             if (!_validationData.selectors.add(toSetValue(selector))) {
-                revert ValidationAlreadySet(selector, validationConfig.functionReference());
+                revert ValidationAlreadySet(selector, validationConfig.pluginEntity());
             }
         }
 

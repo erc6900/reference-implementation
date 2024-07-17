@@ -78,7 +78,7 @@ library ValidationConfigLib {
         return uint32(bytes4(ValidationConfig.unwrap(config) << 160));
     }
 
-    function functionReference(ValidationConfig config) internal pure returns (PluginEntity) {
+    function pluginEntity(ValidationConfig config) internal pure returns (PluginEntity) {
         return PluginEntity.wrap(bytes24(ValidationConfig.unwrap(config)));
     }
 
