@@ -30,7 +30,7 @@ struct ValidationData {
     bool isGlobal;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
-    // The pre validation hooks for this function selector.
+    // The pre validation hooks for this validation function.
     PluginEntity[] preValidationHooks;
     // Permission hooks for this validation function.
     EnumerableSet.Bytes32Set permissionHooks;

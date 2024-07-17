@@ -78,7 +78,7 @@ contract UpgradeableModularAccount is
     error SignatureValidationInvalid(address plugin, uint32 entityId);
     error UnexpectedAggregator(address plugin, uint32 entityId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
-    error UserOpValidationFunctionMissing(bytes4 selector);
+    error ValidationFunctionMissing(bytes4 selector);
     error ValidationDoesNotApply(bytes4 selector, address plugin, uint32 entityId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
@@ -86,14 +86,13 @@ contract UpgradeableModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installPlugin, uninstallPlugin
     modifier wrapNativeFunction() {
-        _checkPermittedCallerIfNotFromEP();
-
-        PostExecToRun[] memory postExecHooks =
-            _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
+        (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
+            _checkPermittedCallerAndAssociatedHooks();
 
         _;
 
         _doCachedPostExecHooks(postExecHooks);
+        _doCachedPostExecHooks(postPermissionHooks);
     }
 
     constructor(IEntryPoint anEntryPoint) {
@@ -136,7 +135,7 @@ contract UpgradeableModularAccount is
             revert UnrecognizedFunction(msg.sig);
         }
 
-        _checkPermittedCallerIfNotFromEP();
+        _checkPermittedCallerAndAssociatedHooks();
 
         PostExecToRun[] memory postExecHooks;
         // Cache post-exec hooks in memory
@@ -500,17 +499,7 @@ contract UpgradeableModularAccount is
             } else {
                 currentAuthData = "";
             }
-
-            (address hookPlugin, uint32 hookEntityId) = preRuntimeValidationHooks[i].unpack();
-            try IValidationHook(hookPlugin).preRuntimeValidationHook(
-                hookEntityId, msg.sender, msg.value, callData, currentAuthData
-            )
-            // forgefmt: disable-start
-            // solhint-disable-next-line no-empty-blocks
-            {} catch (bytes memory revertReason) {
-            // forgefmt: disable-end
-                revert PreRuntimeValidationHookFailed(hookPlugin, hookEntityId, revertReason);
-            }
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthData);
         }
 
         if (authSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
@@ -605,8 +594,77 @@ contract UpgradeableModularAccount is
         }
     }
 
+    function _doPreRuntimeValidationHook(
+        PluginEntity validationHook,
+        bytes memory callData,
+        bytes memory currentAuthData
+    ) internal {
+        (address hookPlugin, uint32 hookEntityId) = validationHook.unpack();
+        try IValidationHook(hookPlugin).preRuntimeValidationHook(
+            hookEntityId, msg.sender, msg.value, callData, currentAuthData
+        )
+        // forgefmt: disable-start
+        // solhint-disable-next-line no-empty-blocks
+        {} catch (bytes memory revertReason) {
+        // forgefmt: disable-end
+            revert PreRuntimeValidationHookFailed(hookPlugin, hookEntityId, revertReason);
+        }
+    }
+
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override {}
+
+    /**
+     * Order of operations:
+     *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
+     *          - Yes: Return an empty array, there are no post-permissionHooks.
+     *          - No: Continue
+     *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
+     *         directly call.
+     *          - Yes: Continue
+     *          - No: Revert, the caller is not allowed to call this selector
+     *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
+     *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
+     *         post-permissionHooks to run later.
+     */
+    function _checkPermittedCallerAndAssociatedHooks()
+        internal
+        returns (PostExecToRun[] memory, PostExecToRun[] memory)
+    {
+        AccountStorage storage _storage = getAccountStorage();
+
+        if (
+            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
+                || _storage.selectorData[msg.sig].isPublic
+        ) {
+            return (new PostExecToRun[](0), new PostExecToRun[](0));
+        }
+
+        PluginEntity directCallValidationKey = PluginEntityLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
+
+        _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
+
+        // Direct call is allowed, run associated permission & validation hooks
+
+        // Validation hooks
+        PluginEntity[] memory preRuntimeValidationHooks =
+            _storage.validationData[directCallValidationKey].preValidationHooks;
+
+        uint256 hookLen = preRuntimeValidationHooks.length;
+        for (uint256 i = 0; i < hookLen; ++i) {
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
+        }
+
+        // Permission hooks
+        PostExecToRun[] memory postPermissionHooks =
+            _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
+
+        // Exec hooks
+        PostExecToRun[] memory postExecutionHooks =
+            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
+
+        return (postPermissionHooks, postExecutionHooks);
+    }
 
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
@@ -661,25 +719,6 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _checkIfValidationAppliesSelector(bytes4 selector, PluginEntity validationFunction, bool isGlobal)
-        internal
-        view
-    {
-        AccountStorage storage _storage = getAccountStorage();
-
-        // Check that the provided validation function is applicable to the selector
-        if (isGlobal) {
-            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
-                revert UserOpValidationFunctionMissing(selector);
-            }
-        } else {
-            // Not global validation, but per-selector
-            if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
-                revert UserOpValidationFunctionMissing(selector);
-            }
-        }
-    }
-
     function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
         if (
             selector == this.execute.selector || selector == this.executeBatch.selector
@@ -693,14 +732,22 @@ contract UpgradeableModularAccount is
         return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
-    function _checkPermittedCallerIfNotFromEP() internal view {
+    function _checkIfValidationAppliesSelector(bytes4 selector, PluginEntity validationFunction, bool isGlobal)
+        internal
+        view
+    {
         AccountStorage storage _storage = getAccountStorage();
 
-        if (
-            msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
-                && !_storage.selectorData[msg.sig].isPublic
-        ) {
-            revert ExecFromPluginNotPermitted(msg.sender, msg.sig);
+        // Check that the provided validation function is applicable to the selector
+        if (isGlobal) {
+            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
+                revert ValidationFunctionMissing(selector);
+            }
+        } else {
+            // Not global validation, but per-selector
+            if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
+                revert ValidationFunctionMissing(selector);
+            }
         }
     }
 }
