@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {SimpleAccount} from "@eth-infinitism/account-abstraction/samples/SimpleAccount.sol";
 import {SimpleAccountFactory} from "@eth-infinitism/account-abstraction/samples/SimpleAccountFactory.sol";
@@ -34,8 +34,8 @@ contract CompareSimpleAccountTest is Test {
 
     Counter public counter;
 
-    uint256 public constant CALL_GAS_LIMIT = 500000;
-    uint256 public constant VERIFICATION_GAS_LIMIT = 500000;
+    uint256 public constant CALL_GAS_LIMIT = 500_000;
+    uint256 public constant VERIFICATION_GAS_LIMIT = 500_000;
 
     // helper function to compress 2 gas values into a single bytes32
     function _encodeGas(uint256 g1, uint256 g2) internal pure returns (bytes32) {

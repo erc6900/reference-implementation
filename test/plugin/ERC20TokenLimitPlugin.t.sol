@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
+
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
+import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
+import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ERC20TokenLimitPlugin} from "../../src/plugins/ERC20TokenLimitPlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
-import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
@@ -71,8 +73,8 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
             nonce: 0,
             initCode: "",
             callData: abi.encodePacked(UpgradeableModularAccount.executeUserOp.selector, callData),
-            accountGasLimits: bytes32(bytes16(uint128(200000))) | bytes32(uint256(200000)),
-            preVerificationGas: 200000,
+            accountGasLimits: bytes32(bytes16(uint128(200_000))) | bytes32(uint256(200_000)),
+            preVerificationGas: 200_000,
             gasFees: bytes32(uint256(uint128(0))),
             paymasterAndData: "",
             signature: _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
@@ -102,13 +104,13 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         calls[2] = Call({
             target: address(erc20),
             value: 0,
-            data: abi.encodeCall(IERC20.transfer, (recipient, 5 ether + 100000))
+            data: abi.encodeCall(IERC20.transfer, (recipient, 5 ether + 100_000))
         });
 
         vm.startPrank(address(entryPoint));
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0));
-        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit() public {
@@ -120,13 +122,13 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         calls[2] = Call({
             target: address(erc20),
             value: 0,
-            data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100000))
+            data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100_000))
         });
 
         vm.startPrank(address(entryPoint));
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0));
-        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit_fail() public {
@@ -138,7 +140,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         calls[2] = Call({
             target: address(erc20),
             value: 0,
-            data: abi.encodeCall(IERC20.approve, (recipient, 9 ether + 100000))
+            data: abi.encodeCall(IERC20.approve, (recipient, 9 ether + 100_000))
         });
 
         vm.startPrank(address(entryPoint));
@@ -168,7 +170,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         calls[2] = Call({
             target: address(erc20),
             value: 0,
-            data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100000))
+            data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100_000))
         });
 
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
@@ -176,6 +178,6 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
             _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
         );
-        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
+        assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
     }
 }

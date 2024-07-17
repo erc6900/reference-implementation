@@ -5,13 +5,15 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
+
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
+import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
+import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {NativeTokenLimitPlugin} from "../../src/plugins/NativeTokenLimitPlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
-import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
@@ -92,16 +94,16 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
         // uses 10e - 200000 of gas
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         uint256 result = acct.validateUserOp(
-            _getPackedUO(100000, 100000, 10 ether - 400000, 1, _getExecuteWithValue(0)), bytes32(0), 0
+            _getPackedUO(100_000, 100_000, 10 ether - 400_000, 1, _getExecuteWithValue(0)), bytes32(0), 0
         );
-        assertEq(plugin.limits(0, address(acct)), 200000);
+        assertEq(plugin.limits(0, address(acct)), 200_000);
 
         uint256 expected = uint256(type(uint48).max) << 160;
         assertEq(result, expected);
 
         // uses 200k + 1 wei of gas
         vm.expectRevert(NativeTokenLimitPlugin.ExceededNativeTokenLimit.selector);
-        result = acct.validateUserOp(_getPackedUO(100000, 100000, 1, 1, _getExecuteWithValue(0)), bytes32(0), 0);
+        result = acct.validateUserOp(_getPackedUO(100_000, 100_000, 1, 1, _getExecuteWithValue(0)), bytes32(0), 0);
     }
 
     function test_userOp_executeLimit() public {
@@ -130,24 +132,24 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
         Call[] memory calls = new Call[](3);
         calls[0] = Call({target: recipient, value: 1, data: ""});
         calls[1] = Call({target: recipient, value: 1 ether, data: ""});
-        calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
+        calls[2] = Call({target: recipient, value: 5 ether + 100_000, data: ""});
 
         vm.startPrank(address(entryPoint));
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeUserOp(
             _getPackedUO(0, 0, 0, 0, abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0)
         );
-        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 100001);
-        assertEq(recipient.balance, 6 ether + 100001);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 100_001);
+        assertEq(recipient.balance, 6 ether + 100_001);
     }
 
     function test_userOp_combinedExecLimit_success() public {
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(5 ether));
+        uos[0] = _getPackedUO(200_000, 200_000, 200_000, 1, _getExecuteWithValue(5 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(0, address(acct)), 5 ether - 600000);
+        assertEq(plugin.limits(0, address(acct)), 5 ether - 600_000);
         assertEq(recipient.balance, 5 ether);
     }
 
@@ -155,25 +157,26 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
         Call[] memory calls = new Call[](3);
         calls[0] = Call({target: recipient, value: 1, data: ""});
         calls[1] = Call({target: recipient, value: 1 ether, data: ""});
-        calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
+        calls[2] = Call({target: recipient, value: 5 ether + 100_000, data: ""});
 
         vm.startPrank(address(entryPoint));
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] = _getPackedUO(200000, 200000, 200000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        uos[0] =
+            _getPackedUO(200_000, 200_000, 200_000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 700001);
-        assertEq(recipient.balance, 6 ether + 100001);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 6 ether - 700_001);
+        assertEq(recipient.balance, 6 ether + 100_001);
     }
 
     function test_userOp_combinedExecLimit_failExec() public {
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] = _getPackedUO(200000, 200000, 200000, 1, _getExecuteWithValue(10 ether));
+        uos[0] = _getPackedUO(200_000, 200_000, 200_000, 1, _getExecuteWithValue(10 ether));
         entryPoint.handleOps(uos, bundler);
 
-        assertEq(plugin.limits(0, address(acct)), 10 ether - 600000);
+        assertEq(plugin.limits(0, address(acct)), 10 ether - 600_000);
         assertEq(recipient.balance, 0);
     }
 
@@ -187,12 +190,12 @@ contract NativeTokenLimitPluginTest is AccountTestBase {
         Call[] memory calls = new Call[](3);
         calls[0] = Call({target: recipient, value: 1, data: ""});
         calls[1] = Call({target: recipient, value: 1 ether, data: ""});
-        calls[2] = Call({target: recipient, value: 5 ether + 100000, data: ""});
+        calls[2] = Call({target: recipient, value: 5 ether + 100_000, data: ""});
 
         assertEq(plugin.limits(0, address(acct)), 10 ether);
         acct.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)), _encodeSignature(validationFunction, 1, "")
         );
-        assertEq(plugin.limits(0, address(acct)), 4 ether - 100001);
+        assertEq(plugin.limits(0, address(acct)), 4 ether - 100_001);
     }
 }

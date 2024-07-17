@@ -3,9 +3,10 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
+import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
 import {
-    ManifestExecutionHook,
     ManifestExecutionFunction,
+    ManifestExecutionHook,
     ManifestValidation,
     PluginManifest,
     PluginMetadata
@@ -13,7 +14,6 @@ import {
 import {PluginManifest} from "../../../src/interfaces/IPlugin.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
-import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
 
 import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
 
@@ -28,9 +28,9 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         SIG_VALIDATION
     }
 
-    string public constant NAME = "Comprehensive Plugin";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "Comprehensive Plugin";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
@@ -176,9 +176,9 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
 
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
         return metadata;
     }
 }

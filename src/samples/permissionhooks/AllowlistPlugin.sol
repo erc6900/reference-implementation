@@ -3,9 +3,10 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {PluginMetadata, PluginManifest} from "../../interfaces/IPlugin.sol";
+import {PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
+
+import {Call, IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IValidationHook} from "../../interfaces/IValidationHook.sol";
-import {IStandardExecutor, Call} from "../../interfaces/IStandardExecutor.sol";
 import {BasePlugin} from "../../plugins/BasePlugin.sol";
 
 contract AllowlistPlugin is IValidationHook, BasePlugin {

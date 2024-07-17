@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {IPlugin, ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
 import {BasePlugin} from "./BasePlugin.sol";
@@ -12,9 +12,9 @@ import {BasePlugin} from "./BasePlugin.sol";
 /// @notice This plugin allows modular accounts to receive various types of tokens by implementing
 /// required token receiver interfaces.
 contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
-    string public constant NAME = "Token Receiver Plugin";
-    string public constant VERSION = "1.0.0";
-    string public constant AUTHOR = "ERC-6900 Authors";
+    string internal constant _NAME = "Token Receiver Plugin";
+    string internal constant _VERSION = "1.0.0";
+    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
@@ -85,9 +85,9 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
     /// @inheritdoc IPlugin
     function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
         PluginMetadata memory metadata;
-        metadata.name = NAME;
-        metadata.version = VERSION;
-        metadata.author = AUTHOR;
+        metadata.name = _NAME;
+        metadata.version = _VERSION;
+        metadata.author = _AUTHOR;
         return metadata;
     }
 }
