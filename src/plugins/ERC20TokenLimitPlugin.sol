@@ -38,20 +38,20 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
 
-    mapping(uint8 functionId => mapping(address token => mapping(address account => uint256 limit))) public limits;
+    mapping(uint32 entityId => mapping(address token => mapping(address account => uint256 limit))) public limits;
     AssociatedLinkedListSet internal _tokenList;
 
     error ExceededTokenLimit();
     error ExceededNumberOfEntities();
     error SelectorNotAllowed();
 
-    function updateLimits(uint8 functionId, address token, uint256 newLimit) external {
+    function updateLimits(uint32 entityId, address token, uint256 newLimit) external {
         _tokenList.tryAdd(msg.sender, SetValue.wrap(bytes30(bytes20(token))));
-        limits[functionId][token][msg.sender] = newLimit;
+        limits[entityId][token][msg.sender] = newLimit;
     }
 
     /// @inheritdoc IExecutionHook
-    function preExecutionHook(uint8 functionId, address, uint256, bytes calldata data)
+    function preExecutionHook(uint32 entityId, address, uint256, bytes calldata data)
         external
         override
         returns (bytes memory)
@@ -61,13 +61,13 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         if (selector == IStandardExecutor.execute.selector) {
             (address token,, bytes memory innerCalldata) = abi.decode(callData, (address, uint256, bytes));
             if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(token))))) {
-                _decrementLimit(functionId, token, innerCalldata);
+                _decrementLimit(entityId, token, innerCalldata);
             }
         } else if (selector == IStandardExecutor.executeBatch.selector) {
             Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(calls[i].target))))) {
-                    _decrementLimit(functionId, calls[i].target, calls[i].data);
+                    _decrementLimit(entityId, calls[i].target, calls[i].data);
                 }
             }
         }
@@ -77,25 +77,25 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
 
     /// @inheritdoc IPlugin
     function onInstall(bytes calldata data) external override {
-        (uint8 startFunctionId, ERC20SpendLimit[] memory spendLimits) =
-            abi.decode(data, (uint8, ERC20SpendLimit[]));
+        (uint32 startEntityId, ERC20SpendLimit[] memory spendLimits) =
+            abi.decode(data, (uint32, ERC20SpendLimit[]));
 
-        if (startFunctionId + spendLimits.length > type(uint8).max) {
+        if (startEntityId + spendLimits.length > type(uint32).max) {
             revert ExceededNumberOfEntities();
         }
 
         for (uint8 i = 0; i < spendLimits.length; i++) {
             _tokenList.tryAdd(msg.sender, SetValue.wrap(bytes30(bytes20(spendLimits[i].token))));
             for (uint256 j = 0; j < spendLimits[i].limits.length; j++) {
-                limits[i + startFunctionId][spendLimits[i].token][msg.sender] = spendLimits[i].limits[j];
+                limits[i + startEntityId][spendLimits[i].token][msg.sender] = spendLimits[i].limits[j];
             }
         }
     }
 
     /// @inheritdoc IPlugin
     function onUninstall(bytes calldata data) external override {
-        (address token, uint8 functionId) = abi.decode(data, (address, uint8));
-        delete limits[functionId][token][msg.sender];
+        (address token, uint32 entityId) = abi.decode(data, (address, uint32));
+        delete limits[entityId][token][msg.sender];
     }
 
     function getTokensForAccount(address account) external view returns (address[] memory tokens) {
@@ -108,7 +108,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
     }
 
     /// @inheritdoc IExecutionHook
-    function postExecutionHook(uint8, bytes calldata) external pure override {
+    function postExecutionHook(uint32, bytes calldata) external pure override {
         revert NotImplemented();
     }
 
@@ -133,7 +133,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         return super.supportsInterface(interfaceId);
     }
 
-    function _decrementLimit(uint8 functionId, address token, bytes memory innerCalldata) internal {
+    function _decrementLimit(uint32 entityId, address token, bytes memory innerCalldata) internal {
         bytes4 selector;
         uint256 spend;
         assembly {
@@ -141,12 +141,12 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
             spend := mload(add(innerCalldata, 68)) // 36:68 is recipient, 68:100 is spend
         }
         if (selector == IERC20.transfer.selector || selector == IERC20.approve.selector) {
-            uint256 limit = limits[functionId][token][msg.sender];
+            uint256 limit = limits[entityId][token][msg.sender];
             if (spend > limit) {
                 revert ExceededTokenLimit();
             }
             // solhint-disable-next-line reentrancy
-            limits[functionId][token][msg.sender] = limit - spend;
+            limits[entityId][token][msg.sender] = limit - spend;
         } else {
             revert SelectorNotAllowed();
         }

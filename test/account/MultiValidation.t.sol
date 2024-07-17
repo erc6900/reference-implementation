@@ -8,26 +8,26 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/interfaces/IPluginManager.sol";
+import {PluginEntity} from "../../src/interfaces/IPluginManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {SingleOwnerPlugin} from "../../src/plugins/owner/SingleOwnerPlugin.sol";
+import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_OWNER_FUNCTION_ID} from "../utils/TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 contract MultiValidationTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    SingleOwnerPlugin public validator2;
+    SingleSignerValidation public validator2;
 
     address public owner2;
     uint256 public owner2Key;
 
     function setUp() public {
-        validator2 = new SingleOwnerPlugin();
+        validator2 = new SingleSignerValidation();
 
         (owner2, owner2Key) = makeAddrAndKey("owner2");
     }
@@ -35,16 +35,16 @@ contract MultiValidationTest is AccountTestBase {
     function test_overlappingValidationInstall() public {
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID, true, true),
+            ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true),
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_OWNER_FUNCTION_ID, owner2),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2),
             "",
             ""
         );
 
-        FunctionReference[] memory validations = new FunctionReference[](2);
-        validations[0] = FunctionReferenceLib.pack(address(singleOwnerPlugin), TEST_DEFAULT_OWNER_FUNCTION_ID);
-        validations[1] = FunctionReferenceLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID);
+        PluginEntity[] memory validations = new PluginEntity[](2);
+        validations[0] = PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        validations[1] = PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         bytes4[] memory selectors0 = account1.getSelectors(validations[0]);
         bytes4[] memory selectors1 = account1.getSelectors(validations[1]);
@@ -64,16 +64,14 @@ contract MultiValidationTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(validator2),
-                0,
+                1,
                 abi.encodeWithSignature("NotAuthorized()")
             )
         );
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             _encodeSignature(
-                FunctionReferenceLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID),
-                GLOBAL_VALIDATION,
-                ""
+                PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
         );
 
@@ -81,9 +79,7 @@ contract MultiValidationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             _encodeSignature(
-                FunctionReferenceLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID),
-                GLOBAL_VALIDATION,
-                ""
+                PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
         );
     }
@@ -109,7 +105,7 @@ contract MultiValidationTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            FunctionReferenceLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID),
+            PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -124,7 +120,7 @@ contract MultiValidationTest is AccountTestBase {
         userOp.nonce = 1;
         (v, r, s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            FunctionReferenceLib.pack(address(validator2), TEST_DEFAULT_OWNER_FUNCTION_ID),
+            PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );

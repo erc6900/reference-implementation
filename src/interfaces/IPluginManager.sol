@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-type FunctionReference is bytes21;
+type PluginEntity is bytes24;
 
-type ValidationConfig is bytes23;
+type ValidationConfig is bytes26;
 
 interface IPluginManager {
     event PluginInstalled(address indexed plugin, bytes32 manifestHash);
@@ -45,7 +45,7 @@ interface IPluginManager {
     /// data
     /// @param permissionHookUninstallData Optional data to be decoded and used by the plugin to clear account data
     function uninstallValidation(
-        FunctionReference validationFunction,
+        PluginEntity validationFunction,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData

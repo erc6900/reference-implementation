@@ -7,7 +7,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {FunctionReference, FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -16,7 +16,7 @@ import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
 contract SelfCallAuthorizationTest is AccountTestBase {
     ComprehensivePlugin public comprehensivePlugin;
 
-    FunctionReference public comprehensivePluginValidation;
+    PluginEntity public comprehensivePluginValidation;
 
     function setUp() public {
         // install the comprehensive plugin to get new exec functions with different validations configured.
@@ -27,9 +27,8 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         vm.prank(address(entryPoint));
         account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
 
-        comprehensivePluginValidation = FunctionReferenceLib.pack(
-            address(comprehensivePlugin), uint8(ComprehensivePlugin.FunctionId.VALIDATION)
-        );
+        comprehensivePluginValidation =
+            PluginEntityLib.pack(address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION));
     }
 
     function test_selfCallFails_userOp() public {
@@ -304,7 +303,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 UpgradeableModularAccount.installValidation,
                 (ValidationConfigLib.pack(comprehensivePluginValidation, false, false), selectors, "", "", "")
             ),
-            _encodeSignature(_ownerValidation, GLOBAL_VALIDATION, "")
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
 
