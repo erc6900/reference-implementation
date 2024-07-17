@@ -6,16 +6,15 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {FunctionReference} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
 import {ERC20TokenLimitPlugin} from "../../src/plugins/ERC20TokenLimitPlugin.sol";
 import {MockPlugin} from "../mocks/MockPlugin.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {FunctionReferenceLib} from "../../src/helpers/FunctionReferenceLib.sol";
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 import {IStandardExecutor, Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
-import {MSCAFactoryFixture} from "../mocks/MSCAFactoryFixture.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract ERC20TokenLimitPluginTest is AccountTestBase {
@@ -24,7 +23,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
     address payable public bundler = payable(address(2));
     PluginManifest internal _m;
     MockPlugin public validationPlugin = new MockPlugin(_m);
-    FunctionReference public validationFunction;
+    PluginEntity public validationFunction;
 
     UpgradeableModularAccount public acct;
     ERC20TokenLimitPlugin public plugin = new ERC20TokenLimitPlugin();
@@ -32,8 +31,6 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
 
     function setUp() public {
         // Set up a validator with hooks from the erc20 spend limit plugin attached
-        MSCAFactoryFixture factory = new MSCAFactoryFixture(entryPoint, _deploySingleOwnerPlugin());
-
         acct = factory.createAccount(address(this), 0);
 
         erc20 = new MockERC20();
@@ -41,7 +38,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
 
         ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
         permissionHooks[0] = ExecutionHook({
-            hookFunction: FunctionReferenceLib.pack(address(plugin), 0),
+            hookFunction: PluginEntityLib.pack(address(plugin), 0),
             isPreHook: true,
             isPostHook: false
         });
@@ -65,7 +62,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
             abi.encode(permissionHooks, permissionInitDatas)
         );
 
-        validationFunction = FunctionReferenceLib.pack(address(validationPlugin), 0);
+        validationFunction = PluginEntityLib.pack(address(validationPlugin), 0);
     }
 
     function _getPackedUO(bytes memory callData) internal view returns (PackedUserOperation memory uo) {
@@ -78,7 +75,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
             preVerificationGas: 200000,
             gasFees: bytes32(uint256(uint128(0))),
             paymasterAndData: "",
-            signature: _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
+            signature: _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
         });
     }
 
@@ -157,7 +154,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
             _getExecuteWithSpend(5 ether),
-            _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
+            _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
         );
         assertEq(plugin.limits(0, address(erc20), address(acct)), 5 ether);
     }
@@ -177,7 +174,7 @@ contract ERC20TokenLimitPluginTest is AccountTestBase {
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
-            _encodeSignature(FunctionReferenceLib.pack(address(validationPlugin), 0), 1, "")
+            _encodeSignature(PluginEntityLib.pack(address(validationPlugin), 0), 1, "")
         );
         assertEq(plugin.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100001);
     }
