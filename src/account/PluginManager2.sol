@@ -124,20 +124,20 @@ abstract contract PluginManager2 {
 
             // Clear permission hooks
             EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
-            uint256 len = permissionHooks.length();
-            for (uint256 i = 0; i < len; ++i) {
+            uint256 permissionHookLen = permissionHooks.length();
+            for (uint256 i = 0; i < permissionHookLen; ++i) {
                 bytes32 permissionHook = permissionHooks.at(0);
                 permissionHooks.remove(permissionHook);
                 address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
                 IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i]);
             }
         }
-        delete _validationData.preValidationHooks;
 
         // Clear selectors
-        while (_validationData.selectors.length() > 0) {
-            bytes32 selector = _validationData.selectors.at(0);
-            _validationData.selectors.remove(selector);
+        uint256 selectorLen = _validationData.selectors.length();
+        for (uint256 i = 0; i < selectorLen; ++i) {
+            bytes32 selectorSetValue = _validationData.selectors.at(0);
+            _validationData.selectors.remove(selectorSetValue);
         }
 
         if (uninstallData.length > 0) {
