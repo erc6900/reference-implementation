@@ -7,7 +7,6 @@ import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
 import {
     ManifestExecutionFunction,
     ManifestExecutionHook,
-    ManifestValidation,
     ModuleManifest,
     ModuleMetadata
 } from "../../../src/interfaces/IModule.sol";
@@ -138,17 +137,6 @@ contract ComprehensiveModule is IValidation, IValidationHook, IExecutionHook, Ba
             executionSelector: this.foo.selector,
             isPublic: false,
             allowGlobalValidation: false
-        });
-
-        bytes4[] memory validationSelectors = new bytes4[](1);
-        validationSelectors[0] = this.foo.selector;
-
-        manifest.validationFunctions = new ManifestValidation[](1);
-        manifest.validationFunctions[0] = ManifestValidation({
-            entityId: uint32(EntityId.VALIDATION),
-            isGlobal: true,
-            isSignatureValidation: false,
-            selectors: validationSelectors
         });
 
         manifest.executionHooks = new ManifestExecutionHook[](3);

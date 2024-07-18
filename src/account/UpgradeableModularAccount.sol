@@ -18,6 +18,7 @@ import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol"
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
+import {RESERVED_VALIDATION_DATA_INDEX, SELF_PERMIT_VALIDATION_FUNCTIONID} from "../helpers/Constants.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
@@ -28,7 +29,6 @@ import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, toExecutionHook, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
-
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract UpgradeableModularAccount is
@@ -441,7 +441,7 @@ contract UpgradeableModularAccount is
 
         // Run the user op validationFunction
         {
-            if (signatureSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+            if (signatureSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
                 revert ValidationSignatureSegmentMissing();
             }
 
@@ -497,7 +497,7 @@ contract UpgradeableModularAccount is
             _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthData);
         }
 
-        if (authSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+        if (authSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
             revert ValidationSignatureSegmentMissing();
         }
 
@@ -635,7 +635,7 @@ contract UpgradeableModularAccount is
             return (new PostExecToRun[](0), new PostExecToRun[](0));
         }
 
-        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
+        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, SELF_PERMIT_VALIDATION_FUNCTIONID);
 
         _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
 

@@ -5,11 +5,12 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {RESERVED_VALIDATION_DATA_INDEX, SELF_PERMIT_VALIDATION_FUNCTIONID} from "../helpers/Constants.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {IModule, ManifestExecutionHook, ManifestValidation, ModuleManifest} from "../interfaces/IModule.sol";
+import {IModule, ManifestExecutionHook, ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {AccountStorage, SelectorData, ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
@@ -17,12 +18,6 @@ abstract contract ModuleManagerInternals is IModuleManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
     using ValidationConfigLib for ValidationConfig;
-
-    // Index marking the start of the data for the validation function.
-    uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
-
-    // Magic value for the Entity ID of direct call validation.
-    uint32 internal constant _SELF_PERMIT_VALIDATION_FUNCTIONID = type(uint32).max;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
@@ -163,17 +158,6 @@ abstract contract ModuleManagerInternals is IModuleManager {
             _setExecutionFunction(selector, isPublic, allowGlobalValidation, module);
         }
 
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            // Todo: limit this to only "direct runtime call" validation path (old EFP),
-            // and add a way for the user to specify permission/pre-val hooks here.
-            ManifestValidation memory mv = manifest.validationFunctions[i];
-
-            ValidationConfig validationConfig =
-                ValidationConfigLib.pack(module, mv.entityId, mv.isGlobal, mv.isSignatureValidation);
-            _addValidationFunction(validationConfig, mv.selectors);
-        }
-
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
@@ -210,13 +194,6 @@ abstract contract ModuleManagerInternals is IModuleManager {
             ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
-        }
-
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ModuleEntity validationFunction =
-                ModuleEntityLib.pack(module, manifest.validationFunctions[i].entityId);
-            _removeValidationFunction(validationFunction);
         }
 
         length = manifest.executionFunctions.length;
@@ -261,13 +238,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 _validationData.preValidationHooks.push(preValidationFunction);
 
                 if (initDatas[i].length > 0) {
-                    (address preValidationPlugin,) = ModuleEntityLib.unpack(preValidationFunction);
-                    IModule(preValidationPlugin).onInstall(initDatas[i]);
+                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
+                    IModule(preValidationModule).onInstall(initDatas[i]);
                 }
             }
 
             // Avoid collision between reserved index and actual indices
-            if (_validationData.preValidationHooks.length > _RESERVED_VALIDATION_DATA_INDEX) {
+            if (_validationData.preValidationHooks.length > RESERVED_VALIDATION_DATA_INDEX) {
                 revert PreValidationHookLimitExceeded();
             }
         }
@@ -284,8 +261,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 }
 
                 if (initDatas[i].length > 0) {
-                    (address executionPlugin,) = ModuleEntityLib.unpack(permissionFunction.hookFunction);
-                    IModule(executionPlugin).onInstall(initDatas[i]);
+                    (address executionModule,) = ModuleEntityLib.unpack(permissionFunction.hookFunction);
+                    IModule(executionModule).onInstall(initDatas[i]);
                 }
             }
         }
@@ -297,7 +274,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             }
         }
 
-        if (validationConfig.entityId() != _SELF_PERMIT_VALIDATION_FUNCTIONID) {
+        if (validationConfig.entityId() != SELF_PERMIT_VALIDATION_FUNCTIONID) {
             // Only allow global validations and signature validations if they're not direct-call validations.
 
             _validationData.isGlobal = validationConfig.isGlobal();
@@ -326,8 +303,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
             for (uint256 i = 0; i < preValidationHooks.length; ++i) {
                 ModuleEntity preValidationFunction = preValidationHooks[i];
                 if (preValidationHookUninstallDatas[0].length > 0) {
-                    (address preValidationPlugin,) = ModuleEntityLib.unpack(preValidationFunction);
-                    IModule(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
+                    IModule(preValidationModule).onUninstall(preValidationHookUninstallDatas[0]);
                 }
             }
             delete _validationData.preValidationHooks;
@@ -342,8 +319,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
             for (uint256 i = 0; i < permissionHookLen; ++i) {
                 bytes32 permissionHook = permissionHooks.at(0);
                 permissionHooks.remove(permissionHook);
-                address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
-                IModule(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i]);
+                address permissionHookModule = address(uint160(bytes20(permissionHook)));
+                IModule(permissionHookModule).onUninstall(permissionHookUninstallDatas[i]);
             }
         }
 
@@ -355,8 +332,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
 
         if (uninstallData.length > 0) {
-            (address plugin,) = ModuleEntityLib.unpack(validationFunction);
-            IModule(plugin).onUninstall(uninstallData);
+            (address module,) = ModuleEntityLib.unpack(validationFunction);
+            IModule(module).onUninstall(uninstallData);
         }
     }
 }
