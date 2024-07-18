@@ -118,7 +118,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
             entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isDefault: false,
+            isGlobal: false,
             isSignatureValidation: false,
             selectors: validationSelectors
         });
@@ -161,7 +161,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.validationFunctions = new ManifestValidation[](2);
         manifest.validationFunctions[0] = ManifestValidation({
             entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isDefault: false,
+            isGlobal: false,
             isSignatureValidation: false,
             selectors: validationSelectors
         });
@@ -207,7 +207,7 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
             entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isDefault: false,
+            isGlobal: false,
             isSignatureValidation: false,
             selectors: validationSelectors
         });

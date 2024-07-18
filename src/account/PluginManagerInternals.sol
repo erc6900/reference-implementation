@@ -7,14 +7,22 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
+import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {IPlugin, ManifestExecutionHook, ManifestValidation, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IPluginManager, PluginEntity} from "../interfaces/IPluginManager.sol";
-import {AccountStorage, SelectorData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
+import {IPluginManager, PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {AccountStorage, SelectorData, ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
 abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using PluginEntityLib for PluginEntity;
+    using ValidationConfigLib for ValidationConfig;
+
+    // Index marking the start of the data for the validation function.
+    uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
+
+    // Magic value for the Entity ID of direct call validation.
+    uint32 internal constant _SELF_PERMIT_VALIDATION_FUNCTIONID = type(uint32).max;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
@@ -22,10 +30,12 @@ abstract contract PluginManagerInternals is IPluginManager {
     error IPluginFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullPlugin();
+    error PermissionAlreadySet(PluginEntity validationFunction, ExecutionHook hook);
     error PluginInstallCallbackFailed(address plugin, bytes revertReason);
     error PluginInterfaceNotSupported(address plugin);
     error PluginNotInstalled(address plugin);
-    error ValidationFunctionAlreadySet(bytes4 selector, PluginEntity validationFunction);
+    error PreValidationHookLimitExceeded();
+    error ValidationAlreadySet(bytes4 selector, PluginEntity validationFunction);
 
     // Storage update operations
 
@@ -71,39 +81,35 @@ abstract contract PluginManagerInternals is IPluginManager {
         _selectorData.allowGlobalValidation = false;
     }
 
-    function _addValidationFunction(address plugin, ManifestValidation memory mv) internal {
-        AccountStorage storage _storage = getAccountStorage();
+    function _addValidationFunction(ValidationConfig validationConfig, bytes4[] memory selectors) internal {
+        ValidationData storage _validationData =
+            getAccountStorage().validationData[validationConfig.pluginEntity()];
 
-        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
-
-        if (mv.isDefault) {
-            _storage.validationData[validationFunction].isGlobal = true;
+        if (validationConfig.isGlobal()) {
+            _validationData.isGlobal = true;
         }
 
-        if (mv.isSignatureValidation) {
-            _storage.validationData[validationFunction].isSignatureValidation = true;
+        if (validationConfig.isSignatureValidation()) {
+            _validationData.isSignatureValidation = true;
         }
 
         // Add the validation function to the selectors.
-        uint256 length = mv.selectors.length;
+        uint256 length = selectors.length;
         for (uint256 i = 0; i < length; ++i) {
-            bytes4 selector = mv.selectors[i];
-            _storage.validationData[validationFunction].selectors.add(toSetValue(selector));
+            _validationData.selectors.add(toSetValue(selectors[i]));
         }
     }
 
-    function _removeValidationFunction(address plugin, ManifestValidation memory mv) internal {
-        AccountStorage storage _storage = getAccountStorage();
+    function _removeValidationFunction(PluginEntity validationFunction) internal {
+        ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
 
-        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
-
-        _storage.validationData[validationFunction].isGlobal = false;
-        _storage.validationData[validationFunction].isSignatureValidation = false;
+        _validationData.isGlobal = false;
+        _validationData.isSignatureValidation = false;
 
         // Clear the selectors
-        while (_storage.validationData[validationFunction].selectors.length() > 0) {
-            bytes32 selector = _storage.validationData[validationFunction].selectors.at(0);
-            _storage.validationData[validationFunction].selectors.remove(selector);
+        uint256 length = _validationData.selectors.length();
+        for (uint256 i = 0; i < length; ++i) {
+            _validationData.selectors.remove(_validationData.selectors.at(0));
         }
     }
 
@@ -161,7 +167,11 @@ abstract contract PluginManagerInternals is IPluginManager {
         for (uint256 i = 0; i < length; ++i) {
             // Todo: limit this to only "direct runtime call" validation path (old EFP),
             // and add a way for the user to specify permission/pre-val hooks here.
-            _addValidationFunction(plugin, manifest.validationFunctions[i]);
+            ManifestValidation memory mv = manifest.validationFunctions[i];
+
+            ValidationConfig validationConfig =
+                ValidationConfigLib.pack(plugin, mv.entityId, mv.isGlobal, mv.isSignatureValidation);
+            _addValidationFunction(validationConfig, mv.selectors);
         }
 
         length = manifest.executionHooks.length;
@@ -204,7 +214,9 @@ abstract contract PluginManagerInternals is IPluginManager {
 
         length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
-            _removeValidationFunction(plugin, manifest.validationFunctions[i]);
+            PluginEntity validationFunction =
+                PluginEntityLib.pack(plugin, manifest.validationFunctions[i].entityId);
+            _removeValidationFunction(validationFunction);
         }
 
         length = manifest.executionFunctions.length;
@@ -227,5 +239,124 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
 
         emit PluginUninstalled(plugin, onUninstallSuccess);
+    }
+
+    function _installValidation(
+        ValidationConfig validationConfig,
+        bytes4[] memory selectors,
+        bytes calldata installData,
+        bytes memory preValidationHooks,
+        bytes memory permissionHooks
+    ) internal {
+        ValidationData storage _validationData =
+            getAccountStorage().validationData[validationConfig.pluginEntity()];
+
+        if (preValidationHooks.length > 0) {
+            (PluginEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
+                abi.decode(preValidationHooks, (PluginEntity[], bytes[]));
+
+            for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
+                PluginEntity preValidationFunction = preValidationFunctions[i];
+
+                _validationData.preValidationHooks.push(preValidationFunction);
+
+                if (initDatas[i].length > 0) {
+                    (address preValidationPlugin,) = PluginEntityLib.unpack(preValidationFunction);
+                    IPlugin(preValidationPlugin).onInstall(initDatas[i]);
+                }
+            }
+
+            // Avoid collision between reserved index and actual indices
+            if (_validationData.preValidationHooks.length > _RESERVED_VALIDATION_DATA_INDEX) {
+                revert PreValidationHookLimitExceeded();
+            }
+        }
+
+        if (permissionHooks.length > 0) {
+            (ExecutionHook[] memory permissionFunctions, bytes[] memory initDatas) =
+                abi.decode(permissionHooks, (ExecutionHook[], bytes[]));
+
+            for (uint256 i = 0; i < permissionFunctions.length; ++i) {
+                ExecutionHook memory permissionFunction = permissionFunctions[i];
+
+                if (!_validationData.permissionHooks.add(toSetValue(permissionFunction))) {
+                    revert PermissionAlreadySet(validationConfig.pluginEntity(), permissionFunction);
+                }
+
+                if (initDatas[i].length > 0) {
+                    (address executionPlugin,) = PluginEntityLib.unpack(permissionFunction.hookFunction);
+                    IPlugin(executionPlugin).onInstall(initDatas[i]);
+                }
+            }
+        }
+
+        for (uint256 i = 0; i < selectors.length; ++i) {
+            bytes4 selector = selectors[i];
+            if (!_validationData.selectors.add(toSetValue(selector))) {
+                revert ValidationAlreadySet(selector, validationConfig.pluginEntity());
+            }
+        }
+
+        if (validationConfig.entityId() != _SELF_PERMIT_VALIDATION_FUNCTIONID) {
+            // Only allow global validations and signature validations if they're not direct-call validations.
+
+            _validationData.isGlobal = validationConfig.isGlobal();
+            _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
+            if (installData.length > 0) {
+                IPlugin(validationConfig.plugin()).onInstall(installData);
+            }
+        }
+    }
+
+    function _uninstallValidation(
+        PluginEntity validationFunction,
+        bytes calldata uninstallData,
+        bytes calldata preValidationHookUninstallData,
+        bytes calldata permissionHookUninstallData
+    ) internal {
+        ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
+
+        _removeValidationFunction(validationFunction);
+
+        {
+            bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
+
+            // Clear pre validation hooks
+            PluginEntity[] storage preValidationHooks = _validationData.preValidationHooks;
+            for (uint256 i = 0; i < preValidationHooks.length; ++i) {
+                PluginEntity preValidationFunction = preValidationHooks[i];
+                if (preValidationHookUninstallDatas[0].length > 0) {
+                    (address preValidationPlugin,) = PluginEntityLib.unpack(preValidationFunction);
+                    IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                }
+            }
+            delete _validationData.preValidationHooks;
+        }
+
+        {
+            bytes[] memory permissionHookUninstallDatas = abi.decode(permissionHookUninstallData, (bytes[]));
+
+            // Clear permission hooks
+            EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
+            uint256 permissionHookLen = permissionHooks.length();
+            for (uint256 i = 0; i < permissionHookLen; ++i) {
+                bytes32 permissionHook = permissionHooks.at(0);
+                permissionHooks.remove(permissionHook);
+                address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
+                IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i]);
+            }
+        }
+
+        // Clear selectors
+        uint256 selectorLen = _validationData.selectors.length();
+        for (uint256 i = 0; i < selectorLen; ++i) {
+            bytes32 selectorSetValue = _validationData.selectors.at(0);
+            _validationData.selectors.remove(selectorSetValue);
+        }
+
+        if (uninstallData.length > 0) {
+            (address plugin,) = PluginEntityLib.unpack(validationFunction);
+            IPlugin(plugin).onUninstall(uninstallData);
+        }
     }
 }
