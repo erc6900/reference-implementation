@@ -4,12 +4,13 @@ pragma solidity ^0.8.19;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
 
-contract AccountFactory {
+contract AccountFactory is Ownable {
     UpgradeableModularAccount public accountImplementation;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
@@ -66,8 +67,16 @@ contract AccountFactory {
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 
-    function addStake() external payable {
+    function addStake() external payable onlyOwner {
         entryPoint.addStake{value: msg.value}(UNSTAKE_DELAY);
+    }
+
+    function unlockStake() external onlyOwner {
+        entryPoint.unlockStake();
+    }
+
+    function withdrawStake(address payable withdrawAddress) external onlyOwner {
+        entryPoint.withdrawStake(withdrawAddress);
     }
 
     function getSalt(address owner, uint256 salt) public pure returns (bytes32) {
