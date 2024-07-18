@@ -5,11 +5,12 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {RESERVED_VALIDATION_DATA_INDEX, SELF_PERMIT_VALIDATION_FUNCTIONID} from "../helpers/Constants.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {IPlugin, ManifestExecutionHook, ManifestValidation, PluginManifest} from "../interfaces/IPlugin.sol";
+import {IPlugin, ManifestExecutionHook, PluginManifest} from "../interfaces/IPlugin.sol";
 import {IPluginManager, PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
 import {AccountStorage, SelectorData, ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
@@ -17,12 +18,6 @@ abstract contract PluginManagerInternals is IPluginManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using PluginEntityLib for PluginEntity;
     using ValidationConfigLib for ValidationConfig;
-
-    // Index marking the start of the data for the validation function.
-    uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
-
-    // Magic value for the Entity ID of direct call validation.
-    uint32 internal constant _SELF_PERMIT_VALIDATION_FUNCTIONID = type(uint32).max;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
@@ -163,16 +158,19 @@ abstract contract PluginManagerInternals is IPluginManager {
             _setExecutionFunction(selector, isPublic, allowGlobalValidation, plugin);
         }
 
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            // Todo: limit this to only "direct runtime call" validation path (old EFP),
-            // and add a way for the user to specify permission/pre-val hooks here.
-            ManifestValidation memory mv = manifest.validationFunctions[i];
+        // Install direct call validation, if any, from the manifest
 
-            ValidationConfig validationConfig =
-                ValidationConfigLib.pack(plugin, mv.entityId, mv.isGlobal, mv.isSignatureValidation);
-            _addValidationFunction(validationConfig, mv.selectors);
-        }
+        // Todo: add a way for the user to specify permission/pre-val hooks here.
+
+        ValidationConfig directCallValidation = ValidationConfigLib.pack({
+            _plugin: plugin,
+            _entityId: SELF_PERMIT_VALIDATION_FUNCTIONID,
+            _isGlobal: manifest.globalDirectCallValidation,
+            // Direct call validation is never a signature validation
+            _isSignatureValidation: false
+        });
+
+        _addValidationFunction(directCallValidation, manifest.directCallValidationSelectors);
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
@@ -212,11 +210,10 @@ abstract contract PluginManagerInternals is IPluginManager {
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
-        length = manifest.validationFunctions.length;
-        for (uint256 i = 0; i < length; ++i) {
-            PluginEntity validationFunction =
-                PluginEntityLib.pack(plugin, manifest.validationFunctions[i].entityId);
-            _removeValidationFunction(validationFunction);
+        if (manifest.globalDirectCallValidation || manifest.directCallValidationSelectors.length > 0) {
+            PluginEntity directCallValidation = PluginEntityLib.pack(plugin, SELF_PERMIT_VALIDATION_FUNCTIONID);
+
+            _removeValidationFunction(directCallValidation);
         }
 
         length = manifest.executionFunctions.length;
@@ -267,7 +264,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
 
             // Avoid collision between reserved index and actual indices
-            if (_validationData.preValidationHooks.length > _RESERVED_VALIDATION_DATA_INDEX) {
+            if (_validationData.preValidationHooks.length > RESERVED_VALIDATION_DATA_INDEX) {
                 revert PreValidationHookLimitExceeded();
             }
         }
@@ -297,7 +294,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             }
         }
 
-        if (validationConfig.entityId() != _SELF_PERMIT_VALIDATION_FUNCTIONID) {
+        if (validationConfig.entityId() != SELF_PERMIT_VALIDATION_FUNCTIONID) {
             // Only allow global validations and signature validations if they're not direct-call validations.
 
             _validationData.isGlobal = validationConfig.isGlobal();

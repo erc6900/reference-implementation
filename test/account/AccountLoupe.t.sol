@@ -16,8 +16,12 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
+    PluginEntity public comprehensivePluginValidation;
+
     function setUp() public {
         comprehensivePlugin = new ComprehensivePlugin();
+        comprehensivePluginValidation =
+            PluginEntityLib.pack(address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION));
 
         _customValidationSetup();
 
@@ -61,9 +65,6 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_pluginLoupe_getSelectors() public {
-        PluginEntity comprehensivePluginValidation =
-            PluginEntityLib.pack(address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION));
-
         bytes4[] memory selectors = account1.getSelectors(comprehensivePluginValidation);
 
         assertEq(selectors.length, 1);
@@ -107,7 +108,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_pluginLoupe_getValidationHooks() public {
-        PluginEntity[] memory hooks = account1.getPreValidationHooks(_signerValidation);
+        PluginEntity[] memory hooks = account1.getPreValidationHooks(comprehensivePluginValidation);
 
         assertEq(hooks.length, 2);
         assertEq(
@@ -144,12 +145,15 @@ contract AccountLoupeTest is CustomValidationTestBase {
             address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.PRE_VALIDATION_HOOK_2)
         );
 
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = comprehensivePlugin.foo.selector;
+
         bytes[] memory installDatas = new bytes[](2);
         return (
-            _signerValidation,
+            comprehensivePluginValidation,
             true,
             true,
-            new bytes4[](0),
+            selectors,
             bytes(""),
             abi.encode(preValidationHooks, installDatas),
             ""

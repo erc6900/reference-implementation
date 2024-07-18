@@ -46,19 +46,21 @@ contract ValidationIntersectionTest is AccountTestBase {
             entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
         });
 
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = MockUserOpValidationPlugin.foo.selector;
+
         vm.startPrank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(noHookPlugin),
-            manifest: noHookPlugin.pluginManifest(),
-            pluginInstallData: ""
-        });
-        account1.installPlugin({
-            plugin: address(oneHookPlugin),
-            manifest: oneHookPlugin.pluginManifest(),
-            pluginInstallData: ""
-        });
-        // TODO: change with new install flow
-        // temporary fix to add the pre-validation hook
+        // Install noHookValidation
+        account1.installValidation(
+            ValidationConfigLib.pack(noHookValidation, true, true),
+            validationSelectors,
+            bytes(""),
+            bytes(""),
+            bytes("")
+        );
+
+        // Install oneHookValidation
+        validationSelectors[0] = MockUserOpValidation1HookPlugin.bar.selector;
         PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
         preValidationHooks[0] = PluginEntityLib.pack({
             addr: address(oneHookPlugin),
@@ -67,17 +69,14 @@ contract ValidationIntersectionTest is AccountTestBase {
         bytes[] memory installDatas = new bytes[](1);
         account1.installValidation(
             ValidationConfigLib.pack(oneHookValidation, true, true),
-            new bytes4[](0),
+            validationSelectors,
             bytes(""),
             abi.encode(preValidationHooks, installDatas),
             bytes("")
         );
-        account1.installPlugin({
-            plugin: address(twoHookPlugin),
-            manifest: twoHookPlugin.pluginManifest(),
-            pluginInstallData: ""
-        });
-        // temporary fix to add the pre-validation hook
+
+        // Install twoHookValidation
+        validationSelectors[0] = MockUserOpValidation2HookPlugin.baz.selector;
         preValidationHooks = new PluginEntity[](2);
         preValidationHooks[0] = PluginEntityLib.pack({
             addr: address(twoHookPlugin),
@@ -90,7 +89,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         installDatas = new bytes[](2);
         account1.installValidation(
             ValidationConfigLib.pack(twoHookValidation, true, true),
-            new bytes4[](0),
+            validationSelectors,
             bytes(""),
             abi.encode(preValidationHooks, installDatas),
             bytes("")

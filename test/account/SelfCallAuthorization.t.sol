@@ -24,12 +24,18 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         comprehensivePlugin = new ComprehensivePlugin();
 
-        vm.startPrank(address(entryPoint));
-        account1.installPlugin(address(comprehensivePlugin), comprehensivePlugin.pluginManifest(), "");
-        vm.stopPrank();
-
         comprehensivePluginValidation =
             PluginEntityLib.pack(address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION));
+
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = ComprehensivePlugin.foo.selector;
+
+        vm.startPrank(address(entryPoint));
+        account1.installPlugin(address(comprehensivePlugin), comprehensivePlugin.pluginManifest(), "");
+        account1.installValidation(
+            ValidationConfigLib.pack(comprehensivePluginValidation, false, false), validationSelectors, "", "", ""
+        );
+        vm.stopPrank();
     }
 
     function test_selfCallFails_userOp() public {

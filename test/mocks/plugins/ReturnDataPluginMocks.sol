@@ -3,12 +3,9 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {
-    ManifestExecutionFunction,
-    ManifestValidation,
-    PluginManifest,
-    PluginMetadata
-} from "../../../src/interfaces/IPlugin.sol";
+import {ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
+
+import {SELF_PERMIT_VALIDATION_FUNCTIONID} from "../../../src/helpers/Constants.sol";
 
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
@@ -103,7 +100,8 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         // This result should be allowed based on the manifest permission request
         bytes memory returnData = IStandardExecutor(msg.sender).executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
-            abi.encodePacked(this, uint32(0), uint8(0), uint32(1), uint8(255)) // Validation function of self,
+            abi.encodePacked(this, SELF_PERMIT_VALIDATION_FUNCTIONID, uint8(0), uint32(1), uint8(255)) // Validation
+                // function of self,
                 // selector-associated, with no auth data
         );
 
@@ -119,17 +117,8 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
     function pluginManifest() external pure override returns (PluginManifest memory) {
         PluginManifest memory manifest;
 
-        // todo: this is the exact workflow that would benefit from a "permiteed call" setup in the manifest.
-        bytes4[] memory validationSelectors = new bytes4[](1);
-        validationSelectors[0] = IStandardExecutor.execute.selector;
-
-        manifest.validationFunctions = new ManifestValidation[](1);
-        manifest.validationFunctions[0] = ManifestValidation({
-            entityId: 0,
-            isGlobal: true,
-            isSignatureValidation: false,
-            selectors: validationSelectors
-        });
+        manifest.directCallValidationSelectors = new bytes4[](1);
+        manifest.directCallValidationSelectors[0] = IStandardExecutor.execute.selector;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
