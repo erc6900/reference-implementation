@@ -7,39 +7,39 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
-import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
+import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {IPlugin, ManifestExecutionHook, ManifestValidation, PluginManifest} from "../interfaces/IPlugin.sol";
-import {IPluginManager, PluginEntity} from "../interfaces/IPluginManager.sol";
+import {IModule, ManifestExecutionHook, ManifestValidation, ModuleManifest} from "../interfaces/IModule.sol";
+import {IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
 import {AccountStorage, SelectorData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
-abstract contract PluginManagerInternals is IPluginManager {
+abstract contract ModuleManagerInternals is IModuleManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
-    using PluginEntityLib for PluginEntity;
+    using ModuleEntityLib for ModuleEntity;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
     error ExecutionFunctionAlreadySet(bytes4 selector);
-    error InvalidPluginManifest();
-    error IPluginFunctionNotAllowed(bytes4 selector);
+    error InvalidModuleManifest();
+    error IModuleFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
-    error NullPluginEntity();
-    error NullPlugin();
-    error PluginAlreadyInstalled(address plugin);
-    error PluginInstallCallbackFailed(address plugin, bytes revertReason);
-    error PluginInterfaceNotSupported(address plugin);
-    error PluginNotInstalled(address plugin);
-    error ValidationFunctionAlreadySet(bytes4 selector, PluginEntity validationFunction);
+    error NullModuleEntity();
+    error NullModule();
+    error ModuleAlreadyInstalled(address module);
+    error ModuleInstallCallbackFailed(address module, bytes revertReason);
+    error ModuleInterfaceNotSupported(address module);
+    error ModuleNotInstalled(address module);
+    error ValidationFunctionAlreadySet(bytes4 selector, ModuleEntity validationFunction);
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowGlobalValidation, address plugin)
+    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowGlobalValidation, address module)
         internal
     {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        if (_selectorData.plugin != address(0)) {
+        if (_selectorData.module != address(0)) {
             revert ExecutionFunctionAlreadySet(selector);
         }
 
@@ -49,13 +49,13 @@ abstract contract PluginManagerInternals is IPluginManager {
             revert NativeFunctionNotAllowed(selector);
         }
 
-        // Make sure incoming execution function is not a function in IPlugin
-        if (KnownSelectors.isIPluginFunction(selector)) {
-            revert IPluginFunctionNotAllowed(selector);
+        // Make sure incoming execution function is not a function in IModule
+        if (KnownSelectors.isIModuleFunction(selector)) {
+            revert IModuleFunctionNotAllowed(selector);
         }
 
         // Also make sure it doesn't collide with functions defined by ERC-4337
-        // and called by the entry point. This prevents a malicious plugin from
+        // and called by the entry point. This prevents a malicious module from
         // sneaking in a function with the same selector as e.g.
         // `validatePaymasterUserOp` and turning the account into their own
         // personal paymaster.
@@ -63,7 +63,7 @@ abstract contract PluginManagerInternals is IPluginManager {
             revert Erc4337FunctionNotAllowed(selector);
         }
 
-        _selectorData.plugin = plugin;
+        _selectorData.module = module;
         _selectorData.isPublic = isPublic;
         _selectorData.allowGlobalValidation = allowGlobalValidation;
     }
@@ -71,15 +71,15 @@ abstract contract PluginManagerInternals is IPluginManager {
     function _removeExecutionFunction(bytes4 selector) internal {
         SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
 
-        _selectorData.plugin = address(0);
+        _selectorData.module = address(0);
         _selectorData.isPublic = false;
         _selectorData.allowGlobalValidation = false;
     }
 
-    function _addValidationFunction(address plugin, ManifestValidation memory mv) internal {
+    function _addValidationFunction(address module, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
+        ModuleEntity validationFunction = ModuleEntityLib.pack(module, mv.entityId);
 
         if (mv.isDefault) {
             _storage.validationData[validationFunction].isGlobal = true;
@@ -97,10 +97,10 @@ abstract contract PluginManagerInternals is IPluginManager {
         }
     }
 
-    function _removeValidationFunction(address plugin, ManifestValidation memory mv) internal {
+    function _removeValidationFunction(address module, ManifestValidation memory mv) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        PluginEntity validationFunction = PluginEntityLib.pack(plugin, mv.entityId);
+        ModuleEntity validationFunction = ModuleEntityLib.pack(module, mv.entityId);
 
         _storage.validationData[validationFunction].isGlobal = false;
         _storage.validationData[validationFunction].isSignatureValidation = false;
@@ -114,7 +114,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _addExecHooks(
         EnumerableSet.Bytes32Set storage hooks,
-        PluginEntity hookFunction,
+        ModuleEntity hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
@@ -127,7 +127,7 @@ abstract contract PluginManagerInternals is IPluginManager {
 
     function _removeExecHooks(
         EnumerableSet.Bytes32Set storage hooks,
-        PluginEntity hookFunction,
+        ModuleEntity hookFunction,
         bool isPreExecHook,
         bool isPostExecHook
     ) internal {
@@ -138,31 +138,31 @@ abstract contract PluginManagerInternals is IPluginManager {
         );
     }
 
-    function _installPlugin(address plugin, bytes32 manifestHash, bytes memory pluginInstallData) internal {
+    function _installModule(address module, bytes32 manifestHash, bytes memory moduleInstallData) internal {
         AccountStorage storage _storage = getAccountStorage();
 
-        if (plugin == address(0)) {
-            revert NullPlugin();
+        if (module == address(0)) {
+            revert NullModule();
         }
 
-        // Check if the plugin exists.
-        if (_storage.pluginManifestHashes.contains(plugin)) {
-            revert PluginAlreadyInstalled(plugin);
+        // Check if the module exists.
+        if (_storage.moduleManifestHashes.contains(module)) {
+            revert ModuleAlreadyInstalled(module);
         }
 
-        // Check that the plugin supports the IPlugin interface.
-        if (!ERC165Checker.supportsInterface(plugin, type(IPlugin).interfaceId)) {
-            revert PluginInterfaceNotSupported(plugin);
+        // Check that the module supports the IModule interface.
+        if (!ERC165Checker.supportsInterface(module, type(IModule).interfaceId)) {
+            revert ModuleInterfaceNotSupported(module);
         }
 
         // Check manifest hash.
-        PluginManifest memory manifest = IPlugin(plugin).pluginManifest();
-        if (!_isValidPluginManifest(manifest, manifestHash)) {
-            revert InvalidPluginManifest();
+        ModuleManifest memory manifest = IModule(module).moduleManifest();
+        if (!_isValidModuleManifest(manifest, manifestHash)) {
+            revert InvalidModuleManifest();
         }
 
-        // Add the plugin metadata to the account
-        _storage.pluginManifestHashes.set(plugin, uint256(manifestHash));
+        // Add the module metadata to the account
+        _storage.moduleManifestHashes.set(module, uint256(manifestHash));
 
         // Update components according to the manifest.
         uint256 length = manifest.executionFunctions.length;
@@ -170,21 +170,21 @@ abstract contract PluginManagerInternals is IPluginManager {
             bytes4 selector = manifest.executionFunctions[i].executionSelector;
             bool isPublic = manifest.executionFunctions[i].isPublic;
             bool allowGlobalValidation = manifest.executionFunctions[i].allowGlobalValidation;
-            _setExecutionFunction(selector, isPublic, allowGlobalValidation, plugin);
+            _setExecutionFunction(selector, isPublic, allowGlobalValidation, module);
         }
 
         length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             // Todo: limit this to only "direct runtime call" validation path (old EFP),
             // and add a way for the user to specify permission/pre-val hooks here.
-            _addValidationFunction(plugin, manifest.validationFunctions[i]);
+            _addValidationFunction(module, manifest.validationFunctions[i]);
         }
 
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            PluginEntity hookFunction = PluginEntityLib.pack(plugin, mh.entityId);
+            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
             _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
@@ -193,30 +193,30 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
         }
 
-        // Initialize the plugin storage for the account.
+        // Initialize the module storage for the account.
         // solhint-disable-next-line no-empty-blocks
-        try IPlugin(plugin).onInstall(pluginInstallData) {}
+        try IModule(module).onInstall(moduleInstallData) {}
         catch (bytes memory revertReason) {
-            revert PluginInstallCallbackFailed(plugin, revertReason);
+            revert ModuleInstallCallbackFailed(module, revertReason);
         }
 
-        emit PluginInstalled(plugin, manifestHash);
+        emit ModuleInstalled(module, manifestHash);
     }
 
-    function _uninstallPlugin(address plugin, PluginManifest memory manifest, bytes memory uninstallData)
+    function _uninstallModule(address module, ModuleManifest memory manifest, bytes memory uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
 
-        // Check if the plugin exists.
-        if (!_storage.pluginManifestHashes.contains(plugin)) {
-            revert PluginNotInstalled(plugin);
+        // Check if the module exists.
+        if (!_storage.moduleManifestHashes.contains(module)) {
+            revert ModuleNotInstalled(module);
         }
 
         // Check manifest hash.
-        bytes32 manifestHash = bytes32(_storage.pluginManifestHashes.get(plugin));
-        if (!_isValidPluginManifest(manifest, manifestHash)) {
-            revert InvalidPluginManifest();
+        bytes32 manifestHash = bytes32(_storage.moduleManifestHashes.get(module));
+        if (!_isValidModuleManifest(manifest, manifestHash)) {
+            revert InvalidModuleManifest();
         }
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
@@ -224,14 +224,14 @@ abstract contract PluginManagerInternals is IPluginManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            PluginEntity hookFunction = PluginEntityLib.pack(plugin, mh.entityId);
+            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
             _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
         }
 
         length = manifest.validationFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
-            _removeValidationFunction(plugin, manifest.validationFunctions[i]);
+            _removeValidationFunction(module, manifest.validationFunctions[i]);
         }
 
         length = manifest.executionFunctions.length;
@@ -245,21 +245,21 @@ abstract contract PluginManagerInternals is IPluginManager {
             _storage.supportedIfaces[manifest.interfaceIds[i]] -= 1;
         }
 
-        // Remove the plugin metadata from the account.
-        _storage.pluginManifestHashes.remove(plugin);
+        // Remove the module metadata from the account.
+        _storage.moduleManifestHashes.remove(module);
 
-        // Clear the plugin storage for the account.
+        // Clear the module storage for the account.
         bool onUninstallSuccess = true;
         // solhint-disable-next-line no-empty-blocks
-        try IPlugin(plugin).onUninstall(uninstallData) {}
+        try IModule(module).onUninstall(uninstallData) {}
         catch {
             onUninstallSuccess = false;
         }
 
-        emit PluginUninstalled(plugin, onUninstallSuccess);
+        emit ModuleUninstalled(module, onUninstallSuccess);
     }
 
-    function _isValidPluginManifest(PluginManifest memory manifest, bytes32 manifestHash)
+    function _isValidModuleManifest(ModuleManifest memory manifest, bytes32 manifestHash)
         internal
         pure
         returns (bool)

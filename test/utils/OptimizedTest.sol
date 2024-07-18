@@ -7,8 +7,8 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
+import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 
 /// @dev This contract provides functions to deploy optimized (via IR) precompiled contracts. By compiling just
 /// the source contracts (excluding the test suite) via IR, and using the resulting bytecode within the tests
@@ -45,10 +45,10 @@ abstract contract OptimizedTest is Test {
             : new UpgradeableModularAccount(entryPoint);
     }
 
-    function _deployTokenReceiverPlugin() internal returns (TokenReceiverPlugin) {
+    function _deployTokenReceiverModule() internal returns (TokenReceiverModule) {
         return _isOptimizedTest()
-            ? TokenReceiverPlugin(deployCode("out-optimized/TokenReceiverPlugin.sol/TokenReceiverPlugin.json"))
-            : new TokenReceiverPlugin();
+            ? TokenReceiverModule(deployCode("out-optimized/TokenReceiverModule.sol/TokenReceiverModule.json"))
+            : new TokenReceiverModule();
     }
 
     function _deploySingleSignerValidation() internal returns (SingleSignerValidation) {

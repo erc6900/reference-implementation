@@ -34,53 +34,53 @@ struct SelectorPermission {
     string permissionDescription;
 }
 
-/// @dev A struct holding fields to describe the plugin in a purely view context. Intended for front end clients.
-struct PluginMetadata {
-    // A human-readable name of the plugin.
+/// @dev A struct holding fields to describe the module in a purely view context. Intended for front end clients.
+struct ModuleMetadata {
+    // A human-readable name of the module.
     string name;
-    // The version of the plugin, following the semantic versioning scheme.
+    // The version of the module, following the semantic versioning scheme.
     string version;
     // The author field SHOULD be a username representing the identity of the user or organization
-    // that created this plugin.
+    // that created this module.
     string author;
     // String desciptions of the relative sensitivity of specific functions. The selectors MUST be selectors for
-    // functions implemented by this plugin.
+    // functions implemented by this module.
     SelectorPermission[] permissionDescriptors;
-    // A list of all ERC-7715 permission strings that the plugin could possibly use
+    // A list of all ERC-7715 permission strings that the module could possibly use
     string[] permissionRequest;
 }
 
-/// @dev A struct describing how the plugin should be installed on a modular account.
-struct PluginManifest {
-    // Execution functions defined in this plugin to be installed on the MSCA.
+/// @dev A struct describing how the module should be installed on a modular account.
+struct ModuleManifest {
+    // Execution functions defined in this module to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
     ManifestValidation[] validationFunctions;
     ManifestExecutionHook[] executionHooks;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
-    // IPlugin's interface ID.
+    // IModule's interface ID.
     bytes4[] interfaceIds;
 }
 
-interface IPlugin is IERC165 {
-    /// @notice Initialize plugin data for the modular account.
-    /// @dev Called by the modular account during `installPlugin`.
-    /// @param data Optional bytes array to be decoded and used by the plugin to setup initial plugin data for the
+interface IModule is IERC165 {
+    /// @notice Initialize module data for the modular account.
+    /// @dev Called by the modular account during `installModule`.
+    /// @param data Optional bytes array to be decoded and used by the module to setup initial module data for the
     /// modular account.
     function onInstall(bytes calldata data) external;
 
-    /// @notice Clear plugin data for the modular account.
-    /// @dev Called by the modular account during `uninstallPlugin`.
-    /// @param data Optional bytes array to be decoded and used by the plugin to clear plugin data for the modular
+    /// @notice Clear module data for the modular account.
+    /// @dev Called by the modular account during `uninstallModule`.
+    /// @param data Optional bytes array to be decoded and used by the module to clear module data for the modular
     /// account.
     function onUninstall(bytes calldata data) external;
 
-    /// @notice Describe the contents and intended configuration of the plugin.
+    /// @notice Describe the contents and intended configuration of the module.
     /// @dev This manifest MUST stay constant over time.
-    /// @return A manifest describing the contents and intended configuration of the plugin.
-    function pluginManifest() external pure returns (PluginManifest memory);
+    /// @return A manifest describing the contents and intended configuration of the module.
+    function moduleManifest() external pure returns (ModuleManifest memory);
 
-    /// @notice Describe the metadata of the plugin.
+    /// @notice Describe the metadata of the module.
     /// @dev This metadata MUST stay constant over time.
-    /// @return A metadata struct describing the plugin.
-    function pluginMetadata() external pure returns (PluginMetadata memory);
+    /// @return A metadata struct describing the module.
+    function moduleMetadata() external pure returns (ModuleMetadata memory);
 }

@@ -6,14 +6,14 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {
     ManifestExecutionFunction,
     ManifestValidation,
-    PluginManifest,
-    PluginMetadata
-} from "../../../src/interfaces/IPlugin.sol";
+    ModuleManifest,
+    ModuleMetadata
+} from "../../../src/interfaces/IModule.sol";
 
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
 contract RegularResultContract {
     function foo() external pure returns (bytes32) {
@@ -25,7 +25,7 @@ contract RegularResultContract {
     }
 }
 
-contract ResultCreatorPlugin is BasePlugin {
+contract ResultCreatorModule is BaseModule {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -38,8 +38,8 @@ contract ResultCreatorPlugin is BasePlugin {
         return keccak256("foo");
     }
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -56,16 +56,16 @@ contract ResultCreatorPlugin is BasePlugin {
         return manifest;
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 }
 
-contract ResultConsumerPlugin is BasePlugin, IValidation {
-    ResultCreatorPlugin public immutable RESULT_CREATOR;
+contract ResultConsumerModule is BaseModule, IValidation {
+    ResultCreatorModule public immutable RESULT_CREATOR;
     RegularResultContract public immutable REGULAR_RESULT_CONTRACT;
 
     error NotAuthorized();
 
-    constructor(ResultCreatorPlugin _resultCreator, RegularResultContract _regularResultContract) {
+    constructor(ResultCreatorModule _resultCreator, RegularResultContract _regularResultContract) {
         RESULT_CREATOR = _resultCreator;
         REGULAR_RESULT_CONTRACT = _regularResultContract;
     }
@@ -93,7 +93,7 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
     // Check the return data through the fallback
     function checkResultFallback(bytes32 expected) external view returns (bool) {
         // This result should be allowed based on the manifest permission request
-        bytes32 actual = ResultCreatorPlugin(msg.sender).foo();
+        bytes32 actual = ResultCreatorModule(msg.sender).foo();
 
         return actual == expected;
     }
@@ -116,8 +116,8 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
 
     function onUninstall(bytes calldata) external override {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         // todo: this is the exact workflow that would benefit from a "permiteed call" setup in the manifest.
         bytes4[] memory validationSelectors = new bytes4[](1);
@@ -146,5 +146,5 @@ contract ResultConsumerPlugin is BasePlugin, IValidation {
         return manifest;
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 }

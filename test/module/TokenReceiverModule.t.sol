@@ -7,7 +7,7 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
+import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 
 import {MockERC1155} from "../mocks/MockERC1155.sol";
 import {MockERC721} from "../mocks/MockERC721.sol";
@@ -15,10 +15,10 @@ import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.so
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
-contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
+contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
     EntryPoint public entryPoint;
     UpgradeableModularAccount public acct;
-    TokenReceiverPlugin public plugin;
+    TokenReceiverModule public module;
 
     MockERC721 public t0;
     MockERC1155 public t1;
@@ -39,7 +39,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
             new SingleSignerFactoryFixture(entryPoint, _deploySingleSignerValidation());
 
         acct = factory.createAccount(address(this), 0);
-        plugin = _deployTokenReceiverPlugin();
+        module = _deployTokenReceiverModule();
 
         t0 = new MockERC721("t0", "t0");
         t0.mint(address(this), _TOKEN_ID);
@@ -54,11 +54,11 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
         }
     }
 
-    function _initPlugin() internal {
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
+    function _initModule() internal {
+        bytes32 manifestHash = keccak256(abi.encode(module.moduleManifest()));
 
         vm.prank(address(entryPoint));
-        acct.installPlugin(address(plugin), manifestHash, "");
+        acct.installModule(address(module), manifestHash, "");
     }
 
     function test_failERC721Transfer() public {
@@ -73,7 +73,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     }
 
     function test_passERC721Transfer() public {
-        _initPlugin();
+        _initModule();
         assertEq(t0.ownerOf(_TOKEN_ID), address(this));
         t0.safeTransferFrom(address(this), address(acct), _TOKEN_ID);
         assertEq(t0.ownerOf(_TOKEN_ID), address(acct));
@@ -102,7 +102,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     }
 
     function test_passERC1155Transfer() public {
-        _initPlugin();
+        _initModule();
 
         assertEq(t1.balanceOf(address(this), _TOKEN_ID), _TOKEN_AMOUNT);
         assertEq(t1.balanceOf(address(acct), _TOKEN_ID), 0);
@@ -131,7 +131,7 @@ contract TokenReceiverPluginTest is OptimizedTest, IERC1155Receiver {
     }
 
     function test_passIntrospection() public {
-        _initPlugin();
+        _initModule();
 
         bool isSupported;
 

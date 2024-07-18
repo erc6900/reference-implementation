@@ -13,20 +13,20 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
+import {ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
-import {BasePlugin, IERC165} from "./BasePlugin.sol";
+import {BaseModule, IERC165} from "./BaseModule.sol";
 
-/// @title ERC20 Token Limit Plugin
+/// @title ERC20 Token Limit Module
 /// @author ERC-6900 Authors
-/// @notice This plugin supports an ERC20 token spend limit. This should be combined with a contract whitelist
-/// plugin to make sure that token transfers not tracked by the plugin don't happen.
-/// Note: this plugin is opinionated on what selectors can be called for token contracts to guard against weird
+/// @notice This module supports an ERC20 token spend limit. This should be combined with a contract whitelist
+/// module to make sure that token transfers not tracked by the module don't happen.
+/// Note: this module is opinionated on what selectors can be called for token contracts to guard against weird
 /// edge cases like DAI. You wouldn't be able to use uni v2 pairs directly as the pair contract is also the LP
 /// token contract
-contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
+contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.AddressSet;
     using AssociatedLinkedListSetLib for AssociatedLinkedListSet;
@@ -36,7 +36,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         uint256[] limits;
     }
 
-    string internal constant _NAME = "ERC20 Token Limit Plugin";
+    string internal constant _NAME = "ERC20 Token Limit Module";
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
 
@@ -77,7 +77,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         return "";
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onInstall(bytes calldata data) external override {
         (uint32 startEntityId, ERC20SpendLimit[] memory spendLimits) =
             abi.decode(data, (uint32, ERC20SpendLimit[]));
@@ -94,7 +94,7 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         }
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onUninstall(bytes calldata data) external override {
         (address token, uint32 entityId) = abi.decode(data, (address, uint32));
         delete limits[entityId][token][msg.sender];
@@ -114,13 +114,13 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         revert NotImplemented();
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     // solhint-disable-next-line no-empty-blocks
-    function pluginManifest() external pure override returns (PluginManifest memory) {}
+    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
-    /// @inheritdoc IPlugin
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    /// @inheritdoc IModule
+    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;
@@ -130,8 +130,8 @@ contract ERC20TokenLimitPlugin is BasePlugin, IExecutionHook {
         return metadata;
     }
 
-    /// @inheritdoc BasePlugin
-    function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
+    /// @inheritdoc BaseModule
+    function supportsInterface(bytes4 interfaceId) public view override(BaseModule, IERC165) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

@@ -2,7 +2,7 @@
 
 Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900). It is an early draft implementation.
 
-The implementation includes an upgradable modular account with two plugins (`SingleSignerValidation` and `TokenReceiverPlugin`). It is compliant with ERC-6900 with the latest updates.
+The implementation includes an upgradable modular account with two modules (`SingleSignerValidation` and `TokenReceiverModule`). It is compliant with ERC-6900 with the latest updates.
 
 ## Important Callouts
 
@@ -11,7 +11,7 @@ The implementation includes an upgradable modular account with two plugins (`Sin
 
 ## Development
 
-Anyone is welcome to submit feedback and/or PRs to improve code or add Plugins.
+Anyone is welcome to submit feedback and/or PRs to improve code or add Modules.
 
 ### Testing
 

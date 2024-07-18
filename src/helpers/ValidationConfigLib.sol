@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 
 // Validation config is a packed representation of a validation function and flags for its configuration.
 // Layout:
@@ -12,14 +12,14 @@ import {PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
 // 0x____________________________________________________000000000000 // unused
 
 library ValidationConfigLib {
-    function pack(PluginEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
+    function pack(ModuleEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
         internal
         pure
         returns (ValidationConfig)
     {
         return ValidationConfig.wrap(
             bytes26(
-                bytes26(PluginEntity.unwrap(_validationFunction))
+                bytes26(ModuleEntity.unwrap(_validationFunction))
                 // isGlobal flag stored in the 25th byte
                 | bytes26(bytes32(_isGlobal ? uint256(1) << 56 : 0))
                 // isSignatureValidation flag stored in the 26th byte
@@ -28,15 +28,15 @@ library ValidationConfigLib {
         );
     }
 
-    function pack(address _plugin, uint32 _entityId, bool _isGlobal, bool _isSignatureValidation)
+    function pack(address _module, uint32 _entityId, bool _isGlobal, bool _isSignatureValidation)
         internal
         pure
         returns (ValidationConfig)
     {
         return ValidationConfig.wrap(
             bytes26(
-                // plugin address stored in the first 20 bytes
-                bytes26(bytes20(_plugin))
+                // module address stored in the first 20 bytes
+                bytes26(bytes20(_module))
                 // entityId stored in the 21st - 24th byte
                 | bytes26(bytes24(uint192(_entityId)))
                 // isGlobal flag stored in the 25th byte
@@ -50,10 +50,10 @@ library ValidationConfigLib {
     function unpackUnderlying(ValidationConfig config)
         internal
         pure
-        returns (address _plugin, uint32 _entityId, bool _isGlobal, bool _isSignatureValidation)
+        returns (address _module, uint32 _entityId, bool _isGlobal, bool _isSignatureValidation)
     {
         bytes26 configBytes = ValidationConfig.unwrap(config);
-        _plugin = address(bytes20(configBytes));
+        _module = address(bytes20(configBytes));
         _entityId = uint32(bytes4(configBytes << 160));
         _isGlobal = uint8(configBytes[24]) == 1;
         _isSignatureValidation = uint8(configBytes[25]) == 1;
@@ -62,15 +62,15 @@ library ValidationConfigLib {
     function unpack(ValidationConfig config)
         internal
         pure
-        returns (PluginEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
+        returns (ModuleEntity _validationFunction, bool _isGlobal, bool _isSignatureValidation)
     {
         bytes26 configBytes = ValidationConfig.unwrap(config);
-        _validationFunction = PluginEntity.wrap(bytes24(configBytes));
+        _validationFunction = ModuleEntity.wrap(bytes24(configBytes));
         _isGlobal = uint8(configBytes[24]) == 1;
         _isSignatureValidation = uint8(configBytes[25]) == 1;
     }
 
-    function plugin(ValidationConfig config) internal pure returns (address) {
+    function module(ValidationConfig config) internal pure returns (address) {
         return address(bytes20(ValidationConfig.unwrap(config)));
     }
 
@@ -78,8 +78,8 @@ library ValidationConfigLib {
         return uint32(bytes4(ValidationConfig.unwrap(config) << 160));
     }
 
-    function pluginEntity(ValidationConfig config) internal pure returns (PluginEntity) {
-        return PluginEntity.wrap(bytes24(ValidationConfig.unwrap(config)));
+    function moduleEntity(ValidationConfig config) internal pure returns (ModuleEntity) {
+        return ModuleEntity.wrap(bytes24(ValidationConfig.unwrap(config)));
     }
 
     function isGlobal(ValidationConfig config) internal pure returns (bool) {
