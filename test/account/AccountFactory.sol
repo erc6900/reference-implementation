@@ -11,21 +11,21 @@ contract AccountFactoryTest is AccountTestBase {
 
     function setUp() public {
         _account = new UpgradeableModularAccount(entryPoint);
-        _factory = new AccountFactory(entryPoint, _account);
+        _factory = new AccountFactory(entryPoint, _account, address(singleSignerValidation));
     }
 
     function test_createAccount() public {
-        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0, singleSignerValidation);
+        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
 
         assertEq(address(account.entryPoint()), address(entryPoint));
     }
 
     function test_multipleDeploy() public {
-        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0, singleSignerValidation);
+        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
 
         uint256 startGas = gasleft();
 
-        UpgradeableModularAccount account2 = _factory.createAccount(address(this), 100, 0, singleSignerValidation);
+        UpgradeableModularAccount account2 = _factory.createAccount(address(this), 100, 0);
 
         // Assert that the 2nd deployment call cost less than 1 sstore
         // Implies that no deployment was done on the second calls
