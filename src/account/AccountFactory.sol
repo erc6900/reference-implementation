@@ -2,9 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
@@ -17,7 +18,7 @@ contract AccountFactory is Ownable {
     IEntryPoint public entryPoint;
     address public self;
 
-    constructor(IEntryPoint _entryPoint, UpgradeableModularAccount _accountImpl) {
+    constructor(IEntryPoint _entryPoint, UpgradeableModularAccount _accountImpl) Ownable(msg.sender) {
         entryPoint = _entryPoint;
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
@@ -38,7 +39,7 @@ contract AccountFactory is Ownable {
         uint256 salt,
         uint32 entityId,
         SingleSignerValidation singleSignerValidation
-    ) public returns (UpgradeableModularAccount) {
+    ) external returns (UpgradeableModularAccount) {
         address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
 
         // short circuit if exists
@@ -60,13 +61,6 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    /**
-     * Calculate the counterfactual address of this account as it would be returned by createAccount()
-     */
-    function getAddress(address owner, uint256 salt) public view returns (address) {
-        return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
-    }
-
     function addStake() external payable onlyOwner {
         entryPoint.addStake{value: msg.value}(UNSTAKE_DELAY);
     }
@@ -77,6 +71,13 @@ contract AccountFactory is Ownable {
 
     function withdrawStake(address payable withdrawAddress) external onlyOwner {
         entryPoint.withdrawStake(withdrawAddress);
+    }
+
+    /**
+     * Calculate the counterfactual address of this account as it would be returned by createAccount()
+     */
+    function getAddress(address owner, uint256 salt) external view returns (address) {
+        return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 
     function getSalt(address owner, uint256 salt) public pure returns (bytes32) {
