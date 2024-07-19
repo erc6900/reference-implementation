@@ -7,41 +7,41 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
-import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract SelfCallAuthorizationTest is AccountTestBase {
-    ComprehensivePlugin public comprehensivePlugin;
+    ComprehensiveModule public comprehensiveModule;
 
-    PluginEntity public comprehensivePluginValidation;
+    ModuleEntity public comprehensiveModuleValidation;
 
     function setUp() public {
-        // install the comprehensive plugin to get new exec functions with different validations configured.
+        // install the comprehensive module to get new exec functions with different validations configured.
 
-        comprehensivePlugin = new ComprehensivePlugin();
+        comprehensiveModule = new ComprehensiveModule();
 
-        bytes32 manifestHash = keccak256(abi.encode(comprehensivePlugin.pluginManifest()));
+        bytes32 manifestHash = keccak256(abi.encode(comprehensiveModule.moduleManifest()));
         vm.prank(address(entryPoint));
-        account1.installPlugin(address(comprehensivePlugin), manifestHash, "");
+        account1.installModule(address(comprehensiveModule), manifestHash, "");
 
-        comprehensivePluginValidation =
-            PluginEntityLib.pack(address(comprehensivePlugin), uint32(ComprehensivePlugin.EntityId.VALIDATION));
+        comprehensiveModuleValidation =
+            ModuleEntityLib.pack(address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.VALIDATION));
     }
 
     function test_selfCallFails_userOp() public {
         // Uses global validation
         _runUserOp(
-            abi.encodeCall(ComprehensivePlugin.foo, ()),
+            abi.encodeCall(ComprehensiveModule.foo, ()),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -50,13 +50,13 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     function test_selfCallFails_execUserOp() public {
         // Uses global validation
         _runUserOp(
-            abi.encodePacked(IAccountExecute.executeUserOp.selector, abi.encodeCall(ComprehensivePlugin.foo, ())),
+            abi.encodePacked(IAccountExecute.executeUserOp.selector, abi.encodeCall(ComprehensiveModule.foo, ())),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -65,19 +65,19 @@ contract SelfCallAuthorizationTest is AccountTestBase {
     function test_selfCallFails_runtime() public {
         // Uses global validation
         _runtimeCall(
-            abi.encodeCall(ComprehensivePlugin.foo, ()),
+            abi.encodeCall(ComprehensiveModule.foo, ()),
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
             )
         );
     }
 
     function test_selfCallPrivilegeEscalation_prevented_userOp() public {
-        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runUserOp(
             abi.encodeCall(
                 UpgradeableModularAccount.execute,
-                (address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()))
+                (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
@@ -88,7 +88,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         );
 
         Call[] memory calls = new Call[](1);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         _runUserOp(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
@@ -97,20 +97,20 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
     }
 
     function test_selfCallPrivilegeEscalation_prevented_execUserOp() public {
-        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runUserOp(
             abi.encodePacked(
                 IAccountExecute.executeUserOp.selector,
                 abi.encodeCall(
                     UpgradeableModularAccount.execute,
-                    (address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()))
+                    (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
                 )
             ),
             abi.encodeWithSelector(
@@ -122,7 +122,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         );
 
         Call[] memory calls = new Call[](1);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         _runUserOp(
             abi.encodePacked(
@@ -133,29 +133,29 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
     }
 
     function test_selfCallPrivilegeEscalation_prevented_runtime() public {
-        // Using global validation, self-call bypasses custom validation needed for ComprehensivePlugin.foo
+        // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runtimeCall(
             abi.encodeCall(
                 UpgradeableModularAccount.execute,
-                (address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()))
+                (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
             abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
         );
 
         Call[] memory calls = new Call[](1);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         _runtimeExecBatchExpFail(
             calls,
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensivePlugin.foo.selector
+                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
             )
         );
     }
@@ -164,17 +164,17 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory calls = new Call[](2);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
-        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
+        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
-        PackedUserOperation memory userOp = _generateUserOpWithComprehensivePluginValidation(
+        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls))
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
-        vm.expectCall(address(comprehensivePlugin), abi.encodeCall(ComprehensivePlugin.foo, ()), 2);
+        vm.expectCall(address(comprehensiveModule), abi.encodeCall(ComprehensiveModule.foo, ()), 2);
         entryPoint.handleOps(userOps, beneficiary);
     }
 
@@ -182,10 +182,10 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory calls = new Call[](2);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
-        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
+        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
-        PackedUserOperation memory userOp = _generateUserOpWithComprehensivePluginValidation(
+        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodePacked(
                 IAccountExecute.executeUserOp.selector, abi.encodeCall(IStandardExecutor.executeBatch, (calls))
             )
@@ -194,7 +194,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
-        vm.expectCall(address(comprehensivePlugin), abi.encodeCall(ComprehensivePlugin.foo, ()), 2);
+        vm.expectCall(address(comprehensiveModule), abi.encodeCall(ComprehensiveModule.foo, ()), 2);
         entryPoint.handleOps(userOps, beneficiary);
     }
 
@@ -202,13 +202,13 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory calls = new Call[](2);
-        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
-        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
+        calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
-        vm.expectCall(address(comprehensivePlugin), abi.encodeCall(ComprehensivePlugin.foo, ()), 2);
+        vm.expectCall(address(comprehensiveModule), abi.encodeCall(ComprehensiveModule.foo, ()), 2);
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
-            _encodeSignature(comprehensivePluginValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
+            _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
     }
 
@@ -216,12 +216,12 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory innerCalls = new Call[](1);
-        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
         outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
 
-        PackedUserOperation memory userOp = _generateUserOpWithComprehensivePluginValidation(
+        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
         );
 
@@ -243,12 +243,12 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory innerCalls = new Call[](1);
-        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
         outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
 
-        PackedUserOperation memory userOp = _generateUserOpWithComprehensivePluginValidation(
+        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodePacked(
                 IAccountExecute.executeUserOp.selector,
                 abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
@@ -273,7 +273,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _enableBatchValidation();
 
         Call[] memory innerCalls = new Call[](1);
-        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensivePlugin.foo, ()));
+        innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
         outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
@@ -281,12 +281,12 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector));
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls)),
-            _encodeSignature(comprehensivePluginValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
+            _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
     }
 
     function _enableBatchValidation() internal {
-        // Extend ComprehensivePlugin's validation function to also validate `executeBatch`, to allow the
+        // Extend ComprehensiveModule's validation function to also validate `executeBatch`, to allow the
         // self-call.
 
         bytes4[] memory selectors = new bytes4[](1);
@@ -296,13 +296,13 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.installValidation,
-                (ValidationConfigLib.pack(comprehensivePluginValidation, false, false), selectors, "", "", "")
+                (ValidationConfigLib.pack(comprehensiveModuleValidation, false, false), selectors, "", "", "")
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
 
-    function _generateUserOpWithComprehensivePluginValidation(bytes memory callData)
+    function _generateUserOpWithComprehensiveModuleValidation(bytes memory callData)
         internal
         view
         returns (PackedUserOperation memory)
@@ -318,9 +318,9 @@ contract SelfCallAuthorizationTest is AccountTestBase {
             gasFees: _encodeGas(1, 1),
             paymasterAndData: hex"",
             signature: _encodeSignature(
-                comprehensivePluginValidation,
+                comprehensiveModuleValidation,
                 SELECTOR_ASSOCIATED_VALIDATION,
-                // Comprehensive plugin's validation function doesn't actually check anything, so we don't need to
+                // Comprehensive module's validation function doesn't actually check anything, so we don't need to
                 // sign anything.
                 ""
             )

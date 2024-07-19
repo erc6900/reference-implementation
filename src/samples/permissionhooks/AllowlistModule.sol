@@ -3,13 +3,13 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
+import {ModuleManifest, ModuleMetadata} from "../../interfaces/IModule.sol";
 
 import {Call, IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IValidationHook} from "../../interfaces/IValidationHook.sol";
-import {BasePlugin} from "../../plugins/BasePlugin.sol";
+import {BaseModule} from "../../modules/BaseModule.sol";
 
-contract AllowlistPlugin is IValidationHook, BasePlugin {
+contract AllowlistModule is IValidationHook, BaseModule {
     enum EntityId {
         PRE_VALIDATION_HOOK
     }
@@ -95,9 +95,9 @@ contract AllowlistPlugin is IValidationHook, BasePlugin {
         revert NotImplemented();
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
-        metadata.name = "Allowlist Plugin";
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
+        metadata.name = "Allowlist Module";
         metadata.version = "v0.0.1";
         metadata.author = "ERC-6900 Working Group";
 
@@ -105,7 +105,7 @@ contract AllowlistPlugin is IValidationHook, BasePlugin {
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function pluginManifest() external pure override returns (PluginManifest memory) {}
+    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
     function _checkAllowlistCalldata(bytes calldata callData) internal view {
         if (bytes4(callData[:4]) == IStandardExecutor.execute.selector) {

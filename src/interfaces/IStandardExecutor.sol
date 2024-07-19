@@ -12,7 +12,6 @@ struct Call {
 
 interface IStandardExecutor {
     /// @notice Standard execute method.
-    /// @dev If the target is a plugin, the call SHOULD revert.
     /// @param target The target address for the account to call.
     /// @param value The value to send with the call.
     /// @param data The calldata for the call.
@@ -20,7 +19,7 @@ interface IStandardExecutor {
     function execute(address target, uint256 value, bytes calldata data) external payable returns (bytes memory);
 
     /// @notice Standard executeBatch method.
-    /// @dev If the target is a plugin, the call SHOULD revert. If any of the calls revert, the entire batch MUST
+    /// @dev If the target is a module, the call SHOULD revert. If any of the calls revert, the entire batch MUST
     /// revert.
     /// @param calls The array of calls.
     /// @return An array containing the return data from the calls.

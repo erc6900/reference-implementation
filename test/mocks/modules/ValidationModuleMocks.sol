@@ -6,14 +6,14 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {
     ManifestExecutionFunction,
     ManifestValidation,
-    PluginManifest,
-    PluginMetadata
-} from "../../../src/interfaces/IPlugin.sol";
+    ModuleManifest,
+    ModuleMetadata
+} from "../../../src/interfaces/IModule.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook, BasePlugin {
+abstract contract MockBaseUserOpValidationModule is IValidation, IValidationHook, BaseModule {
     enum EntityId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
@@ -25,7 +25,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
     uint256 internal _preUserOpValidationHook2Data;
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     function onInstall(bytes calldata) external override {}
@@ -68,7 +68,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
     }
 
     // Empty stubs
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 
     function preRuntimeValidationHook(uint32, address, uint256, bytes calldata, bytes calldata)
         external
@@ -87,7 +87,7 @@ abstract contract MockBaseUserOpValidationPlugin is IValidation, IValidationHook
     }
 }
 
-contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
+contract MockUserOpValidationModule is MockBaseUserOpValidationModule {
     function setValidationData(uint256 userOpValidationFunctionData) external {
         _userOpValidationFunctionData = userOpValidationFunctionData;
     }
@@ -99,11 +99,11 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
     function foo() external {}
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -127,7 +127,7 @@ contract MockUserOpValidationPlugin is MockBaseUserOpValidationPlugin {
     }
 }
 
-contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
+contract MockUserOpValidation1HookModule is MockBaseUserOpValidationModule {
     function setValidationData(uint256 userOpValidationFunctionData, uint256 preUserOpValidationHook1Data)
         external
     {
@@ -142,11 +142,11 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
     function bar() external {}
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -170,7 +170,7 @@ contract MockUserOpValidation1HookPlugin is MockBaseUserOpValidationPlugin {
     }
 }
 
-contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
+contract MockUserOpValidation2HookModule is MockBaseUserOpValidationModule {
     function setValidationData(
         uint256 userOpValidationFunctionData,
         uint256 preUserOpValidationHook1Data,
@@ -188,11 +188,11 @@ contract MockUserOpValidation2HookPlugin is MockBaseUserOpValidationPlugin {
     function baz() external {}
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({

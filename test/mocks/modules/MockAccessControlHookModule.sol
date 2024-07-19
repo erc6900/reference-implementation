@@ -3,17 +3,17 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
+import {ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-// A pre validaiton hook plugin that uses per-hook data.
+// A pre validaiton hook module that uses per-hook data.
 // This example enforces that the target of an `execute` call must only be the previously specified address.
 // This is just a mock - it does not enforce this over `executeBatch` and other methods of making calls, and should
 // not be used in production..
-contract MockAccessControlHookPlugin is IValidationHook, BasePlugin {
+contract MockAccessControlHookModule is IValidationHook, BaseModule {
     enum EntityId {
         PRE_VALIDATION_HOOK
     }
@@ -73,7 +73,7 @@ contract MockAccessControlHookPlugin is IValidationHook, BasePlugin {
         revert NotImplemented();
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {}
+    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 }

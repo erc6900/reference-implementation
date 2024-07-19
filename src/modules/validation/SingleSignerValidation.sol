@@ -6,9 +6,9 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import {IPlugin, PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.sol";
+import {IModule, ModuleManifest, ModuleMetadata} from "../../interfaces/IModule.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
-import {BasePlugin} from "../BasePlugin.sol";
+import {BaseModule} from "../BaseModule.sol";
 import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 
 /// @title ECSDA Validation
@@ -24,7 +24,7 @@ import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 ///
 /// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
-contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
+contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -46,13 +46,13 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         _transferSigner(entityId, newSigner);
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onInstall(bytes calldata data) external override {
         (uint32 entityId, address newSigner) = abi.decode(data, (uint32, address));
         _transferSigner(entityId, newSigner);
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onUninstall(bytes calldata data) external override {
         // ToDo: what does it mean in the world of composable validation world to uninstall one type of validation
         // We can either get rid of all SingleSigner signers. What about the nested ones?
@@ -115,18 +115,18 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc IPlugin
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    /// @inheritdoc IModule
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
         return manifest;
     }
 
-    /// @inheritdoc IPlugin
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    /// @inheritdoc IModule
+    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;
