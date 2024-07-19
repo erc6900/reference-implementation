@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
-import {PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
+import {ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-contract DirectCallPlugin is BasePlugin, IExecutionHook {
+contract DirectCallModule is BaseModule, IExecutionHook {
     bool public preHookRan = false;
     bool public postHookRan = false;
 
@@ -15,7 +15,7 @@ contract DirectCallPlugin is BasePlugin, IExecutionHook {
 
     function onUninstall(bytes calldata) external override {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {}
+    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
     function directCall() external returns (bytes memory) {
         return IStandardExecutor(msg.sender).execute(address(this), 0, abi.encodeCall(this.getData, ()));
@@ -25,7 +25,7 @@ contract DirectCallPlugin is BasePlugin, IExecutionHook {
         return hex"04546b";
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 
     function preExecutionHook(uint32, address sender, uint256, bytes calldata)
         external

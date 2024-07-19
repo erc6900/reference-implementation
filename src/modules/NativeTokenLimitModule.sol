@@ -6,20 +6,20 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
+import {ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
-import {BasePlugin, IERC165} from "./BasePlugin.sol";
+import {BaseModule, IERC165} from "./BaseModule.sol";
 
-/// @title Native Token Limit Plugin
+/// @title Native Token Limit Module
 /// @author ERC-6900 Authors
-/// @notice This plugin supports a single total native token spend limit.
+/// @notice This module supports a single total native token spend limit.
 /// It tracks a total spend limit across UserOperation gas limits and native token transfers.
 /// If a non whitelisted paymaster is used, UO gas would not cause the limit to decrease.
 /// If a whitelisted paymaster is used, gas is still counted towards the limit
-contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
+contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -82,7 +82,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         return _checkAndDecrementLimit(entityId, data);
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onInstall(bytes calldata data) external override {
         (uint32 startEntityId, uint256[] memory spendLimits) = abi.decode(data, (uint32, uint256[]));
 
@@ -95,7 +95,7 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         }
     }
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     function onUninstall(bytes calldata data) external override {
         // This is the highest entityId that's being used by the account
         uint32 entityId = abi.decode(data, (uint32));
@@ -117,13 +117,13 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
         override
     {} // solhint-disable-line no-empty-blocks
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     // solhint-disable-next-line no-empty-blocks
-    function pluginManifest() external pure override returns (PluginManifest memory) {}
+    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
-    /// @inheritdoc IPlugin
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    /// @inheritdoc IModule
+    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;
@@ -138,8 +138,8 @@ contract NativeTokenLimitPlugin is BasePlugin, IExecutionHook, IValidationHook {
     // ┃    EIP-165    ┃
     // ┗━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc BasePlugin
-    function supportsInterface(bytes4 interfaceId) public view override(BasePlugin, IERC165) returns (bool) {
+    /// @inheritdoc BaseModule
+    function supportsInterface(bytes4 interfaceId) public view override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(IExecutionHook).interfaceId || super.supportsInterface(interfaceId);
     }
 

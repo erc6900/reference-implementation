@@ -3,17 +3,17 @@ pragma solidity ^0.8.19;
 
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {
-    IPlugin,
+    IModule,
     ManifestExecutionFunction,
     ManifestExecutionHook,
-    PluginManifest
-} from "../../src/interfaces/IPlugin.sol";
+    ModuleManifest
+} from "../../src/interfaces/IModule.sol";
 
-import {MockPlugin} from "../mocks/MockPlugin.sol";
+import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountExecHooksTest is AccountTestBase {
-    MockPlugin public mockPlugin1;
+    MockModule public mockModule1;
     bytes32 public manifestHash1;
     bytes32 public manifestHash2;
 
@@ -22,11 +22,11 @@ contract AccountExecHooksTest is AccountTestBase {
     uint32 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
     uint32 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
-    PluginManifest internal _m1;
+    ModuleManifest internal _m1;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
-    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
-    // emitted by MockPlugin
+    event ModuleInstalled(address indexed module, bytes32 manifestHash);
+    event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
+    // emitted by MockModule
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
@@ -42,7 +42,7 @@ contract AccountExecHooksTest is AccountTestBase {
     }
 
     function test_preExecHook_install() public {
-        _installPlugin1WithHooks(
+        _installModule1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _PRE_HOOK_FUNCTION_ID_1,
@@ -52,7 +52,7 @@ contract AccountExecHooksTest is AccountTestBase {
         );
     }
 
-    /// @dev Plugin 1 hook pair: [1, null]
+    /// @dev Module 1 hook pair: [1, null]
     ///      Expected execution: [1, null]
     function test_preExecHook_run() public {
         test_preExecHook_install();
@@ -66,7 +66,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 uint256(0), // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),
-            0 // msg value in call to plugin
+            0 // msg value in call to module
         );
 
         (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
@@ -76,11 +76,11 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_preExecHook_uninstall() public {
         test_preExecHook_install();
 
-        _uninstallPlugin(mockPlugin1);
+        _uninstallModule(mockModule1);
     }
 
     function test_execHookPair_install() public {
-        _installPlugin1WithHooks(
+        _installModule1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _BOTH_HOOKS_FUNCTION_ID_3,
@@ -90,7 +90,7 @@ contract AccountExecHooksTest is AccountTestBase {
         );
     }
 
-    /// @dev Plugin 1 hook pair: [1, 2]
+    /// @dev Module 1 hook pair: [1, 2]
     ///      Expected execution: [1, 2]
     function test_execHookPair_run() public {
         test_execHookPair_install();
@@ -105,7 +105,7 @@ contract AccountExecHooksTest is AccountTestBase {
                 uint256(0), // msg.value in call to account
                 abi.encodeWithSelector(_EXEC_SELECTOR)
             ),
-            0 // msg value in call to plugin
+            0 // msg value in call to module
         );
         vm.expectEmit(true, true, true, true);
         // exec call
@@ -114,7 +114,7 @@ contract AccountExecHooksTest is AccountTestBase {
         // post hook call
         emit ReceivedCall(
             abi.encodeCall(IExecutionHook.postExecutionHook, (_BOTH_HOOKS_FUNCTION_ID_3, "")),
-            0 // msg value in call to plugin
+            0 // msg value in call to module
         );
 
         (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
@@ -124,11 +124,11 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_execHookPair_uninstall() public {
         test_execHookPair_install();
 
-        _uninstallPlugin(mockPlugin1);
+        _uninstallModule(mockModule1);
     }
 
     function test_postOnlyExecHook_install() public {
-        _installPlugin1WithHooks(
+        _installModule1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _POST_HOOK_FUNCTION_ID_2,
@@ -138,7 +138,7 @@ contract AccountExecHooksTest is AccountTestBase {
         );
     }
 
-    /// @dev Plugin 1 hook pair: [null, 2]
+    /// @dev Module 1 hook pair: [null, 2]
     ///      Expected execution: [null, 2]
     function test_postOnlyExecHook_run() public {
         test_postOnlyExecHook_install();
@@ -146,7 +146,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
             abi.encodeCall(IExecutionHook.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
-            0 // msg value in call to plugin
+            0 // msg value in call to module
         );
 
         (bool success,) = address(account1).call(abi.encodeWithSelector(_EXEC_SELECTOR));
@@ -156,34 +156,34 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_postOnlyExecHook_uninstall() public {
         test_postOnlyExecHook_install();
 
-        _uninstallPlugin(mockPlugin1);
+        _uninstallModule(mockModule1);
     }
 
-    function _installPlugin1WithHooks(ManifestExecutionHook memory execHooks) internal {
+    function _installModule1WithHooks(ManifestExecutionHook memory execHooks) internal {
         _m1.executionHooks.push(execHooks);
-        mockPlugin1 = new MockPlugin(_m1);
-        manifestHash1 = keccak256(abi.encode(mockPlugin1.pluginManifest()));
+        mockModule1 = new MockModule(_m1);
+        manifestHash1 = keccak256(abi.encode(mockModule1.moduleManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IPlugin.onInstall, (bytes(""))), 0);
+        emit ReceivedCall(abi.encodeCall(IModule.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(mockPlugin1), manifestHash1);
+        emit ModuleInstalled(address(mockModule1), manifestHash1);
 
         vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(mockPlugin1),
+        account1.installModule({
+            module: address(mockModule1),
             manifestHash: manifestHash1,
-            pluginInstallData: bytes("")
+            moduleInstallData: bytes("")
         });
     }
 
-    function _uninstallPlugin(MockPlugin plugin) internal {
+    function _uninstallModule(MockModule module) internal {
         vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IPlugin.onUninstall, (bytes(""))), 0);
+        emit ReceivedCall(abi.encodeCall(IModule.onUninstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), true);
+        emit ModuleUninstalled(address(module), true);
 
         vm.prank(address(entryPoint));
-        account1.uninstallPlugin(address(plugin), bytes(""), bytes(""));
+        account1.uninstallModule(address(module), bytes(""), bytes(""));
     }
 }

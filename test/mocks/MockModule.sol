@@ -4,10 +4,10 @@ pragma solidity ^0.8.19;
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
-import {IPlugin, PluginManifest, PluginMetadata} from "../../src/interfaces/IPlugin.sol";
+import {IModule, ModuleManifest, ModuleMetadata} from "../../src/interfaces/IModule.sol";
 import {IValidation} from "../../src/interfaces/IValidation.sol";
 
-contract MockPlugin is ERC165 {
+contract MockModule is ERC165 {
     // It's super inefficient to hold the entire abi-encoded manifest in storage, but this is fine since it's
     // just a mock. Note that the reason we do this is to allow copying the entire contents of the manifest
     // into storage in a single line, since solidity fails to compile with memory -> storage copying of nested
@@ -17,41 +17,41 @@ contract MockPlugin is ERC165 {
     // struct ManifestAssociatedFunction memory[] memory to storage not yet supported.
     bytes internal _manifest;
 
-    string internal constant _NAME = "Mock Plugin Modifiable";
+    string internal constant _NAME = "Mock Module Modifiable";
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    constructor(PluginManifest memory _pluginManifest) {
-        _manifest = abi.encode(_pluginManifest);
+    constructor(ModuleManifest memory _moduleManifest) {
+        _manifest = abi.encode(_moduleManifest);
     }
 
-    function _getManifest() internal view returns (PluginManifest memory) {
-        PluginManifest memory m = abi.decode(_manifest, (PluginManifest));
+    function _getManifest() internal view returns (ModuleManifest memory) {
+        ModuleManifest memory m = abi.decode(_manifest, (ModuleManifest));
         return m;
     }
 
-    function _castToPure(function() internal view returns (PluginManifest memory) fnIn)
+    function _castToPure(function() internal view returns (ModuleManifest memory) fnIn)
         internal
         pure
-        returns (function() internal pure returns (PluginManifest memory) fnOut)
+        returns (function() internal pure returns (ModuleManifest memory) fnOut)
     {
         assembly ("memory-safe") {
             fnOut := fnIn
         }
     }
 
-    function pluginManifest() external pure returns (PluginManifest memory) {
+    function moduleManifest() external pure returns (ModuleManifest memory) {
         return _castToPure(_getManifest)();
     }
 
-    function pluginMetadata() external pure returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    function moduleMetadata() external pure returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;
@@ -65,14 +65,14 @@ contract MockPlugin is ERC165 {
     ///
     /// This function call must use less than 30 000 gas.
     ///
-    /// Supporting the IPlugin interface is a requirement for plugin installation. This is also used
+    /// Supporting the IModule interface is a requirement for module installation. This is also used
     /// by the modular account to prevent standard execution functions `execute` and `executeBatch` from
-    /// making calls to plugins.
+    /// making calls to modules.
     /// @param interfaceId The interface ID to check for support.
     /// @return True if the contract supports `interfaceId`.
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IPlugin).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
     receive() external payable {}

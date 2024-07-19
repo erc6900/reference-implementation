@@ -4,15 +4,15 @@ pragma solidity ^0.8.25;
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import {IPlugin, ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../interfaces/IPlugin.sol";
-import {BasePlugin} from "./BasePlugin.sol";
+import {IModule, ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
+import {BaseModule} from "./BaseModule.sol";
 
-/// @title Token Receiver Plugin
+/// @title Token Receiver Module
 /// @author ERC-6900 Authors
-/// @notice This plugin allows modular accounts to receive various types of tokens by implementing
+/// @notice This module allows modular accounts to receive various types of tokens by implementing
 /// required token receiver interfaces.
-contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
-    string internal constant _NAME = "Token Receiver Plugin";
+contract TokenReceiverModule is BaseModule, IERC721Receiver, IERC1155Receiver {
+    string internal constant _NAME = "Token Receiver Module";
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
 
@@ -43,20 +43,20 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     // solhint-disable-next-line no-empty-blocks
     function onInstall(bytes calldata) external pure override {}
 
-    /// @inheritdoc IPlugin
+    /// @inheritdoc IModule
     // solhint-disable-next-line no-empty-blocks
     function onUninstall(bytes calldata) external pure override {}
 
-    /// @inheritdoc IPlugin
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    /// @inheritdoc IModule
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](3);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -82,9 +82,9 @@ contract TokenReceiverPlugin is BasePlugin, IERC721Receiver, IERC1155Receiver {
         return manifest;
     }
 
-    /// @inheritdoc IPlugin
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    /// @inheritdoc IModule
+    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;

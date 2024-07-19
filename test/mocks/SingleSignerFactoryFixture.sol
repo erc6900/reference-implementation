@@ -7,7 +7,7 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
@@ -45,17 +45,17 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner);
+            bytes memory moduleInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner);
             // not necessary to check return addr since next call will fail if so
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
-            // point proxy to actual implementation and init plugins
+            // point proxy to actual implementation and init modules
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(
                     address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
                 ),
                 new bytes4[](0),
-                pluginInstallData,
+                moduleInstallData,
                 "",
                 ""
             );

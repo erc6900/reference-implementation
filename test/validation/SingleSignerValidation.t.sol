@@ -5,7 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {ContractOwner} from "../mocks/ContractOwner.sol";
@@ -50,7 +50,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -68,7 +68,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -91,7 +91,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), newEntityId), GLOBAL_VALIDATION, ""
+                ModuleEntityLib.pack(address(singleSignerValidation), newEntityId), GLOBAL_VALIDATION, ""
             )
         );
         assertEq(ethRecipient.balance, 1 wei);
