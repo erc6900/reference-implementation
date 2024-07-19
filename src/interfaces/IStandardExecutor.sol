@@ -12,7 +12,6 @@ struct Call {
 
 interface IStandardExecutor {
     /// @notice Standard execute method.
-    /// @dev If the target is a module, the call SHOULD revert.
     /// @param target The target address for the account to call.
     /// @param value The value to send with the call.
     /// @param data The calldata for the call.

@@ -43,7 +43,6 @@ struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;
     bool initializing;
-    // Module metadata storage
     EnumerableMap.AddressToUintMap moduleManifestHashes;
     // Execution functions and their associated functions
     mapping(bytes4 => SelectorData) selectorData;
