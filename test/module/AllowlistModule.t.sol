@@ -7,7 +7,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
-import {AllowlistModule} from "../../src/samples/permissionhooks/AllowlistModule.sol";
+import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
