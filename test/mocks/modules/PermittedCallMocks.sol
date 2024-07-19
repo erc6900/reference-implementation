@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ManifestExecutionFunction, PluginManifest, PluginMetadata} from "../../../src/interfaces/IPlugin.sol";
+import {ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
-import {ResultCreatorPlugin} from "./ReturnDataPluginMocks.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
+import {ResultCreatorModule} from "./ReturnDataModuleMocks.sol";
 
-contract PermittedCallerPlugin is BasePlugin {
+contract PermittedCallerModule is BaseModule {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
         manifest.executionFunctions[0].executionSelector = this.usePermittedCallAllowed.selector;
@@ -25,15 +25,15 @@ contract PermittedCallerPlugin is BasePlugin {
         return manifest;
     }
 
-    function pluginMetadata() external pure override returns (PluginMetadata memory) {}
+    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 
-    // The manifest requested access to use the plugin-defined method "foo"
+    // The manifest requested access to use the module-defined method "foo"
     function usePermittedCallAllowed() external view returns (bytes memory) {
-        return abi.encode(ResultCreatorPlugin(msg.sender).foo());
+        return abi.encode(ResultCreatorModule(msg.sender).foo());
     }
 
-    // The manifest has not requested access to use the plugin-defined method "bar", so this should revert.
+    // The manifest has not requested access to use the module-defined method "bar", so this should revert.
     function usePermittedCallNotAllowed() external view returns (bytes memory) {
-        return abi.encode(ResultCreatorPlugin(msg.sender).bar());
+        return abi.encode(ResultCreatorModule(msg.sender).bar());
     }
 }

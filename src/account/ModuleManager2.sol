@@ -3,16 +3,16 @@ pragma solidity ^0.8.25;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {PluginEntityLib} from "../helpers/PluginEntityLib.sol";
+import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
 import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
-import {PluginEntity, ValidationConfig} from "../interfaces/IPluginManager.sol";
+import {IModule} from "../interfaces/IModule.sol";
+import {ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
 
 // Temporary additional functions for a user-controlled install flow for validation functions.
-abstract contract PluginManager2 {
+abstract contract ModuleManager2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ValidationConfigLib for ValidationConfig;
 
@@ -20,10 +20,10 @@ abstract contract PluginManager2 {
     uint8 internal constant _RESERVED_VALIDATION_DATA_INDEX = 255;
     uint32 internal constant _SELF_PERMIT_VALIDATION_FUNCTIONID = type(uint32).max;
 
-    error PreValidationAlreadySet(PluginEntity validationFunction, PluginEntity preValidationFunction);
-    error ValidationAlreadySet(bytes4 selector, PluginEntity validationFunction);
-    error ValidationNotSet(bytes4 selector, PluginEntity validationFunction);
-    error PermissionAlreadySet(PluginEntity validationFunction, ExecutionHook hook);
+    error PreValidationAlreadySet(ModuleEntity validationFunction, ModuleEntity preValidationFunction);
+    error ValidationAlreadySet(bytes4 selector, ModuleEntity validationFunction);
+    error ValidationNotSet(bytes4 selector, ModuleEntity validationFunction);
+    error PermissionAlreadySet(ModuleEntity validationFunction, ExecutionHook hook);
     error PreValidationHookLimitExceeded();
 
     function _installValidation(
@@ -34,20 +34,20 @@ abstract contract PluginManager2 {
         bytes memory permissionHooks
     ) internal {
         ValidationData storage _validationData =
-            getAccountStorage().validationData[validationConfig.pluginEntity()];
+            getAccountStorage().validationData[validationConfig.moduleEntity()];
 
         if (preValidationHooks.length > 0) {
-            (PluginEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
-                abi.decode(preValidationHooks, (PluginEntity[], bytes[]));
+            (ModuleEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
+                abi.decode(preValidationHooks, (ModuleEntity[], bytes[]));
 
             for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
-                PluginEntity preValidationFunction = preValidationFunctions[i];
+                ModuleEntity preValidationFunction = preValidationFunctions[i];
 
                 _validationData.preValidationHooks.push(preValidationFunction);
 
                 if (initDatas[i].length > 0) {
-                    (address preValidationPlugin,) = PluginEntityLib.unpack(preValidationFunction);
-                    IPlugin(preValidationPlugin).onInstall(initDatas[i]);
+                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
+                    IModule(preValidationModule).onInstall(initDatas[i]);
                 }
             }
 
@@ -65,12 +65,12 @@ abstract contract PluginManager2 {
                 ExecutionHook memory permissionFunction = permissionFunctions[i];
 
                 if (!_validationData.permissionHooks.add(toSetValue(permissionFunction))) {
-                    revert PermissionAlreadySet(validationConfig.pluginEntity(), permissionFunction);
+                    revert PermissionAlreadySet(validationConfig.moduleEntity(), permissionFunction);
                 }
 
                 if (initDatas[i].length > 0) {
-                    (address executionPlugin,) = PluginEntityLib.unpack(permissionFunction.hookFunction);
-                    IPlugin(executionPlugin).onInstall(initDatas[i]);
+                    (address executionModule,) = ModuleEntityLib.unpack(permissionFunction.hookFunction);
+                    IModule(executionModule).onInstall(initDatas[i]);
                 }
             }
         }
@@ -78,7 +78,7 @@ abstract contract PluginManager2 {
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
             if (!_validationData.selectors.add(toSetValue(selector))) {
-                revert ValidationAlreadySet(selector, validationConfig.pluginEntity());
+                revert ValidationAlreadySet(selector, validationConfig.moduleEntity());
             }
         }
 
@@ -88,13 +88,13 @@ abstract contract PluginManager2 {
             _validationData.isGlobal = validationConfig.isGlobal();
             _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
             if (installData.length > 0) {
-                IPlugin(validationConfig.plugin()).onInstall(installData);
+                IModule(validationConfig.module()).onInstall(installData);
             }
         }
     }
 
     function _uninstallValidation(
-        PluginEntity validationFunction,
+        ModuleEntity validationFunction,
         bytes calldata uninstallData,
         bytes calldata preValidationHookUninstallData,
         bytes calldata permissionHookUninstallData
@@ -108,12 +108,12 @@ abstract contract PluginManager2 {
             bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
 
             // Clear pre validation hooks
-            PluginEntity[] storage preValidationHooks = _validationData.preValidationHooks;
+            ModuleEntity[] storage preValidationHooks = _validationData.preValidationHooks;
             for (uint256 i = 0; i < preValidationHooks.length; ++i) {
-                PluginEntity preValidationFunction = preValidationHooks[i];
+                ModuleEntity preValidationFunction = preValidationHooks[i];
                 if (preValidationHookUninstallDatas[0].length > 0) {
-                    (address preValidationPlugin,) = PluginEntityLib.unpack(preValidationFunction);
-                    IPlugin(preValidationPlugin).onUninstall(preValidationHookUninstallDatas[0]);
+                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
+                    IModule(preValidationModule).onUninstall(preValidationHookUninstallDatas[0]);
                 }
             }
             delete _validationData.preValidationHooks;
@@ -128,8 +128,8 @@ abstract contract PluginManager2 {
             for (uint256 i = 0; i < permissionHookLen; ++i) {
                 bytes32 permissionHook = permissionHooks.at(0);
                 permissionHooks.remove(permissionHook);
-                address permissionHookPlugin = address(uint160(bytes20(permissionHook)));
-                IPlugin(permissionHookPlugin).onUninstall(permissionHookUninstallDatas[i]);
+                address permissionHookModule = address(uint160(bytes20(permissionHook)));
+                IModule(permissionHookModule).onUninstall(permissionHookUninstallDatas[i]);
             }
         }
 
@@ -141,8 +141,8 @@ abstract contract PluginManager2 {
         }
 
         if (uninstallData.length > 0) {
-            (address plugin,) = PluginEntityLib.unpack(validationFunction);
-            IPlugin(plugin).onUninstall(uninstallData);
+            (address module,) = ModuleEntityLib.unpack(validationFunction);
+            IModule(module).onUninstall(uninstallData);
         }
     }
 }

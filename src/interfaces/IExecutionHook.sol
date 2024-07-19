@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {IPlugin} from "./IPlugin.sol";
+import {IModule} from "./IModule.sol";
 
-interface IExecutionHook is IPlugin {
+interface IExecutionHook is IModule {
     /// @notice Run the pre execution hook specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there

@@ -8,16 +8,16 @@ import {
     ManifestExecutionFunction,
     ManifestExecutionHook,
     ManifestValidation,
-    PluginManifest,
-    PluginMetadata
-} from "../../../src/interfaces/IPlugin.sol";
-import {PluginManifest} from "../../../src/interfaces/IPlugin.sol";
+    ModuleManifest,
+    ModuleMetadata
+} from "../../../src/interfaces/IModule.sol";
+import {ModuleManifest} from "../../../src/interfaces/IModule.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 
-import {BasePlugin} from "../../../src/plugins/BasePlugin.sol";
+import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, BasePlugin {
+contract ComprehensiveModule is IValidation, IValidationHook, IExecutionHook, BaseModule {
     enum EntityId {
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2,
@@ -28,7 +28,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         SIG_VALIDATION
     }
 
-    string internal constant _NAME = "Comprehensive Plugin";
+    string internal constant _NAME = "Comprehensive Module";
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
 
@@ -39,7 +39,7 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
     function foo() external {}
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    // ┃    Plugin interface functions    ┃
+    // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     function onInstall(bytes calldata) external override {}
@@ -130,8 +130,8 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         revert NotImplemented();
     }
 
-    function pluginManifest() external pure override returns (PluginManifest memory) {
-        PluginManifest memory manifest;
+    function moduleManifest() external pure override returns (ModuleManifest memory) {
+        ModuleManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -174,8 +174,8 @@ contract ComprehensivePlugin is IValidation, IValidationHook, IExecutionHook, Ba
         return manifest;
     }
 
-    function pluginMetadata() external pure virtual override returns (PluginMetadata memory) {
-        PluginMetadata memory metadata;
+    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
+        ModuleMetadata memory metadata;
         metadata.name = _NAME;
         metadata.version = _VERSION;
         metadata.author = _AUTHOR;

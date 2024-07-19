@@ -4,23 +4,23 @@ pragma solidity ^0.8.25;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
-import {AllowlistPlugin} from "../../src/samples/permissionhooks/AllowlistPlugin.sol";
+import {AllowlistModule} from "../../src/samples/permissionhooks/AllowlistModule.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
-contract AllowlistPluginTest is CustomValidationTestBase {
-    AllowlistPlugin public allowlistPlugin;
+contract AllowlistModuleTest is CustomValidationTestBase {
+    AllowlistModule public allowlistModule;
 
-    AllowlistPlugin.AllowlistInit[] public allowlistInit;
+    AllowlistModule.AllowlistInit[] public allowlistInit;
 
     Counter[] public counters;
 
     function setUp() public {
-        allowlistPlugin = new AllowlistPlugin();
+        allowlistModule = new AllowlistModule();
 
         counters = new Counter[](10);
 
@@ -32,7 +32,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
     }
 
     function testFuzz_allowlistHook_userOp_single(uint256 seed) public {
-        AllowlistPlugin.AllowlistInit[] memory inits;
+        AllowlistModule.AllowlistInit[] memory inits;
         (inits, seed) = _generateRandomizedAllowlistInit(seed);
 
         _copyInitToStorage(inits);
@@ -46,7 +46,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
     }
 
     function testFuzz_allowlistHook_userOp_batch(uint256 seed) public {
-        AllowlistPlugin.AllowlistInit[] memory inits;
+        AllowlistModule.AllowlistInit[] memory inits;
         (inits, seed) = _generateRandomizedAllowlistInit(seed);
 
         _copyInitToStorage(inits);
@@ -60,7 +60,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
     }
 
     function testFuzz_allowlistHook_runtime_single(uint256 seed) public {
-        AllowlistPlugin.AllowlistInit[] memory inits;
+        AllowlistModule.AllowlistInit[] memory inits;
         (inits, seed) = _generateRandomizedAllowlistInit(seed);
 
         _copyInitToStorage(inits);
@@ -78,7 +78,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
     }
 
     function testFuzz_allowlistHook_runtime_batch(uint256 seed) public {
-        AllowlistPlugin.AllowlistInit[] memory inits;
+        AllowlistModule.AllowlistInit[] memory inits;
         (inits, seed) = _generateRandomizedAllowlistInit(seed);
 
         _copyInitToStorage(inits);
@@ -145,17 +145,17 @@ contract AllowlistPluginTest is CustomValidationTestBase {
             Call memory call = calls[i];
 
             (bool allowed, bool hasSelectorAllowlist) =
-                allowlistPlugin.targetAllowlist(call.target, address(account1));
+                allowlistModule.targetAllowlist(call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
-                        && !allowlistPlugin.selectorAllowlist(call.target, bytes4(call.data), address(account1))
+                        && !allowlistModule.selectorAllowlist(call.target, bytes4(call.data), address(account1))
                 ) {
                     return abi.encodeWithSelector(
                         IEntryPoint.FailedOpWithRevert.selector,
                         0,
                         "AA23 reverted",
-                        abi.encodeWithSelector(AllowlistPlugin.SelectorNotAllowed.selector)
+                        abi.encodeWithSelector(AllowlistModule.SelectorNotAllowed.selector)
                     );
                 }
             } else {
@@ -163,7 +163,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                     IEntryPoint.FailedOpWithRevert.selector,
                     0,
                     "AA23 reverted",
-                    abi.encodeWithSelector(AllowlistPlugin.TargetNotAllowed.selector)
+                    abi.encodeWithSelector(AllowlistModule.TargetNotAllowed.selector)
                 );
             }
         }
@@ -176,30 +176,30 @@ contract AllowlistPluginTest is CustomValidationTestBase {
             Call memory call = calls[i];
 
             (bool allowed, bool hasSelectorAllowlist) =
-                allowlistPlugin.targetAllowlist(call.target, address(account1));
+                allowlistModule.targetAllowlist(call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
-                        && !allowlistPlugin.selectorAllowlist(call.target, bytes4(call.data), address(account1))
+                        && !allowlistModule.selectorAllowlist(call.target, bytes4(call.data), address(account1))
                 ) {
                     return abi.encodeWithSelector(
                         UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
-                        address(allowlistPlugin),
-                        uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK),
-                        abi.encodeWithSelector(AllowlistPlugin.SelectorNotAllowed.selector)
+                        address(allowlistModule),
+                        uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK),
+                        abi.encodeWithSelector(AllowlistModule.SelectorNotAllowed.selector)
                     );
                 }
             } else {
                 return abi.encodeWithSelector(
                     UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
-                    address(allowlistPlugin),
-                    uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK),
-                    abi.encodeWithSelector(AllowlistPlugin.TargetNotAllowed.selector)
+                    address(allowlistModule),
+                    uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK),
+                    abi.encodeWithSelector(AllowlistModule.TargetNotAllowed.selector)
                 );
             }
         }
 
-        // At this point, we have returned any error that would come from the AllowlistPlugin.
+        // At this point, we have returned any error that would come from the AllowlistModule.
         // But, because this is in the runtime path, the Counter itself may throw if it is not a valid selector.
 
         for (uint256 i = 0; i < calls.length; i++) {
@@ -221,12 +221,12 @@ contract AllowlistPluginTest is CustomValidationTestBase {
     function _generateRandomizedAllowlistInit(uint256 seed)
         internal
         view
-        returns (AllowlistPlugin.AllowlistInit[] memory, uint256)
+        returns (AllowlistModule.AllowlistInit[] memory, uint256)
     {
         uint256 length = seed % 10;
         seed = _next(seed);
 
-        AllowlistPlugin.AllowlistInit[] memory init = new AllowlistPlugin.AllowlistInit[](length);
+        AllowlistModule.AllowlistInit[] memory init = new AllowlistModule.AllowlistInit[](length);
 
         for (uint256 i = 0; i < length; i++) {
             // Half the time, the target is a random counter, the other half, it's a random address.
@@ -271,7 +271,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
                 seed = _next(seed);
             }
 
-            init[i] = AllowlistPlugin.AllowlistInit(target, hasSelectorAllowlist, selectors);
+            init[i] = AllowlistModule.AllowlistInit(target, hasSelectorAllowlist, selectors);
         }
 
         return (init, seed);
@@ -291,12 +291,12 @@ contract AllowlistPluginTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (PluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
     {
-        PluginEntity accessControlHook =
-            PluginEntityLib.pack(address(allowlistPlugin), uint32(AllowlistPlugin.EntityId.PRE_VALIDATION_HOOK));
+        ModuleEntity accessControlHook =
+            ModuleEntityLib.pack(address(allowlistModule), uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK));
 
-        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
+        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
         preValidationHooks[0] = accessControlHook;
 
         bytes[] memory preValidationHookData = new bytes[](1);
@@ -318,7 +318,7 @@ contract AllowlistPluginTest is CustomValidationTestBase {
 
     // Unfortunately, this is a feature that solidity has only implemented in via-ir, so we need to do it manually
     // to be able to run the tests in lite mode.
-    function _copyInitToStorage(AllowlistPlugin.AllowlistInit[] memory init) internal {
+    function _copyInitToStorage(AllowlistModule.AllowlistInit[] memory init) internal {
         for (uint256 i = 0; i < init.length; i++) {
             allowlistInit.push(init[i]);
         }

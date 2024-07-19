@@ -9,21 +9,21 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {PluginManagerInternals} from "../../src/account/PluginManagerInternals.sol";
+import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
-import {PluginManifest} from "../../src/interfaces/IPlugin.sol";
-import {IPluginManager} from "../../src/interfaces/IPluginManager.sol";
+import {ModuleManifest} from "../../src/interfaces/IModule.sol";
+import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
-import {TokenReceiverPlugin} from "../../src/plugins/TokenReceiverPlugin.sol";
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
+import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 
-import {MockPlugin} from "../mocks/MockPlugin.sol";
-import {ComprehensivePlugin} from "../mocks/plugins/ComprehensivePlugin.sol";
+import {MockModule} from "../mocks/MockModule.sol";
+import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
@@ -31,7 +31,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    TokenReceiverPlugin public tokenReceiverPlugin;
+    TokenReceiverModule public tokenReceiverModule;
 
     // A separate account and owner that isn't deployed yet, used to test initcode
     address public owner2;
@@ -40,14 +40,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     address public ethRecipient;
     Counter public counter;
-    PluginManifest internal _manifest;
+    ModuleManifest internal _manifest;
 
-    event PluginInstalled(address indexed plugin, bytes32 manifestHash);
-    event PluginUninstalled(address indexed plugin, bool indexed callbacksSucceeded);
+    event ModuleInstalled(address indexed module, bytes32 manifestHash);
+    event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
-        tokenReceiverPlugin = _deployTokenReceiverPlugin();
+        tokenReceiverModule = _deployTokenReceiverModule();
 
         (owner2, owner2Key) = makeAddrAndKey("owner2");
 
@@ -236,163 +236,163 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(ethRecipient.balance, 2 wei);
     }
 
-    function test_installPlugin() public {
+    function test_installModule() public {
         vm.startPrank(address(entryPoint));
 
-        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
+        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverModule.moduleManifest()));
 
         vm.expectEmit(true, true, true, true);
-        emit PluginInstalled(address(tokenReceiverPlugin), manifestHash);
-        IPluginManager(account1).installPlugin({
-            plugin: address(tokenReceiverPlugin),
+        emit ModuleInstalled(address(tokenReceiverModule), manifestHash);
+        IModuleManager(account1).installModule({
+            module: address(tokenReceiverModule),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days))
+            moduleInstallData: abi.encode(uint48(1 days))
         });
 
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(tokenReceiverPlugin));
+        address[] memory modules = IAccountLoupe(account1).getInstalledModules();
+        assertEq(modules.length, 1);
+        assertEq(modules[0], address(tokenReceiverModule));
     }
 
-    function test_installPlugin_PermittedCallSelectorNotInstalled() public {
+    function test_installModule_PermittedCallSelectorNotInstalled() public {
         vm.startPrank(address(entryPoint));
 
-        PluginManifest memory m;
+        ModuleManifest memory m;
 
-        MockPlugin mockPluginWithBadPermittedExec = new MockPlugin(m);
-        bytes32 manifestHash = keccak256(abi.encode(mockPluginWithBadPermittedExec.pluginManifest()));
+        MockModule mockModuleWithBadPermittedExec = new MockModule(m);
+        bytes32 manifestHash = keccak256(abi.encode(mockModuleWithBadPermittedExec.moduleManifest()));
 
-        IPluginManager(account1).installPlugin({
-            plugin: address(mockPluginWithBadPermittedExec),
+        IModuleManager(account1).installModule({
+            module: address(mockModuleWithBadPermittedExec),
             manifestHash: manifestHash,
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
     }
 
-    function test_installPlugin_invalidManifest() public {
+    function test_installModule_invalidManifest() public {
         vm.startPrank(address(entryPoint));
 
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account1).installPlugin({
-            plugin: address(tokenReceiverPlugin),
+        vm.expectRevert(abi.encodeWithSelector(ModuleManagerInternals.InvalidModuleManifest.selector));
+        IModuleManager(account1).installModule({
+            module: address(tokenReceiverModule),
             manifestHash: bytes32(0),
-            pluginInstallData: abi.encode(uint48(1 days))
+            moduleInstallData: abi.encode(uint48(1 days))
         });
     }
 
-    function test_installPlugin_interfaceNotSupported() public {
+    function test_installModule_interfaceNotSupported() public {
         vm.startPrank(address(entryPoint));
 
-        address badPlugin = address(1);
+        address badModule = address(1);
         vm.expectRevert(
-            abi.encodeWithSelector(PluginManagerInternals.PluginInterfaceNotSupported.selector, address(badPlugin))
+            abi.encodeWithSelector(ModuleManagerInternals.ModuleInterfaceNotSupported.selector, address(badModule))
         );
-        IPluginManager(account1).installPlugin({
-            plugin: address(badPlugin),
+        IModuleManager(account1).installModule({
+            module: address(badModule),
             manifestHash: bytes32(0),
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
     }
 
-    function test_installPlugin_alreadyInstalled() public {
+    function test_installModule_alreadyInstalled() public {
         vm.startPrank(address(entryPoint));
 
-        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverPlugin.pluginManifest()));
-        IPluginManager(account1).installPlugin({
-            plugin: address(tokenReceiverPlugin),
+        bytes32 manifestHash = keccak256(abi.encode(tokenReceiverModule.moduleManifest()));
+        IModuleManager(account1).installModule({
+            module: address(tokenReceiverModule),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days))
+            moduleInstallData: abi.encode(uint48(1 days))
         });
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                PluginManagerInternals.PluginAlreadyInstalled.selector, address(tokenReceiverPlugin)
+                ModuleManagerInternals.ModuleAlreadyInstalled.selector, address(tokenReceiverModule)
             )
         );
-        IPluginManager(account1).installPlugin({
-            plugin: address(tokenReceiverPlugin),
+        IModuleManager(account1).installModule({
+            module: address(tokenReceiverModule),
             manifestHash: manifestHash,
-            pluginInstallData: abi.encode(uint48(1 days))
+            moduleInstallData: abi.encode(uint48(1 days))
         });
     }
 
-    function test_uninstallPlugin_default() public {
+    function test_uninstallModule_default() public {
         vm.startPrank(address(entryPoint));
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
+        ComprehensiveModule module = new ComprehensiveModule();
+        bytes32 manifestHash = keccak256(abi.encode(module.moduleManifest()));
+        IModuleManager(account1).installModule({
+            module: address(module),
             manifestHash: manifestHash,
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), true);
-        IPluginManager(account1).uninstallPlugin({plugin: address(plugin), config: "", pluginUninstallData: ""});
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 0);
+        emit ModuleUninstalled(address(module), true);
+        IModuleManager(account1).uninstallModule({module: address(module), config: "", moduleUninstallData: ""});
+        address[] memory modules = IAccountLoupe(account1).getInstalledModules();
+        assertEq(modules.length, 0);
     }
 
-    function test_uninstallPlugin_manifestParameter() public {
+    function test_uninstallModule_manifestParameter() public {
         vm.startPrank(address(entryPoint));
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
+        ComprehensiveModule module = new ComprehensiveModule();
+        bytes memory serializedManifest = abi.encode(module.moduleManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
+        IModuleManager(account1).installModule({
+            module: address(module),
             manifestHash: manifestHash,
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
-        emit PluginUninstalled(address(plugin), true);
-        IPluginManager(account1).uninstallPlugin({
-            plugin: address(plugin),
+        emit ModuleUninstalled(address(module), true);
+        IModuleManager(account1).uninstallModule({
+            module: address(module),
             config: serializedManifest,
-            pluginUninstallData: ""
+            moduleUninstallData: ""
         });
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 0);
+        address[] memory modules = IAccountLoupe(account1).getInstalledModules();
+        assertEq(modules.length, 0);
     }
 
-    function test_uninstallPlugin_invalidManifestFails() public {
+    function test_uninstallModule_invalidManifestFails() public {
         vm.startPrank(address(entryPoint));
 
-        ComprehensivePlugin plugin = new ComprehensivePlugin();
-        bytes memory serializedManifest = abi.encode(plugin.pluginManifest());
+        ComprehensiveModule module = new ComprehensiveModule();
+        bytes memory serializedManifest = abi.encode(module.moduleManifest());
         bytes32 manifestHash = keccak256(serializedManifest);
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
+        IModuleManager(account1).installModule({
+            module: address(module),
             manifestHash: manifestHash,
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
 
         // Attempt to uninstall with a blank _manifest
-        PluginManifest memory blankManifest;
+        ModuleManifest memory blankManifest;
 
-        vm.expectRevert(abi.encodeWithSelector(PluginManagerInternals.InvalidPluginManifest.selector));
-        IPluginManager(account1).uninstallPlugin({
-            plugin: address(plugin),
+        vm.expectRevert(abi.encodeWithSelector(ModuleManagerInternals.InvalidModuleManifest.selector));
+        IModuleManager(account1).uninstallModule({
+            module: address(module),
             config: abi.encode(blankManifest),
-            pluginUninstallData: ""
+            moduleUninstallData: ""
         });
-        address[] memory plugins = IAccountLoupe(account1).getInstalledPlugins();
-        assertEq(plugins.length, 1);
-        assertEq(plugins[0], address(plugin));
+        address[] memory modules = IAccountLoupe(account1).getInstalledModules();
+        assertEq(modules.length, 1);
+        assertEq(modules[0], address(module));
     }
 
-    function _installPluginWithExecHooks() internal returns (MockPlugin plugin) {
+    function _installModuleWithExecHooks() internal returns (MockModule module) {
         vm.startPrank(address(entryPoint));
 
-        plugin = new MockPlugin(_manifest);
-        bytes32 manifestHash = keccak256(abi.encode(plugin.pluginManifest()));
+        module = new MockModule(_manifest);
+        bytes32 manifestHash = keccak256(abi.encode(module.moduleManifest()));
 
-        IPluginManager(account1).installPlugin({
-            plugin: address(plugin),
+        IModuleManager(account1).installModule({
+            module: address(module),
             manifestHash: manifestHash,
-            pluginInstallData: ""
+            moduleInstallData: ""
         });
 
         vm.stopPrank();
