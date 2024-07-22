@@ -31,6 +31,8 @@ struct ValidationData {
     bool isGlobal;
     // Whether or not this validation is a signature validator.
     bool isSignatureValidation;
+    // Whether, in the case this is an appended bytecode validation, the validation is disabled
+    bool isAppendedBytecodeValidationDisabled;
     // The pre validation hooks for this validation function.
     PluginEntity[] preValidationHooks;
     // Permission hooks for this validation function.

@@ -7,7 +7,11 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+
 import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
+
+import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
@@ -41,23 +45,14 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * account creation
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
-        address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+        // address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+        address addr = getAddress(owner, salt);
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner);
-            // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
-            // point proxy to actual implementation and init plugins
-            UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(
-                    address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
-                ),
-                new bytes4[](0),
-                pluginInstallData,
-                "",
-                ""
+            LibClone.createDeterministicERC1967(
+                address(accountImplementation), _getImmutableArgs(owner), getSalt(owner, salt)
             );
         }
 
@@ -68,7 +63,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
     function getAddress(address owner, uint256 salt) public view returns (address) {
-        return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+        // return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+        return LibClone.predictDeterministicAddressERC1967(
+            address(accountImplementation), _getImmutableArgs(owner), getSalt(owner, salt), address(this)
+        );
     }
 
     function addStake() external payable {
@@ -77,5 +75,12 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     function getSalt(address owner, uint256 salt) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt));
+    }
+
+    function _getImmutableArgs(address owner) private view returns (bytes memory) {
+        return abi.encode(
+            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            abi.encode(owner)
+        );
     }
 }

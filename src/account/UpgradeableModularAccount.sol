@@ -7,8 +7,10 @@ import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IA
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
+
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -247,6 +249,15 @@ contract UpgradeableModularAccount is
         return returnData;
     }
 
+    // We pass a bool for "enabled" for ease of use, rather than the more efficient "disabled"
+    // We just negate it later.
+    function setBytecodeAppendedValidationEnabled(bool enabled) external wrapNativeFunction {
+        PluginEntity appendedValidation = _getAppendedValidation();
+
+        getAccountStorage().validationData[appendedValidation].isAppendedBytecodeValidationDisabled = !enabled;
+        // TODO: event
+    }
+
     /// @inheritdoc IPluginManager
     /// @notice May be validated by a global validation.
     function installPlugin(address plugin, bytes32 manifestHash, bytes calldata pluginInstallData)
@@ -332,7 +343,7 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc UUPSUpgradeable
     /// @notice May be validated by a global validation.
-    function upgradeToAndCall(address newImplementation, bytes memory data)
+    function upgradeToAndCall(address newImplementation, bytes calldata data)
         public
         payable
         override
@@ -348,7 +359,21 @@ contract UpgradeableModularAccount is
         PluginEntity sigValidation = PluginEntity.wrap(bytes24(signature));
 
         (address plugin, uint32 entityId) = sigValidation.unpack();
-        if (!_storage.validationData[sigValidation].isSignatureValidation) {
+        // IF, in storage, the validation is not a signature validation THEN
+        //      Is it the appended validation?
+        //          No: revert
+        //          Yes: Is it disabled as an appended bytecode validation?
+        //              No: continue
+        //              Yes: revert
+        // Written as:
+        // IF not storage AND (not appended OR appended-disabled) THEN revert ELSE continue
+        if (
+            !_storage.validationData[sigValidation].isSignatureValidation
+                && (
+                    !_getAppendedValidation().eq(sigValidation)
+                        || _storage.validationData[sigValidation].isAppendedBytecodeValidationDisabled
+                )
+        ) {
             revert SignatureValidationInvalid(plugin, entityId);
         }
 
@@ -733,7 +758,6 @@ contract UpgradeableModularAccount is
         ) {
             return true;
         }
-
         return getAccountStorage().selectorData[selector].allowGlobalValidation;
     }
 
@@ -745,14 +769,39 @@ contract UpgradeableModularAccount is
 
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
-                revert ValidationFunctionMissing(selector);
+            if (_globalValidationAllowed(selector)) {
+                if (_storage.validationData[validationFunction].isGlobal) {
+                    return;
+                }
+
+                if (
+                    _getAppendedValidation().eq(validationFunction)
+                        && !validationFunction.eq(PluginEntity.wrap(bytes24(0)))
+                        && !_storage.validationData[validationFunction].isAppendedBytecodeValidationDisabled
+                ) {
+                    return;
+                }
             }
+            revert ValidationFunctionMissing(selector);
         } else {
             // Not global validation, but per-selector
             if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
                 revert ValidationFunctionMissing(selector);
             }
         }
+    }
+
+    function _getAppendedValidation() internal view returns (PluginEntity) {
+        bytes memory appendedData = LibClone.argsOnERC1967(address(this));
+        // Appended bytecode is under the format abi.encode(pluginEntity, validationArbitraryData)
+        // Validations will then decode this arbitrary data for whatever information they need if they support
+        // bytecode-appended validation.
+        if (appendedData.length > 0) {
+            // TODO: Evaluate if it's better to somehow pass the data back from here and have it passed to the
+            // validation instead of having it be read from bytecode by the validation
+            (PluginEntity appendedValidationFunction,) = abi.decode(appendedData, (PluginEntity, bytes));
+            return appendedValidationFunction;
+        }
+        return PluginEntity.wrap(bytes24(0));
     }
 }

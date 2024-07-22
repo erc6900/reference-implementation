@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -10,6 +12,9 @@ import {IPlugin, PluginManifest, PluginMetadata} from "../../interfaces/IPlugin.
 import {IValidation} from "../../interfaces/IValidation.sol";
 import {BasePlugin} from "../BasePlugin.sol";
 import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
+
+import {PluginEntityLib} from "../../helpers/PluginEntityLib.sol";
+import {PluginEntity} from "../../interfaces/IPluginManager.sol";
 
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
@@ -26,6 +31,7 @@ import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 /// to validate partially or fully.
 contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     using ECDSA for bytes32;
+    using PluginEntityLib for PluginEntity;
     using MessageHashUtils for bytes32;
 
     string internal constant _NAME = "SingleSigner Validation";
@@ -61,7 +67,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
 
     /// @inheritdoc ISingleSignerValidation
     function signerOf(uint32 entityId, address account) external view returns (address) {
-        return signer[entityId][account];
+        return _getExpectedSigner(entityId, account);
     }
 
     /// @inheritdoc IValidation
@@ -73,7 +79,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
     {
         // Validate the user op signature against the owner.
         (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != signer[entityId][userOp.sender]) {
+        if (sigSigner == address(0) || sigSigner != _getExpectedSigner(entityId, userOp.sender)) {
             return _SIG_VALIDATION_FAILED;
         }
         return _SIG_VALIDATION_PASSED;
@@ -88,8 +94,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         bytes calldata,
         bytes calldata
     ) external view override {
-        // Validate that the sender is the owner of the account or self.
-        if (sender != signer[entityId][account]) {
+        if (sender != _getExpectedSigner(entityId, account)) {
             revert NotAuthorized();
         }
         return;
@@ -108,7 +113,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         override
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(signer[entityId][account], digest, signature)) {
+        if (SignatureChecker.isValidSignatureNow(_getExpectedSigner(entityId, account), digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
@@ -141,5 +146,29 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         address previousSigner = signer[entityId][msg.sender];
         signer[entityId][msg.sender] = newSigner;
         emit SignerTransferred(msg.sender, entityId, previousSigner, newSigner);
+    }
+
+    function _getExpectedSigner(uint32 entityId, address account) internal view returns (address) {
+        address expectedSigner = signer[entityId][account];
+
+        if (expectedSigner == address(0)) {
+            // Check clone for expected validation (address(this));
+            // Check clone code for expected signer
+            bytes memory immutables = LibClone.argsOnERC1967(account);
+
+            // Note: Will opaquely revert on incorrect encoding (fun)
+            // But all appended bytecode should be in this format
+            (PluginEntity validation, bytes memory appendedData) = abi.decode(immutables, (PluginEntity, bytes));
+
+            if (!validation.eq(PluginEntityLib.pack(address(this), entityId))) {
+                revert("Validation incorrect");
+            }
+
+            (address decodedSigner) = abi.decode(appendedData, (address));
+
+            expectedSigner = decodedSigner;
+        }
+
+        return expectedSigner;
     }
 }
