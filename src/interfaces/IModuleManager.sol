@@ -7,6 +7,8 @@ type ModuleEntity is bytes24;
 
 type ValidationConfig is bytes26;
 
+type HookConfig is bytes26;
+
 interface IModuleManager {
     event ModuleInstalled(address indexed module);
 
@@ -29,14 +31,14 @@ interface IModuleManager {
     /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the module to setup initial module state.
-    /// @param preValidationHooks Optional pre-validation hooks to install for the validation function.
-    /// @param permissionHooks Optional permission hooks to install for the validation function.
+    /// @param hooks Optional hooks to install, associated with the validation function. These may be
+    /// pre-validation hooks or execution hooks. The expected format is a bytes26 HookConfig, followed by the
+    /// install data, if any.
     function installValidation(
         ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
-        bytes calldata preValidationHooks,
-        bytes calldata permissionHooks
+        bytes[] calldata hooks
     ) external;
 
     /// @notice Uninstall a validation function from a set of execution selectors.
@@ -44,14 +46,13 @@ interface IModuleManager {
     /// @param validationFunction The validation function to uninstall.
     /// @param uninstallData Optional data to be decoded and used by the module to clear module data for the
     /// account.
-    /// @param preValidationHookUninstallData Optional data to be decoded and used by the module to clear account
-    /// data
-    /// @param permissionHookUninstallData Optional data to be decoded and used by the module to clear account data
+    /// @param hookUninstallData Optional data to be used by hooks for cleanup. If any are provided, the array must
+    /// be of a length equal to existing pre-validation hooks plus permission hooks. Hooks are indexed by
+    /// pre-validation hook order first, then permission hooks.
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,
-        bytes calldata preValidationHookUninstallData,
-        bytes calldata permissionHookUninstallData
+        bytes[] calldata hookUninstallData
     ) external;
 
     /// @notice Uninstall a module from the modular account.

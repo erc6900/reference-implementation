@@ -56,8 +56,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
                 ),
                 new bytes4[](0),
                 moduleInstallData,
-                "",
-                ""
+                new bytes[](0)
             );
         }
 

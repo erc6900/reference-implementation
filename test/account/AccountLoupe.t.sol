@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
@@ -135,28 +136,23 @@ contract AccountLoupeTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
-        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](2);
-        preValidationHooks[0] = ModuleEntityLib.pack(
-            address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_1)
+        bytes[] memory hooks = new bytes[](2);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_1)
+            )
         );
-        preValidationHooks[1] = ModuleEntityLib.pack(
-            address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_2)
+        hooks[1] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_2)
+            )
         );
 
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = comprehensiveModule.foo.selector;
 
-        bytes[] memory installDatas = new bytes[](2);
-        return (
-            comprehensiveModuleValidation,
-            true,
-            true,
-            selectors,
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            ""
-        );
+        return (comprehensiveModuleValidation, true, true, selectors, bytes(""), hooks);
     }
 }

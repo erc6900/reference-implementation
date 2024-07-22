@@ -8,8 +8,8 @@ import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {ModuleManifest} from "../../src/interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
@@ -38,29 +38,24 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
         preValidationHooks[0] = ModuleEntityLib.pack(address(module), 0);
 
-        ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
-        permissionHooks[0] = ExecutionHook({
-            hookFunction: ModuleEntityLib.pack(address(module), 0),
-            isPreHook: true,
-            isPostHook: false
-        });
-
         uint256[] memory spendLimits = new uint256[](1);
         spendLimits[0] = spendLimit;
 
-        bytes[] memory preValHooksInitDatas = new bytes[](1);
-        preValHooksInitDatas[0] = "";
+        bytes[] memory hooks = new bytes[](2);
+        hooks[0] = abi.encodePacked(HookConfigLib.packValidationHook({_module: address(module), _entityId: 0}));
+        // No init data for pre validation
 
-        bytes[] memory permissionInitDatas = new bytes[](1);
-        permissionInitDatas[0] = abi.encode(0, spendLimits);
+        hooks[1] = abi.encodePacked(
+            HookConfigLib.packExecHook({_module: address(module), _entityId: 0, _hasPre: true, _hasPost: false}),
+            abi.encode(0, spendLimits)
+        );
 
         vm.prank(address(acct));
         acct.installValidation(
             ValidationConfigLib.pack(address(validationModule), 0, true, true),
             new bytes4[](0),
             new bytes(0),
-            abi.encode(preValidationHooks, preValHooksInitDatas),
-            abi.encode(permissionHooks, permissionInitDatas)
+            hooks
         );
 
         validationFunction = ModuleEntityLib.pack(address(validationModule), 0);

@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
@@ -52,16 +53,15 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         ERC20TokenLimitModule.ERC20SpendLimit[] memory limit = new ERC20TokenLimitModule.ERC20SpendLimit[](1);
         limit[0] = ERC20TokenLimitModule.ERC20SpendLimit({token: address(erc20), limits: limits});
 
-        bytes[] memory permissionInitDatas = new bytes[](1);
-        permissionInitDatas[0] = abi.encode(uint8(0), limit);
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packExecHook({_module: address(module), _entityId: 0, _hasPre: true, _hasPost: false}),
+            abi.encode(uint8(0), limit) // TODO: should this still be uint8?
+        );
 
         vm.prank(address(acct));
         acct.installValidation(
-            ValidationConfigLib.pack(address(validationModule), 0, true, true),
-            new bytes4[](0),
-            new bytes(0),
-            new bytes(0),
-            abi.encode(permissionHooks, permissionInitDatas)
+            ValidationConfigLib.pack(address(validationModule), 0, true, true), new bytes4[](0), "", hooks
         );
 
         validationFunction = ModuleEntityLib.pack(address(validationModule), 0);

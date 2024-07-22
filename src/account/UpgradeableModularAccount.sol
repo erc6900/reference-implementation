@@ -251,10 +251,9 @@ contract UpgradeableModularAccount is
         ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
-        bytes calldata preValidationHooks,
-        bytes calldata permissionHooks
+        bytes[] calldata hooks
     ) external initializer {
-        _installValidation(validationConfig, selectors, installData, preValidationHooks, permissionHooks);
+        _installValidation(validationConfig, selectors, installData, hooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
@@ -264,10 +263,9 @@ contract UpgradeableModularAccount is
         ValidationConfig validationConfig,
         bytes4[] memory selectors,
         bytes calldata installData,
-        bytes calldata preValidationHooks,
-        bytes calldata permissionHooks
+        bytes[] calldata hooks
     ) external wrapNativeFunction {
-        _installValidation(validationConfig, selectors, installData, preValidationHooks, permissionHooks);
+        _installValidation(validationConfig, selectors, installData, hooks);
     }
 
     /// @inheritdoc IModuleManager
@@ -275,12 +273,9 @@ contract UpgradeableModularAccount is
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,
-        bytes calldata preValidationHookUninstallData,
-        bytes calldata permissionHookUninstallData
+        bytes[] calldata hookUninstallData
     ) external wrapNativeFunction {
-        _uninstallValidation(
-            validationFunction, uninstallData, preValidationHookUninstallData, permissionHookUninstallData
-        );
+        _uninstallValidation(validationFunction, uninstallData, hookUninstallData);
     }
 
     /// @notice ERC165 introspection
