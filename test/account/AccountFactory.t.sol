@@ -20,6 +20,12 @@ contract AccountFactoryTest is AccountTestBase {
         assertEq(address(account.entryPoint()), address(entryPoint));
     }
 
+    function test_createAccountAndGetAddress() public {
+        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
+
+        assertEq(address(account), address(_factory.createAccount(address(this), 100, 0)));
+    }
+
     function test_multipleDeploy() public {
         UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
 
