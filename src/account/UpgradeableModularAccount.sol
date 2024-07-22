@@ -105,28 +105,6 @@ contract UpgradeableModularAccount is
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Initializes the account with a set of modules
-    /// @param modules The modules to install
-    /// @param manifests The manifests of the modules to install
-    /// @param moduleInstallDatas The module install datas of the modules to install
-    function initialize(
-        address[] memory modules,
-        ModuleManifest[] calldata manifests,
-        bytes[] memory moduleInstallDatas
-    ) external initializer {
-        uint256 length = modules.length;
-
-        if (length != manifests.length || length != moduleInstallDatas.length) {
-            revert ArrayLengthMismatch();
-        }
-
-        for (uint256 i = 0; i < length; ++i) {
-            _installModule(modules[i], manifests[i], moduleInstallDatas[i]);
-        }
-
-        emit ModularAccountInitialized(_ENTRY_POINT);
-    }
-
     receive() external payable {}
 
     /// @notice Fallback function
