@@ -36,7 +36,7 @@ interface IModuleManager {
     /// install data, if any.
     function installValidation(
         ValidationConfig validationConfig,
-        bytes4[] memory selectors,
+        bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
     ) external;

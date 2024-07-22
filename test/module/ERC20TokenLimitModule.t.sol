@@ -56,7 +56,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
             HookConfigLib.packExecHook({_module: address(module), _entityId: 0, _hasPre: true, _hasPost: false}),
-            abi.encode(uint8(0), limit) // TODO: should this still be uint8?
+            abi.encode(uint32(0), limit)
         );
 
         vm.prank(address(acct));

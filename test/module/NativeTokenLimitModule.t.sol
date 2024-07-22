@@ -115,7 +115,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
                 UpgradeableModularAccount.PreExecHookReverted.selector,
                 abi.encode(
                     address(module),
-                    uint8(0),
+                    uint32(0),
                     abi.encodePacked(NativeTokenLimitModule.ExceededNativeTokenLimit.selector)
                 )
             )

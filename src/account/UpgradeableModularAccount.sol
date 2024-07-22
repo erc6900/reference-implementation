@@ -12,6 +12,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {HookConfig, HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
@@ -46,6 +47,7 @@ contract UpgradeableModularAccount is
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
     using ValidationConfigLib for ValidationConfig;
+    using HookConfigLib for HookConfig;
     using SparseCalldataSegmentLib for bytes;
 
     struct PostExecToRun {
@@ -249,7 +251,7 @@ contract UpgradeableModularAccount is
     /// @dev This function is only callable once, and only by the EntryPoint.
     function initializeWithValidation(
         ValidationConfig validationConfig,
-        bytes4[] memory selectors,
+        bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
     ) external initializer {
@@ -261,7 +263,7 @@ contract UpgradeableModularAccount is
     /// @notice May be validated by a global validation.
     function installValidation(
         ValidationConfig validationConfig,
-        bytes4[] memory selectors,
+        bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
     ) external wrapNativeFunction {
@@ -498,26 +500,24 @@ contract UpgradeableModularAccount is
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            bytes32 key = executionHooks.at(i);
-            (ModuleEntity hookFunction,, bool isPostHook) = toExecutionHook(key);
-            if (isPostHook) {
-                postHooksToRun[i].postExecHook = hookFunction;
+            HookConfig hookFunction = toExecutionHook(executionHooks.at(i));
+            if (hookFunction.hasPostHook()) {
+                postHooksToRun[i].postExecHook = hookFunction.moduleEntity();
             }
         }
 
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            bytes32 key = executionHooks.at(i);
-            (ModuleEntity hookFunction, bool isPreHook, bool isPostHook) = toExecutionHook(key);
+            HookConfig hookFunction = toExecutionHook(executionHooks.at(i));
 
-            if (isPreHook) {
+            if (hookFunction.hasPreHook()) {
                 bytes memory preExecHookReturnData;
 
-                preExecHookReturnData = _runPreExecHook(hookFunction, data);
+                preExecHookReturnData = _runPreExecHook(hookFunction.moduleEntity(), data);
 
                 // If there is an associated post-exec hook, save the return data.
-                if (isPostHook) {
+                if (hookFunction.hasPostHook()) {
                     postHooksToRun[i].preExecHookReturnData = preExecHookReturnData;
                 }
             }

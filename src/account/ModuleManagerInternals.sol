@@ -10,7 +10,6 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {IModule, ManifestExecutionHook, ModuleManifest} from "../interfaces/IModule.sol";
 import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
@@ -34,7 +33,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
     error IModuleFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
-    error PermissionAlreadySet(ModuleEntity validationFunction, ExecutionHook hook);
+    error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookFunction);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleInterfaceNotSupported(address module);
     error ModuleNotInstalled(address module);
@@ -117,30 +116,12 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
     }
 
-    function _addExecHooks(
-        EnumerableSet.Bytes32Set storage hooks,
-        ModuleEntity hookFunction,
-        bool isPreExecHook,
-        bool isPostExecHook
-    ) internal {
-        hooks.add(
-            toSetValue(
-                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
-            )
-        );
+    function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookFunction) internal {
+        hooks.add(toSetValue(hookFunction));
     }
 
-    function _removeExecHooks(
-        EnumerableSet.Bytes32Set storage hooks,
-        ModuleEntity hookFunction,
-        bool isPreExecHook,
-        bool isPostExecHook
-    ) internal {
-        hooks.remove(
-            toSetValue(
-                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
-            )
-        );
+    function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookFunction) internal {
+        hooks.remove(toSetValue(hookFunction));
     }
 
     function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
@@ -171,8 +152,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
-            _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
+            HookConfig hookFunction = HookConfigLib.packExecHook({
+                _module: module,
+                _entityId: mh.entityId,
+                _hasPre: mh.isPreHook,
+                _hasPost: mh.isPostHook
+            });
+            _addExecHooks(execHooks, hookFunction);
         }
 
         length = manifest.interfaceIds.length;
@@ -200,9 +186,14 @@ abstract contract ModuleManagerInternals is IModuleManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
+            HookConfig hookFunction = HookConfigLib.packExecHook({
+                _module: module,
+                _entityId: mh.entityId,
+                _hasPre: mh.isPreHook,
+                _hasPost: mh.isPostHook
+            });
+            _removeExecHooks(execHooks, hookFunction);
         }
 
         length = manifest.executionFunctions.length;
@@ -241,7 +232,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
 
     function _installValidation(
         ValidationConfig validationConfig,
-        bytes4[] memory selectors,
+        bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
     ) internal {
@@ -263,13 +254,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 _onInstall(hook.module(), hookData);
             } else {
                 // Hook is an execution hook
-                (ModuleEntity hookFunction, bool hasPre, bool hasPost) = hook.unpackExecHook();
-
-                ExecutionHook memory executionHook =
-                    ExecutionHook({hookFunction: hookFunction, isPreHook: hasPre, isPostHook: hasPost});
-
-                if (!_validationData.permissionHooks.add(toSetValue(executionHook))) {
-                    revert PermissionAlreadySet(validationConfig.moduleEntity(), executionHook);
+                if (!_validationData.permissionHooks.add(toSetValue(hook))) {
+                    revert PermissionAlreadySet(validationConfig.moduleEntity(), hook);
                 }
 
                 _onInstall(hook.module(), hookData);
