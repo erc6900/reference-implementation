@@ -11,7 +11,7 @@ import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.so
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
 contract AccountFactory is Ownable {
-    UpgradeableModularAccount public accountImplementation;
+    UpgradeableModularAccount public immutable ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
     IEntryPoint public immutable ENTRY_POINT;
@@ -23,7 +23,7 @@ contract AccountFactory is Ownable {
         ENTRY_POINT = _entryPoint;
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
-        accountImplementation = _accountImpl;
+        ACCOUNT_IMPL = _accountImpl;
         SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
     }
 
@@ -45,7 +45,7 @@ contract AccountFactory is Ownable {
         if (addr.code.length == 0) {
             bytes memory pluginInstallData = abi.encode(entityId, owner);
             // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: combinedSalt}(address(accountImplementation), "");
+            new ERC1967Proxy{salt: combinedSalt}(address(ACCOUNT_IMPL), "");
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION, entityId, true, true),
