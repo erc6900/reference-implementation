@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
-
 import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
@@ -792,14 +791,15 @@ contract UpgradeableModularAccount is
     }
 
     function _getAppendedValidation() internal view returns (PluginEntity) {
-        bytes memory appendedData = LibClone.argsOnERC1967(address(this));
-        // Appended bytecode is under the format abi.encode(pluginEntity, validationArbitraryData)
-        // Validations will then decode this arbitrary data for whatever information they need if they support
+        // Get only the 24 first bytes of appended data
+        bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 24);
+        // Appended bytecode is under the format abi.encodePacked(pluginEntity, any...)
+        // Validations will then decode this arbitrary data for whatever information they need
         // bytecode-appended validation.
         if (appendedData.length > 0) {
             // TODO: Evaluate if it's better to somehow pass the data back from here and have it passed to the
             // validation instead of having it be read from bytecode by the validation
-            (PluginEntity appendedValidationFunction,) = abi.decode(appendedData, (PluginEntity, bytes));
+            PluginEntity appendedValidationFunction = PluginEntity.wrap(bytes24(appendedData));
             return appendedValidationFunction;
         }
         return PluginEntity.wrap(bytes24(0));

@@ -152,19 +152,21 @@ contract SingleSignerValidation is ISingleSignerValidation, BasePlugin {
         address expectedSigner = signer[entityId][account];
 
         if (expectedSigner == address(0)) {
-            // Check clone for expected validation (address(this));
-            // Check clone code for expected signer
+            // Check clone for expected validation (address(this)) and expected signer
             bytes memory immutables = LibClone.argsOnERC1967(account);
+            // TODO: Add length check to prevent casting empty bytes, maybe?
 
-            // Note: Will opaquely revert on incorrect encoding (fun)
-            // But all appended bytecode should be in this format
-            (PluginEntity validation, bytes memory appendedData) = abi.decode(immutables, (PluginEntity, bytes));
+            PluginEntity validation = PluginEntity.wrap(bytes24(immutables));
 
             if (!validation.eq(PluginEntityLib.pack(address(this), entityId))) {
                 revert("Validation incorrect");
             }
 
-            (address decodedSigner) = abi.decode(appendedData, (address));
+            address decodedSigner;
+            assembly {
+                // shr to make sure the address is right-aligned
+                decodedSigner := shr(96, mload(add(add(immutables, 0x20), 0x18)))
+            }
 
             expectedSigner = decodedSigner;
         }

@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
@@ -78,9 +77,9 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     }
 
     function _getImmutableArgs(address owner) private view returns (bytes memory) {
-        return abi.encode(
+        return abi.encodePacked(
             PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-            abi.encode(owner)
+            owner
         );
     }
 }
