@@ -40,8 +40,4 @@ interface IAccountLoupe {
         external
         view
         returns (ModuleEntity[] memory preValidationHooks);
-
-    /// @notice Get an array of all installed modules.
-    /// @return The addresses of all installed modules.
-    function getInstalledModules() external view returns (address[] memory);
 }

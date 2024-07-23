@@ -49,12 +49,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(noHookModule),
-            manifestHash: keccak256(abi.encode(noHookModule.moduleManifest())),
+            manifest: noHookModule.moduleManifest(),
             moduleInstallData: ""
         });
         account1.installModule({
             module: address(oneHookModule),
-            manifestHash: keccak256(abi.encode(oneHookModule.moduleManifest())),
+            manifest: oneHookModule.moduleManifest(),
             moduleInstallData: ""
         });
         // TODO: change with new install flow
@@ -74,7 +74,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         );
         account1.installModule({
             module: address(twoHookModule),
-            manifestHash: keccak256(abi.encode(twoHookModule.moduleManifest())),
+            manifest: twoHookModule.moduleManifest(),
             moduleInstallData: ""
         });
         // temporary fix to add the pre-validation hook
