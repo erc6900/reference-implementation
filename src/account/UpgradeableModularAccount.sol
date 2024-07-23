@@ -18,6 +18,7 @@ import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol"
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
+import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
@@ -28,7 +29,6 @@ import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, toExecutionHook, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
-
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract UpgradeableModularAccount is
@@ -104,28 +104,6 @@ contract UpgradeableModularAccount is
     }
 
     // EXTERNAL FUNCTIONS
-
-    /// @notice Initializes the account with a set of modules
-    /// @param modules The modules to install
-    /// @param manifests The manifests of the modules to install
-    /// @param moduleInstallDatas The module install datas of the modules to install
-    function initialize(
-        address[] memory modules,
-        ModuleManifest[] calldata manifests,
-        bytes[] memory moduleInstallDatas
-    ) external initializer {
-        uint256 length = modules.length;
-
-        if (length != manifests.length || length != moduleInstallDatas.length) {
-            revert ArrayLengthMismatch();
-        }
-
-        for (uint256 i = 0; i < length; ++i) {
-            _installModule(modules[i], manifests[i], moduleInstallDatas[i]);
-        }
-
-        emit ModularAccountInitialized(_ENTRY_POINT);
-    }
 
     receive() external payable {}
 
@@ -441,7 +419,7 @@ contract UpgradeableModularAccount is
 
         // Run the user op validationFunction
         {
-            if (signatureSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+            if (signatureSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
                 revert ValidationSignatureSegmentMissing();
             }
 
@@ -497,7 +475,7 @@ contract UpgradeableModularAccount is
             _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthData);
         }
 
-        if (authSegment.getIndex() != _RESERVED_VALIDATION_DATA_INDEX) {
+        if (authSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
             revert ValidationSignatureSegmentMissing();
         }
 
@@ -635,7 +613,7 @@ contract UpgradeableModularAccount is
             return (new PostExecToRun[](0), new PostExecToRun[](0));
         }
 
-        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, _SELF_PERMIT_VALIDATION_FUNCTIONID);
+        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
 
         _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
 

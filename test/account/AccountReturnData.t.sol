@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
+import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {
     RegularResultContract,
@@ -38,6 +41,16 @@ contract AccountReturnDataTest is AccountTestBase {
             manifest: resultConsumerModule.moduleManifest(),
             moduleInstallData: ""
         });
+        // Allow the result consumer module to perform direct calls to the account
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = IStandardExecutor.execute.selector;
+        account1.installValidation(
+            ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
+            selectors,
+            "",
+            "",
+            ""
+        );
         vm.stopPrank();
     }
 
