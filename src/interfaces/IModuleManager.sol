@@ -1,21 +1,24 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
+import {ModuleManifest} from "./IModule.sol";
+
 type ModuleEntity is bytes24;
 
 type ValidationConfig is bytes26;
 
 interface IModuleManager {
-    event ModuleInstalled(address indexed module, bytes32 manifestHash);
+    event ModuleInstalled(address indexed module);
 
     event ModuleUninstalled(address indexed module, bool indexed onUninstallSucceeded);
 
     /// @notice Install a module to the modular account.
     /// @param module The module to install.
-    /// @param manifestHash The hash of the module manifest.
+    /// @param manifest the manifest describing functions to install
     /// @param moduleInstallData Optional data to be decoded and used by the module to setup initial module data
     /// for the modular account.
-    function installModule(address module, bytes32 manifestHash, bytes calldata moduleInstallData) external;
+    function installModule(address module, ModuleManifest calldata manifest, bytes calldata moduleInstallData)
+        external;
 
     /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
     /// path.
@@ -53,9 +56,9 @@ interface IModuleManager {
 
     /// @notice Uninstall a module from the modular account.
     /// @param module The module to uninstall.
-    /// @param config An optional, implementation-specific field that accounts may use to ensure consistency
-    /// guarantees.
+    /// @param manifest the manifest describing functions to uninstall.
     /// @param moduleUninstallData Optional data to be decoded and used by the module to clear module data for the
     /// modular account.
-    function uninstallModule(address module, bytes calldata config, bytes calldata moduleUninstallData) external;
+    function uninstallModule(address module, ModuleManifest calldata manifest, bytes calldata moduleUninstallData)
+        external;
 }
