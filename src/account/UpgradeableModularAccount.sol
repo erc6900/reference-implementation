@@ -29,7 +29,6 @@ import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, toExecutionHook, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 
-import {ModuleManager2} from "./ModuleManager2.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract UpgradeableModularAccount is
@@ -42,7 +41,6 @@ contract UpgradeableModularAccount is
     IStandardExecutor,
     IAccountExecute,
     ModuleManagerInternals,
-    ModuleManager2,
     UUPSUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;

@@ -146,7 +146,7 @@ contract ComprehensiveModule is IValidation, IValidationHook, IExecutionHook, Ba
         manifest.validationFunctions = new ManifestValidation[](1);
         manifest.validationFunctions[0] = ManifestValidation({
             entityId: uint32(EntityId.VALIDATION),
-            isDefault: true,
+            isGlobal: true,
             isSignatureValidation: false,
             selectors: validationSelectors
         });
