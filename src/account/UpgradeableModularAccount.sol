@@ -18,7 +18,7 @@ import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol"
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
-import {RESERVED_VALIDATION_DATA_INDEX, SELF_PERMIT_VALIDATION_FUNCTIONID} from "../helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
@@ -613,7 +613,7 @@ contract UpgradeableModularAccount is
             return (new PostExecToRun[](0), new PostExecToRun[](0));
         }
 
-        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, SELF_PERMIT_VALIDATION_FUNCTIONID);
+        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
 
         _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {SELF_PERMIT_VALIDATION_FUNCTIONID} from "../../src/helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
@@ -45,9 +45,7 @@ contract AccountReturnDataTest is AccountTestBase {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = IStandardExecutor.execute.selector;
         account1.installValidation(
-            ValidationConfigLib.pack(
-                address(resultConsumerModule), SELF_PERMIT_VALIDATION_FUNCTIONID, false, false
-            ),
+            ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
             selectors,
             "",
             "",

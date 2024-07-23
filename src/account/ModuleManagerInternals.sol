@@ -5,7 +5,7 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {RESERVED_VALIDATION_DATA_INDEX, SELF_PERMIT_VALIDATION_FUNCTIONID} from "../helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITYID, MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
@@ -244,7 +244,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             }
 
             // Avoid collision between reserved index and actual indices
-            if (_validationData.preValidationHooks.length > RESERVED_VALIDATION_DATA_INDEX) {
+            if (_validationData.preValidationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
                 revert PreValidationHookLimitExceeded();
             }
         }
@@ -274,7 +274,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             }
         }
 
-        if (validationConfig.entityId() != SELF_PERMIT_VALIDATION_FUNCTIONID) {
+        if (validationConfig.entityId() != DIRECT_CALL_VALIDATION_ENTITYID) {
             // Only allow global validations and signature validations if they're not direct-call validations.
 
             _validationData.isGlobal = validationConfig.isGlobal();
