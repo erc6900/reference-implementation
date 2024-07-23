@@ -24,12 +24,18 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         comprehensiveModule = new ComprehensiveModule();
 
-        vm.startPrank(address(entryPoint));
-        account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
-        vm.stopPrank();
-
         comprehensiveModuleValidation =
             ModuleEntityLib.pack(address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.VALIDATION));
+
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = ComprehensiveModule.foo.selector;
+
+        vm.startPrank(address(entryPoint));
+        account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
+        account1.installValidation(
+            ValidationConfigLib.pack(comprehensiveModuleValidation, false, false), validationSelectors, "", "", ""
+        );
+        vm.stopPrank();
     }
 
     function test_selfCallFails_userOp() public {

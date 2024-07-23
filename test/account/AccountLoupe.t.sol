@@ -16,8 +16,12 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
+    ModuleEntity public comprehensiveModuleValidation;
+
     function setUp() public {
         comprehensiveModule = new ComprehensiveModule();
+        comprehensiveModuleValidation =
+            ModuleEntityLib.pack(address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.VALIDATION));
 
         _customValidationSetup();
 
@@ -61,9 +65,6 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_moduleLoupe_getSelectors() public {
-        ModuleEntity comprehensiveModuleValidation =
-            ModuleEntityLib.pack(address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.VALIDATION));
-
         bytes4[] memory selectors = account1.getSelectors(comprehensiveModuleValidation);
 
         assertEq(selectors.length, 1);
@@ -107,7 +108,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
     }
 
     function test_moduleLoupe_getValidationHooks() public {
-        ModuleEntity[] memory hooks = account1.getPreValidationHooks(_signerValidation);
+        ModuleEntity[] memory hooks = account1.getPreValidationHooks(comprehensiveModuleValidation);
 
         assertEq(hooks.length, 2);
         assertEq(
@@ -144,12 +145,15 @@ contract AccountLoupeTest is CustomValidationTestBase {
             address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_2)
         );
 
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = comprehensiveModule.foo.selector;
+
         bytes[] memory installDatas = new bytes[](2);
         return (
-            _signerValidation,
+            comprehensiveModuleValidation,
             true,
             true,
-            new bytes4[](0),
+            selectors,
             bytes(""),
             abi.encode(preValidationHooks, installDatas),
             ""
