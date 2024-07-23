@@ -3,12 +3,7 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {
-    ManifestExecutionFunction,
-    ManifestValidation,
-    ModuleManifest,
-    ModuleMetadata
-} from "../../../src/interfaces/IModule.sol";
+import {ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
@@ -112,17 +107,6 @@ contract MockUserOpValidationModule is MockBaseUserOpValidationModule {
             allowGlobalValidation: false
         });
 
-        bytes4[] memory validationSelectors = new bytes4[](1);
-        validationSelectors[0] = this.foo.selector;
-
-        manifest.validationFunctions = new ManifestValidation[](1);
-        manifest.validationFunctions[0] = ManifestValidation({
-            entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isGlobal: false,
-            isSignatureValidation: false,
-            selectors: validationSelectors
-        });
-
         return manifest;
     }
 }
@@ -153,17 +137,6 @@ contract MockUserOpValidation1HookModule is MockBaseUserOpValidationModule {
             executionSelector: this.bar.selector,
             isPublic: false,
             allowGlobalValidation: false
-        });
-
-        bytes4[] memory validationSelectors = new bytes4[](1);
-        validationSelectors[0] = this.bar.selector;
-
-        manifest.validationFunctions = new ManifestValidation[](2);
-        manifest.validationFunctions[0] = ManifestValidation({
-            entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isGlobal: false,
-            isSignatureValidation: false,
-            selectors: validationSelectors
         });
 
         return manifest;
@@ -199,17 +172,6 @@ contract MockUserOpValidation2HookModule is MockBaseUserOpValidationModule {
             executionSelector: this.baz.selector,
             isPublic: false,
             allowGlobalValidation: false
-        });
-
-        bytes4[] memory validationSelectors = new bytes4[](1);
-        validationSelectors[0] = this.baz.selector;
-
-        manifest.validationFunctions = new ManifestValidation[](1);
-        manifest.validationFunctions[0] = ManifestValidation({
-            entityId: uint32(EntityId.USER_OP_VALIDATION),
-            isGlobal: false,
-            isSignatureValidation: false,
-            selectors: validationSelectors
         });
 
         return manifest;

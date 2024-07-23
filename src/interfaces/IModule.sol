@@ -13,14 +13,6 @@ struct ManifestExecutionFunction {
     bool allowGlobalValidation;
 }
 
-// todo: do we need these at all? Or do we fully switch to `installValidation`?
-struct ManifestValidation {
-    uint32 entityId;
-    bool isGlobal;
-    bool isSignatureValidation;
-    bytes4[] selectors;
-}
-
 struct ManifestExecutionHook {
     // TODO(erc6900 spec): These fields can be packed into a single word
     bytes4 executionSelector;
@@ -54,7 +46,6 @@ struct ModuleMetadata {
 struct ModuleManifest {
     // Execution functions defined in this module to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
-    ManifestValidation[] validationFunctions;
     ManifestExecutionHook[] executionHooks;
     // List of ERC-165 interface IDs to add to account to support introspection checks. This MUST NOT include
     // IModule's interface ID.
