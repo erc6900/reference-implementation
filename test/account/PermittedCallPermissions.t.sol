@@ -21,21 +21,19 @@ contract PermittedCallPermissionsTest is AccountTestBase {
         permittedCallerModule = new PermittedCallerModule();
 
         // Add the result creator module to the account
-        bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorModule.moduleManifest()));
-        vm.prank(address(entryPoint));
+        vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(resultCreatorModule),
-            manifestHash: resultCreatorManifestHash,
+            manifest: resultCreatorModule.moduleManifest(),
             moduleInstallData: ""
         });
         // Add the permitted caller module to the account
-        bytes32 permittedCallerManifestHash = keccak256(abi.encode(permittedCallerModule.moduleManifest()));
-        vm.prank(address(entryPoint));
         account1.installModule({
             module: address(permittedCallerModule),
-            manifestHash: permittedCallerManifestHash,
+            manifest: permittedCallerModule.moduleManifest(),
             moduleInstallData: ""
         });
+        vm.stopPrank();
     }
 
     function test_permittedCall_Allowed() public {

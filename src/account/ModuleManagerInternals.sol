@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
@@ -15,18 +14,14 @@ import {AccountStorage, SelectorData, getAccountStorage, toSetValue} from "./Acc
 
 abstract contract ModuleManagerInternals is IModuleManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableMap for EnumerableMap.AddressToUintMap;
     using ModuleEntityLib for ModuleEntity;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
     error ExecutionFunctionAlreadySet(bytes4 selector);
-    error InvalidModuleManifest();
     error IModuleFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
-    error NullModuleEntity();
     error NullModule();
-    error ModuleAlreadyInstalled(address module);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleInterfaceNotSupported(address module);
     error ModuleNotInstalled(address module);
@@ -138,31 +133,20 @@ abstract contract ModuleManagerInternals is IModuleManager {
         );
     }
 
-    function _installModule(address module, bytes32 manifestHash, bytes memory moduleInstallData) internal {
+    function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
+        internal
+    {
         AccountStorage storage _storage = getAccountStorage();
 
         if (module == address(0)) {
             revert NullModule();
         }
 
-        // Check if the module exists.
-        if (_storage.moduleManifestHashes.contains(module)) {
-            revert ModuleAlreadyInstalled(module);
-        }
-
+        // TODO: do we need this check? Or switch to a non-165 checking function?
         // Check that the module supports the IModule interface.
         if (!ERC165Checker.supportsInterface(module, type(IModule).interfaceId)) {
             revert ModuleInterfaceNotSupported(module);
         }
-
-        // Check manifest hash.
-        ModuleManifest memory manifest = IModule(module).moduleManifest();
-        if (!_isValidModuleManifest(manifest, manifestHash)) {
-            revert InvalidModuleManifest();
-        }
-
-        // Add the module metadata to the account
-        _storage.moduleManifestHashes.set(module, uint256(manifestHash));
 
         // Update components according to the manifest.
         uint256 length = manifest.executionFunctions.length;
@@ -200,24 +184,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
             revert ModuleInstallCallbackFailed(module, revertReason);
         }
 
-        emit ModuleInstalled(module, manifestHash);
+        emit ModuleInstalled(module);
     }
 
-    function _uninstallModule(address module, ModuleManifest memory manifest, bytes memory uninstallData)
+    function _uninstallModule(address module, ModuleManifest calldata manifest, bytes memory uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
-
-        // Check if the module exists.
-        if (!_storage.moduleManifestHashes.contains(module)) {
-            revert ModuleNotInstalled(module);
-        }
-
-        // Check manifest hash.
-        bytes32 manifestHash = bytes32(_storage.moduleManifestHashes.get(module));
-        if (!_isValidModuleManifest(manifest, manifestHash)) {
-            revert InvalidModuleManifest();
-        }
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
 
@@ -245,9 +218,6 @@ abstract contract ModuleManagerInternals is IModuleManager {
             _storage.supportedIfaces[manifest.interfaceIds[i]] -= 1;
         }
 
-        // Remove the module metadata from the account.
-        _storage.moduleManifestHashes.remove(module);
-
         // Clear the module storage for the account.
         bool onUninstallSuccess = true;
         // solhint-disable-next-line no-empty-blocks
@@ -257,13 +227,5 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
 
         emit ModuleUninstalled(module, onUninstallSuccess);
-    }
-
-    function _isValidModuleManifest(ModuleManifest memory manifest, bytes32 manifestHash)
-        internal
-        pure
-        returns (bool)
-    {
-        return manifestHash == keccak256(abi.encode(manifest));
     }
 }

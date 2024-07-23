@@ -24,9 +24,9 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         comprehensiveModule = new ComprehensiveModule();
 
-        bytes32 manifestHash = keccak256(abi.encode(comprehensiveModule.moduleManifest()));
-        vm.prank(address(entryPoint));
-        account1.installModule(address(comprehensiveModule), manifestHash, "");
+        vm.startPrank(address(entryPoint));
+        account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
+        vm.stopPrank();
 
         comprehensiveModuleValidation =
             ModuleEntityLib.pack(address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.VALIDATION));
