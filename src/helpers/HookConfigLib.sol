@@ -22,7 +22,7 @@ import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
 //
 
 // Hook types:
-// 0x00 // Exec
+// 0x00 // Exec (selector and validation associated)
 // 0x01 // Validation
 
 // Exec hook flags layout:
