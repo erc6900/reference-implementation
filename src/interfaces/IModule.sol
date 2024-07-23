@@ -16,7 +16,7 @@ struct ManifestExecutionFunction {
 // todo: do we need these at all? Or do we fully switch to `installValidation`?
 struct ManifestValidation {
     uint32 entityId;
-    bool isDefault;
+    bool isGlobal;
     bool isSignatureValidation;
     bytes4[] selectors;
 }
