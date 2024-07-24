@@ -5,19 +5,27 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {DIRECT_CALL_VALIDATION_ENTITYID, MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
+import {MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
+import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
 import {IModule, ManifestExecutionHook, ModuleManifest} from "../interfaces/IModule.sol";
-import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
-import {AccountStorage, SelectorData, ValidationData, getAccountStorage, toSetValue} from "./AccountStorage.sol";
+import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
+import {
+    AccountStorage,
+    SelectorData,
+    ValidationData,
+    getAccountStorage,
+    toModuleEntity,
+    toSetValue
+} from "./AccountStorage.sol";
 
 abstract contract ModuleManagerInternals is IModuleManager {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
     using ValidationConfigLib for ValidationConfig;
+    using HookConfigLib for HookConfig;
 
     error ArrayLengthMismatch();
     error Erc4337FunctionNotAllowed(bytes4 selector);
@@ -25,7 +33,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
     error IModuleFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
-    error PermissionAlreadySet(ModuleEntity validationFunction, ExecutionHook hook);
+    error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookConfig);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleInterfaceNotSupported(address module);
     error ModuleNotInstalled(address module);
@@ -108,30 +116,12 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
     }
 
-    function _addExecHooks(
-        EnumerableSet.Bytes32Set storage hooks,
-        ModuleEntity hookFunction,
-        bool isPreExecHook,
-        bool isPostExecHook
-    ) internal {
-        hooks.add(
-            toSetValue(
-                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
-            )
-        );
+    function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
+        hooks.add(toSetValue(hookConfig));
     }
 
-    function _removeExecHooks(
-        EnumerableSet.Bytes32Set storage hooks,
-        ModuleEntity hookFunction,
-        bool isPreExecHook,
-        bool isPostExecHook
-    ) internal {
-        hooks.remove(
-            toSetValue(
-                ExecutionHook({hookFunction: hookFunction, isPreHook: isPreExecHook, isPostHook: isPostExecHook})
-            )
-        );
+    function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
+        hooks.remove(toSetValue(hookConfig));
     }
 
     function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
@@ -162,8 +152,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
-            _addExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
+            HookConfig hookConfig = HookConfigLib.packExecHook({
+                _module: module,
+                _entityId: mh.entityId,
+                _hasPre: mh.isPreHook,
+                _hasPost: mh.isPostHook
+            });
+            _addExecHooks(execHooks, hookConfig);
         }
 
         length = manifest.interfaceIds.length;
@@ -191,9 +186,14 @@ abstract contract ModuleManagerInternals is IModuleManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            ModuleEntity hookFunction = ModuleEntityLib.pack(module, mh.entityId);
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            _removeExecHooks(execHooks, hookFunction, mh.isPreHook, mh.isPostHook);
+            HookConfig hookConfig = HookConfigLib.packExecHook({
+                _module: module,
+                _entityId: mh.entityId,
+                _hasPre: mh.isPreHook,
+                _hasPost: mh.isPostHook
+            });
+            _removeExecHooks(execHooks, hookConfig);
         }
 
         length = manifest.executionFunctions.length;
@@ -218,53 +218,44 @@ abstract contract ModuleManagerInternals is IModuleManager {
         emit ModuleUninstalled(module, onUninstallSuccess);
     }
 
+    function _onInstall(address module, bytes calldata data) internal {
+        if (data.length > 0) {
+            IModule(module).onInstall(data);
+        }
+    }
+
+    function _onUninstall(address module, bytes calldata data) internal {
+        if (data.length > 0) {
+            IModule(module).onUninstall(data);
+        }
+    }
+
     function _installValidation(
         ValidationConfig validationConfig,
-        bytes4[] memory selectors,
+        bytes4[] calldata selectors,
         bytes calldata installData,
-        bytes memory preValidationHooks,
-        bytes memory permissionHooks
+        bytes[] calldata hooks
     ) internal {
         ValidationData storage _validationData =
             getAccountStorage().validationData[validationConfig.moduleEntity()];
 
-        if (preValidationHooks.length > 0) {
-            (ModuleEntity[] memory preValidationFunctions, bytes[] memory initDatas) =
-                abi.decode(preValidationHooks, (ModuleEntity[], bytes[]));
+        for (uint256 i = 0; i < hooks.length; ++i) {
+            HookConfig hookConfig = HookConfig.wrap(bytes26(hooks[i][:26]));
+            bytes calldata hookData = hooks[i][26:];
 
-            for (uint256 i = 0; i < preValidationFunctions.length; ++i) {
-                ModuleEntity preValidationFunction = preValidationFunctions[i];
+            if (hookConfig.isValidationHook()) {
+                _validationData.preValidationHooks.push(hookConfig.moduleEntity());
 
-                _validationData.preValidationHooks.push(preValidationFunction);
-
-                if (initDatas[i].length > 0) {
-                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
-                    IModule(preValidationModule).onInstall(initDatas[i]);
+                // Avoid collision between reserved index and actual indices
+                if (_validationData.preValidationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
+                    revert PreValidationHookLimitExceeded();
                 }
+            } // Hook is an execution hook
+            else if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
+                revert PermissionAlreadySet(validationConfig.moduleEntity(), hookConfig);
             }
 
-            // Avoid collision between reserved index and actual indices
-            if (_validationData.preValidationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
-                revert PreValidationHookLimitExceeded();
-            }
-        }
-
-        if (permissionHooks.length > 0) {
-            (ExecutionHook[] memory permissionFunctions, bytes[] memory initDatas) =
-                abi.decode(permissionHooks, (ExecutionHook[], bytes[]));
-
-            for (uint256 i = 0; i < permissionFunctions.length; ++i) {
-                ExecutionHook memory permissionFunction = permissionFunctions[i];
-
-                if (!_validationData.permissionHooks.add(toSetValue(permissionFunction))) {
-                    revert PermissionAlreadySet(validationConfig.moduleEntity(), permissionFunction);
-                }
-
-                if (initDatas[i].length > 0) {
-                    (address executionModule,) = ModuleEntityLib.unpack(permissionFunction.hookFunction);
-                    IModule(executionModule).onInstall(initDatas[i]);
-                }
-            }
+            _onInstall(hookConfig.module(), hookData);
         }
 
         for (uint256 i = 0; i < selectors.length; ++i) {
@@ -274,54 +265,57 @@ abstract contract ModuleManagerInternals is IModuleManager {
             }
         }
 
-        if (validationConfig.entityId() != DIRECT_CALL_VALIDATION_ENTITYID) {
-            // Only allow global validations and signature validations if they're not direct-call validations.
+        _validationData.isGlobal = validationConfig.isGlobal();
+        _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
 
-            _validationData.isGlobal = validationConfig.isGlobal();
-            _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
-            if (installData.length > 0) {
-                IModule(validationConfig.module()).onInstall(installData);
-            }
-        }
+        _onInstall(validationConfig.module(), installData);
     }
 
     function _uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,
-        bytes calldata preValidationHookUninstallData,
-        bytes calldata permissionHookUninstallData
+        bytes[] calldata hookUninstallDatas
     ) internal {
         ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
 
         _removeValidationFunction(validationFunction);
 
-        {
-            bytes[] memory preValidationHookUninstallDatas = abi.decode(preValidationHookUninstallData, (bytes[]));
-
-            // Clear pre validation hooks
-            ModuleEntity[] storage preValidationHooks = _validationData.preValidationHooks;
-            for (uint256 i = 0; i < preValidationHooks.length; ++i) {
-                ModuleEntity preValidationFunction = preValidationHooks[i];
-                if (preValidationHookUninstallDatas[0].length > 0) {
-                    (address preValidationModule,) = ModuleEntityLib.unpack(preValidationFunction);
-                    IModule(preValidationModule).onUninstall(preValidationHookUninstallDatas[0]);
-                }
+        // Send `onUninstall` to hooks
+        if (hookUninstallDatas.length > 0) {
+            // If any uninstall data is provided, assert it is of the correct length.
+            if (
+                hookUninstallDatas.length
+                    != _validationData.preValidationHooks.length + _validationData.permissionHooks.length()
+            ) {
+                revert ArrayLengthMismatch();
             }
-            delete _validationData.preValidationHooks;
+
+            // Hook uninstall data is provided in the order of pre-validation hooks, then permission hooks.
+            uint256 hookIndex = 0;
+            for (uint256 i = 0; i < _validationData.preValidationHooks.length; ++i) {
+                bytes calldata hookData = hookUninstallDatas[hookIndex];
+                (address hookModule,) = ModuleEntityLib.unpack(_validationData.preValidationHooks[i]);
+                _onUninstall(hookModule, hookData);
+                hookIndex++;
+            }
+
+            for (uint256 i = 0; i < _validationData.permissionHooks.length(); ++i) {
+                bytes calldata hookData = hookUninstallDatas[hookIndex];
+                (address hookModule,) =
+                    ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
+                _onUninstall(hookModule, hookData);
+                hookIndex++;
+            }
         }
 
-        {
-            bytes[] memory permissionHookUninstallDatas = abi.decode(permissionHookUninstallData, (bytes[]));
+        // Clear all stored hooks
+        delete _validationData.preValidationHooks;
 
-            // Clear permission hooks
-            EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
-            uint256 permissionHookLen = permissionHooks.length();
-            for (uint256 i = 0; i < permissionHookLen; ++i) {
-                bytes32 permissionHook = permissionHooks.at(0);
-                permissionHooks.remove(permissionHook);
-                address permissionHookModule = address(uint160(bytes20(permissionHook)));
-                IModule(permissionHookModule).onUninstall(permissionHookUninstallDatas[i]);
-            }
+        EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
+        uint256 permissionHookLen = permissionHooks.length();
+        for (uint256 i = 0; i < permissionHookLen; ++i) {
+            bytes32 permissionHook = permissionHooks.at(0);
+            permissionHooks.remove(permissionHook);
         }
 
         // Clear selectors
@@ -331,9 +325,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             _validationData.selectors.remove(selectorSetValue);
         }
 
-        if (uninstallData.length > 0) {
-            (address module,) = ModuleEntityLib.unpack(validationFunction);
-            IModule(module).onUninstall(uninstallData);
-        }
+        (address module,) = ModuleEntityLib.unpack(validationFunction);
+        _onUninstall(module, uninstallData);
     }
 }

@@ -83,8 +83,7 @@ contract SingleSignerValidationTest is AccountTestBase {
             ValidationConfigLib.pack(address(singleSignerValidation), newEntityId, true, false),
             new bytes4[](0),
             abi.encode(newEntityId, owner2),
-            "",
-            ""
+            new bytes[](0)
         );
 
         vm.prank(owner2);
