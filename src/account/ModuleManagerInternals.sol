@@ -240,26 +240,22 @@ abstract contract ModuleManagerInternals is IModuleManager {
             getAccountStorage().validationData[validationConfig.moduleEntity()];
 
         for (uint256 i = 0; i < hooks.length; ++i) {
-            HookConfig hook = HookConfig.wrap(bytes26(hooks[i][:26]));
+            HookConfig hookConfig = HookConfig.wrap(bytes26(hooks[i][:26]));
             bytes calldata hookData = hooks[i][26:];
 
-            if (hook.isValidationHook()) {
-                _validationData.preValidationHooks.push(hook.moduleEntity());
+            if (hookConfig.isValidationHook()) {
+                _validationData.preValidationHooks.push(hookConfig.moduleEntity());
 
                 // Avoid collision between reserved index and actual indices
                 if (_validationData.preValidationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
                     revert PreValidationHookLimitExceeded();
                 }
-
-                _onInstall(hook.module(), hookData);
-            } else {
-                // Hook is an execution hook
-                if (!_validationData.permissionHooks.add(toSetValue(hook))) {
-                    revert PermissionAlreadySet(validationConfig.moduleEntity(), hook);
-                }
-
-                _onInstall(hook.module(), hookData);
+            } // Hook is an execution hook
+            else if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
+                revert PermissionAlreadySet(validationConfig.moduleEntity(), hookConfig);
             }
+
+            _onInstall(hookConfig.module(), hookData);
         }
 
         for (uint256 i = 0; i < selectors.length; ++i) {

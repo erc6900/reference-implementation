@@ -10,7 +10,7 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ExecutionHook, IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {HookConfig, IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {getAccountStorage, toExecutionHook, toSelector} from "./AccountStorage.sol";
+import {getAccountStorage, toHookConfig, toSelector} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -58,7 +58,7 @@ abstract contract AccountLoupe is IAccountLoupe {
 
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            HookConfig hookConfig = toExecutionHook(key);
+            HookConfig hookConfig = toHookConfig(key);
             execHooks[i] = ExecutionHook({
                 hookFunction: hookConfig.moduleEntity(),
                 isPreHook: hookConfig.hasPreHook(),
@@ -80,7 +80,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         permissionHooks = new ExecutionHook[](executionHooksLength);
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            HookConfig hookConfig = toExecutionHook(key);
+            HookConfig hookConfig = toHookConfig(key);
             permissionHooks[i] = ExecutionHook({
                 hookFunction: hookConfig.moduleEntity(),
                 isPreHook: hookConfig.hasPreHook(),

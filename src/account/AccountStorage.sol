@@ -73,7 +73,7 @@ function toSetValue(HookConfig hookConfig) pure returns (bytes32) {
     return bytes32(HookConfig.unwrap(hookConfig));
 }
 
-function toExecutionHook(bytes32 setValue) pure returns (HookConfig) {
+function toHookConfig(bytes32 setValue) pure returns (HookConfig) {
     return HookConfig.wrap(bytes26(setValue));
 }
 

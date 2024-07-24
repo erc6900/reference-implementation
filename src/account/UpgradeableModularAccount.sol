@@ -28,7 +28,7 @@ import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
-import {AccountStorage, getAccountStorage, toExecutionHook, toSetValue} from "./AccountStorage.sol";
+import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
@@ -500,7 +500,7 @@ contract UpgradeableModularAccount is
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            HookConfig hookConfig = toExecutionHook(executionHooks.at(i));
+            HookConfig hookConfig = toHookConfig(executionHooks.at(i));
             if (hookConfig.hasPostHook()) {
                 postHooksToRun[i].postExecHook = hookConfig.moduleEntity();
             }
@@ -509,7 +509,7 @@ contract UpgradeableModularAccount is
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            HookConfig hookConfig = toExecutionHook(executionHooks.at(i));
+            HookConfig hookConfig = toHookConfig(executionHooks.at(i));
 
             if (hookConfig.hasPreHook()) {
                 bytes memory preExecHookReturnData;
