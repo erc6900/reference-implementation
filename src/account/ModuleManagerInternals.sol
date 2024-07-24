@@ -33,7 +33,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
     error IModuleFunctionNotAllowed(bytes4 selector);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
-    error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookFunction);
+    error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookConfig);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleInterfaceNotSupported(address module);
     error ModuleNotInstalled(address module);
@@ -116,12 +116,12 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
     }
 
-    function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookFunction) internal {
-        hooks.add(toSetValue(hookFunction));
+    function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
+        hooks.add(toSetValue(hookConfig));
     }
 
-    function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookFunction) internal {
-        hooks.remove(toSetValue(hookFunction));
+    function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
+        hooks.remove(toSetValue(hookConfig));
     }
 
     function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
@@ -152,13 +152,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            HookConfig hookFunction = HookConfigLib.packExecHook({
+            HookConfig hookConfig = HookConfigLib.packExecHook({
                 _module: module,
                 _entityId: mh.entityId,
                 _hasPre: mh.isPreHook,
                 _hasPost: mh.isPostHook
             });
-            _addExecHooks(execHooks, hookFunction);
+            _addExecHooks(execHooks, hookConfig);
         }
 
         length = manifest.interfaceIds.length;
@@ -187,13 +187,13 @@ abstract contract ModuleManagerInternals is IModuleManager {
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
             EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
-            HookConfig hookFunction = HookConfigLib.packExecHook({
+            HookConfig hookConfig = HookConfigLib.packExecHook({
                 _module: module,
                 _entityId: mh.entityId,
                 _hasPre: mh.isPreHook,
                 _hasPost: mh.isPostHook
             });
-            _removeExecHooks(execHooks, hookFunction);
+            _removeExecHooks(execHooks, hookConfig);
         }
 
         length = manifest.executionFunctions.length;

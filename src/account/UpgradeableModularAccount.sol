@@ -500,24 +500,24 @@ contract UpgradeableModularAccount is
         // Copy all post hooks to the array. This happens before any pre hooks are run, so we can
         // be sure that the set of hooks to run will not be affected by state changes mid-execution.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            HookConfig hookFunction = toExecutionHook(executionHooks.at(i));
-            if (hookFunction.hasPostHook()) {
-                postHooksToRun[i].postExecHook = hookFunction.moduleEntity();
+            HookConfig hookConfig = toExecutionHook(executionHooks.at(i));
+            if (hookConfig.hasPostHook()) {
+                postHooksToRun[i].postExecHook = hookConfig.moduleEntity();
             }
         }
 
         // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
-            HookConfig hookFunction = toExecutionHook(executionHooks.at(i));
+            HookConfig hookConfig = toExecutionHook(executionHooks.at(i));
 
-            if (hookFunction.hasPreHook()) {
+            if (hookConfig.hasPreHook()) {
                 bytes memory preExecHookReturnData;
 
-                preExecHookReturnData = _runPreExecHook(hookFunction.moduleEntity(), data);
+                preExecHookReturnData = _runPreExecHook(hookConfig.moduleEntity(), data);
 
                 // If there is an associated post-exec hook, save the return data.
-                if (hookFunction.hasPostHook()) {
+                if (hookConfig.hasPostHook()) {
                     postHooksToRun[i].preExecHookReturnData = preExecHookReturnData;
                 }
             }

@@ -58,11 +58,11 @@ abstract contract AccountLoupe is IAccountLoupe {
 
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            HookConfig hook = toExecutionHook(key);
+            HookConfig hookConfig = toExecutionHook(key);
             execHooks[i] = ExecutionHook({
-                hookFunction: hook.moduleEntity(),
-                isPreHook: hook.hasPreHook(),
-                isPostHook: hook.hasPostHook()
+                hookFunction: hookConfig.moduleEntity(),
+                isPreHook: hookConfig.hasPreHook(),
+                isPostHook: hookConfig.hasPostHook()
             });
         }
     }
@@ -80,11 +80,11 @@ abstract contract AccountLoupe is IAccountLoupe {
         permissionHooks = new ExecutionHook[](executionHooksLength);
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            HookConfig hook = toExecutionHook(key);
+            HookConfig hookConfig = toExecutionHook(key);
             permissionHooks[i] = ExecutionHook({
-                hookFunction: hook.moduleEntity(),
-                isPreHook: hook.hasPreHook(),
-                isPostHook: hook.hasPostHook()
+                hookFunction: hookConfig.moduleEntity(),
+                isPreHook: hookConfig.hasPreHook(),
+                isPostHook: hookConfig.hasPostHook()
             });
         }
     }
