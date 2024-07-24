@@ -6,7 +6,9 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
+import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
@@ -330,20 +332,15 @@ contract PerHookDataTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
-        ModuleEntity accessControlHook = ModuleEntityLib.pack(
-            address(_accessControlHookModule), uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK)
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(_accessControlHookModule), uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK)
+            ),
+            abi.encode(_counter)
         );
-
-        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
-        preValidationHooks[0] = accessControlHook;
-
-        bytes[] memory preValidationHookData = new bytes[](1);
-        // Access control is restricted to only the counter
-        preValidationHookData[0] = abi.encode(_counter);
-
-        bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
 
         return (
             _signerValidation,
@@ -351,8 +348,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             true,
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
-            packedPreValidationHooks,
-            ""
+            hooks
         );
     }
 }

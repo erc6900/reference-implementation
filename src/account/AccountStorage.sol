@@ -3,8 +3,7 @@ pragma solidity ^0.8.25;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {ExecutionHook} from "../interfaces/IAccountLoupe.sol";
-import {ModuleEntity} from "../interfaces/IModuleManager.sol";
+import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
@@ -70,19 +69,12 @@ function toModuleEntity(bytes32 setValue) pure returns (ModuleEntity) {
 // 0x________________________________________________AA____________________ is pre hook
 // 0x__________________________________________________BB__________________ is post hook
 
-function toSetValue(ExecutionHook memory executionHook) pure returns (bytes32) {
-    return bytes32(ModuleEntity.unwrap(executionHook.hookFunction))
-        | bytes32(executionHook.isPreHook ? uint256(1) << 56 : 0)
-        | bytes32(executionHook.isPostHook ? uint256(1) << 48 : 0);
+function toSetValue(HookConfig hookConfig) pure returns (bytes32) {
+    return bytes32(HookConfig.unwrap(hookConfig));
 }
 
-function toExecutionHook(bytes32 setValue)
-    pure
-    returns (ModuleEntity hookFunction, bool isPreHook, bool isPostHook)
-{
-    hookFunction = ModuleEntity.wrap(bytes24(setValue));
-    isPreHook = (uint256(setValue) >> 56) & 0xFF == 1;
-    isPostHook = (uint256(setValue) >> 48) & 0xFF == 1;
+function toHookConfig(bytes32 setValue) pure returns (HookConfig) {
+    return HookConfig.wrap(bytes26(setValue));
 }
 
 function toSetValue(bytes4 selector) pure returns (bytes32) {

@@ -51,8 +51,7 @@ contract AccountFactory is Ownable {
                 ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION, entityId, true, true),
                 new bytes4[](0),
                 pluginInstallData,
-                "",
-                ""
+                new bytes[](0)
             );
         }
 

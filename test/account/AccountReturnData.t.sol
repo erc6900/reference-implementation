@@ -48,8 +48,7 @@ contract AccountReturnDataTest is AccountTestBase {
             ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
             selectors,
             "",
-            "",
-            ""
+            new bytes[](0)
         );
         vm.stopPrank();
     }

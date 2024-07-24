@@ -21,8 +21,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
-            bytes memory preValidationHooks,
-            bytes memory permissionHooks
+            bytes[] memory hooks
         ) = _initialValidationConfig();
 
         address accountImplementation = address(factory.accountImplementation());
@@ -33,8 +32,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
             selectors,
             installData,
-            preValidationHooks,
-            permissionHooks
+            hooks
         );
 
         vm.deal(address(account1), 100 ether);
@@ -49,7 +47,6 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
-            bytes memory preValidationHooks,
-            bytes memory permissionHooks
+            bytes[] memory hooks
         );
 }
