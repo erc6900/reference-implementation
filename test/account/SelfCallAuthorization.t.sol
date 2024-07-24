@@ -33,7 +33,10 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
         account1.installValidation(
-            ValidationConfigLib.pack(comprehensiveModuleValidation, false, false), validationSelectors, "", "", ""
+            ValidationConfigLib.pack(comprehensiveModuleValidation, false, false),
+            validationSelectors,
+            "",
+            new bytes[](0)
         );
         vm.stopPrank();
     }
@@ -302,7 +305,12 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.installValidation,
-                (ValidationConfigLib.pack(comprehensiveModuleValidation, false, false), selectors, "", "", "")
+                (
+                    ValidationConfigLib.pack(comprehensiveModuleValidation, false, false),
+                    selectors,
+                    "",
+                    new bytes[](0)
+                )
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );

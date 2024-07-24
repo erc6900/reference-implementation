@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
@@ -52,47 +54,36 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         // Install noHookValidation
         account1.installValidation(
-            ValidationConfigLib.pack(noHookValidation, true, true),
-            validationSelectors,
-            bytes(""),
-            bytes(""),
-            bytes("")
+            ValidationConfigLib.pack(noHookValidation, true, true), validationSelectors, bytes(""), new bytes[](0)
         );
 
         // Install oneHookValidation
         validationSelectors[0] = MockUserOpValidation1HookModule.bar.selector;
-        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
-        preValidationHooks[0] = ModuleEntityLib.pack({
-            addr: address(oneHookModule),
-            entityId: uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
-        });
-        bytes[] memory installDatas = new bytes[](1);
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(oneHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
+            )
+        );
         account1.installValidation(
-            ValidationConfigLib.pack(oneHookValidation, true, true),
-            validationSelectors,
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            bytes("")
+            ValidationConfigLib.pack(oneHookValidation, true, true), validationSelectors, bytes(""), hooks
         );
 
         // Install twoHookValidation
         validationSelectors[0] = MockUserOpValidation2HookModule.baz.selector;
-        preValidationHooks = new ModuleEntity[](2);
-        preValidationHooks[0] = ModuleEntityLib.pack({
-            addr: address(twoHookModule),
-            entityId: uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
-        });
-        preValidationHooks[1] = ModuleEntityLib.pack({
-            addr: address(twoHookModule),
-            entityId: uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_2)
-        });
-        installDatas = new bytes[](2);
+        hooks = new bytes[](2);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(twoHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
+            )
+        );
+        hooks[1] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(twoHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_2)
+            )
+        );
         account1.installValidation(
-            ValidationConfigLib.pack(twoHookValidation, true, true),
-            validationSelectors,
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            bytes("")
+            ValidationConfigLib.pack(twoHookValidation, true, true), validationSelectors, bytes(""), hooks
         );
         vm.stopPrank();
     }

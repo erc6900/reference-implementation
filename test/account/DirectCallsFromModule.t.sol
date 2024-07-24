@@ -1,9 +1,10 @@
 pragma solidity ^0.8.19;
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
@@ -108,23 +109,22 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = IStandardExecutor.execute.selector;
 
-        ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
-        bytes[] memory permissionHookInitDatas = new bytes[](1);
-
-        permissionHooks[0] = ExecutionHook({hookFunction: _moduleEntity, isPreHook: true, isPostHook: true});
-
-        bytes memory encodedPermissionHooks = abi.encode(permissionHooks, permissionHookInitDatas);
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packExecHook({_hookFunction: _moduleEntity, _hasPre: true, _hasPost: true}),
+            hex"00" // onInstall data
+        );
 
         vm.prank(address(entryPoint));
 
         ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, false, false);
 
-        account1.installValidation(validationConfig, selectors, "", "", encodedPermissionHooks);
+        account1.installValidation(validationConfig, selectors, "", hooks);
     }
 
     function _uninstallModule() internal {
         vm.prank(address(entryPoint));
-        account1.uninstallValidation(_moduleEntity, "", abi.encode(new bytes[](0)), abi.encode(new bytes[](1)));
+        account1.uninstallValidation(_moduleEntity, "", new bytes[](1));
     }
 
     function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {

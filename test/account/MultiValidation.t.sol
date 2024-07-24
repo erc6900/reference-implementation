@@ -39,8 +39,7 @@ contract MultiValidationTest is AccountTestBase {
             ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true),
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2),
-            "",
-            ""
+            new bytes[](0)
         );
 
         ModuleEntity[] memory validations = new ModuleEntity[](2);

@@ -4,7 +4,9 @@ pragma solidity ^0.8.25;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
+import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
@@ -291,19 +293,15 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
-        ModuleEntity accessControlHook =
-            ModuleEntityLib.pack(address(allowlistModule), uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK));
-
-        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
-        preValidationHooks[0] = accessControlHook;
-
-        bytes[] memory preValidationHookData = new bytes[](1);
-        // Access control is restricted to only the counter
-        preValidationHookData[0] = abi.encode(allowlistInit);
-
-        bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(allowlistModule), uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK)
+            ),
+            abi.encode(allowlistInit)
+        );
 
         return (
             _signerValidation,
@@ -311,8 +309,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             true,
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
-            packedPreValidationHooks,
-            ""
+            hooks
         );
     }
 
