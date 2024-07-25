@@ -6,31 +6,33 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ExecutionHook, IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
-import {IPluginManager, PluginEntity} from "../interfaces/IPluginManager.sol";
+import {HookConfig, IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {getAccountStorage, toExecutionHook, toSelector} from "./AccountStorage.sol";
+import {getAccountStorage, toHookConfig, toSelector} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
+    using HookConfigLib for HookConfig;
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionFunctionHandler(bytes4 selector) external view override returns (address plugin) {
+    function getExecutionFunctionHandler(bytes4 selector) external view override returns (address module) {
         if (
             selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
-                || selector == IPluginManager.installPlugin.selector
-                || selector == IPluginManager.uninstallPlugin.selector
+                || selector == IModuleManager.installModule.selector
+                || selector == IModuleManager.uninstallModule.selector
         ) {
             return address(this);
         }
 
-        return getAccountStorage().selectorData[selector].plugin;
+        return getAccountStorage().selectorData[selector].module;
     }
 
     /// @inheritdoc IAccountLoupe
-    function getSelectors(PluginEntity validationFunction) external view returns (bytes4[] memory) {
+    function getSelectors(ModuleEntity validationFunction) external view returns (bytes4[] memory) {
         uint256 length = getAccountStorage().validationData[validationFunction].selectors.length();
 
         bytes4[] memory selectors = new bytes4[](length);
@@ -56,13 +58,17 @@ abstract contract AccountLoupe is IAccountLoupe {
 
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            ExecutionHook memory execHook = execHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
+            HookConfig hookConfig = toHookConfig(key);
+            execHooks[i] = ExecutionHook({
+                hookFunction: hookConfig.moduleEntity(),
+                isPreHook: hookConfig.hasPreHook(),
+                isPostHook: hookConfig.hasPostHook()
+            });
         }
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPermissionHooks(PluginEntity validationFunction)
+    function getPermissionHooks(ModuleEntity validationFunction)
         external
         view
         override
@@ -74,23 +80,22 @@ abstract contract AccountLoupe is IAccountLoupe {
         permissionHooks = new ExecutionHook[](executionHooksLength);
         for (uint256 i = 0; i < executionHooksLength; ++i) {
             bytes32 key = hooks.at(i);
-            ExecutionHook memory execHook = permissionHooks[i];
-            (execHook.hookFunction, execHook.isPreHook, execHook.isPostHook) = toExecutionHook(key);
+            HookConfig hookConfig = toHookConfig(key);
+            permissionHooks[i] = ExecutionHook({
+                hookFunction: hookConfig.moduleEntity(),
+                isPreHook: hookConfig.hasPreHook(),
+                isPostHook: hookConfig.hasPostHook()
+            });
         }
     }
 
     /// @inheritdoc IAccountLoupe
-    function getPreValidationHooks(PluginEntity validationFunction)
+    function getPreValidationHooks(ModuleEntity validationFunction)
         external
         view
         override
-        returns (PluginEntity[] memory preValidationHooks)
+        returns (ModuleEntity[] memory preValidationHooks)
     {
         preValidationHooks = getAccountStorage().validationData[validationFunction].preValidationHooks;
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getInstalledPlugins() external view override returns (address[] memory pluginAddresses) {
-        pluginAddresses = getAccountStorage().pluginManifestHashes.keys();
     }
 }

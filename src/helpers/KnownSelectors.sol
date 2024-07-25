@@ -9,8 +9,8 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {IPlugin} from "../interfaces/IPlugin.sol";
-import {IPluginManager} from "../interfaces/IPluginManager.sol";
+import {IModule} from "../interfaces/IModule.sol";
+import {IModuleManager} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
@@ -22,8 +22,8 @@ library KnownSelectors {
         return
         // check against IAccount methods
         selector == IAccount.validateUserOp.selector
-        // check against IPluginManager methods
-        || selector == IPluginManager.installPlugin.selector || selector == IPluginManager.uninstallPlugin.selector
+        // check against IModuleManager methods
+        || selector == IModuleManager.installModule.selector || selector == IModuleManager.uninstallModule.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods
@@ -35,8 +35,7 @@ library KnownSelectors {
         // check against IAccountLoupe methods
         || selector == IAccountLoupe.getExecutionFunctionHandler.selector
             || selector == IAccountLoupe.getSelectors.selector || selector == IAccountLoupe.getExecutionHooks.selector
-            || selector == IAccountLoupe.getPreValidationHooks.selector
-            || selector == IAccountLoupe.getInstalledPlugins.selector;
+            || selector == IAccountLoupe.getPreValidationHooks.selector;
     }
 
     function isErc4337Function(bytes4 selector) internal pure returns (bool) {
@@ -46,9 +45,9 @@ library KnownSelectors {
             || selector == IPaymaster.validatePaymasterUserOp.selector || selector == IPaymaster.postOp.selector;
     }
 
-    function isIPluginFunction(bytes4 selector) internal pure returns (bool) {
-        return selector == IPlugin.onInstall.selector || selector == IPlugin.onUninstall.selector
-            || selector == IPlugin.pluginManifest.selector || selector == IPlugin.pluginMetadata.selector
+    function isIModuleFunction(bytes4 selector) internal pure returns (bool) {
+        return selector == IModule.onInstall.selector || selector == IModule.onUninstall.selector
+            || selector == IModule.moduleManifest.selector || selector == IModule.moduleMetadata.selector
             || selector == IExecutionHook.preExecutionHook.selector
             || selector == IExecutionHook.postExecutionHook.selector || selector == IValidation.validateUserOp.selector
             || selector == IValidation.validateRuntime.selector || selector == IValidation.validateSignature.selector

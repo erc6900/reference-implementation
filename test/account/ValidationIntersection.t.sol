@@ -4,105 +4,95 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {
-    MockBaseUserOpValidationPlugin,
-    MockUserOpValidation1HookPlugin,
-    MockUserOpValidation2HookPlugin,
-    MockUserOpValidationPlugin
-} from "../mocks/plugins/ValidationPluginMocks.sol";
+    MockBaseUserOpValidationModule,
+    MockUserOpValidation1HookModule,
+    MockUserOpValidation2HookModule,
+    MockUserOpValidationModule
+} from "../mocks/modules/ValidationModuleMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract ValidationIntersectionTest is AccountTestBase {
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
-    MockUserOpValidationPlugin public noHookPlugin;
-    MockUserOpValidation1HookPlugin public oneHookPlugin;
-    MockUserOpValidation2HookPlugin public twoHookPlugin;
+    MockUserOpValidationModule public noHookModule;
+    MockUserOpValidation1HookModule public oneHookModule;
+    MockUserOpValidation2HookModule public twoHookModule;
 
-    PluginEntity public noHookValidation;
-    PluginEntity public oneHookValidation;
-    PluginEntity public twoHookValidation;
+    ModuleEntity public noHookValidation;
+    ModuleEntity public oneHookValidation;
+    ModuleEntity public twoHookValidation;
 
     function setUp() public {
-        noHookPlugin = new MockUserOpValidationPlugin();
-        oneHookPlugin = new MockUserOpValidation1HookPlugin();
-        twoHookPlugin = new MockUserOpValidation2HookPlugin();
+        noHookModule = new MockUserOpValidationModule();
+        oneHookModule = new MockUserOpValidation1HookModule();
+        twoHookModule = new MockUserOpValidation2HookModule();
 
-        noHookValidation = PluginEntityLib.pack({
-            addr: address(noHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
+        noHookValidation = ModuleEntityLib.pack({
+            addr: address(noHookModule),
+            entityId: uint32(MockBaseUserOpValidationModule.EntityId.USER_OP_VALIDATION)
         });
 
-        oneHookValidation = PluginEntityLib.pack({
-            addr: address(oneHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
+        oneHookValidation = ModuleEntityLib.pack({
+            addr: address(oneHookModule),
+            entityId: uint32(MockBaseUserOpValidationModule.EntityId.USER_OP_VALIDATION)
         });
 
-        twoHookValidation = PluginEntityLib.pack({
-            addr: address(twoHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.USER_OP_VALIDATION)
+        twoHookValidation = ModuleEntityLib.pack({
+            addr: address(twoHookModule),
+            entityId: uint32(MockBaseUserOpValidationModule.EntityId.USER_OP_VALIDATION)
         });
+
+        bytes4[] memory validationSelectors = new bytes4[](1);
+        validationSelectors[0] = MockUserOpValidationModule.foo.selector;
 
         vm.startPrank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(noHookPlugin),
-            manifestHash: keccak256(abi.encode(noHookPlugin.pluginManifest())),
-            pluginInstallData: ""
-        });
-        account1.installPlugin({
-            plugin: address(oneHookPlugin),
-            manifestHash: keccak256(abi.encode(oneHookPlugin.pluginManifest())),
-            pluginInstallData: ""
-        });
-        // TODO: change with new install flow
-        // temporary fix to add the pre-validation hook
-        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
-        preValidationHooks[0] = PluginEntityLib.pack({
-            addr: address(oneHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_1)
-        });
-        bytes[] memory installDatas = new bytes[](1);
+        // Install noHookValidation
         account1.installValidation(
-            ValidationConfigLib.pack(oneHookValidation, true, true),
-            new bytes4[](0),
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            bytes("")
+            ValidationConfigLib.pack(noHookValidation, true, true), validationSelectors, bytes(""), new bytes[](0)
         );
-        account1.installPlugin({
-            plugin: address(twoHookPlugin),
-            manifestHash: keccak256(abi.encode(twoHookPlugin.pluginManifest())),
-            pluginInstallData: ""
-        });
-        // temporary fix to add the pre-validation hook
-        preValidationHooks = new PluginEntity[](2);
-        preValidationHooks[0] = PluginEntityLib.pack({
-            addr: address(twoHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_1)
-        });
-        preValidationHooks[1] = PluginEntityLib.pack({
-            addr: address(twoHookPlugin),
-            entityId: uint32(MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_2)
-        });
-        installDatas = new bytes[](2);
+
+        // Install oneHookValidation
+        validationSelectors[0] = MockUserOpValidation1HookModule.bar.selector;
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(oneHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
+            )
+        );
         account1.installValidation(
-            ValidationConfigLib.pack(twoHookValidation, true, true),
-            new bytes4[](0),
-            bytes(""),
-            abi.encode(preValidationHooks, installDatas),
-            bytes("")
+            ValidationConfigLib.pack(oneHookValidation, true, true), validationSelectors, bytes(""), hooks
+        );
+
+        // Install twoHookValidation
+        validationSelectors[0] = MockUserOpValidation2HookModule.baz.selector;
+        hooks = new bytes[](2);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(twoHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1)
+            )
+        );
+        hooks[1] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(twoHookModule), uint32(MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_2)
+            )
+        );
+        account1.installValidation(
+            ValidationConfigLib.pack(twoHookValidation, true, true), validationSelectors, bytes(""), hooks
         );
         vm.stopPrank();
     }
 
     function testFuzz_validationIntersect_single(uint256 validationData) public {
-        noHookPlugin.setValidationData(validationData);
+        noHookModule.setValidationData(validationData);
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(noHookPlugin.foo.selector);
+        userOp.callData = bytes.concat(noHookModule.foo.selector);
         userOp.signature = _encodeSignature(noHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -113,13 +103,13 @@ contract ValidationIntersectionTest is AccountTestBase {
     }
 
     function test_validationIntersect_authorizer_sigfail_validationFunction() public {
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             _SIG_VALIDATION_FAILED,
             0 // returns OK
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -131,13 +121,13 @@ contract ValidationIntersectionTest is AccountTestBase {
     }
 
     function test_validationIntersect_authorizer_sigfail_hook() public {
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             0, // returns OK
             _SIG_VALIDATION_FAILED
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -155,12 +145,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             _packValidationRes(address(0), start1, end1), _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -177,12 +167,12 @@ contract ValidationIntersectionTest is AccountTestBase {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             _packValidationRes(address(0), start2, end2), _packValidationRes(address(0), start1, end1)
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -195,14 +185,14 @@ contract ValidationIntersectionTest is AccountTestBase {
     function test_validationIntersect_revert_unexpectedAuthorizer() public {
         address badAuthorizer = makeAddr("badAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             0, // returns OK
             uint256(uint160(badAuthorizer)) // returns an aggregator, which preValidation hooks are not allowed to
                 // do.
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -210,8 +200,8 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.UnexpectedAggregator.selector,
-                address(oneHookPlugin),
-                MockBaseUserOpValidationPlugin.EntityId.PRE_VALIDATION_HOOK_1,
+                address(oneHookModule),
+                MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1,
                 badAuthorizer
             )
         );
@@ -221,13 +211,13 @@ contract ValidationIntersectionTest is AccountTestBase {
     function test_validationIntersect_validAuthorizer() public {
         address goodAuthorizer = makeAddr("goodAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             uint256(uint160(goodAuthorizer)), // returns a valid aggregator
             0 // returns OK
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -246,12 +236,12 @@ contract ValidationIntersectionTest is AccountTestBase {
 
         address goodAuthorizer = makeAddr("goodAuthorizer");
 
-        oneHookPlugin.setValidationData(
+        oneHookModule.setValidationData(
             _packValidationRes(goodAuthorizer, start1, end1), _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(oneHookPlugin.bar.selector);
+        userOp.callData = bytes.concat(oneHookModule.bar.selector);
         userOp.signature = _encodeSignature(oneHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -268,14 +258,14 @@ contract ValidationIntersectionTest is AccountTestBase {
         uint48 start2 = uint48(15);
         uint48 end2 = uint48(25);
 
-        twoHookPlugin.setValidationData(
+        twoHookModule.setValidationData(
             0, // returns OK
             _packValidationRes(address(0), start1, end1),
             _packValidationRes(address(0), start2, end2)
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
+        userOp.callData = bytes.concat(twoHookModule.baz.selector);
         userOp.signature = _encodeSignature(twoHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);
 
@@ -286,14 +276,14 @@ contract ValidationIntersectionTest is AccountTestBase {
     }
 
     function test_validationIntersect_multiplePreValidationHooksSigFail() public {
-        twoHookPlugin.setValidationData(
+        twoHookModule.setValidationData(
             0, // returns OK
             0, // returns OK
             _SIG_VALIDATION_FAILED
         );
 
         PackedUserOperation memory userOp;
-        userOp.callData = bytes.concat(twoHookPlugin.baz.selector);
+        userOp.callData = bytes.concat(twoHookModule.baz.selector);
 
         userOp.signature = _encodeSignature(twoHookValidation, SELECTOR_ASSOCIATED_VALIDATION, "");
         bytes32 uoHash = entryPoint.getUserOpHash(userOp);

@@ -38,7 +38,7 @@ runs = 5000
 depth = 32
 
 [profile.deep.fuzz]
-runs = 10000
+runs = 100000
 
 [profile.deep.invariant]
 runs = 5000

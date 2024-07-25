@@ -3,43 +3,41 @@ pragma solidity ^0.8.19;
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {PermittedCallerPlugin} from "../mocks/plugins/PermittedCallMocks.sol";
-import {ResultCreatorPlugin} from "../mocks/plugins/ReturnDataPluginMocks.sol";
+import {PermittedCallerModule} from "../mocks/modules/PermittedCallMocks.sol";
+import {ResultCreatorModule} from "../mocks/modules/ReturnDataModuleMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract PermittedCallPermissionsTest is AccountTestBase {
-    ResultCreatorPlugin public resultCreatorPlugin;
+    ResultCreatorModule public resultCreatorModule;
 
-    PermittedCallerPlugin public permittedCallerPlugin;
+    PermittedCallerModule public permittedCallerModule;
 
     function setUp() public {
         _transferOwnershipToTest();
-        resultCreatorPlugin = new ResultCreatorPlugin();
+        resultCreatorModule = new ResultCreatorModule();
 
-        // Initialize the permitted caller plugins, which will attempt to use the permissions system to authorize
+        // Initialize the permitted caller modules, which will attempt to use the permissions system to authorize
         // calls.
-        permittedCallerPlugin = new PermittedCallerPlugin();
+        permittedCallerModule = new PermittedCallerModule();
 
-        // Add the result creator plugin to the account
-        bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(resultCreatorPlugin),
-            manifestHash: resultCreatorManifestHash,
-            pluginInstallData: ""
+        // Add the result creator module to the account
+        vm.startPrank(address(entryPoint));
+        account1.installModule({
+            module: address(resultCreatorModule),
+            manifest: resultCreatorModule.moduleManifest(),
+            moduleInstallData: ""
         });
-        // Add the permitted caller plugin to the account
-        bytes32 permittedCallerManifestHash = keccak256(abi.encode(permittedCallerPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(permittedCallerPlugin),
-            manifestHash: permittedCallerManifestHash,
-            pluginInstallData: ""
+        // Add the permitted caller module to the account
+        account1.installModule({
+            module: address(permittedCallerModule),
+            manifest: permittedCallerModule.moduleManifest(),
+            moduleInstallData: ""
         });
+        vm.stopPrank();
     }
 
     function test_permittedCall_Allowed() public {
-        bytes memory result = PermittedCallerPlugin(address(account1)).usePermittedCallAllowed();
+        bytes memory result = PermittedCallerModule(address(account1)).usePermittedCallAllowed();
         bytes32 actual = abi.decode(result, (bytes32));
 
         assertEq(actual, keccak256("bar"));
@@ -48,9 +46,9 @@ contract PermittedCallPermissionsTest is AccountTestBase {
     function test_permittedCall_NotAllowed() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ResultCreatorPlugin.bar.selector
+                UpgradeableModularAccount.ValidationFunctionMissing.selector, ResultCreatorModule.bar.selector
             )
         );
-        PermittedCallerPlugin(address(account1)).usePermittedCallNotAllowed();
+        PermittedCallerModule(address(account1)).usePermittedCallNotAllowed();
     }
 }

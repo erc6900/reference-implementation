@@ -9,11 +9,11 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {PluginEntity} from "../../src/interfaces/IPluginManager.sol";
+import {ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
@@ -39,13 +39,12 @@ contract MultiValidationTest is AccountTestBase {
             ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true),
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2),
-            "",
-            ""
+            new bytes[](0)
         );
 
-        PluginEntity[] memory validations = new PluginEntity[](2);
-        validations[0] = PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
-        validations[1] = PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        ModuleEntity[] memory validations = new ModuleEntity[](2);
+        validations[0] = ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        validations[1] = ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         bytes4[] memory selectors0 = account1.getSelectors(validations[0]);
         bytes4[] memory selectors1 = account1.getSelectors(validations[1]);
@@ -72,7 +71,7 @@ contract MultiValidationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
+                ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
         );
 
@@ -80,7 +79,7 @@ contract MultiValidationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
             _encodeSignature(
-                PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
+                ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
         );
     }
@@ -106,7 +105,7 @@ contract MultiValidationTest is AccountTestBase {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner2Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -121,7 +120,7 @@ contract MultiValidationTest is AccountTestBase {
         userOp.nonce = 1;
         (v, r, s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
         userOp.signature = _encodeSignature(
-            PluginEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );

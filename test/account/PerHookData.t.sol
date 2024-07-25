@@ -6,23 +6,25 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
+import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
-import {MockAccessControlHookPlugin} from "../mocks/plugins/MockAccessControlHookPlugin.sol";
+import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
 contract PerHookDataTest is CustomValidationTestBase {
     using MessageHashUtils for bytes32;
 
-    MockAccessControlHookPlugin internal _accessControlHookPlugin;
+    MockAccessControlHookModule internal _accessControlHookModule;
 
     Counter internal _counter;
 
     function setUp() public {
         _counter = new Counter();
 
-        _accessControlHookPlugin = new MockAccessControlHookPlugin();
+        _accessControlHookModule = new MockAccessControlHookModule();
 
         _customValidationSetup();
     }
@@ -217,8 +219,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
-                _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
+                _accessControlHookModule,
+                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -236,8 +238,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
-                _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
+                _accessControlHookModule,
+                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -278,8 +280,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         vm.expectRevert(
             abi.encodeWithSelector(
                 UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
-                _accessControlHookPlugin,
-                uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK),
+                _accessControlHookModule,
+                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
                 abi.encodeWithSignature("Error(string)", "Target not allowed")
             )
         );
@@ -330,20 +332,15 @@ contract PerHookDataTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (PluginEntity, bool, bool, bytes4[] memory, bytes memory, bytes memory, bytes memory)
+        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
-        PluginEntity accessControlHook = PluginEntityLib.pack(
-            address(_accessControlHookPlugin), uint32(MockAccessControlHookPlugin.EntityId.PRE_VALIDATION_HOOK)
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(
+                address(_accessControlHookModule), uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK)
+            ),
+            abi.encode(_counter)
         );
-
-        PluginEntity[] memory preValidationHooks = new PluginEntity[](1);
-        preValidationHooks[0] = accessControlHook;
-
-        bytes[] memory preValidationHookData = new bytes[](1);
-        // Access control is restricted to only the counter
-        preValidationHookData[0] = abi.encode(_counter);
-
-        bytes memory packedPreValidationHooks = abi.encode(preValidationHooks, preValidationHookData);
 
         return (
             _signerValidation,
@@ -351,8 +348,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             true,
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
-            packedPreValidationHooks,
-            ""
+            hooks
         );
     }
 }

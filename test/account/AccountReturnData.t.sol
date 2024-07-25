@@ -1,51 +1,61 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
+import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {
     RegularResultContract,
-    ResultConsumerPlugin,
-    ResultCreatorPlugin
-} from "../mocks/plugins/ReturnDataPluginMocks.sol";
+    ResultConsumerModule,
+    ResultCreatorModule
+} from "../mocks/modules/ReturnDataModuleMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
-// Tests all the different ways that return data can be read from plugins through an account
+// Tests all the different ways that return data can be read from modules through an account
 contract AccountReturnDataTest is AccountTestBase {
     RegularResultContract public regularResultContract;
-    ResultCreatorPlugin public resultCreatorPlugin;
-    ResultConsumerPlugin public resultConsumerPlugin;
+    ResultCreatorModule public resultCreatorModule;
+    ResultConsumerModule public resultConsumerModule;
 
     function setUp() public {
         _transferOwnershipToTest();
 
         regularResultContract = new RegularResultContract();
-        resultCreatorPlugin = new ResultCreatorPlugin();
-        resultConsumerPlugin = new ResultConsumerPlugin(resultCreatorPlugin, regularResultContract);
+        resultCreatorModule = new ResultCreatorModule();
+        resultConsumerModule = new ResultConsumerModule(resultCreatorModule, regularResultContract);
 
-        // Add the result creator plugin to the account
-        bytes32 resultCreatorManifestHash = keccak256(abi.encode(resultCreatorPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(resultCreatorPlugin),
-            manifestHash: resultCreatorManifestHash,
-            pluginInstallData: ""
+        // Add the result creator module to the account
+        vm.startPrank(address(entryPoint));
+        account1.installModule({
+            module: address(resultCreatorModule),
+            manifest: resultCreatorModule.moduleManifest(),
+            moduleInstallData: ""
         });
-        // Add the result consumer plugin to the account
-        bytes32 resultConsumerManifestHash = keccak256(abi.encode(resultConsumerPlugin.pluginManifest()));
-        vm.prank(address(entryPoint));
-        account1.installPlugin({
-            plugin: address(resultConsumerPlugin),
-            manifestHash: resultConsumerManifestHash,
-            pluginInstallData: ""
+        // Add the result consumer module to the account
+        account1.installModule({
+            module: address(resultConsumerModule),
+            manifest: resultConsumerModule.moduleManifest(),
+            moduleInstallData: ""
         });
+        // Allow the result consumer module to perform direct calls to the account
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = IStandardExecutor.execute.selector;
+        account1.installValidation(
+            ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
+            selectors,
+            "",
+            new bytes[](0)
+        );
+        vm.stopPrank();
     }
 
-    // Tests the ability to read the result of plugin execution functions via the account's fallback
+    // Tests the ability to read the result of module execution functions via the account's fallback
     function test_returnData_fallback() public {
-        bytes32 result = ResultCreatorPlugin(address(account1)).foo();
+        bytes32 result = ResultCreatorModule(address(account1)).foo();
 
         assertEq(result, keccak256("bar"));
     }
@@ -58,7 +68,7 @@ contract AccountReturnDataTest is AccountTestBase {
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -86,7 +96,7 @@ contract AccountReturnDataTest is AccountTestBase {
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
             _encodeSignature(
-                PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -102,15 +112,15 @@ contract AccountReturnDataTest is AccountTestBase {
     }
 
     // Tests the ability to read data via routing to fallback functions
-    function test_returnData_execFromPlugin_fallback() public {
-        bool result = ResultConsumerPlugin(address(account1)).checkResultFallback(keccak256("bar"));
+    function test_returnData_execFromModule_fallback() public {
+        bool result = ResultConsumerModule(address(account1)).checkResultFallback(keccak256("bar"));
 
         assertTrue(result);
     }
 
     // Tests the ability to read data via executeWithAuthorization
     function test_returnData_authorized_exec() public {
-        bool result = ResultConsumerPlugin(address(account1)).checkResultExecuteWithAuthorization(
+        bool result = ResultConsumerModule(address(account1)).checkResultExecuteWithAuthorization(
             address(regularResultContract), keccak256("bar")
         );
 

@@ -7,10 +7,10 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
-import {SingleSignerValidation} from "../../src/plugins/validation/SingleSignerValidation.sol";
+import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
-import {PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";

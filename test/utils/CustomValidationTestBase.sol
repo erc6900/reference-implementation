@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntity} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {AccountTestBase} from "./AccountTestBase.sol";
@@ -16,13 +16,12 @@ import {AccountTestBase} from "./AccountTestBase.sol";
 abstract contract CustomValidationTestBase is AccountTestBase {
     function _customValidationSetup() internal {
         (
-            PluginEntity validationFunction,
+            ModuleEntity validationFunction,
             bool isGlobal,
             bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
-            bytes memory preValidationHooks,
-            bytes memory permissionHooks
+            bytes[] memory hooks
         ) = _initialValidationConfig();
 
         address accountImplementation = address(factory.accountImplementation());
@@ -33,8 +32,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
             selectors,
             installData,
-            preValidationHooks,
-            permissionHooks
+            hooks
         );
 
         vm.deal(address(account1), 100 ether);
@@ -44,12 +42,11 @@ abstract contract CustomValidationTestBase is AccountTestBase {
         internal
         virtual
         returns (
-            PluginEntity validationFunction,
+            ModuleEntity validationFunction,
             bool shared,
             bool isSignatureValidation,
             bytes4[] memory selectors,
             bytes memory installData,
-            bytes memory preValidationHooks,
-            bytes memory permissionHooks
+            bytes[] memory hooks
         );
 }
