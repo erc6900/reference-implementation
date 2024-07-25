@@ -117,12 +117,8 @@ contract UpgradeableModularAccount is
         if (execModule == address(0)) {
             revert UnrecognizedFunction(msg.sig);
         }
-
-        _checkPermittedCallerAndAssociatedHooks();
-
-        PostExecToRun[] memory postExecHooks;
-        // Cache post-exec hooks in memory
-        postExecHooks = _doPreHooks(getAccountStorage().selectorData[msg.sig].executionHooks, msg.data);
+        (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
+            _checkPermittedCallerAndAssociatedHooks();
 
         // execute the function, bubbling up any reverts
         (bool execSuccess, bytes memory execReturnData) = execModule.call(msg.data);
@@ -135,6 +131,7 @@ contract UpgradeableModularAccount is
         }
 
         _doCachedPostExecHooks(postExecHooks);
+        _doCachedPostExecHooks(postPermissionHooks);
 
         return execReturnData;
     }
@@ -600,32 +597,34 @@ contract UpgradeableModularAccount is
         returns (PostExecToRun[] memory, PostExecToRun[] memory)
     {
         AccountStorage storage _storage = getAccountStorage();
+        PostExecToRun[] memory postPermissionHooks;
 
+        // We only need to handle permission hooks when the sender is not the entry point or the account itself,
+        // and the selector isn't public.
         if (
-            msg.sender == address(_ENTRY_POINT) || msg.sender == address(this)
-                || _storage.selectorData[msg.sig].isPublic
+            msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
+                && !_storage.selectorData[msg.sig].isPublic
         ) {
-            return (new PostExecToRun[](0), new PostExecToRun[](0));
+            ModuleEntity directCallValidationKey =
+                ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
+
+            _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
+
+            // Direct call is allowed, run associated permission & validation hooks
+
+            // Validation hooks
+            ModuleEntity[] memory preRuntimeValidationHooks =
+                _storage.validationData[directCallValidationKey].preValidationHooks;
+
+            uint256 hookLen = preRuntimeValidationHooks.length;
+            for (uint256 i = 0; i < hookLen; ++i) {
+                _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
+            }
+
+            // Permission hooks
+            postPermissionHooks =
+                _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
         }
-
-        ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
-
-        _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
-
-        // Direct call is allowed, run associated permission & validation hooks
-
-        // Validation hooks
-        ModuleEntity[] memory preRuntimeValidationHooks =
-            _storage.validationData[directCallValidationKey].preValidationHooks;
-
-        uint256 hookLen = preRuntimeValidationHooks.length;
-        for (uint256 i = 0; i < hookLen; ++i) {
-            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
-        }
-
-        // Permission hooks
-        PostExecToRun[] memory postPermissionHooks =
-            _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
 
         // Exec hooks
         PostExecToRun[] memory postExecutionHooks =
