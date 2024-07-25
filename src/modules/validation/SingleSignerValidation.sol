@@ -13,8 +13,8 @@ import {IValidation} from "../../interfaces/IValidation.sol";
 import {BaseModule} from "../BaseModule.sol";
 import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 
-import {PluginEntityLib} from "../../helpers/PluginEntityLib.sol";
-import {PluginEntity} from "../../interfaces/IPluginManager.sol";
+import {ModuleEntityLib} from "../../helpers/ModuleEntityLib.sol";
+import {ModuleEntity} from "../../interfaces/IModuleManager.sol";
 
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
@@ -31,7 +31,7 @@ import {PluginEntity} from "../../interfaces/IPluginManager.sol";
 /// to validate partially or fully.
 contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     using ECDSA for bytes32;
-    using PluginEntityLib for PluginEntity;
+    using ModuleEntityLib for ModuleEntity;
     using MessageHashUtils for bytes32;
 
     string internal constant _NAME = "SingleSigner Validation";
@@ -156,9 +156,9 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
             bytes memory immutables = LibClone.argsOnERC1967(account);
             // TODO: Add length check to prevent casting empty bytes, maybe?
 
-            PluginEntity validation = PluginEntity.wrap(bytes24(immutables));
+            ModuleEntity validation = ModuleEntity.wrap(bytes24(immutables));
 
-            if (!validation.eq(PluginEntityLib.pack(address(this), entityId))) {
+            if (!validation.eq(ModuleEntityLib.pack(address(this), entityId))) {
                 revert("Validation incorrect");
             }
 

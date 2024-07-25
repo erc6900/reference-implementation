@@ -78,7 +78,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     function _getImmutableArgs(address owner) private view returns (bytes memory) {
         return abi.encodePacked(
-            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             owner
         );
     }

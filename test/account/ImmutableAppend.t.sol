@@ -2,11 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {IEntryPoint, UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {PluginEntity, PluginEntityLib} from "../../src/helpers/PluginEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {DirectCallPlugin} from "../mocks/plugins/DirectCallPlugin.sol";
+import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
@@ -26,7 +26,7 @@ contract ImmutableAppendTest is AccountTestBase {
 
     function test_success_getData() public {
         bytes memory expectedArgs = abi.encodePacked(
-            PluginEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1))
         );
 

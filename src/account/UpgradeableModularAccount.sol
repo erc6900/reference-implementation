@@ -226,7 +226,7 @@ contract UpgradeableModularAccount is
     // We pass a bool for "enabled" for ease of use, rather than the more efficient "disabled"
     // We just negate it later.
     function setBytecodeAppendedValidationEnabled(bool enabled) external wrapNativeFunction {
-        PluginEntity appendedValidation = _getAppendedValidation();
+        ModuleEntity appendedValidation = _getAppendedValidation();
 
         getAccountStorage().validationData[appendedValidation].isAppendedBytecodeValidationDisabled = !enabled;
         // TODO: event
@@ -737,7 +737,7 @@ contract UpgradeableModularAccount is
 
                 if (
                     _getAppendedValidation().eq(validationFunction)
-                        && !validationFunction.eq(PluginEntity.wrap(bytes24(0)))
+                        && !validationFunction.eq(ModuleEntity.wrap(bytes24(0)))
                         && !_storage.validationData[validationFunction].isAppendedBytecodeValidationDisabled
                 ) {
                     return;
@@ -752,7 +752,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _getAppendedValidation() internal view returns (PluginEntity) {
+    function _getAppendedValidation() internal view returns (ModuleEntity) {
         // Get only the 24 first bytes of appended data
         bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 24);
         // Appended bytecode is under the format abi.encodePacked(pluginEntity, any...)
@@ -761,9 +761,9 @@ contract UpgradeableModularAccount is
         if (appendedData.length > 0) {
             // TODO: Evaluate if it's better to somehow pass the data back from here and have it passed to the
             // validation instead of having it be read from bytecode by the validation
-            PluginEntity appendedValidationFunction = PluginEntity.wrap(bytes24(appendedData));
+            ModuleEntity appendedValidationFunction = ModuleEntity.wrap(bytes24(appendedData));
             return appendedValidationFunction;
         }
-        return PluginEntity.wrap(bytes24(0));
+        return ModuleEntity.wrap(bytes24(0));
     }
 }
