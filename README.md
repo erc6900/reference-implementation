@@ -28,3 +28,14 @@ Since IR compilation generates different bytecode, it's useful to test against t
 FOUNDRY_PROFILE=optimized-build forge build
 FOUNDRY_PROFILE=optimized-test forge test -vvv
 ```
+
+## Integration testing
+
+The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidation`. This is not auditted, nor intended for production use. Limitations set by the GPL-V3 license apply.
+
+To run this script, provide appropriate values in a `.env` file based on the `.env.example` template, then run:
+```bash
+forge script script/Deploy.s.sol <wallet options> -r <rpc_url> --broadcast
+```
+
+Where `<wallet_options>` specifies a way to sign the deployment transaction (see [here](https://book.getfoundry.sh/reference/forge/forge-script#wallet-options---raw)) and `<rpc_url>` specifies an RPC for the network you are deploying on.
