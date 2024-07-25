@@ -755,7 +755,7 @@ contract UpgradeableModularAccount is
     function _getAppendedValidation() internal view returns (ModuleEntity) {
         // Get only the 24 first bytes of appended data
         bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 24);
-        // Appended bytecode is under the format abi.encodePacked(pluginEntity, any...)
+        // Appended bytecode is under the format abi.encodePacked(moduleEntity, any...)
         // Validations will then decode this arbitrary data for whatever information they need
         // bytecode-appended validation.
         if (appendedData.length > 0) {
