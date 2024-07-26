@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
-
 import {IModule} from "./IModule.sol";
 
 struct ManifestExecutionFunction {
