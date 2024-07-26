@@ -11,7 +11,7 @@ contract AccountFactoryTest is AccountTestBase {
 
     function setUp() public {
         _account = new UpgradeableModularAccount(entryPoint);
-        _factory = new AccountFactory(entryPoint, _account, address(singleSignerValidation));
+        _factory = new AccountFactory(entryPoint, _account, address(singleSignerValidation), address(this));
     }
 
     function test_createAccount() public {

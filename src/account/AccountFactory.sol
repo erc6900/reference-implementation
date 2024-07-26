@@ -17,9 +17,12 @@ contract AccountFactory is Ownable {
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION;
 
-    constructor(IEntryPoint _entryPoint, UpgradeableModularAccount _accountImpl, address _singleSignerValidation)
-        Ownable(msg.sender)
-    {
+    constructor(
+        IEntryPoint _entryPoint,
+        UpgradeableModularAccount _accountImpl,
+        address _singleSignerValidation,
+        address owner
+    ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
