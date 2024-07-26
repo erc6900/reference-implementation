@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {LibClone} from "solady/utils/LibClone.sol";
 import {Ownable} from "solady/auth/Ownable.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
 
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
