@@ -30,19 +30,16 @@ contract DeployTest is Test {
         vm.setEnv("ENTRYPOINT", vm.toString(address(_entryPoint)));
         vm.setEnv("OWNER", vm.toString(_owner));
 
-        // Create1 derivation of the 2nd address deployed
-        address deployScriptAddr = address(0x2e234DAe75C793f67A35089C9d99245E1C58470b);
-
         _accountImpl = Create2.computeAddress(
             bytes32(0),
             keccak256(
                 abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(address(_entryPoint)))
             ),
-            deployScriptAddr
+            CREATE2_FACTORY
         );
 
         _singleSignerValidation = Create2.computeAddress(
-            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), deployScriptAddr
+            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
         );
 
         _factory = Create2.computeAddress(
@@ -53,7 +50,7 @@ contract DeployTest is Test {
                     abi.encode(address(_entryPoint), _accountImpl, _singleSignerValidation, _owner)
                 )
             ),
-            deployScriptAddr
+            CREATE2_FACTORY
         );
 
         vm.setEnv("ACCOUNT_IMPL", vm.toString(address(_accountImpl)));
