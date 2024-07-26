@@ -235,21 +235,21 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function installExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleInstallData
-    ) external override wrapNativeFunction {
+    function installExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleInstallData)
+        external
+        override
+        wrapNativeFunction
+    {
         _installExecution(module, manifest, moduleInstallData);
     }
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function uninstallExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleUninstallData
-    ) external override wrapNativeFunction {
+    function uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleUninstallData)
+        external
+        override
+        wrapNativeFunction
+    {
         _uninstallExecution(module, manifest, moduleUninstallData);
     }
 

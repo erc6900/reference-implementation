@@ -19,11 +19,8 @@ interface IModuleManager {
     /// @param manifest the manifest describing functions to install
     /// @param moduleInstallData Optional data to be decoded and used by the module to setup initial module data
     /// for the modular account.
-    function installExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleInstallData
-    ) external;
+    function installExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleInstallData)
+        external;
 
     /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
     /// path.
@@ -63,9 +60,6 @@ interface IModuleManager {
     /// @param manifest the manifest describing functions to uninstall.
     /// @param moduleUninstallData Optional data to be decoded and used by the module to clear module data for the
     /// modular account.
-    function uninstallExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleUninstallData
-    ) external;
+    function uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleUninstallData)
+        external;
 }
