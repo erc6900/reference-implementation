@@ -55,12 +55,4 @@ sort_imports = true
 number_underscore = "thousands"
 int_types = "long"
 
-[rpc_endpoints]
-mainnet = "${RPC_URL_MAINNET}"
-goerli = "${RPC_URL_GOERLI}"
-
-[etherscan]
-mainnet = { key = "${ETHERSCAN_API_KEY}" }
-goerli = { key = "${ETHERSCAN_API_KEY}" }
-
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
