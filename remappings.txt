@@ -3,3 +3,4 @@ forge-std/=lib/forge-std/src/
 @eth-infinitism/account-abstraction/=lib/account-abstraction/contracts/
 @openzeppelin/=lib/openzeppelin-contracts/
 @modular-account-libs/=lib/modular-account-libs/src/
+solady=lib/solady/src/

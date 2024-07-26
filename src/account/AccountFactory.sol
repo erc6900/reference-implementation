@@ -3,16 +3,14 @@ pragma solidity ^0.8.19;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
-    bytes32 private immutable _PROXY_BYTECODE_HASH;
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION;
@@ -22,10 +20,9 @@ contract AccountFactory is Ownable {
         UpgradeableModularAccount _accountImpl,
         address _singleSignerValidation,
         address owner
-    ) Ownable(owner) {
+    ) {
+        _initializeOwner(owner);
         ENTRY_POINT = _entryPoint;
-        _PROXY_BYTECODE_HASH =
-            keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
         SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
     }
@@ -42,13 +39,13 @@ contract AccountFactory is Ownable {
         returns (UpgradeableModularAccount)
     {
         bytes32 combinedSalt = getSalt(owner, salt, entityId);
-        address addr = Create2.computeAddress(combinedSalt, _PROXY_BYTECODE_HASH);
-
+        address addr =
+            LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), combinedSalt, address(this));
         // short circuit if exists
         if (addr.code.length == 0) {
             bytes memory pluginInstallData = abi.encode(entityId, owner);
             // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: combinedSalt}(address(ACCOUNT_IMPL), "");
+            LibClone.deployDeterministicERC1967(address(ACCOUNT_IMPL), combinedSalt);
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION, entityId, true, true),
@@ -77,7 +74,9 @@ contract AccountFactory is Ownable {
      * Calculate the counterfactual address of this account as it would be returned by createAccount()
      */
     function getAddress(address owner, uint256 salt, uint32 entityId) external view returns (address) {
-        return Create2.computeAddress(getSalt(owner, salt, entityId), _PROXY_BYTECODE_HASH);
+        return LibClone.predictDeterministicAddressERC1967(
+            address(ACCOUNT_IMPL), getSalt(owner, salt, entityId), address(this)
+        );
     }
 
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
