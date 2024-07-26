@@ -6,7 +6,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import {IModule, ModuleManifest, ModuleMetadata} from "../../interfaces/IModule.sol";
+import {IModule, ModuleMetadata} from "../../interfaces/IModule.sol";
 import {IValidation} from "../../interfaces/IValidation.sol";
 import {BaseModule} from "../BaseModule.sol";
 import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
@@ -117,12 +117,6 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-    /// @inheritdoc IModule
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
-        return manifest;
-    }
 
     /// @inheritdoc IModule
     function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {

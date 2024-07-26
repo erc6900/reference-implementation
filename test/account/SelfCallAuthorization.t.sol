@@ -31,7 +31,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         validationSelectors[0] = ComprehensiveModule.foo.selector;
 
         vm.startPrank(address(entryPoint));
-        account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
+        account1.installExecution(address(comprehensiveModule), comprehensiveModule.executionManifest(), "");
         account1.installValidation(
             ValidationConfigLib.pack(comprehensiveModuleValidation, false, false),
             validationSelectors,

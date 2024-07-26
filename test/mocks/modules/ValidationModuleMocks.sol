@@ -3,12 +3,13 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
+import {ExecutionManifest, IExecution, ManifestExecutionFunction} from "../../../src/interfaces/IExecution.sol";
+import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-abstract contract MockBaseUserOpValidationModule is IValidation, IValidationHook, BaseModule {
+abstract contract MockBaseUserOpValidationModule is IExecution, IValidation, IValidationHook, BaseModule {
     enum EntityId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
@@ -97,8 +98,8 @@ contract MockUserOpValidationModule is MockBaseUserOpValidationModule {
     // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -129,8 +130,8 @@ contract MockUserOpValidation1HookModule is MockBaseUserOpValidationModule {
     // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
@@ -164,8 +165,8 @@ contract MockUserOpValidation2HookModule is MockBaseUserOpValidationModule {
     // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
