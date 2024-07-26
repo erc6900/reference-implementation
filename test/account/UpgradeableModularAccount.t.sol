@@ -13,7 +13,7 @@ import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.s
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
-import {ModuleManifest} from "../../src/interfaces/IModule.sol";
+import {ModuleManifest} from "../../src/interfaces/IExecution.sol";
 import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 

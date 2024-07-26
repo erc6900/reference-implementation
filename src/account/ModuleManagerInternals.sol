@@ -10,7 +10,8 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {IModule, ManifestExecutionHook, ModuleManifest} from "../interfaces/IModule.sol";
+import {ManifestExecutionHook, ModuleManifest} from "../interfaces/IExecution.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
     AccountStorage,

@@ -13,8 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
-import {IModule} from "../interfaces/IModule.sol";
+import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
 import {BaseModule, IERC165} from "./BaseModule.sol";
@@ -113,10 +112,6 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
     function postExecutionHook(uint32, bytes calldata) external pure override {
         revert NotImplemented();
     }
-
-    /// @inheritdoc IModule
-    // solhint-disable-next-line no-empty-blocks
-    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
     /// @inheritdoc IModule
     function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {

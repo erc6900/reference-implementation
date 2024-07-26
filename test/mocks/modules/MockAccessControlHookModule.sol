@@ -3,8 +3,7 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
-
+import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
@@ -74,6 +73,4 @@ contract MockAccessControlHookModule is IValidationHook, BaseModule {
     }
 
     function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
-
-    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 }

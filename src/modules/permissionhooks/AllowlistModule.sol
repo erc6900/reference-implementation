@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ModuleManifest, ModuleMetadata} from "../../interfaces/IModule.sol";
+import {ModuleMetadata} from "../../interfaces/IModule.sol";
 
 import {Call, IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
 import {IValidationHook} from "../../interfaces/IValidationHook.sol";
@@ -103,9 +103,6 @@ contract AllowlistModule is IValidationHook, BaseModule {
 
         return metadata;
     }
-
-    // solhint-disable-next-line no-empty-blocks
-    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
     function _checkAllowlistCalldata(bytes calldata callData) internal view {
         if (bytes4(callData[:4]) == IStandardExecutor.execute.selector) {

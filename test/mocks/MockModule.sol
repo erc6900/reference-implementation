@@ -3,8 +3,9 @@ pragma solidity ^0.8.19;
 
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
+import {ModuleManifest} from "../../src/interfaces/IExecution.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
-import {IModule, ModuleManifest, ModuleMetadata} from "../../src/interfaces/IModule.sol";
+import {IModule, ModuleMetadata} from "../../src/interfaces/IModule.sol";
 import {IValidation} from "../../src/interfaces/IValidation.sol";
 
 contract MockModule is ERC165 {

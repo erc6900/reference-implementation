@@ -20,8 +20,9 @@ import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
 import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
+
+import {ModuleManifest} from "../interfaces/IExecution.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";

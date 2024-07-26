@@ -13,7 +13,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {ModuleManifest} from "../../src/interfaces/IModule.sol";
+import {ModuleManifest} from "../../src/interfaces/IExecution.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ERC20TokenLimitModule} from "../../src/modules/ERC20TokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";

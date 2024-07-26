@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {ModuleManifest} from "./IModule.sol";
+import {ModuleManifest} from "./IExecution.sol";
 
 type ModuleEntity is bytes24;
 

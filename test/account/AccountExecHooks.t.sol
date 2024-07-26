@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {
     IModule,
     ManifestExecutionFunction,
     ManifestExecutionHook,
     ModuleManifest
-} from "../../src/interfaces/IModule.sol";
+} from "../../src/interfaces/IExecution.sol";
+import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";

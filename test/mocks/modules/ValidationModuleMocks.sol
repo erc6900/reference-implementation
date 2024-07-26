@@ -3,12 +3,13 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../../../src/interfaces/IModule.sol";
+import {IExecution, ManifestExecutionFunction, ModuleManifest} from "../../../src/interfaces/IExecution.sol";
+import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IValidation} from "../../../src/interfaces/IValidation.sol";
 import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-abstract contract MockBaseUserOpValidationModule is IValidation, IValidationHook, BaseModule {
+abstract contract MockBaseUserOpValidationModule is IExecution, IValidation, IValidationHook, BaseModule {
     enum EntityId {
         USER_OP_VALIDATION,
         PRE_VALIDATION_HOOK_1,
