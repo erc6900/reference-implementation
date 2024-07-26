@@ -33,17 +33,21 @@ contract DeployScript is Script {
         console2.log("EP: ", address(entryPoint));
         console2.log("Factory owner: ", owner);
 
+        vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
         _deploySingleSignerValidation(singleSignerValidationSalt, singleSignerValidation);
         _deployAccountFactory(factorySalt, factory);
         _addStakeForFactory(uint32(requiredUnstakeDelay), requiredStakeAmount);
+        vm.stopBroadcast();
     }
 
     function _deployAccountImpl(bytes32 salt, address expected) internal {
         console2.log(string.concat("Deploying AccountImpl with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
-            salt, keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(entryPoint)))
+            salt,
+            keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(entryPoint))),
+            CREATE2_FACTORY
         );
         if (addr != expected) {
             console2.log("Expected address mismatch");
@@ -72,8 +76,9 @@ contract DeployScript is Script {
     function _deploySingleSignerValidation(bytes32 salt, address expected) internal {
         console2.log(string.concat("Deploying SingleSignerValidation with salt: ", vm.toString(salt)));
 
-        address addr =
-            Create2.computeAddress(salt, keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)));
+        address addr = Create2.computeAddress(
+            salt, keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
+        );
         if (addr != expected) {
             console2.log("Expected address mismatch");
             console2.log("Expected: ", expected);
@@ -108,7 +113,8 @@ contract DeployScript is Script {
                     type(AccountFactory).creationCode,
                     abi.encode(entryPoint, accountImpl, singleSignerValidation, owner)
                 )
-            )
+            ),
+            CREATE2_FACTORY
         );
         if (addr != expected) {
             console2.log("Expected address mismatch");
