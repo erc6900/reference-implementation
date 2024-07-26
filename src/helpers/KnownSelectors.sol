@@ -25,7 +25,8 @@ library KnownSelectors {
         // check against IAccount methods
         selector == IAccount.validateUserOp.selector
         // check against IModuleManager methods
-        || selector == IModuleManager.installModule.selector || selector == IModuleManager.uninstallModule.selector
+        || selector == IModuleManager.installExecution.selector
+            || selector == IModuleManager.uninstallExecution.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods

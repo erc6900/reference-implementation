@@ -26,13 +26,13 @@ struct ModuleMetadata {
 
 interface IModule is IERC165 {
     /// @notice Initialize module data for the modular account.
-    /// @dev Called by the modular account during `installModule`.
+    /// @dev Called by the modular account during `installExecution`.
     /// @param data Optional bytes array to be decoded and used by the module to setup initial module data for the
     /// modular account.
     function onInstall(bytes calldata data) external;
 
     /// @notice Clear module data for the modular account.
-    /// @dev Called by the modular account during `uninstallModule`.
+    /// @dev Called by the modular account during `uninstallExecution`.
     /// @param data Optional bytes array to be decoded and used by the module to clear module data for the modular
     /// account.
     function onUninstall(bytes calldata data) external;

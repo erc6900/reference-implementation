@@ -125,7 +125,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         hooks.remove(toSetValue(hookConfig));
     }
 
-    function _installModule(address module, ExecutionManifest calldata manifest, bytes memory moduleInstallData)
+    function _installExecution(address module, ExecutionManifest calldata manifest, bytes memory moduleInstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
@@ -177,7 +177,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         emit ModuleInstalled(module);
     }
 
-    function _uninstallModule(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
+    function _uninstallExecution(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();

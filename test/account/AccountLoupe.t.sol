@@ -27,7 +27,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         _customValidationSetup();
 
         vm.startPrank(address(entryPoint));
-        account1.installModule(address(comprehensiveModule), comprehensiveModule.executionManifest(), "");
+        account1.installExecution(address(comprehensiveModule), comprehensiveModule.executionManifest(), "");
         vm.stopPrank();
     }
 
@@ -40,9 +40,9 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
         selectorsToCheck[2] = UUPSUpgradeable.upgradeToAndCall.selector;
 
-        selectorsToCheck[3] = IModuleManager.installModule.selector;
+        selectorsToCheck[3] = IModuleManager.installExecution.selector;
 
-        selectorsToCheck[4] = IModuleManager.uninstallModule.selector;
+        selectorsToCheck[4] = IModuleManager.uninstallExecution.selector;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
             address module = account1.getExecutionFunctionHandler(selectorsToCheck[i]);

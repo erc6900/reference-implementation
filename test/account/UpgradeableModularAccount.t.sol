@@ -236,12 +236,12 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(ethRecipient.balance, 2 wei);
     }
 
-    function test_installModule() public {
+    function test_installExecution() public {
         vm.startPrank(address(entryPoint));
 
         vm.expectEmit(true, true, true, true);
         emit ModuleInstalled(address(tokenReceiverModule));
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: tokenReceiverModule.executionManifest(),
             moduleInstallData: abi.encode(uint48(1 days))
@@ -252,21 +252,21 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(handler, address(tokenReceiverModule));
     }
 
-    function test_installModule_PermittedCallSelectorNotInstalled() public {
+    function test_installExecution_PermittedCallSelectorNotInstalled() public {
         vm.startPrank(address(entryPoint));
 
         ExecutionManifest memory m;
 
         MockModule mockModuleWithBadPermittedExec = new MockModule(m);
 
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(mockModuleWithBadPermittedExec),
             manifest: mockModuleWithBadPermittedExec.executionManifest(),
             moduleInstallData: ""
         });
     }
 
-    function test_installModule_interfaceNotSupported() public {
+    function test_installExecution_interfaceNotSupported() public {
         vm.startPrank(address(entryPoint));
 
         address badModule = address(1);
@@ -276,14 +276,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         ExecutionManifest memory m;
 
-        IModuleManager(account1).installModule({module: address(badModule), manifest: m, moduleInstallData: ""});
+        IModuleManager(account1).installExecution({module: address(badModule), manifest: m, moduleInstallData: ""});
     }
 
-    function test_installModule_alreadyInstalled() public {
+    function test_installExecution_alreadyInstalled() public {
         ExecutionManifest memory m = tokenReceiverModule.executionManifest();
 
         vm.prank(address(entryPoint));
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
@@ -296,18 +296,18 @@ contract UpgradeableModularAccountTest is AccountTestBase {
                 TokenReceiverModule.onERC721Received.selector
             )
         );
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
         });
     }
 
-    function test_uninstallModule_default() public {
+    function test_uninstallExecution_default() public {
         vm.startPrank(address(entryPoint));
 
         ComprehensiveModule module = new ComprehensiveModule();
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleInstallData: ""
@@ -315,7 +315,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         vm.expectEmit(true, true, true, true);
         emit ModuleUninstalled(address(module), true);
-        IModuleManager(account1).uninstallModule({
+        IModuleManager(account1).uninstallExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleUninstallData: ""
@@ -325,12 +325,12 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(handler, address(0));
     }
 
-    function _installModuleWithExecHooks() internal returns (MockModule module) {
+    function _installExecutionWithExecHooks() internal returns (MockModule module) {
         vm.startPrank(address(entryPoint));
 
         module = new MockModule(_manifest);
 
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleInstallData: ""
