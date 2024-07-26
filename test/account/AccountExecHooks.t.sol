@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {
+    ExecutionManifest,
     IModule,
     ManifestExecutionFunction,
-    ManifestExecutionHook,
-    ModuleManifest
-} from "../../src/interfaces/IModule.sol";
+    ManifestExecutionHook
+} from "../../src/interfaces/IExecution.sol";
+import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -20,7 +20,7 @@ contract AccountExecHooksTest is AccountTestBase {
     uint32 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
     uint32 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
-    ModuleManifest internal _m1;
+    ExecutionManifest internal _m1;
 
     event ModuleInstalled(address indexed module);
     event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
@@ -40,7 +40,7 @@ contract AccountExecHooksTest is AccountTestBase {
     }
 
     function test_preExecHook_install() public {
-        _installModule1WithHooks(
+        _installExecution1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _PRE_HOOK_FUNCTION_ID_1,
@@ -74,11 +74,11 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_preExecHook_uninstall() public {
         test_preExecHook_install();
 
-        _uninstallModule(mockModule1);
+        _uninstallExecution(mockModule1);
     }
 
     function test_execHookPair_install() public {
-        _installModule1WithHooks(
+        _installExecution1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _BOTH_HOOKS_FUNCTION_ID_3,
@@ -122,11 +122,11 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_execHookPair_uninstall() public {
         test_execHookPair_install();
 
-        _uninstallModule(mockModule1);
+        _uninstallExecution(mockModule1);
     }
 
     function test_postOnlyExecHook_install() public {
-        _installModule1WithHooks(
+        _installExecution1WithHooks(
             ManifestExecutionHook({
                 executionSelector: _EXEC_SELECTOR,
                 entityId: _POST_HOOK_FUNCTION_ID_2,
@@ -154,10 +154,10 @@ contract AccountExecHooksTest is AccountTestBase {
     function test_postOnlyExecHook_uninstall() public {
         test_postOnlyExecHook_install();
 
-        _uninstallModule(mockModule1);
+        _uninstallExecution(mockModule1);
     }
 
-    function _installModule1WithHooks(ManifestExecutionHook memory execHooks) internal {
+    function _installExecution1WithHooks(ManifestExecutionHook memory execHooks) internal {
         _m1.executionHooks.push(execHooks);
         mockModule1 = new MockModule(_m1);
 
@@ -167,22 +167,22 @@ contract AccountExecHooksTest is AccountTestBase {
         emit ModuleInstalled(address(mockModule1));
 
         vm.startPrank(address(entryPoint));
-        account1.installModule({
+        account1.installExecution({
             module: address(mockModule1),
-            manifest: mockModule1.moduleManifest(),
+            manifest: mockModule1.executionManifest(),
             moduleInstallData: bytes("")
         });
         vm.stopPrank();
     }
 
-    function _uninstallModule(MockModule module) internal {
+    function _uninstallExecution(MockModule module) internal {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IModule.onUninstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
         emit ModuleUninstalled(address(module), true);
 
         vm.startPrank(address(entryPoint));
-        account1.uninstallModule(address(module), module.moduleManifest(), bytes(""));
+        account1.uninstallExecution(address(module), module.executionManifest(), bytes(""));
         vm.stopPrank();
     }
 }

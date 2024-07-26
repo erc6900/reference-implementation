@@ -8,6 +8,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
+
+import {IExecution} from "../interfaces/IExecution.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IModule} from "../interfaces/IModule.sol";
 import {IModuleManager} from "../interfaces/IModuleManager.sol";
@@ -23,7 +25,8 @@ library KnownSelectors {
         // check against IAccount methods
         selector == IAccount.validateUserOp.selector
         // check against IModuleManager methods
-        || selector == IModuleManager.installModule.selector || selector == IModuleManager.uninstallModule.selector
+        || selector == IModuleManager.installExecution.selector
+            || selector == IModuleManager.uninstallExecution.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods
@@ -47,7 +50,7 @@ library KnownSelectors {
 
     function isIModuleFunction(bytes4 selector) internal pure returns (bool) {
         return selector == IModule.onInstall.selector || selector == IModule.onUninstall.selector
-            || selector == IModule.moduleManifest.selector || selector == IModule.moduleMetadata.selector
+            || selector == IExecution.executionManifest.selector || selector == IModule.moduleMetadata.selector
             || selector == IExecutionHook.preExecutionHook.selector
             || selector == IExecutionHook.postExecutionHook.selector || selector == IValidation.validateUserOp.selector
             || selector == IValidation.validateRuntime.selector || selector == IValidation.validateSignature.selector

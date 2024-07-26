@@ -4,14 +4,16 @@ pragma solidity ^0.8.25;
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import {IModule, ManifestExecutionFunction, ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
+import {ExecutionManifest, ManifestExecutionFunction} from "../interfaces/IExecution.sol";
+import {ExecutionManifest, IExecution} from "../interfaces/IExecution.sol";
+import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {BaseModule} from "./BaseModule.sol";
 
 /// @title Token Receiver Module
 /// @author ERC-6900 Authors
 /// @notice This module allows modular accounts to receive various types of tokens by implementing
 /// required token receiver interfaces.
-contract TokenReceiverModule is BaseModule, IERC721Receiver, IERC1155Receiver {
+contract TokenReceiverModule is BaseModule, IExecution, IERC721Receiver, IERC1155Receiver {
     string internal constant _NAME = "Token Receiver Module";
     string internal constant _VERSION = "1.0.0";
     string internal constant _AUTHOR = "ERC-6900 Authors";
@@ -54,9 +56,9 @@ contract TokenReceiverModule is BaseModule, IERC721Receiver, IERC1155Receiver {
     // solhint-disable-next-line no-empty-blocks
     function onUninstall(bytes calldata) external pure override {}
 
-    /// @inheritdoc IModule
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    /// @inheritdoc IExecution
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](3);
         manifest.executionFunctions[0] = ManifestExecutionFunction({

@@ -3,8 +3,9 @@ pragma solidity ^0.8.19;
 
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
+import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
-import {IModule, ModuleManifest, ModuleMetadata} from "../../src/interfaces/IModule.sol";
+import {IModule, ModuleMetadata} from "../../src/interfaces/IModule.sol";
 import {IValidation} from "../../src/interfaces/IValidation.sol";
 
 contract MockModule is ERC165 {
@@ -27,26 +28,26 @@ contract MockModule is ERC165 {
     // ┃    Module interface functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    constructor(ModuleManifest memory _moduleManifest) {
-        _manifest = abi.encode(_moduleManifest);
+    constructor(ExecutionManifest memory _executionManifest) {
+        _manifest = abi.encode(_executionManifest);
     }
 
-    function _getManifest() internal view returns (ModuleManifest memory) {
-        ModuleManifest memory m = abi.decode(_manifest, (ModuleManifest));
+    function _getManifest() internal view returns (ExecutionManifest memory) {
+        ExecutionManifest memory m = abi.decode(_manifest, (ExecutionManifest));
         return m;
     }
 
-    function _castToPure(function() internal view returns (ModuleManifest memory) fnIn)
+    function _castToPure(function() internal view returns (ExecutionManifest memory) fnIn)
         internal
         pure
-        returns (function() internal pure returns (ModuleManifest memory) fnOut)
+        returns (function() internal pure returns (ExecutionManifest memory) fnOut)
     {
         assembly ("memory-safe") {
             fnOut := fnIn
         }
     }
 
-    function moduleManifest() external pure returns (ModuleManifest memory) {
+    function executionManifest() external pure returns (ExecutionManifest memory) {
         return _castToPure(_getManifest)();
     }
 

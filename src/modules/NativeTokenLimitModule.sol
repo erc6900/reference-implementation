@@ -6,8 +6,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {ModuleManifest, ModuleMetadata} from "../interfaces/IModule.sol";
-import {IModule} from "../interfaces/IModule.sol";
+import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
 import {IValidationHook} from "../interfaces/IValidationHook.sol";
@@ -116,10 +115,6 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
         pure
         override
     {} // solhint-disable-line no-empty-blocks
-
-    /// @inheritdoc IModule
-    // solhint-disable-next-line no-empty-blocks
-    function moduleManifest() external pure override returns (ModuleManifest memory) {}
 
     /// @inheritdoc IModule
     function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {

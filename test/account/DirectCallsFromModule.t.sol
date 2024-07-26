@@ -34,9 +34,9 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     }
 
     function test_Fail_DirectCallModuleUninstalled() external {
-        _installModule();
+        _installExecution();
 
-        _uninstallModule();
+        _uninstallExecution();
 
         vm.prank(address(_module));
         vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
@@ -44,7 +44,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     }
 
     function test_Fail_DirectCallModuleCallOtherSelector() external {
-        _installModule();
+        _installExecution();
 
         Call[] memory calls = new Call[](0);
 
@@ -58,7 +58,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     /* -------------------------------------------------------------------------- */
 
     function test_Pass_DirectCallFromModulePrank() external {
-        _installModule();
+        _installExecution();
 
         vm.prank(address(_module));
         account1.execute(address(0), 0, "");
@@ -68,7 +68,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     }
 
     function test_Pass_DirectCallFromModuleCallback() external {
-        _installModule();
+        _installExecution();
 
         bytes memory encodedCall = abi.encodeCall(DirectCallModule.directCall, ());
 
@@ -86,7 +86,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     function test_Flow_DirectCallFromModuleSequence() external {
         // Install => Succeesfully call => uninstall => fail to call
 
-        _installModule();
+        _installExecution();
 
         vm.prank(address(_module));
         account1.execute(address(0), 0, "");
@@ -94,7 +94,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         assertTrue(_module.preHookRan());
         assertTrue(_module.postHookRan());
 
-        _uninstallModule();
+        _uninstallExecution();
 
         vm.prank(address(_module));
         vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
@@ -105,7 +105,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     /*                                  Internals                                 */
     /* -------------------------------------------------------------------------- */
 
-    function _installModule() internal {
+    function _installExecution() internal {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = IStandardExecutor.execute.selector;
 
@@ -122,7 +122,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         account1.installValidation(validationConfig, selectors, "", hooks);
     }
 
-    function _uninstallModule() internal {
+    function _uninstallExecution() internal {
         vm.prank(address(entryPoint));
         account1.uninstallValidation(_moduleEntity, "", new bytes[](1));
     }

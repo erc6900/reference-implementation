@@ -13,7 +13,7 @@ import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.s
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
-import {ModuleManifest} from "../../src/interfaces/IModule.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
@@ -40,7 +40,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     address public ethRecipient;
     Counter public counter;
-    ModuleManifest internal _manifest;
+    ExecutionManifest internal _manifest;
 
     event ModuleInstalled(address indexed module);
     event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
@@ -236,14 +236,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(ethRecipient.balance, 2 wei);
     }
 
-    function test_installModule() public {
+    function test_installExecution() public {
         vm.startPrank(address(entryPoint));
 
         vm.expectEmit(true, true, true, true);
         emit ModuleInstalled(address(tokenReceiverModule));
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
-            manifest: tokenReceiverModule.moduleManifest(),
+            manifest: tokenReceiverModule.executionManifest(),
             moduleInstallData: abi.encode(uint48(1 days))
         });
 
@@ -252,21 +252,21 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(handler, address(tokenReceiverModule));
     }
 
-    function test_installModule_PermittedCallSelectorNotInstalled() public {
+    function test_installExecution_PermittedCallSelectorNotInstalled() public {
         vm.startPrank(address(entryPoint));
 
-        ModuleManifest memory m;
+        ExecutionManifest memory m;
 
         MockModule mockModuleWithBadPermittedExec = new MockModule(m);
 
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(mockModuleWithBadPermittedExec),
-            manifest: mockModuleWithBadPermittedExec.moduleManifest(),
+            manifest: mockModuleWithBadPermittedExec.executionManifest(),
             moduleInstallData: ""
         });
     }
 
-    function test_installModule_interfaceNotSupported() public {
+    function test_installExecution_interfaceNotSupported() public {
         vm.startPrank(address(entryPoint));
 
         address badModule = address(1);
@@ -274,16 +274,16 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             abi.encodeWithSelector(ModuleManagerInternals.ModuleInterfaceNotSupported.selector, address(badModule))
         );
 
-        ModuleManifest memory m;
+        ExecutionManifest memory m;
 
-        IModuleManager(account1).installModule({module: address(badModule), manifest: m, moduleInstallData: ""});
+        IModuleManager(account1).installExecution({module: address(badModule), manifest: m, moduleInstallData: ""});
     }
 
-    function test_installModule_alreadyInstalled() public {
-        ModuleManifest memory m = tokenReceiverModule.moduleManifest();
+    function test_installExecution_alreadyInstalled() public {
+        ExecutionManifest memory m = tokenReceiverModule.executionManifest();
 
         vm.prank(address(entryPoint));
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
@@ -296,28 +296,28 @@ contract UpgradeableModularAccountTest is AccountTestBase {
                 TokenReceiverModule.onERC721Received.selector
             )
         );
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
         });
     }
 
-    function test_uninstallModule_default() public {
+    function test_uninstallExecution_default() public {
         vm.startPrank(address(entryPoint));
 
         ComprehensiveModule module = new ComprehensiveModule();
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(module),
-            manifest: module.moduleManifest(),
+            manifest: module.executionManifest(),
             moduleInstallData: ""
         });
 
         vm.expectEmit(true, true, true, true);
         emit ModuleUninstalled(address(module), true);
-        IModuleManager(account1).uninstallModule({
+        IModuleManager(account1).uninstallExecution({
             module: address(module),
-            manifest: module.moduleManifest(),
+            manifest: module.executionManifest(),
             moduleUninstallData: ""
         });
 
@@ -325,14 +325,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(handler, address(0));
     }
 
-    function _installModuleWithExecHooks() internal returns (MockModule module) {
+    function _installExecutionWithExecHooks() internal returns (MockModule module) {
         vm.startPrank(address(entryPoint));
 
         module = new MockModule(_manifest);
 
-        IModuleManager(account1).installModule({
+        IModuleManager(account1).installExecution({
             module: address(module),
-            manifest: module.moduleManifest(),
+            manifest: module.executionManifest(),
             moduleInstallData: ""
         });
 
