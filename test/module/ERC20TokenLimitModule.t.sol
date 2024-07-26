@@ -13,7 +13,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {ModuleManifest} from "../../src/interfaces/IExecution.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ERC20TokenLimitModule} from "../../src/modules/ERC20TokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
@@ -24,7 +24,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
     address public recipient = address(1);
     MockERC20 public erc20;
     address payable public bundler = payable(address(2));
-    ModuleManifest internal _m;
+    ExecutionManifest internal _m;
     MockModule public validationModule = new MockModule(_m);
     ModuleEntity public validationFunction;
 

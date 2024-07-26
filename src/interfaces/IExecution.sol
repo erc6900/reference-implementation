@@ -24,7 +24,7 @@ struct ManifestExecutionHook {
 }
 
 /// @dev A struct describing how the module should be installed on a modular account.
-struct ModuleManifest {
+struct ExecutionManifest {
     // Execution functions defined in this module to be installed on the MSCA.
     ManifestExecutionFunction[] executionFunctions;
     ManifestExecutionHook[] executionHooks;
@@ -37,5 +37,5 @@ interface IExecution is IModule {
     /// @notice Describe the contents and intended configuration of the module.
     /// @dev This manifest MUST stay constant over time.
     /// @return A manifest describing the contents and intended configuration of the module.
-    function moduleManifest() external pure returns (ModuleManifest memory);
+    function executionManifest() external pure returns (ExecutionManifest memory);
 }

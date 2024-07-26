@@ -24,13 +24,13 @@ contract PermittedCallPermissionsTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(resultCreatorModule),
-            manifest: resultCreatorModule.moduleManifest(),
+            manifest: resultCreatorModule.executionManifest(),
             moduleInstallData: ""
         });
         // Add the permitted caller module to the account
         account1.installModule({
             module: address(permittedCallerModule),
-            manifest: permittedCallerModule.moduleManifest(),
+            manifest: permittedCallerModule.executionManifest(),
             moduleInstallData: ""
         });
         vm.stopPrank();

@@ -4,10 +4,10 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
+    ExecutionManifest,
     IExecution,
     ManifestExecutionFunction,
-    ManifestExecutionHook,
-    ModuleManifest
+    ManifestExecutionHook
 } from "../../../src/interfaces/IExecution.sol";
 
 import {IExecution} from "../../../src/interfaces/IExecution.sol";
@@ -131,8 +131,8 @@ contract ComprehensiveModule is IExecution, IValidation, IValidationHook, IExecu
         revert NotImplemented();
     }
 
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({

@@ -4,8 +4,8 @@ pragma solidity ^0.8.25;
 import {IERC1155Receiver} from "@openzeppelin/contracts/interfaces/IERC1155Receiver.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import {ManifestExecutionFunction, ModuleManifest} from "../interfaces/IExecution.sol";
-import {IExecution, ModuleManifest} from "../interfaces/IExecution.sol";
+import {ExecutionManifest, ManifestExecutionFunction} from "../interfaces/IExecution.sol";
+import {ExecutionManifest, IExecution} from "../interfaces/IExecution.sol";
 import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {BaseModule} from "./BaseModule.sol";
 
@@ -57,8 +57,8 @@ contract TokenReceiverModule is BaseModule, IExecution, IERC721Receiver, IERC115
     function onUninstall(bytes calldata) external pure override {}
 
     /// @inheritdoc IExecution
-    function moduleManifest() external pure override returns (ModuleManifest memory) {
-        ModuleManifest memory manifest;
+    function executionManifest() external pure override returns (ExecutionManifest memory) {
+        ExecutionManifest memory manifest;
 
         manifest.executionFunctions = new ManifestExecutionFunction[](3);
         manifest.executionFunctions[0] = ManifestExecutionFunction({

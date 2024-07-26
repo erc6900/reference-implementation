@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {ModuleManifest} from "./IExecution.sol";
+import {ExecutionManifest} from "./IExecution.sol";
 
 type ModuleEntity is bytes24;
 
@@ -19,7 +19,7 @@ interface IModuleManager {
     /// @param manifest the manifest describing functions to install
     /// @param moduleInstallData Optional data to be decoded and used by the module to setup initial module data
     /// for the modular account.
-    function installModule(address module, ModuleManifest calldata manifest, bytes calldata moduleInstallData)
+    function installModule(address module, ExecutionManifest calldata manifest, bytes calldata moduleInstallData)
         external;
 
     /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
@@ -60,6 +60,9 @@ interface IModuleManager {
     /// @param manifest the manifest describing functions to uninstall.
     /// @param moduleUninstallData Optional data to be decoded and used by the module to clear module data for the
     /// modular account.
-    function uninstallModule(address module, ModuleManifest calldata manifest, bytes calldata moduleUninstallData)
-        external;
+    function uninstallModule(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleUninstallData
+    ) external;
 }

@@ -32,13 +32,13 @@ contract AccountReturnDataTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(resultCreatorModule),
-            manifest: resultCreatorModule.moduleManifest(),
+            manifest: resultCreatorModule.executionManifest(),
             moduleInstallData: ""
         });
         // Add the result consumer module to the account
         account1.installModule({
             module: address(resultConsumerModule),
-            manifest: resultConsumerModule.moduleManifest(),
+            manifest: resultConsumerModule.executionManifest(),
             moduleInstallData: ""
         });
         // Allow the result consumer module to perform direct calls to the account

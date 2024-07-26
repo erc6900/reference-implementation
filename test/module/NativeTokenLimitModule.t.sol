@@ -10,7 +10,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ModuleManifest} from "../../src/interfaces/IExecution.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
@@ -20,7 +20,7 @@ import {AccountTestBase} from "../utils/AccountTestBase.sol";
 contract NativeTokenLimitModuleTest is AccountTestBase {
     address public recipient = address(1);
     address payable public bundler = payable(address(2));
-    ModuleManifest internal _m;
+    ExecutionManifest internal _m;
     MockModule public validationModule = new MockModule(_m);
     ModuleEntity public validationFunction;
 

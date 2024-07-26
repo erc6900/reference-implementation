@@ -21,7 +21,7 @@ import {_coalescePreValidation, _coalesceValidation} from "../helpers/Validation
 
 import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
 
-import {ModuleManifest} from "../interfaces/IExecution.sol";
+import {ExecutionManifest} from "../interfaces/IExecution.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
@@ -225,7 +225,7 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function installModule(address module, ModuleManifest calldata manifest, bytes calldata moduleInstallData)
+    function installModule(address module, ExecutionManifest calldata manifest, bytes calldata moduleInstallData)
         external
         override
         wrapNativeFunction
@@ -235,11 +235,11 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function uninstallModule(address module, ModuleManifest calldata manifest, bytes calldata moduleUninstallData)
-        external
-        override
-        wrapNativeFunction
-    {
+    function uninstallModule(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleUninstallData
+    ) external override wrapNativeFunction {
         _uninstallModule(module, manifest, moduleUninstallData);
     }
 

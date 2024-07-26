@@ -27,7 +27,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         _customValidationSetup();
 
         vm.startPrank(address(entryPoint));
-        account1.installModule(address(comprehensiveModule), comprehensiveModule.moduleManifest(), "");
+        account1.installModule(address(comprehensiveModule), comprehensiveModule.executionManifest(), "");
         vm.stopPrank();
     }
 

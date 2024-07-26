@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {
+    ExecutionManifest,
     IModule,
     ManifestExecutionFunction,
-    ManifestExecutionHook,
-    ModuleManifest
+    ManifestExecutionHook
 } from "../../src/interfaces/IExecution.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 
@@ -20,7 +20,7 @@ contract AccountExecHooksTest is AccountTestBase {
     uint32 internal constant _POST_HOOK_FUNCTION_ID_2 = 2;
     uint32 internal constant _BOTH_HOOKS_FUNCTION_ID_3 = 3;
 
-    ModuleManifest internal _m1;
+    ExecutionManifest internal _m1;
 
     event ModuleInstalled(address indexed module);
     event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
@@ -169,7 +169,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         account1.installModule({
             module: address(mockModule1),
-            manifest: mockModule1.moduleManifest(),
+            manifest: mockModule1.executionManifest(),
             moduleInstallData: bytes("")
         });
         vm.stopPrank();
@@ -182,7 +182,7 @@ contract AccountExecHooksTest is AccountTestBase {
         emit ModuleUninstalled(address(module), true);
 
         vm.startPrank(address(entryPoint));
-        account1.uninstallModule(address(module), module.moduleManifest(), bytes(""));
+        account1.uninstallModule(address(module), module.executionManifest(), bytes(""));
         vm.stopPrank();
     }
 }

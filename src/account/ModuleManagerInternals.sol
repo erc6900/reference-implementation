@@ -10,7 +10,7 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {ManifestExecutionHook, ModuleManifest} from "../interfaces/IExecution.sol";
+import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecution.sol";
 import {IModule} from "../interfaces/IModule.sol";
 import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
@@ -125,7 +125,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         hooks.remove(toSetValue(hookConfig));
     }
 
-    function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
+    function _installModule(address module, ExecutionManifest calldata manifest, bytes memory moduleInstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
@@ -177,7 +177,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         emit ModuleInstalled(module);
     }
 
-    function _uninstallModule(address module, ModuleManifest calldata manifest, bytes memory uninstallData)
+    function _uninstallModule(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
