@@ -100,9 +100,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
         assertEq(hooks.length, 3);
         for (uint256 i = 0; i < hooks.length; i++) {
-            assertEq(
-                ModuleEntity.unwrap(hooks[i].hookFunction), ModuleEntity.unwrap(expectedHooks[i].hookFunction)
-            );
+            assertEq(ModuleEntity.unwrap(hooks[i].hookFunction), ModuleEntity.unwrap(expectedHooks[i].hookFunction));
             assertEq(hooks[i].isPreHook, expectedHooks[i].isPreHook);
             assertEq(hooks[i].isPostHook, expectedHooks[i].isPostHook);
         }

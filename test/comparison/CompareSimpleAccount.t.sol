@@ -137,9 +137,7 @@ contract CompareSimpleAccountTest is Test {
             sender: account2,
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(
-                SimpleAccount.execute, (address(counter), 0, abi.encodeCall(Counter.increment, ()))
-            ),
+            callData: abi.encodeCall(SimpleAccount.execute, (address(counter), 0, abi.encodeCall(Counter.increment, ()))),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 2),

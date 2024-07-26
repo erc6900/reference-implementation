@@ -37,10 +37,7 @@ contract AccountFactory is Ownable {
      * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after
      * account creation
      */
-    function createAccount(address owner, uint256 salt, uint32 entityId)
-        external
-        returns (UpgradeableModularAccount)
-    {
+    function createAccount(address owner, uint256 salt, uint32 entityId) external returns (UpgradeableModularAccount) {
         bytes32 combinedSalt = getSalt(owner, salt, entityId);
         address addr = Create2.computeAddress(combinedSalt, _PROXY_BYTECODE_HASH);
 

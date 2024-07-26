@@ -29,16 +29,12 @@ abstract contract OptimizedTest is Test {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
-    function _deployUpgradeableModularAccount(IEntryPoint entryPoint)
-        internal
-        returns (UpgradeableModularAccount)
-    {
+    function _deployUpgradeableModularAccount(IEntryPoint entryPoint) internal returns (UpgradeableModularAccount) {
         return _isOptimizedTest()
             ? UpgradeableModularAccount(
                 payable(
                     deployCode(
-                        "out-optimized/UpgradeableModularAccount.sol/UpgradeableModularAccount.json",
-                        abi.encode(entryPoint)
+                        "out-optimized/UpgradeableModularAccount.sol/UpgradeableModularAccount.json", abi.encode(entryPoint)
                     )
                 )
             )
@@ -53,9 +49,7 @@ abstract contract OptimizedTest is Test {
 
     function _deploySingleSignerValidation() internal returns (SingleSignerValidation) {
         return _isOptimizedTest()
-            ? SingleSignerValidation(
-                deployCode("out-optimized/SingleSignerValidation.sol/SingleSignerValidation.json")
-            )
+            ? SingleSignerValidation(deployCode("out-optimized/SingleSignerValidation.sol/SingleSignerValidation.json"))
             : new SingleSignerValidation();
     }
 }

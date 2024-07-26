@@ -26,8 +26,7 @@ contract GlobalValidationTest is AccountTestBase {
         account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
-        _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         ethRecipient = makeAddr("ethRecipient");
         vm.deal(ethRecipient, 1 wei);

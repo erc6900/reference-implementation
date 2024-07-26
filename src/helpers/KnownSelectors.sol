@@ -27,8 +27,7 @@ library KnownSelectors {
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods
-        || selector == UUPSUpgradeable.proxiableUUID.selector
-            || selector == UUPSUpgradeable.upgradeToAndCall.selector
+        || selector == UUPSUpgradeable.proxiableUUID.selector || selector == UUPSUpgradeable.upgradeToAndCall.selector
         // check against IStandardExecutor methods
         || selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
             || selector == IStandardExecutor.executeWithAuthorization.selector
@@ -48,9 +47,9 @@ library KnownSelectors {
     function isIModuleFunction(bytes4 selector) internal pure returns (bool) {
         return selector == IModule.onInstall.selector || selector == IModule.onUninstall.selector
             || selector == IModule.moduleManifest.selector || selector == IModule.moduleMetadata.selector
-            || selector == IExecutionHook.preExecutionHook.selector
-            || selector == IExecutionHook.postExecutionHook.selector || selector == IValidation.validateUserOp.selector
-            || selector == IValidation.validateRuntime.selector || selector == IValidation.validateSignature.selector
+            || selector == IExecutionHook.preExecutionHook.selector || selector == IExecutionHook.postExecutionHook.selector
+            || selector == IValidation.validateUserOp.selector || selector == IValidation.validateRuntime.selector
+            || selector == IValidation.validateSignature.selector
             || selector == IValidationHook.preUserOpValidationHook.selector
             || selector == IValidationHook.preRuntimeValidationHook.selector;
     }

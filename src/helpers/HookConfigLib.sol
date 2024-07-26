@@ -44,8 +44,7 @@ library HookConfigLib {
     bytes32 internal constant _EXEC_HOOK_HAS_POST = bytes32(uint256(1) << 48);
 
     function packValidationHook(ModuleEntity _hookFunction) internal pure returns (HookConfig) {
-        return
-            HookConfig.wrap(bytes26(bytes26(ModuleEntity.unwrap(_hookFunction)) | bytes26(_HOOK_TYPE_VALIDATION)));
+        return HookConfig.wrap(bytes26(bytes26(ModuleEntity.unwrap(_hookFunction)) | bytes26(_HOOK_TYPE_VALIDATION)));
     }
 
     function packValidationHook(address _module, uint32 _entityId) internal pure returns (HookConfig) {
@@ -59,11 +58,7 @@ library HookConfigLib {
         );
     }
 
-    function packExecHook(ModuleEntity _hookFunction, bool _hasPre, bool _hasPost)
-        internal
-        pure
-        returns (HookConfig)
-    {
+    function packExecHook(ModuleEntity _hookFunction, bool _hasPre, bool _hasPost) internal pure returns (HookConfig) {
         return HookConfig.wrap(
             bytes26(
                 bytes26(ModuleEntity.unwrap(_hookFunction))

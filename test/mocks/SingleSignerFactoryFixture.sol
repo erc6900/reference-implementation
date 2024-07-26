@@ -29,9 +29,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
-        _PROXY_BYTECODE_HASH = keccak256(
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
-        );
+        _PROXY_BYTECODE_HASH =
+            keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), "")));
         singleSignerValidation = _singleSignerValidation;
         self = address(this);
     }
@@ -49,7 +48,6 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         // short circuit if exists
         if (addr.code.length == 0) {
-
             LibClone.createDeterministicERC1967(
                 address(accountImplementation), _getImmutableArgs(owner), getSalt(owner, salt)
             );
@@ -78,8 +76,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     function _getImmutableArgs(address owner) private view returns (bytes memory) {
         return abi.encodePacked(
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-            owner
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID), owner
         );
     }
 }

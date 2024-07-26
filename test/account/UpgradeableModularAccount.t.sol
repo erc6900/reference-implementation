@@ -345,9 +345,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         bytes32 slot = account3.proxiableUUID();
 
         // account has impl from factory
-        assertEq(
-            address(factory.accountImplementation()), address(uint160(uint256(vm.load(address(account1), slot))))
-        );
+        assertEq(address(factory.accountImplementation()), address(uint160(uint256(vm.load(address(account1), slot)))));
         account1.upgradeToAndCall(address(account3), bytes(""));
         // account has new impl
         assertEq(address(account3), address(uint160(uint256(vm.load(address(account1), slot)))));
@@ -388,9 +386,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         for (uint256 i = 0; i < accountWrites.length; i++) {
             bytes32 valWritten = vm.load(addr, accountWrites[i]);
             // solhint-disable-next-line no-console
-            console.log(
-                string.concat("write loc: ", vm.toString(accountWrites[i]), " val: ", vm.toString(valWritten))
-            );
+            console.log(string.concat("write loc: ", vm.toString(accountWrites[i]), " val: ", vm.toString(valWritten)));
         }
 
         for (uint256 i = 0; i < accountReads.length; i++) {

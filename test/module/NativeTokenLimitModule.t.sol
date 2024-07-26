@@ -52,10 +52,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
 
         vm.prank(address(acct));
         acct.installValidation(
-            ValidationConfigLib.pack(address(validationModule), 0, true, true),
-            new bytes4[](0),
-            new bytes(0),
-            hooks
+            ValidationConfigLib.pack(address(validationModule), 0, true, true), new bytes4[](0), new bytes(0), hooks
         );
 
         validationFunction = ModuleEntityLib.pack(address(validationModule), 0);
@@ -157,8 +154,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         assertEq(module.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] =
-            _getPackedUO(200_000, 200_000, 200_000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        uos[0] = _getPackedUO(200_000, 200_000, 200_000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
 
         assertEq(module.limits(0, address(acct)), 10 ether - 6 ether - 700_001);

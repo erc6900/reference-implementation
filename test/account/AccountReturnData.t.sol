@@ -64,8 +64,7 @@ contract AccountReturnDataTest is AccountTestBase {
     function test_returnData_singular_execute() public {
         bytes memory returnData = account1.executeWithAuthorization(
             abi.encodeCall(
-                account1.execute,
-                (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
+                account1.execute, (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),

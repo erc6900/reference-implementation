@@ -53,9 +53,7 @@ contract HookConfigLibTest is Test {
         }
 
         assertEq(
-            ModuleEntity.unwrap(hookConfig.moduleEntity()),
-            ModuleEntity.unwrap(hookFunction),
-            "moduleEntity mismatch"
+            ModuleEntity.unwrap(hookConfig.moduleEntity()), ModuleEntity.unwrap(hookFunction), "moduleEntity mismatch"
         );
         assertEq(hookConfig.isValidationHook(), isValidation, "isValidation mismatch");
 

@@ -3,10 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {
-    IModule,
-    ManifestExecutionFunction,
-    ManifestExecutionHook,
-    ModuleManifest
+    IModule, ManifestExecutionFunction, ManifestExecutionHook, ModuleManifest
 } from "../../src/interfaces/IModule.sol";
 
 import {MockModule} from "../mocks/MockModule.sol";
@@ -31,11 +28,7 @@ contract AccountExecHooksTest is AccountTestBase {
         _transferOwnershipToTest();
 
         _m1.executionFunctions.push(
-            ManifestExecutionFunction({
-                executionSelector: _EXEC_SELECTOR,
-                isPublic: true,
-                allowGlobalValidation: false
-            })
+            ManifestExecutionFunction({executionSelector: _EXEC_SELECTOR, isPublic: true, allowGlobalValidation: false})
         );
     }
 

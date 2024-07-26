@@ -29,10 +29,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
         account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
         account1.initializeWithValidation(
-            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
-            selectors,
-            installData,
-            hooks
+            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation), selectors, installData, hooks
         );
 
         vm.deal(address(account1), 100 ether);

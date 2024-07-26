@@ -33,8 +33,7 @@ contract SparseCalldataSegmentLibTest is Test {
         bytes memory encoded = _encodeWithIndex(segments, indices);
 
         // Decode
-        (bytes[] memory decodedBodies, uint8[] memory decodedIndices) =
-            this.decodeWithIndex(encoded, segments.length);
+        (bytes[] memory decodedBodies, uint8[] memory decodedIndices) = this.decodeWithIndex(encoded, segments.length);
 
         assertEq(decodedBodies.length, segments.length, "decodedBodies.length != segments.length");
         assertEq(decodedIndices.length, segments.length, "decodedIndices.length != segments.length");
@@ -55,11 +54,7 @@ contract SparseCalldataSegmentLibTest is Test {
         return result;
     }
 
-    function _encodeWithIndex(bytes[] memory segments, uint8[] memory indices)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function _encodeWithIndex(bytes[] memory segments, uint8[] memory indices) internal pure returns (bytes memory) {
         require(segments.length == indices.length, "segments len != indices len");
 
         bytes memory result = "";

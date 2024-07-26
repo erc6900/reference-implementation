@@ -35,8 +35,7 @@ contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
 
     function setUp() public {
         entryPoint = new EntryPoint();
-        SingleSignerFactoryFixture factory =
-            new SingleSignerFactoryFixture(entryPoint, _deploySingleSignerValidation());
+        SingleSignerFactoryFixture factory = new SingleSignerFactoryFixture(entryPoint, _deploySingleSignerValidation());
 
         acct = factory.createAccount(address(this), 0);
         module = _deployTokenReceiverModule();

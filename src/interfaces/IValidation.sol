@@ -43,11 +43,8 @@ interface IValidation is IModule {
     /// @param hash the hash of the ERC-1271 request
     /// @param signature the signature of the ERC-1271 request
     /// @return the ERC-1271 `MAGIC_VALUE` if the signature is valid, or 0xFFFFFFFF if invalid.
-    function validateSignature(
-        address account,
-        uint32 entityId,
-        address sender,
-        bytes32 hash,
-        bytes calldata signature
-    ) external view returns (bytes4);
+    function validateSignature(address account, uint32 entityId, address sender, bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4);
 }

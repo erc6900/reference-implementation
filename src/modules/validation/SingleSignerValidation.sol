@@ -86,14 +86,11 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     }
 
     /// @inheritdoc IValidation
-    function validateRuntime(
-        address account,
-        uint32 entityId,
-        address sender,
-        uint256,
-        bytes calldata,
-        bytes calldata
-    ) external view override {
+    function validateRuntime(address account, uint32 entityId, address sender, uint256, bytes calldata, bytes calldata)
+        external
+        view
+        override
+    {
         if (sender != _getExpectedSigner(entityId, account)) {
             revert NotAuthorized();
         }
