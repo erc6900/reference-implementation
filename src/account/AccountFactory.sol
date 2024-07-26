@@ -9,6 +9,8 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
 
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
@@ -38,20 +40,12 @@ contract AccountFactory is Ownable {
      * account creation
      */
     function createAccount(address owner, uint256 salt, uint32 entityId) external returns (UpgradeableModularAccount) {
-        bytes32 combinedSalt = getSalt(owner, salt, entityId);
-        address addr = Create2.computeAddress(combinedSalt, _PROXY_BYTECODE_HASH);
+        address addr = getAddress(owner, salt, entityId);
 
         // short circuit if exists
         if (addr.code.length == 0) {
-            bytes memory pluginInstallData = abi.encode(entityId, owner);
-            // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: combinedSalt}(address(ACCOUNT_IMPL), "");
-            // point proxy to actual implementation and init plugins
-            UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION, entityId, true, true),
-                new bytes4[](0),
-                pluginInstallData,
-                new bytes[](0)
+            LibClone.createDeterministicERC1967(
+                address(ACCOUNT_IMPL), _getImmutableArgs(owner, entityId), getSalt(owner, salt, entityId)
             );
         }
 
@@ -71,13 +65,19 @@ contract AccountFactory is Ownable {
     }
 
     /**
-     * Calculate the counterfactual address of this account as it would be returned by createAccount()
+     * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(address owner, uint256 salt, uint32 entityId) external view returns (address) {
-        return Create2.computeAddress(getSalt(owner, salt, entityId), _PROXY_BYTECODE_HASH);
+    function getAddress(address owner, uint256 salt, uint32 entityId) public view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(
+            address(ACCOUNT_IMPL), _getImmutableArgs(owner, entityId), getSalt(owner, salt, entityId), address(this)
+        );
     }
 
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt, entityId));
+    }
+
+    function _getImmutableArgs(address owner, uint32 entityId) private view returns (bytes memory) {
+        return abi.encodePacked(ModuleEntityLib.pack(address(SINGLE_SIGNER_VALIDATION), entityId), owner);
     }
 }

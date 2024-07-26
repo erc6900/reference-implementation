@@ -24,15 +24,12 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     IEntryPoint public entryPoint;
 
-    address public self;
-
     constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), "")));
         singleSignerValidation = _singleSignerValidation;
-        self = address(this);
     }
 
     /**
