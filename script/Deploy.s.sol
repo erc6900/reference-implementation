@@ -45,7 +45,9 @@ contract DeployScript is Script {
         console2.log(string.concat("Deploying AccountImpl with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
-            salt, keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(entryPoint)))
+            salt,
+            keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(entryPoint))),
+            CREATE2_FACTORY
         );
         if (addr != expected) {
             console2.log("Expected address mismatch");
@@ -74,8 +76,9 @@ contract DeployScript is Script {
     function _deploySingleSignerValidation(bytes32 salt, address expected) internal {
         console2.log(string.concat("Deploying SingleSignerValidation with salt: ", vm.toString(salt)));
 
-        address addr =
-            Create2.computeAddress(salt, keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)));
+        address addr = Create2.computeAddress(
+            salt, keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
+        );
         if (addr != expected) {
             console2.log("Expected address mismatch");
             console2.log("Expected: ", expected);
@@ -110,7 +113,8 @@ contract DeployScript is Script {
                     type(AccountFactory).creationCode,
                     abi.encode(entryPoint, accountImpl, singleSignerValidation, owner)
                 )
-            )
+            ),
+            CREATE2_FACTORY
         );
         if (addr != expected) {
             console2.log("Expected address mismatch");
