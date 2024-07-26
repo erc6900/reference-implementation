@@ -33,10 +33,12 @@ contract DeployScript is Script {
         console2.log("EP: ", address(entryPoint));
         console2.log("Factory owner: ", owner);
 
+        vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
         _deploySingleSignerValidation(singleSignerValidationSalt, singleSignerValidation);
         _deployAccountFactory(factorySalt, factory);
         _addStakeForFactory(uint32(requiredUnstakeDelay), requiredStakeAmount);
+        vm.stopBroadcast();
     }
 
     function _deployAccountImpl(bytes32 salt, address expected) internal {
