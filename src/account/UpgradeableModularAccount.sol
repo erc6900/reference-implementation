@@ -21,8 +21,9 @@ import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
 import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
+
+import {ExecutionManifest} from "../interfaces/IExecution.sol";
 import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
-import {ModuleManifest} from "../interfaces/IModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
@@ -90,7 +91,7 @@ contract UpgradeableModularAccount is
     error SignatureSegmentOutOfOrder();
 
     // Wraps execution of a native function with runtime validation and hooks
-    // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installModule, uninstallModule
+    // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
     modifier wrapNativeFunction() {
         (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
             _checkPermittedCallerAndAssociatedHooks();
@@ -234,22 +235,22 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function installModule(address module, ModuleManifest calldata manifest, bytes calldata moduleInstallData)
-        external
-        override
-        wrapNativeFunction
-    {
-        _installModule(module, manifest, moduleInstallData);
+    function installExecution(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleInstallData
+    ) external override wrapNativeFunction {
+        _installExecution(module, manifest, moduleInstallData);
     }
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function uninstallModule(address module, ModuleManifest calldata manifest, bytes calldata moduleUninstallData)
-        external
-        override
-        wrapNativeFunction
-    {
-        _uninstallModule(module, manifest, moduleUninstallData);
+    function uninstallExecution(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleUninstallData
+    ) external override wrapNativeFunction {
+        _uninstallExecution(module, manifest, moduleUninstallData);
     }
 
     /// @notice Initializes the account with a validation function added to the global pool.
@@ -709,7 +710,7 @@ contract UpgradeableModularAccount is
     function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
         if (
             selector == this.execute.selector || selector == this.executeBatch.selector
-                || selector == this.installModule.selector || selector == this.uninstallModule.selector
+                || selector == this.installExecution.selector || selector == this.uninstallExecution.selector
                 || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
                 || selector == this.upgradeToAndCall.selector
         ) {

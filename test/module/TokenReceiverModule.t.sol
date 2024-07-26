@@ -55,7 +55,7 @@ contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
 
     function _initModule() internal {
         vm.startPrank(address(entryPoint));
-        acct.installModule(address(module), module.moduleManifest(), "");
+        acct.installExecution(address(module), module.executionManifest(), "");
         vm.stopPrank();
     }
 

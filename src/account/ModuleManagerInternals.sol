@@ -10,7 +10,8 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
-import {IModule, ManifestExecutionHook, ModuleManifest} from "../interfaces/IModule.sol";
+import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecution.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
     AccountStorage,
@@ -123,7 +124,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         hooks.remove(toSetValue(hookConfig));
     }
 
-    function _installModule(address module, ModuleManifest calldata manifest, bytes memory moduleInstallData)
+    function _installExecution(address module, ExecutionManifest calldata manifest, bytes memory moduleInstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
@@ -175,7 +176,9 @@ abstract contract ModuleManagerInternals is IModuleManager {
         emit ModuleInstalled(module);
     }
 
-    function _uninstallModule(address module, ModuleManifest calldata manifest, bytes memory uninstallData) internal {
+    function _uninstallExecution(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
+        internal
+    {
         AccountStorage storage _storage = getAccountStorage();
 
         // Remove components according to the manifest, in reverse order (by component type) of their installation.
