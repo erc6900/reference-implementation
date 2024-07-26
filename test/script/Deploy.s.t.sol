@@ -32,7 +32,9 @@ contract DeployTest is Test {
 
         _accountImpl = Create2.computeAddress(
             bytes32(0),
-            keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(address(_entryPoint)))),
+            keccak256(
+                abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(address(_entryPoint)))
+            ),
             CREATE2_FACTORY
         );
 

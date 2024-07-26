@@ -40,8 +40,11 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         erc20.mint(address(acct), 10 ether);
 
         ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
-        permissionHooks[0] =
-            ExecutionHook({hookFunction: ModuleEntityLib.pack(address(module), 0), isPreHook: true, isPostHook: false});
+        permissionHooks[0] = ExecutionHook({
+            hookFunction: ModuleEntityLib.pack(address(module), 0),
+            isPreHook: true,
+            isPostHook: false
+        });
 
         // arr idx 0 => functionId of 0 has that spend
         uint256[] memory limits = new uint256[](1);
@@ -80,7 +83,8 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function _getExecuteWithSpend(uint256 value) internal view returns (bytes memory) {
         return abi.encodeCall(
-            UpgradeableModularAccount.execute, (address(erc20), 0, abi.encodeCall(IERC20.transfer, (recipient, value)))
+            UpgradeableModularAccount.execute,
+            (address(erc20), 0, abi.encodeCall(IERC20.transfer, (recipient, value)))
         );
     }
 
@@ -93,8 +97,10 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function test_userOp_executeBatchLimit() public {
         Call[] memory calls = new Call[](3);
-        calls[0] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 wei))});
-        calls[1] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
+        calls[0] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 wei))});
+        calls[1] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
         calls[2] = Call({
             target: address(erc20),
             value: 0,
@@ -109,8 +115,10 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function test_userOp_executeBatch_approveAndTransferLimit() public {
         Call[] memory calls = new Call[](3);
-        calls[0] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
-        calls[1] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
+        calls[0] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
+        calls[1] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
         calls[2] = Call({
             target: address(erc20),
             value: 0,
@@ -125,8 +133,10 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function test_userOp_executeBatch_approveAndTransferLimit_fail() public {
         Call[] memory calls = new Call[](3);
-        calls[0] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
-        calls[1] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
+        calls[0] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
+        calls[1] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
         calls[2] = Call({
             target: address(erc20),
             value: 0,
@@ -145,15 +155,18 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
     function test_runtime_executeLimit() public {
         assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
         acct.executeWithAuthorization(
-            _getExecuteWithSpend(5 ether), _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
+            _getExecuteWithSpend(5 ether),
+            _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
         );
         assertEq(module.limits(0, address(erc20), address(acct)), 5 ether);
     }
 
     function test_runtime_executeBatchLimit() public {
         Call[] memory calls = new Call[](3);
-        calls[0] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
-        calls[1] = Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
+        calls[0] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.approve, (recipient, 1 wei))});
+        calls[1] =
+            Call({target: address(erc20), value: 0, data: abi.encodeCall(IERC20.transfer, (recipient, 1 ether))});
         calls[2] = Call({
             target: address(erc20),
             value: 0,

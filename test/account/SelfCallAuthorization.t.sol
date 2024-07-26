@@ -85,7 +85,8 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runUserOp(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
+                UpgradeableModularAccount.execute,
+                (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
@@ -151,7 +152,8 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runtimeCall(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
+                UpgradeableModularAccount.execute,
+                (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
             abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
         );
@@ -174,8 +176,9 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
         calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
-        PackedUserOperation memory userOp =
-            _generateUserOpWithComprehensiveModuleValidation(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
+            abi.encodeCall(IStandardExecutor.executeBatch, (calls))
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -256,7 +259,8 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodePacked(
-                IAccountExecute.executeUserOp.selector, abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
+                IAccountExecute.executeUserOp.selector,
+                abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
             )
         );
 
@@ -301,7 +305,12 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.installValidation,
-                (ValidationConfigLib.pack(comprehensiveModuleValidation, false, false), selectors, "", new bytes[](0))
+                (
+                    ValidationConfigLib.pack(comprehensiveModuleValidation, false, false),
+                    selectors,
+                    "",
+                    new bytes[](0)
+                )
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );

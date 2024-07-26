@@ -45,7 +45,12 @@ abstract contract AccountLoupe is IAccountLoupe {
     }
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionHooks(bytes4 selector) external view override returns (ExecutionHook[] memory execHooks) {
+    function getExecutionHooks(bytes4 selector)
+        external
+        view
+        override
+        returns (ExecutionHook[] memory execHooks)
+    {
         EnumerableSet.Bytes32Set storage hooks = getAccountStorage().selectorData[selector].executionHooks;
         uint256 executionHooksLength = hooks.length();
 
@@ -69,7 +74,8 @@ abstract contract AccountLoupe is IAccountLoupe {
         override
         returns (ExecutionHook[] memory permissionHooks)
     {
-        EnumerableSet.Bytes32Set storage hooks = getAccountStorage().validationData[validationFunction].permissionHooks;
+        EnumerableSet.Bytes32Set storage hooks =
+            getAccountStorage().validationData[validationFunction].permissionHooks;
         uint256 executionHooksLength = hooks.length();
         permissionHooks = new ExecutionHook[](executionHooksLength);
         for (uint256 i = 0; i < executionHooksLength; ++i) {

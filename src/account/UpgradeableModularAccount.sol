@@ -235,21 +235,21 @@ contract UpgradeableModularAccount is
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function installExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleInstallData)
-        external
-        override
-        wrapNativeFunction
-    {
+    function installExecution(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleInstallData
+    ) external override wrapNativeFunction {
         _installExecution(module, manifest, moduleInstallData);
     }
 
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
-    function uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata moduleUninstallData)
-        external
-        override
-        wrapNativeFunction
-    {
+    function uninstallExecution(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleUninstallData
+    ) external override wrapNativeFunction {
         _uninstallExecution(module, manifest, moduleUninstallData);
     }
 
@@ -426,7 +426,8 @@ contract UpgradeableModularAccount is
             }
 
             (address module, uint32 entityId) = preUserOpValidationHooks[i].unpack();
-            uint256 currentValidationRes = IValidationHook(module).preUserOpValidationHook(entityId, userOp, userOpHash);
+            uint256 currentValidationRes =
+                IValidationHook(module).preUserOpValidationHook(entityId, userOp, userOpHash);
 
             if (uint160(currentValidationRes) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
@@ -629,7 +630,8 @@ contract UpgradeableModularAccount is
             msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
                 && !_storage.selectorData[msg.sig].isPublic
         ) {
-            ModuleEntity directCallValidationKey = ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
+            ModuleEntity directCallValidationKey =
+                ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
 
             _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
 
@@ -650,15 +652,17 @@ contract UpgradeableModularAccount is
         }
 
         // Exec hooks
-        PostExecToRun[] memory postExecutionHooks = _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
+        PostExecToRun[] memory postExecutionHooks =
+            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
 
         return (postPermissionHooks, postExecutionHooks);
     }
 
-    function _checkIfValidationAppliesCallData(bytes calldata callData, ModuleEntity validationFunction, bool isGlobal)
-        internal
-        view
-    {
+    function _checkIfValidationAppliesCallData(
+        bytes calldata callData,
+        ModuleEntity validationFunction,
+        bool isGlobal
+    ) internal view {
         bytes4 outerSelector = bytes4(callData[:4]);
         if (outerSelector == this.executeUserOp.selector) {
             // If the selector is executeUserOp, pull the actual selector from the following data,

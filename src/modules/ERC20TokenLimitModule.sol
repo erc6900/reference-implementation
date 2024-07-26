@@ -78,7 +78,8 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
 
     /// @inheritdoc IModule
     function onInstall(bytes calldata data) external override {
-        (uint32 startEntityId, ERC20SpendLimit[] memory spendLimits) = abi.decode(data, (uint32, ERC20SpendLimit[]));
+        (uint32 startEntityId, ERC20SpendLimit[] memory spendLimits) =
+            abi.decode(data, (uint32, ERC20SpendLimit[]));
 
         if (startEntityId + spendLimits.length > type(uint32).max) {
             revert ExceededNumberOfEntities();

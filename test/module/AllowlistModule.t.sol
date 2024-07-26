@@ -146,7 +146,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         for (uint256 i = 0; i < calls.length; i++) {
             Call memory call = calls[i];
 
-            (bool allowed, bool hasSelectorAllowlist) = allowlistModule.targetAllowlist(call.target, address(account1));
+            (bool allowed, bool hasSelectorAllowlist) =
+                allowlistModule.targetAllowlist(call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
@@ -176,7 +177,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         for (uint256 i = 0; i < calls.length; i++) {
             Call memory call = calls[i];
 
-            (bool allowed, bool hasSelectorAllowlist) = allowlistModule.targetAllowlist(call.target, address(account1));
+            (bool allowed, bool hasSelectorAllowlist) =
+                allowlistModule.targetAllowlist(call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
@@ -233,7 +235,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             bool isCounter = seed % 2 == 0;
             seed = _next(seed);
 
-            address target = isCounter ? address(counters[seed % counters.length]) : address(uint160(uint256(seed)));
+            address target =
+                isCounter ? address(counters[seed % counters.length]) : address(uint160(uint256(seed)));
 
             bool hasSelectorAllowlist = seed % 2 == 0;
             seed = _next(seed);
@@ -301,7 +304,12 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         );
 
         return (
-            _signerValidation, true, true, new bytes4[](0), abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1), hooks
+            _signerValidation,
+            true,
+            true,
+            new bytes4[](0),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
+            hooks
         );
     }
 

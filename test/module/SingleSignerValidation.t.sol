@@ -89,7 +89,9 @@ contract SingleSignerValidationTest is AccountTestBase {
         vm.prank(owner2);
         account.executeWithAuthorization(
             abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
-            _encodeSignature(ModuleEntityLib.pack(address(singleSignerValidation), newEntityId), GLOBAL_VALIDATION, "")
+            _encodeSignature(
+                ModuleEntityLib.pack(address(singleSignerValidation), newEntityId), GLOBAL_VALIDATION, ""
+            )
         );
         assertEq(ethRecipient.balance, 1 wei);
     }

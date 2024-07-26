@@ -19,7 +19,8 @@ contract ValidationConfigLibTest is Test {
         bool isGlobal,
         bool isSignatureValidation
     ) public {
-        ValidationConfig validationConfig = ValidationConfigLib.pack(module, entityId, isGlobal, isSignatureValidation);
+        ValidationConfig validationConfig =
+            ValidationConfigLib.pack(module, entityId, isGlobal, isSignatureValidation);
 
         // Test unpacking underlying
         (address module2, uint32 entityId2, bool isGlobal2, bool isSignatureValidation2) =

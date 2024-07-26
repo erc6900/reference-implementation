@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
@@ -27,8 +27,9 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
-        _PROXY_BYTECODE_HASH =
-            keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), "")));
+        _PROXY_BYTECODE_HASH = keccak256(
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
+        );
         singleSignerValidation = _singleSignerValidation;
     }
 

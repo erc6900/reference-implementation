@@ -86,7 +86,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
     }
 
     function _addValidationFunction(ValidationConfig validationConfig, bytes4[] memory selectors) internal {
-        ValidationData storage _validationData = getAccountStorage().validationData[validationConfig.moduleEntity()];
+        ValidationData storage _validationData =
+            getAccountStorage().validationData[validationConfig.moduleEntity()];
 
         if (validationConfig.isGlobal()) {
             _validationData.isGlobal = true;
@@ -236,7 +237,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
         bytes calldata installData,
         bytes[] calldata hooks
     ) internal {
-        ValidationData storage _validationData = getAccountStorage().validationData[validationConfig.moduleEntity()];
+        ValidationData storage _validationData =
+            getAccountStorage().validationData[validationConfig.moduleEntity()];
 
         for (uint256 i = 0; i < hooks.length; ++i) {
             HookConfig hookConfig = HookConfig.wrap(bytes26(hooks[i][:26]));
@@ -300,7 +302,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
 
             for (uint256 i = 0; i < _validationData.permissionHooks.length(); ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
-                (address hookModule,) = ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
+                (address hookModule,) =
+                    ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
                 _onUninstall(hookModule, hookData);
                 hookIndex++;
             }

@@ -11,7 +11,8 @@ import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.so
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from "./TestConstants.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from
+    "./TestConstants.sol";
 
 import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 
@@ -58,7 +59,8 @@ abstract contract AccountTestBase is OptimizedTest {
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -123,7 +125,9 @@ abstract contract AccountTestBase is OptimizedTest {
         _runtimeCall(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
     }
 
-    function _runtimeExecExpFail(address target, bytes memory callData, bytes memory expectedRevertData) internal {
+    function _runtimeExecExpFail(address target, bytes memory callData, bytes memory expectedRevertData)
+        internal
+    {
         _runtimeCallExpFail(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
     }
 
@@ -213,7 +217,9 @@ abstract contract AccountTestBase is OptimizedTest {
         for (uint256 i = 0; i < preValidationHookData.length; ++i) {
             sig = abi.encodePacked(
                 sig,
-                _packValidationResWithIndex(preValidationHookData[i].index, preValidationHookData[i].validationData)
+                _packValidationResWithIndex(
+                    preValidationHookData[i].index, preValidationHookData[i].validationData
+                )
             );
         }
 

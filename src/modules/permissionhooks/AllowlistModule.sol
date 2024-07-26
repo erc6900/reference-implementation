@@ -26,7 +26,8 @@ contract AllowlistModule is IValidationHook, BaseModule {
     }
 
     mapping(address target => mapping(address account => AllowlistEntry)) public targetAllowlist;
-    mapping(address target => mapping(bytes4 selector => mapping(address account => bool))) public selectorAllowlist;
+    mapping(address target => mapping(bytes4 selector => mapping(address account => bool))) public
+        selectorAllowlist;
 
     error TargetNotAllowed();
     error SelectorNotAllowed();

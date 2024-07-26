@@ -31,7 +31,11 @@ contract AccountExecHooksTest is AccountTestBase {
         _transferOwnershipToTest();
 
         _m1.executionFunctions.push(
-            ManifestExecutionFunction({executionSelector: _EXEC_SELECTOR, isPublic: true, allowGlobalValidation: false})
+            ManifestExecutionFunction({
+                executionSelector: _EXEC_SELECTOR,
+                isPublic: true,
+                allowGlobalValidation: false
+            })
         );
     }
 

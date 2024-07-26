@@ -39,8 +39,9 @@ contract PerHookDataTest is CustomValidationTestBase {
         PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
 
-        userOp.signature =
-            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -61,8 +62,9 @@ contract PerHookDataTest is CustomValidationTestBase {
             validationData: abi.encodePacked(address(0x1234123412341234123412341234123412341234))
         });
 
-        userOp.signature =
-            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -106,8 +108,9 @@ contract PerHookDataTest is CustomValidationTestBase {
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
         preValidationHookData[1] = PreValidationHookData({index: 1, validationData: abi.encodePacked(_counter)});
 
-        userOp.signature =
-            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -144,8 +147,9 @@ contract PerHookDataTest is CustomValidationTestBase {
         PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(beneficiary)});
 
-        userOp.signature =
-            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -168,8 +172,9 @@ contract PerHookDataTest is CustomValidationTestBase {
         PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: ""});
 
-        userOp.signature =
-            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v));
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -194,7 +199,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
         );
@@ -220,7 +226,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
         );
@@ -238,7 +245,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
@@ -250,10 +258,13 @@ contract PerHookDataTest is CustomValidationTestBase {
         preValidationHookData[1] = PreValidationHookData({index: 1, validationData: abi.encodePacked(_counter)});
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.ValidationSignatureSegmentMissing.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(UpgradeableModularAccount.ValidationSignatureSegmentMissing.selector)
+        );
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
         );
@@ -288,7 +299,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.NonCanonicalEncoding.selector));
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
         );
@@ -331,7 +343,12 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
 
         return (
-            _signerValidation, true, true, new bytes4[](0), abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1), hooks
+            _signerValidation,
+            true,
+            true,
+            new bytes4[](0),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
+            hooks
         );
     }
 }
