@@ -7,6 +7,9 @@ libs = ['lib']
 out = 'out'
 optimizer = true
 optimizer_runs = 200
+auto_detect_solc = false
+bytecode_hash = "none"
+auto_detect_remappings = false
 fs_permissions = [
   { access = "read", path = "./out-optimized" }
 ]
@@ -22,6 +25,7 @@ depth = 10
 [profile.optimized-build]
 via_ir = true
 test = 'src'
+optimizer_runs = 20000
 out = 'out-optimized'
 
 [profile.optimized-test]
