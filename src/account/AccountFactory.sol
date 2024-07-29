@@ -14,7 +14,6 @@ import {LibClone} from "solady/utils/LibClone.sol";
 
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
-    bytes32 private immutable _PROXY_BYTECODE_HASH;
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION;
@@ -26,8 +25,6 @@ contract AccountFactory is Ownable {
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
-        _PROXY_BYTECODE_HASH =
-            keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
         SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
     }
@@ -43,13 +40,13 @@ contract AccountFactory is Ownable {
         external
         returns (UpgradeableModularAccount)
     {
-        address addr = getAddress(owner, salt, entityId);
+        bytes32 fullSalt = getSalt(owner, salt, entityId);
+        bytes memory immutables = _getImmutableArgs(owner, entityId);
 
+        address addr = getAddress(immutables, fullSalt);
         // short circuit if exists
         if (addr.code.length == 0) {
-            LibClone.createDeterministicERC1967(
-                address(ACCOUNT_IMPL), _getImmutableArgs(owner, entityId), getSalt(owner, salt, entityId)
-            );
+            LibClone.createDeterministicERC1967(address(ACCOUNT_IMPL), immutables, fullSalt);
         }
 
         return UpgradeableModularAccount(payable(addr));
@@ -70,13 +67,8 @@ contract AccountFactory is Ownable {
     /**
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(address owner, uint256 salt, uint32 entityId) public view returns (address) {
-        return LibClone.predictDeterministicAddressERC1967(
-            address(ACCOUNT_IMPL),
-            _getImmutableArgs(owner, entityId),
-            getSalt(owner, salt, entityId),
-            address(this)
-        );
+    function getAddress(bytes memory immutables, bytes32 salt) public view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
     }
 
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
