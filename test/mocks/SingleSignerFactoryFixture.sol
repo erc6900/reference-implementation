@@ -12,6 +12,8 @@ import {SingleSignerValidationModule} from "../../src/modules/validation/SingleS
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
     SingleSignerValidationModule public singleSignerValidationModule;
@@ -32,6 +34,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         singleSignerValidationModule = _singleSignerValidationModule;
         self = address(this);
     }
+
+    // TODO: Make createAccount use createAccountFallbackSigner for testing
 
     /**
      * create an account, and return its address.
@@ -67,13 +71,18 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         public
         returns (UpgradeableModularAccount)
     {
-        address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+        bytes32 fullSalt = getSalt(owner, salt);
+
+        bytes memory immutables = _getImmutableArgs(owner);
+
+        address addr = _getAddressFallbackSigner(immutables, fullSalt);
 
         // short circuit if exists
         if (addr.code.length == 0) {
             // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
-            UpgradeableModularAccount(payable(addr)).initialize(owner);
+            // new ERC1967Proxy{salt: getSalt(owner, salt, type(uint32).max)}(address(ACCOUNT_IMPL), "");
+            // UpgradeableModularAccount(payable(addr)).initialize(owner);
+            LibClone.createDeterministicERC1967(address(accountImplementation), immutables, fullSalt);
         }
 
         return UpgradeableModularAccount(payable(addr));
@@ -86,11 +95,27 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 
+    function getAddressFallbackSigner(address owner, uint256 salt) public view returns (address) {
+        bytes32 fullSalt = getSalt(owner, salt);
+        bytes memory immutables = _getImmutableArgs(owner);
+        return _getAddressFallbackSigner(immutables, fullSalt);
+    }
+
     function addStake() external payable {
         entryPoint.addStake{value: msg.value}(UNSTAKE_DELAY);
     }
 
     function getSalt(address owner, uint256 salt) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt));
+    }
+
+    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) internal view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(
+            address(accountImplementation), immutables, salt, address(this)
+        );
+    }
+
+    function _getImmutableArgs(address owner) private pure returns (bytes memory) {
+        return abi.encodePacked(owner);
     }
 }
