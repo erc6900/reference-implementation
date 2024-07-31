@@ -45,6 +45,8 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
+    error AppendedValidationMismatch();
+
     mapping(uint32 entityId => mapping(address account => address)) public signer;
 
     /// @inheritdoc ISingleSignerValidation
@@ -153,7 +155,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
             ModuleEntity validation = ModuleEntity.wrap(bytes24(immutables));
 
             if (!validation.eq(ModuleEntityLib.pack(address(this), entityId))) {
-                revert("Validation incorrect");
+                revert AppendedValidationMismatch();
             }
 
             address decodedSigner;

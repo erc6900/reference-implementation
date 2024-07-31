@@ -4,12 +4,9 @@ pragma solidity ^0.8.19;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
-import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
 contract AccountFactory is Ownable {
