@@ -61,7 +61,7 @@ contract AccountFactory is Ownable {
     }
 
     function createAccountWithFallbackValidation(address owner, uint256 salt)
-        public
+        external 
         returns (UpgradeableModularAccount)
     {
         // The entityId for fallback validations is hardcoded at the maximum value.
