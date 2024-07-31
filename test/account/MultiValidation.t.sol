@@ -46,8 +46,8 @@ contract MultiValidationTest is AccountTestBase {
         validations[0] = ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
         validations[1] = ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
-        bytes4[] memory selectors0 = account1.getSelectors(validations[0]);
-        bytes4[] memory selectors1 = account1.getSelectors(validations[1]);
+        bytes32[] memory selectors0 = account1.getValidationData(validations[0]).selectors;
+        bytes32[] memory selectors1 = account1.getValidationData(validations[1]).selectors;
         assertEq(selectors0.length, selectors1.length);
         for (uint256 i = 0; i < selectors0.length; i++) {
             assertEq(selectors0[i], selectors1[i]);

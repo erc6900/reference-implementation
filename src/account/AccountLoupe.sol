@@ -7,10 +7,12 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
-import {ExecutionHook, IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
+import {
+    ExecutionDataView, ExecutionHook, IAccountLoupe, ValidationDataView
+} from "../interfaces/IAccountLoupe.sol";
 import {HookConfig, IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {getAccountStorage, toHookConfig, toSelector} from "./AccountStorage.sol";
+import {ExecutionData, ValidationData, getAccountStorage, toHookConfig, toSelector} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -18,84 +20,36 @@ abstract contract AccountLoupe is IAccountLoupe {
     using HookConfigLib for HookConfig;
 
     /// @inheritdoc IAccountLoupe
-    function getExecutionFunctionHandler(bytes4 selector) external view override returns (address module) {
+    function getExecutionData(bytes4 selector) external view override returns (ExecutionDataView memory data) {
         if (
             selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
                 || selector == IModuleManager.installExecution.selector
                 || selector == IModuleManager.uninstallExecution.selector
         ) {
-            return address(this);
+            data.module = address(this);
+            data.allowGlobalValidation = true;
+        } else {
+            ExecutionData storage executionData = getAccountStorage().executionData[selector];
+            data.module = executionData.module;
+            data.isPublic = executionData.isPublic;
+            data.allowGlobalValidation = executionData.allowGlobalValidation;
+            data.executionHooks = executionData.executionHooks.values();
         }
-
-        return getAccountStorage().executionData[selector].module;
     }
 
     /// @inheritdoc IAccountLoupe
-    function getSelectors(ModuleEntity validationFunction) external view returns (bytes4[] memory) {
-        uint256 length = getAccountStorage().validationData[validationFunction].selectors.length();
-
-        bytes4[] memory selectors = new bytes4[](length);
-
-        for (uint256 i = 0; i < length; ++i) {
-            selectors[i] = toSelector(getAccountStorage().validationData[validationFunction].selectors.at(i));
-        }
-
-        return selectors;
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getExecutionHooks(bytes4 selector)
+    function getValidationData(ModuleEntity validationFunction)
         external
         view
         override
-        returns (ExecutionHook[] memory execHooks)
+        returns (ValidationDataView memory data)
     {
-        EnumerableSet.Bytes32Set storage hooks = getAccountStorage().executionData[selector].executionHooks;
-        uint256 executionHooksLength = hooks.length();
-
-        execHooks = new ExecutionHook[](executionHooksLength);
-
-        for (uint256 i = 0; i < executionHooksLength; ++i) {
-            bytes32 key = hooks.at(i);
-            HookConfig hookConfig = toHookConfig(key);
-            execHooks[i] = ExecutionHook({
-                hookFunction: hookConfig.moduleEntity(),
-                isPreHook: hookConfig.hasPreHook(),
-                isPostHook: hookConfig.hasPostHook()
-            });
-        }
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getPermissionHooks(ModuleEntity validationFunction)
-        external
-        view
-        override
-        returns (ExecutionHook[] memory permissionHooks)
-    {
-        EnumerableSet.Bytes32Set storage hooks =
-            getAccountStorage().validationData[validationFunction].permissionHooks;
-        uint256 executionHooksLength = hooks.length();
-        permissionHooks = new ExecutionHook[](executionHooksLength);
-        for (uint256 i = 0; i < executionHooksLength; ++i) {
-            bytes32 key = hooks.at(i);
-            HookConfig hookConfig = toHookConfig(key);
-            permissionHooks[i] = ExecutionHook({
-                hookFunction: hookConfig.moduleEntity(),
-                isPreHook: hookConfig.hasPreHook(),
-                isPostHook: hookConfig.hasPostHook()
-            });
-        }
-    }
-
-    /// @inheritdoc IAccountLoupe
-    function getPreValidationHooks(ModuleEntity validationFunction)
-        external
-        view
-        override
-        returns (ModuleEntity[] memory preValidationHooks)
-    {
-        preValidationHooks = getAccountStorage().validationData[validationFunction].preValidationHooks;
+        ValidationData storage validationData = getAccountStorage().validationData[validationFunction];
+        data.isGlobal = validationData.isGlobal;
+        data.isSignatureValidation = validationData.isSignatureValidation;
+        data.preValidationHooks = validationData.preValidationHooks;
+        data.permissionHooks = validationData.permissionHooks.values();
+        data.selectors = validationData.selectors.values();
     }
 }
