@@ -12,9 +12,12 @@ import {
     ManifestExecutionHook
 } from "../../src/interfaces/IExecution.sol";
 
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
+
 import {IModuleManager, ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {IValidationHook} from "../../src/interfaces/IValidationHook.sol";
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -25,9 +28,9 @@ interface TestModule {
 }
 
 contract UpgradeModuleTest is AccountTestBase {
-    address target = address(1000);
-    uint256 sendAmount = 1 ether;
-    uint32 entityId = 10;
+    address public target = address(1000);
+    uint256 public sendAmount = 1 ether;
+    uint32 public entityId = 10;
 
     // From MockModule
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -101,36 +104,70 @@ contract UpgradeModuleTest is AccountTestBase {
     }
 
     function test_upgradeModuleValidationFunction() public {
-        // Test upgrading existing global validation
+        // Setup new validaiton with pre validation and permission hooks
         SingleSignerValidation validation1 = new SingleSignerValidation();
         SingleSignerValidation validation2 = new SingleSignerValidation();
-        MockModule mockPreValAndPermissionsModule = new MockModule();
+        uint32 validationEntityId1 = 10;
+        uint32 validationEntityId2 = 11;
 
-        ModuleEntity currModuleEntity =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
-        ModuleEntity newModuleEntity =
-            ModuleEntityLib.pack(address(validation2), TEST_DEFAULT_VALIDATION_ENTITY_ID + 1);
-
-        vm.startPrank(owner1);
-        account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(target), sendAmount, "")),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+        MockModule mockPreValAndPermissionsModule = new MockModule(
+            ExecutionManifest({
+                executionFunctions: new ManifestExecutionFunction[](0),
+                executionHooks: new ManifestExecutionHook[](0),
+                interfaceIds: new bytes4[](0)
+            })
         );
+
+        ModuleEntity currModuleEntity = ModuleEntityLib.pack(address(validation1), validationEntityId1);
+        ModuleEntity newModuleEntity = ModuleEntityLib.pack(address(validation2), validationEntityId2);
+
+        bytes[] memory hooksForVal1 = new bytes[](2);
+        hooksForVal1[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(address(mockPreValAndPermissionsModule), validationEntityId1)
+        );
+        hooksForVal1[1] = abi.encodePacked(
+            HookConfigLib.packExecHook(address(mockPreValAndPermissionsModule), validationEntityId1, true, true)
+        );
+
+        vm.prank(address(entryPoint));
+        account1.installValidation(
+            ValidationConfigLib.pack(currModuleEntity, true, false),
+            new bytes4[](0),
+            abi.encode(validationEntityId1, owner1),
+            hooksForVal1
+        );
+        // Test that setup worked. Pre val + pre exec hooks should run
+        vm.startPrank(owner1);
+        bytes memory callData = abi.encodeCall(IStandardExecutor.execute, (address(target), sendAmount, ""));
+        vm.expectEmit(true, true, true, true);
+        emit ReceivedCall(
+            abi.encodeCall(
+                IValidationHook.preRuntimeValidationHook, (validationEntityId1, address(owner1), 0, callData, "")
+            ),
+            0
+        );
+        emit ReceivedCall(
+            abi.encodeCall(IExecutionHook.preExecutionHook, (validationEntityId1, address(owner1), 0, callData)), 0
+        );
+        account1.executeWithAuthorization(callData, _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, ""));
         assertEq(target.balance, sendAmount);
 
         // upgrade module by batching uninstall + install calls
+        bytes[] memory hooksForVal2 = new bytes[](2);
+        hooksForVal2[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(address(mockPreValAndPermissionsModule), validationEntityId2)
+        );
+        hooksForVal2[1] = abi.encodePacked(
+            HookConfigLib.packExecHook(address(mockPreValAndPermissionsModule), validationEntityId2, true, true)
+        );
+
         bytes[] memory emptyBytesArr = new bytes[](0);
         Call[] memory calls = new Call[](2);
         calls[0] = Call({
             target: address(account1),
             value: 0,
             data: abi.encodeCall(
-                IModuleManager.uninstallValidation,
-                (currModuleEntity, abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID), emptyBytesArr)
+                IModuleManager.uninstallValidation, (currModuleEntity, abi.encode(validationEntityId1), emptyBytesArr)
             )
         });
         calls[1] = Call({
@@ -139,10 +176,10 @@ contract UpgradeModuleTest is AccountTestBase {
             data: abi.encodeCall(
                 IModuleManager.installValidation,
                 (
-                    ValidationConfigLib.pack(newModuleEntity, true, true),
+                    ValidationConfigLib.pack(newModuleEntity, true, false),
                     new bytes4[](0),
-                    abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID + 1, owner1),
-                    new bytes[](0)
+                    abi.encode(validationEntityId2, owner1),
+                    hooksForVal2
                 )
             )
         });
@@ -164,22 +201,24 @@ contract UpgradeModuleTest is AccountTestBase {
         );
         account1.executeWithAuthorization(
             abi.encodeCall(IStandardExecutor.execute, (target, sendAmount, "")),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, "")
         );
 
         // Test if new validation works
-        account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (target, sendAmount, "")),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(validation2), TEST_DEFAULT_VALIDATION_ENTITY_ID + 1),
-                GLOBAL_VALIDATION,
-                ""
-            )
+        vm.expectEmit(true, true, true, true);
+        emit ReceivedCall(
+            abi.encodeCall(
+                IValidationHook.preRuntimeValidationHook, (validationEntityId2, address(owner1), 0, callData, "")
+            ),
+            0
         );
+        emit ReceivedCall(
+            abi.encodeCall(
+                IExecutionHook.preExecutionHook, (validationEntityId2, address(entryPoint), 0, callData)
+            ),
+            0
+        );
+        account1.executeWithAuthorization(callData, _encodeSignature(newModuleEntity, GLOBAL_VALIDATION, ""));
         assertEq(target.balance, 2 * sendAmount);
     }
 }
