@@ -15,7 +15,7 @@ import {IModule} from "../interfaces/IModule.sol";
 import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
     AccountStorage,
-    SelectorData,
+    ExecutionData,
     ValidationData,
     getAccountStorage,
     toModuleEntity,
@@ -46,9 +46,9 @@ abstract contract ModuleManagerInternals is IModuleManager {
     function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowGlobalValidation, address module)
         internal
     {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        ExecutionData storage _executionData = getAccountStorage().executionData[selector];
 
-        if (_selectorData.module != address(0)) {
+        if (_executionData.module != address(0)) {
             revert ExecutionFunctionAlreadySet(selector);
         }
 
@@ -72,17 +72,17 @@ abstract contract ModuleManagerInternals is IModuleManager {
             revert Erc4337FunctionNotAllowed(selector);
         }
 
-        _selectorData.module = module;
-        _selectorData.isPublic = isPublic;
-        _selectorData.allowGlobalValidation = allowGlobalValidation;
+        _executionData.module = module;
+        _executionData.isPublic = isPublic;
+        _executionData.allowGlobalValidation = allowGlobalValidation;
     }
 
     function _removeExecutionFunction(bytes4 selector) internal {
-        SelectorData storage _selectorData = getAccountStorage().selectorData[selector];
+        ExecutionData storage _executionData = getAccountStorage().executionData[selector];
 
-        _selectorData.module = address(0);
-        _selectorData.isPublic = false;
-        _selectorData.allowGlobalValidation = false;
+        _executionData.module = address(0);
+        _executionData.isPublic = false;
+        _executionData.allowGlobalValidation = false;
     }
 
     function _addValidationFunction(ValidationConfig validationConfig, bytes4[] memory selectors) internal {
@@ -152,7 +152,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
         length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
+            EnumerableSet.Bytes32Set storage execHooks =
+                _storage.executionData[mh.executionSelector].executionHooks;
             HookConfig hookConfig = HookConfigLib.packExecHook({
                 _module: module,
                 _entityId: mh.entityId,
@@ -187,7 +188,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
         uint256 length = manifest.executionHooks.length;
         for (uint256 i = 0; i < length; ++i) {
             ManifestExecutionHook memory mh = manifest.executionHooks[i];
-            EnumerableSet.Bytes32Set storage execHooks = _storage.selectorData[mh.executionSelector].executionHooks;
+            EnumerableSet.Bytes32Set storage execHooks =
+                _storage.executionData[mh.executionSelector].executionHooks;
             HookConfig hookConfig = HookConfigLib.packExecHook({
                 _module: module,
                 _entityId: mh.entityId,

@@ -28,7 +28,7 @@ abstract contract AccountLoupe is IAccountLoupe {
             return address(this);
         }
 
-        return getAccountStorage().selectorData[selector].module;
+        return getAccountStorage().executionData[selector].module;
     }
 
     /// @inheritdoc IAccountLoupe
@@ -51,7 +51,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         override
         returns (ExecutionHook[] memory execHooks)
     {
-        EnumerableSet.Bytes32Set storage hooks = getAccountStorage().selectorData[selector].executionHooks;
+        EnumerableSet.Bytes32Set storage hooks = getAccountStorage().executionData[selector].executionHooks;
         uint256 executionHooksLength = hooks.length();
 
         execHooks = new ExecutionHook[](executionHooksLength);
