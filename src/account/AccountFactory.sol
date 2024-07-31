@@ -60,8 +60,25 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function addStake(uint32 unstakeDelay) external payable onlyOwner {
-        ENTRY_POINT.addStake{value: msg.value}(unstakeDelay);
+    function createAccountWithFallbackValidation(address owner, uint256 salt)
+        public
+        returns (UpgradeableModularAccount)
+    {
+        // The entityId for fallback validations is hardcoded at the maximum value.
+        address addr = Create2.computeAddress(getSalt(owner, salt, type(uint32).max), _PROXY_BYTECODE_HASH);
+
+        // short circuit if exists
+        if (addr.code.length == 0) {
+            // not necessary to check return addr since next call will fail if so
+            new ERC1967Proxy{salt: getSalt(owner, salt, type(uint32).max)}(address(ACCOUNT_IMPL), "");
+            UpgradeableModularAccount(payable(addr)).initialize(owner);
+        }
+
+        return UpgradeableModularAccount(payable(addr));
+    }
+
+    function addStake() external payable onlyOwner {
+        ENTRY_POINT.addStake{value: msg.value}(UNSTAKE_DELAY);
     }
 
     function unlockStake() external onlyOwner {

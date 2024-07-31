@@ -33,6 +33,10 @@ import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./Acc
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
 contract UpgradeableModularAccount is
     AccountExecutor,
     AccountLoupe,
@@ -50,6 +54,8 @@ contract UpgradeableModularAccount is
     using ValidationConfigLib for ValidationConfig;
     using HookConfigLib for HookConfig;
     using SparseCalldataSegmentLib for bytes;
+    using MessageHashUtils for bytes32;
+    using ECDSA for bytes32;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -66,7 +72,13 @@ contract UpgradeableModularAccount is
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
+    uint256 internal constant _SIG_VALIDATION_PASSED = 0;
+    uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
+    ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
+
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
+    event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
 
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromModuleNotPermitted(address module, bytes4 selector);
@@ -257,6 +269,19 @@ contract UpgradeableModularAccount is
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
+    function initialize(address fallbackSigner) external initializer {
+        getAccountStorage().fallbackSigner = fallbackSigner;
+        emit ModularAccountInitialized(_ENTRY_POINT);
+        emit FallbackSignerSet(address(0), fallbackSigner);
+    }
+
+    function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
+        AccountStorage storage _storage = getAccountStorage();
+
+        emit FallbackSignerSet(_storage.fallbackSigner, fallbackSigner);
+        _storage.fallbackSigner = fallbackSigner;
+    }
+
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
     function installValidation(
@@ -309,6 +334,11 @@ contract UpgradeableModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         ModuleEntity sigValidation = ModuleEntity.wrap(bytes24(signature));
+
+        if (sigValidation.eq(_FALLBACK_VALIDATION)) {
+            // do sig validation
+            return _fallbackSignatureValidation(hash, signature[24:]);
+        }
 
         (address module, uint32 entityId) = sigValidation.unpack();
         if (!_storage.validationData[sigValidation].isSignatureValidation) {
@@ -420,8 +450,15 @@ contract UpgradeableModularAccount is
 
             userOp.signature = signatureSegment.getBody();
 
-            (address module, uint32 entityId) = userOpValidationFunction.unpack();
-            uint256 currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
+            uint256 currentValidationRes;
+            if (userOpValidationFunction.eq(_FALLBACK_VALIDATION)) {
+                // fallback userop validation
+                currentValidationRes = _fallbackUserOpValidation(userOp, userOpHash);
+            } else {
+                (address module, uint32 entityId) = userOpValidationFunction.unpack();
+
+                currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
+            }
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -472,6 +509,11 @@ contract UpgradeableModularAccount is
 
         if (authSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
             revert ValidationSignatureSegmentMissing();
+        }
+
+        if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
+            _fallbackRuntimeValidation();
+            return;
         }
 
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
@@ -708,14 +750,49 @@ contract UpgradeableModularAccount is
 
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
-                revert ValidationFunctionMissing(selector);
+            if (
+                _globalValidationAllowed(selector)
+                    && (
+                        _storage.validationData[validationFunction].isGlobal
+                            || validationFunction.eq(_FALLBACK_VALIDATION)
+                    )
+            ) {
+                return;
             }
+            revert ValidationFunctionMissing(selector);
         } else {
             // Not global validation, but per-selector
             if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
                 revert ValidationFunctionMissing(selector);
             }
         }
+    }
+
+    function _fallbackRuntimeValidation() internal view {
+        require(msg.sender == getAccountStorage().fallbackSigner, "temp");
+    }
+
+    function _fallbackUserOpValidation(PackedUserOperation memory userOp, bytes32 userOpHash)
+        internal
+        view
+        returns (uint256)
+    {
+        // Validate the user op signature against the owner.
+        (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
+        if (sigSigner == address(0) || sigSigner != getAccountStorage().fallbackSigner) {
+            return _SIG_VALIDATION_FAILED;
+        }
+        return _SIG_VALIDATION_PASSED;
+    }
+
+    function _fallbackSignatureValidation(bytes32 digest, bytes calldata signature)
+        internal
+        view
+        returns (bytes4)
+    {
+        if (SignatureChecker.isValidSignatureNow(getAccountStorage().fallbackSigner, digest, signature)) {
+            return _1271_MAGIC_VALUE;
+        }
+        return _1271_INVALID;
     }
 }
