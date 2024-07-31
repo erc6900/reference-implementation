@@ -10,3 +10,6 @@
 [submodule "lib/modular-account-libs"]
 	path = lib/modular-account-libs
 	url = https://github.com/erc6900/modular-account-libs
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/vectorized/solady
