@@ -100,6 +100,7 @@ contract UpgradeableModularAccount is
     error ValidationDoesNotApply(bytes4 selector, address module, uint32 entityId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
+    error FallbackSignerMismatch();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
@@ -769,7 +770,9 @@ contract UpgradeableModularAccount is
     }
 
     function _fallbackRuntimeValidation() internal view {
-        require(msg.sender == getAccountStorage().fallbackSigner, "temp");
+        if (msg.sender != getAccountStorage().fallbackSigner) {
+            revert FallbackSignerMismatch();
+        }
     }
 
     function _fallbackUserOpValidation(PackedUserOperation memory userOp, bytes32 userOpHash)
