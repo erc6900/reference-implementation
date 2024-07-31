@@ -6,7 +6,13 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionManifest, ManifestExecutionFunction} from "../../src/interfaces/IExecution.sol";
+import {
+    ExecutionManifest,
+    ManifestExecutionFunction,
+    ManifestExecutionHook
+} from "../../src/interfaces/IExecution.sol";
+
+import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
 import {IModuleManager, ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
@@ -19,6 +25,10 @@ interface TestModule {
 }
 
 contract UpgradeModuleTest is AccountTestBase {
+    address target = address(1000);
+    uint256 sendAmount = 1 ether;
+    uint32 entityId = 10;
+
     // From MockModule
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -31,6 +41,14 @@ contract UpgradeModuleTest is AccountTestBase {
             allowGlobalValidation: true
         });
         m.executionFunctions = executionFunctions;
+        ManifestExecutionHook[] memory executionHooks = new ManifestExecutionHook[](1);
+        executionHooks[0] = ManifestExecutionHook({
+            executionSelector: TestModule.testFunction.selector,
+            entityId: entityId,
+            isPreHook: true,
+            isPostHook: true
+        });
+        m.executionHooks = executionHooks;
 
         MockModule moduleV1 = new MockModule(m);
         MockModule moduleV2 = new MockModule(m);
@@ -39,7 +57,11 @@ contract UpgradeModuleTest is AccountTestBase {
 
         // test installed
         vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodePacked(TestModule.testFunction.selector), 0);
+        bytes memory callData = abi.encodePacked(TestModule.testFunction.selector);
+        emit ReceivedCall(
+            abi.encodeCall(IExecutionHook.preExecutionHook, (entityId, address(entryPoint), 0, callData)), 0
+        );
+        emit ReceivedCall(callData, 0);
         TestModule(address(account1)).testFunction();
 
         // upgrade module by batching uninstall + install calls
@@ -71,30 +93,34 @@ contract UpgradeModuleTest is AccountTestBase {
         // test installed, test if old module still installed
         assertEq(account1.getExecutionFunctionHandler(TestModule.testFunction.selector), address(moduleV2));
         vm.expectEmit(true, true, true, true);
+        emit ReceivedCall(
+            abi.encodeCall(IExecutionHook.preExecutionHook, (entityId, address(owner1), 0, callData)), 0
+        );
         emit ReceivedCall(abi.encodePacked(TestModule.testFunction.selector), 0);
         TestModule(address(account1)).testFunction();
     }
 
     function test_upgradeModuleValidationFunction() public {
-        // Test using existing global validation
-        bytes memory callData = abi.encode(keccak256("test_upgradeModuleValidationFunction"));
+        // Test upgrading existing global validation
+        SingleSignerValidation validation1 = new SingleSignerValidation();
         SingleSignerValidation validation2 = new SingleSignerValidation();
+        MockModule mockPreValAndPermissionsModule = new MockModule();
+
         ModuleEntity currModuleEntity =
             ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
         ModuleEntity newModuleEntity =
             ModuleEntityLib.pack(address(validation2), TEST_DEFAULT_VALIDATION_ENTITY_ID + 1);
 
         vm.startPrank(owner1);
-        vm.expectEmit(true, true, true, true);
-        emit ReceivedTestCall(callData, 1);
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(this), 1, callData)),
+            abi.encodeCall(IStandardExecutor.execute, (address(target), sendAmount, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
         );
+        assertEq(target.balance, sendAmount);
 
         // upgrade module by batching uninstall + install calls
         bytes[] memory emptyBytesArr = new bytes[](0);
@@ -137,7 +163,7 @@ contract UpgradeModuleTest is AccountTestBase {
             )
         );
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(this), 1, callData)),
+            abi.encodeCall(IStandardExecutor.execute, (target, sendAmount, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
@@ -146,25 +172,14 @@ contract UpgradeModuleTest is AccountTestBase {
         );
 
         // Test if new validation works
-        vm.expectEmit(true, true, true, true);
-        emit ReceivedTestCall(callData, 1);
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(this), 1, callData)),
+            abi.encodeCall(IStandardExecutor.execute, (target, sendAmount, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(validation2), TEST_DEFAULT_VALIDATION_ENTITY_ID + 1),
                 GLOBAL_VALIDATION,
                 ""
             )
         );
-    }
-
-    event ReceivedTestCall(bytes, uint256);
-
-    fallback() external payable {
-        emit ReceivedTestCall(msg.data, msg.value);
-    }
-
-    receive() external payable {
-        emit ReceivedTestCall("", msg.value);
+        assertEq(target.balance, 2 * sendAmount);
     }
 }
