@@ -63,6 +63,22 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return UpgradeableModularAccount(payable(addr));
     }
 
+    function createAccountWithFallbackValidation(address owner, uint256 salt)
+        public
+        returns (UpgradeableModularAccount)
+    {
+        address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+
+        // short circuit if exists
+        if (addr.code.length == 0) {
+            // not necessary to check return addr since next call will fail if so
+            new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
+            UpgradeableModularAccount(payable(addr)).initialize(owner);
+        }
+
+        return UpgradeableModularAccount(payable(addr));
+    }
+
     /**
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */

@@ -41,6 +41,8 @@ struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;
     bool initializing;
+    // Address for fallback single signer validation
+    address fallbackSigner;
     // Execution functions and their associated functions
     mapping(bytes4 selector => ExecutionData) executionData;
     mapping(ModuleEntity validationFunction => ValidationData) validationData;
