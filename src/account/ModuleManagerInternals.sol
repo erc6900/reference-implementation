@@ -227,9 +227,15 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
     }
 
-    function _onUninstall(address module, bytes calldata data) internal {
+    function _onUninstall(address module, bytes calldata data) internal returns (bool onUninstallSuccess) {
+        onUninstallSuccess = true;
         if (data.length > 0) {
-            IModule(module).onUninstall(data);
+            // Clear the module storage for the account.
+            // solhint-disable-next-line no-empty-blocks
+            try IModule(module).onUninstall(data) {}
+            catch {
+                onUninstallSuccess = false;
+            }
         }
     }
 
@@ -241,6 +247,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
     ) internal {
         ValidationData storage _validationData =
             getAccountStorage().validationData[validationConfig.moduleEntity()];
+        ModuleEntity moduleEntity = validationConfig.moduleEntity();
 
         for (uint256 i = 0; i < hooks.length; ++i) {
             HookConfig hookConfig = HookConfig.wrap(bytes26(hooks[i][:26]));
@@ -255,7 +262,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 }
             } // Hook is an execution hook
             else if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
-                revert PermissionAlreadySet(validationConfig.moduleEntity(), hookConfig);
+                revert PermissionAlreadySet(moduleEntity, hookConfig);
             }
 
             _onInstall(hookConfig.module(), hookData);
@@ -264,7 +271,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         for (uint256 i = 0; i < selectors.length; ++i) {
             bytes4 selector = selectors[i];
             if (!_validationData.selectors.add(toSetValue(selector))) {
-                revert ValidationAlreadySet(selector, validationConfig.moduleEntity());
+                revert ValidationAlreadySet(selector, moduleEntity);
             }
         }
 
@@ -272,6 +279,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
 
         _onInstall(validationConfig.module(), installData);
+        emit ValidationInstalled(moduleEntity);
     }
 
     function _uninstallValidation(
@@ -280,6 +288,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         bytes[] calldata hookUninstallDatas
     ) internal {
         ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
+        bool onUninstallSuccess = true;
 
         _removeValidationFunction(validationFunction);
 
@@ -298,7 +307,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             for (uint256 i = 0; i < _validationData.preValidationHooks.length; ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
                 (address hookModule,) = ModuleEntityLib.unpack(_validationData.preValidationHooks[i]);
-                _onUninstall(hookModule, hookData);
+                onUninstallSuccess = _onUninstall(hookModule, hookData);
                 hookIndex++;
             }
 
@@ -306,7 +315,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
                 (address hookModule,) =
                     ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
-                _onUninstall(hookModule, hookData);
+                onUninstallSuccess = _onUninstall(hookModule, hookData);
                 hookIndex++;
             }
         }
@@ -329,6 +338,8 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
 
         (address module,) = ModuleEntityLib.unpack(validationFunction);
-        _onUninstall(module, uninstallData);
+        onUninstallSuccess = _onUninstall(module, uninstallData);
+
+        emit ValidationUninstalled(validationFunction, onUninstallSuccess);
     }
 }

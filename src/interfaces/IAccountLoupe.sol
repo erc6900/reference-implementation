@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
+import {ModuleEntity} from "../interfaces/IModuleManager.sol";
 
 // Represents data associated with a specifc function selector.
 struct ExecutionDataView {
