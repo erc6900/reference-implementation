@@ -37,6 +37,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 contract UpgradeableModularAccount is
     AccountExecutor,
     AccountLoupe,
@@ -101,6 +103,7 @@ contract UpgradeableModularAccount is
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
     error FallbackSignerMismatch();
+    error FallbackSignerDisabled();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
@@ -256,8 +259,10 @@ contract UpgradeableModularAccount is
         _uninstallExecution(module, manifest, moduleUninstallData);
     }
 
+    // TODO: Remove this function for SMA
     /// @notice Initializes the account with a validation function added to the global pool.
-    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
+    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall
+    // workflow
     /// with user install configs.
     /// @dev This function is only callable once.
     function initializeWithValidation(
@@ -268,12 +273,6 @@ contract UpgradeableModularAccount is
     ) external initializer {
         _installValidation(validationConfig, selectors, installData, hooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
-    }
-
-    function initialize(address fallbackSigner) external initializer {
-        getAccountStorage().fallbackSigner = fallbackSigner;
-        emit ModularAccountInitialized(_ENTRY_POINT);
-        emit FallbackSignerSet(address(0), fallbackSigner);
     }
 
     function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
@@ -770,7 +769,7 @@ contract UpgradeableModularAccount is
     }
 
     function _fallbackRuntimeValidation() internal view {
-        if (msg.sender != getAccountStorage().fallbackSigner) {
+        if (msg.sender != _getFallbackSigner()) {
             revert FallbackSignerMismatch();
         }
     }
@@ -782,7 +781,7 @@ contract UpgradeableModularAccount is
     {
         // Validate the user op signature against the owner.
         (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != getAccountStorage().fallbackSigner) {
+        if (sigSigner == address(0) || sigSigner != _getFallbackSigner()) {
             return _SIG_VALIDATION_FAILED;
         }
         return _SIG_VALIDATION_PASSED;
@@ -793,9 +792,26 @@ contract UpgradeableModularAccount is
         view
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(getAccountStorage().fallbackSigner, digest, signature)) {
+        if (SignatureChecker.isValidSignatureNow(_getFallbackSigner(), digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
+    }
+
+    function _getFallbackSigner() internal view returns (address) {
+        AccountStorage storage _storage = getAccountStorage();
+
+        if (_storage.fallbackSignerDisabled) {
+            revert FallbackSignerDisabled();
+        }
+
+        address storageFallbackSigner = _storage.fallbackSigner;
+        if (storageFallbackSigner != address(0)) {
+            return storageFallbackSigner;
+        }
+
+        bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 20);
+
+        return address(uint160(bytes20(appendedData)));
     }
 }

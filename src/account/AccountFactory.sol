@@ -10,6 +10,8 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
@@ -61,17 +63,20 @@ contract AccountFactory is Ownable {
     }
 
     function createAccountWithFallbackValidation(address owner, uint256 salt)
-        external 
+        external
         returns (UpgradeableModularAccount)
     {
-        // The entityId for fallback validations is hardcoded at the maximum value.
-        address addr = Create2.computeAddress(getSalt(owner, salt, type(uint32).max), _PROXY_BYTECODE_HASH);
+        // both module address and entityId for fallback validations are hardcoded at the maximum value.
+        bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
+
+        bytes memory immutables = _getImmutableArgs(owner);
+
+        address addr = _getAddressFallbackSigner(immutables, fullSalt);
 
         // short circuit if exists
         if (addr.code.length == 0) {
             // not necessary to check return addr since next call will fail if so
-            new ERC1967Proxy{salt: getSalt(owner, salt, type(uint32).max)}(address(ACCOUNT_IMPL), "");
-            UpgradeableModularAccount(payable(addr)).initialize(owner);
+            LibClone.createDeterministicERC1967(address(ACCOUNT_IMPL), immutables, fullSalt);
         }
 
         return UpgradeableModularAccount(payable(addr));
@@ -96,7 +101,21 @@ contract AccountFactory is Ownable {
         return Create2.computeAddress(getSalt(owner, salt, entityId), _PROXY_BYTECODE_HASH);
     }
 
+    function getAddressFallbackSigner(address owner, uint256 salt) public view returns (address) {
+        bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
+        bytes memory immutables = _getImmutableArgs(owner);
+        return _getAddressFallbackSigner(immutables, fullSalt);
+    }
+
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt, entityId));
+    }
+
+    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) public view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
+    }
+
+    function _getImmutableArgs(address owner) private pure returns (bytes memory) {
+        return abi.encodePacked(owner);
     }
 }

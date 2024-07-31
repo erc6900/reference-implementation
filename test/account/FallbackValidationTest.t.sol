@@ -27,7 +27,7 @@ contract FallbackValidationTest is AccountTestBase {
         (owner2, owner2Key) = makeAddrAndKey("owner2");
 
         // Compute counterfactual address
-        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
+        account2 = UpgradeableModularAccount(payable(factory.getAddressFallbackSigner(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
         ethRecipient = makeAddr("ethRecipient");
