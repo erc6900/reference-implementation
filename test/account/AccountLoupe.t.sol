@@ -5,7 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ExecutionDataView, ExecutionHook, ValidationDataView} from "../../src/interfaces/IAccountLoupe.sol";
+import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IAccountLoupe.sol";
 import {HookConfig, IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 

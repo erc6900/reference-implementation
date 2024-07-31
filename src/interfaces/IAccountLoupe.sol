@@ -3,14 +3,6 @@ pragma solidity ^0.8.25;
 
 import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
 
-/// @notice Pre and post hooks for a given selector.
-/// @dev It's possible for one of either `preExecHook` or `postExecHook` to be empty.
-struct ExecutionHook {
-    ModuleEntity hookFunction;
-    bool isPreHook;
-    bool isPostHook;
-}
-
 // Represents data associated with a specifc function selector.
 struct ExecutionDataView {
     // The module that implements this execution function.

@@ -7,9 +7,7 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
-import {
-    ExecutionDataView, ExecutionHook, IAccountLoupe, ValidationDataView
-} from "../interfaces/IAccountLoupe.sol";
+import {ExecutionDataView, IAccountLoupe, ValidationDataView} from "../interfaces/IAccountLoupe.sol";
 import {HookConfig, IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 import {ExecutionData, ValidationData, getAccountStorage, toHookConfig, toSelector} from "./AccountStorage.sol";
