@@ -175,7 +175,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             revert ModuleInstallCallbackFailed(module, revertReason);
         }
 
-        emit ModuleInstalled(module);
+        emit ExecutionInstalled(module, manifest);
     }
 
     function _uninstallExecution(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
@@ -218,7 +218,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             onUninstallSuccess = false;
         }
 
-        emit ModuleUninstalled(module, onUninstallSuccess);
+        emit ExecutionUninstalled(module, onUninstallSuccess, manifest);
     }
 
     function _onInstall(address module, bytes calldata data) internal {

@@ -10,8 +10,8 @@ type ValidationConfig is bytes26;
 type HookConfig is bytes26;
 
 interface IModuleManager {
-    event ModuleInstalled(address indexed module);
-    event ModuleUninstalled(address indexed module, bool indexed onUninstallSucceeded);
+    event ExecutionInstalled(address indexed module, ExecutionManifest manifest);
+    event ExecutionUninstalled(address indexed module, bool onUninstallSucceeded, ExecutionManifest manifest);
     event ValidationInstalled(ModuleEntity indexed moduleEntity);
     event ValidationUninstalled(ModuleEntity indexed moduleEntity, bool indexed onUninstallSucceeded);
 
