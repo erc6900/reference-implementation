@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
@@ -25,7 +24,6 @@ import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 /// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
 contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
-    using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
     string internal constant _NAME = "SingleSigner Validation";
@@ -39,7 +37,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    mapping(uint32 entityId => mapping(address account => address)) public signer;
+    mapping(uint32 entityId => mapping(address account => address)) public signers;
 
     /// @inheritdoc ISingleSignerValidation
     function transferSigner(uint32 entityId, address newSigner) external {
@@ -59,11 +57,6 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         _transferSigner(abi.decode(data, (uint32)), address(0));
     }
 
-    /// @inheritdoc ISingleSignerValidation
-    function signerOf(uint32 entityId, address account) external view returns (address) {
-        return signer[entityId][account];
-    }
-
     /// @inheritdoc IValidation
     function validateUserOp(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
@@ -72,11 +65,14 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         returns (uint256)
     {
         // Validate the user op signature against the owner.
-        (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != signer[entityId][userOp.sender]) {
-            return _SIG_VALIDATION_FAILED;
+        if (
+            SignatureChecker.isValidSignatureNow(
+                signers[entityId][userOp.sender], userOpHash.toEthSignedMessageHash(), userOp.signature
+            )
+        ) {
+            return _SIG_VALIDATION_PASSED;
         }
-        return _SIG_VALIDATION_PASSED;
+        return _SIG_VALIDATION_FAILED;
     }
 
     /// @inheritdoc IValidation
@@ -89,7 +85,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         bytes calldata
     ) external view override {
         // Validate that the sender is the owner of the account or self.
-        if (sender != signer[entityId][account]) {
+        if (sender != signers[entityId][account]) {
             revert NotAuthorized();
         }
         return;
@@ -108,7 +104,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         override
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(signer[entityId][account], digest, signature)) {
+        if (SignatureChecker.isValidSignatureNow(signers[entityId][account], digest, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;
@@ -132,8 +128,8 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     function _transferSigner(uint32 entityId, address newSigner) internal {
-        address previousSigner = signer[entityId][msg.sender];
-        signer[entityId][msg.sender] = newSigner;
+        address previousSigner = signers[entityId][msg.sender];
+        signers[entityId][msg.sender] = newSigner;
         emit SignerTransferred(msg.sender, entityId, previousSigner, newSigner);
     }
 }
