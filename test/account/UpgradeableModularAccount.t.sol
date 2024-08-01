@@ -12,7 +12,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
+import {ExecutionDataView, IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
@@ -247,9 +247,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             moduleInstallData: abi.encode(uint48(1 days))
         });
 
-        address handler =
-            IAccountLoupe(account1).getExecutionFunctionHandler(TokenReceiverModule.onERC721Received.selector);
-        assertEq(handler, address(tokenReceiverModule));
+        ExecutionDataView memory data =
+            IAccountLoupe(account1).getExecutionData(TokenReceiverModule.onERC721Received.selector);
+        assertEq(data.module, address(tokenReceiverModule));
     }
 
     function test_installExecution_PermittedCallSelectorNotInstalled() public {
@@ -321,8 +321,8 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             moduleUninstallData: ""
         });
 
-        address handler = IAccountLoupe(account1).getExecutionFunctionHandler(module.foo.selector);
-        assertEq(handler, address(0));
+        ExecutionDataView memory data = IAccountLoupe(account1).getExecutionData(module.foo.selector);
+        assertEq(data.module, address(0));
     }
 
     function _installExecutionWithExecHooks() internal returns (MockModule module) {

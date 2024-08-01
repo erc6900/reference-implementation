@@ -114,7 +114,7 @@ contract UpgradeableModularAccount is
     /// @dev We route calls to execution functions based on incoming msg.sig
     /// @dev If there's no module associated with this function selector, revert
     fallback(bytes calldata) external payable returns (bytes memory) {
-        address execModule = getAccountStorage().selectorData[msg.sig].module;
+        address execModule = getAccountStorage().executionData[msg.sig].module;
         if (execModule == address(0)) {
             revert UnrecognizedFunction(msg.sig);
         }
@@ -604,7 +604,7 @@ contract UpgradeableModularAccount is
         // and the selector isn't public.
         if (
             msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
-                && !_storage.selectorData[msg.sig].isPublic
+                && !_storage.executionData[msg.sig].isPublic
         ) {
             ModuleEntity directCallValidationKey =
                 ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
@@ -629,7 +629,7 @@ contract UpgradeableModularAccount is
 
         // Exec hooks
         PostExecToRun[] memory postExecutionHooks =
-            _doPreHooks(_storage.selectorData[msg.sig].executionHooks, msg.data);
+            _doPreHooks(_storage.executionData[msg.sig].executionHooks, msg.data);
 
         return (postPermissionHooks, postExecutionHooks);
     }
@@ -697,7 +697,7 @@ contract UpgradeableModularAccount is
             return true;
         }
 
-        return getAccountStorage().selectorData[selector].allowGlobalValidation;
+        return getAccountStorage().executionData[selector].allowGlobalValidation;
     }
 
     function _checkIfValidationAppliesSelector(bytes4 selector, ModuleEntity validationFunction, bool isGlobal)

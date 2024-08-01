@@ -9,7 +9,7 @@ import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;
 
 // Represents data associated with a specifc function selector.
-struct SelectorData {
+struct ExecutionData {
     // The module that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address module;
@@ -42,7 +42,7 @@ struct AccountStorage {
     uint8 initialized;
     bool initializing;
     // Execution functions and their associated functions
-    mapping(bytes4 => SelectorData) selectorData;
+    mapping(bytes4 selector => ExecutionData) executionData;
     mapping(ModuleEntity validationFunction => ValidationData) validationData;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
