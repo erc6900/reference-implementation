@@ -13,7 +13,6 @@ import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
-    uint32 public constant UNSTAKE_DELAY = 1 weeks;
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION;
 
@@ -61,8 +60,8 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function addStake() external payable onlyOwner {
-        ENTRY_POINT.addStake{value: msg.value}(UNSTAKE_DELAY);
+    function addStake(uint32 unstakeDelay) external payable onlyOwner {
+        ENTRY_POINT.addStake{value: msg.value}(unstakeDelay);
     }
 
     function unlockStake() external onlyOwner {
