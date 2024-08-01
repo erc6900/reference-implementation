@@ -354,7 +354,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_transferOwnership() public {
-        assertEq(singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
+        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
 
         vm.prank(address(entryPoint));
         account1.execute(
@@ -363,7 +363,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             abi.encodeCall(SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
         );
 
-        assertEq(singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner2);
+        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner2);
     }
 
     function test_isValidSignature() public {

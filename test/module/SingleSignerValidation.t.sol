@@ -121,7 +121,7 @@ contract SingleSignerValidationTest is AccountTestBase {
 
         // transfer ownership to signer
         singleSignerValidation.transferSigner(TEST_DEFAULT_VALIDATION_ENTITY_ID, signer);
-        assertEq(signer, singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, accountAddr));
+        assertEq(signer, singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, accountAddr));
 
         // sig check should pass
         assertEq(
