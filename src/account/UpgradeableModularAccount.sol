@@ -734,7 +734,7 @@ contract UpgradeableModularAccount is
             selector == this.execute.selector || selector == this.executeBatch.selector
                 || selector == this.installExecution.selector || selector == this.uninstallExecution.selector
                 || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
-                || selector == this.upgradeToAndCall.selector
+                || selector == this.upgradeToAndCall.selector || selector == this.updateFallbackSigner.selector
         ) {
             return true;
         }

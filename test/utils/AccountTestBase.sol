@@ -56,11 +56,10 @@ abstract contract AccountTestBase is OptimizedTest {
         singleSignerValidation = _deploySingleSignerValidation();
         factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
 
-        account1 = factory.createAccount(owner1, 0);
+        account1 = factory.createAccountWithFallbackValidation(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        _signerValidation = ModuleEntity.wrap(bytes24(type(uint192).max));
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -102,11 +101,7 @@ abstract contract AccountTestBase is OptimizedTest {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
-        userOp.signature = _encodeSignature(
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-            GLOBAL_VALIDATION,
-            abi.encodePacked(r, s, v)
-        );
+        userOp.signature = _encodeSignature(_signerValidation, GLOBAL_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -153,14 +148,7 @@ abstract contract AccountTestBase is OptimizedTest {
         }
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(
-            callData,
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
-        );
+        account1.executeWithAuthorization(callData, _encodeSignature(_signerValidation, GLOBAL_VALIDATION, ""));
     }
 
     // Always expects a revert, even if the revert data is zero-length.
@@ -168,35 +156,15 @@ abstract contract AccountTestBase is OptimizedTest {
         vm.expectRevert(expectedRevertData);
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(
-            callData,
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
-        );
+        account1.executeWithAuthorization(callData, _encodeSignature(_signerValidation, GLOBAL_VALIDATION, ""));
     }
 
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
         account1.executeWithAuthorization(
-            abi.encodeCall(
-                account1.execute,
-                (
-                    address(singleSignerValidation),
-                    0,
-                    abi.encodeCall(
-                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
-                    )
-                )
-            ),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            abi.encodeCall(account1.updateFallbackSigner, (address(this))),
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
 

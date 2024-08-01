@@ -8,7 +8,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
@@ -22,6 +22,9 @@ contract PerHookDataTest is CustomValidationTestBase {
     Counter internal _counter;
 
     function setUp() public {
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+
         _counter = new Counter();
 
         _accessControlHookModule = new MockAccessControlHookModule();
