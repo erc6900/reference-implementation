@@ -307,7 +307,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
             for (uint256 i = 0; i < _validationData.preValidationHooks.length; ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
                 (address hookModule,) = ModuleEntityLib.unpack(_validationData.preValidationHooks[i]);
-                onUninstallSuccess = _onUninstall(hookModule, hookData);
+                onUninstallSuccess = onUninstallSuccess && _onUninstall(hookModule, hookData);
                 hookIndex++;
             }
 
@@ -315,7 +315,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
                 (address hookModule,) =
                     ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
-                onUninstallSuccess = _onUninstall(hookModule, hookData);
+                onUninstallSuccess = onUninstallSuccess && _onUninstall(hookModule, hookData);
                 hookIndex++;
             }
         }
@@ -338,7 +338,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         }
 
         (address module,) = ModuleEntityLib.unpack(validationFunction);
-        onUninstallSuccess = _onUninstall(module, uninstallData);
+        onUninstallSuccess = onUninstallSuccess && _onUninstall(module, uninstallData);
 
         emit ValidationUninstalled(validationFunction, onUninstallSuccess);
     }

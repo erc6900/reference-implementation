@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.25;
 
-import {ModuleEntity} from "../interfaces/IModuleManager.sol";
+import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
 
 // Represents data associated with a specifc function selector.
 struct ExecutionDataView {
@@ -16,7 +16,7 @@ struct ExecutionDataView {
     // Whether or not a global validation function may be used to validate this function.
     bool allowGlobalValidation;
     // The execution hooks for this function selector.
-    bytes32[] executionHooks;
+    HookConfig[] executionHooks;
 }
 
 struct ValidationDataView {
@@ -27,9 +27,9 @@ struct ValidationDataView {
     // The pre validation hooks for this validation function.
     ModuleEntity[] preValidationHooks;
     // Permission hooks for this validation function.
-    bytes32[] permissionHooks;
+    HookConfig[] permissionHooks;
     // The set of selectors that may be validated by this validation function.
-    bytes32[] selectors;
+    bytes4[] selectors;
 }
 
 interface IAccountLoupe {

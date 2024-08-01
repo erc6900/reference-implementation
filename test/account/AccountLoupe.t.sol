@@ -91,14 +91,14 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
             assertEq(data.executionHooks.length, 3);
             for (uint256 j = 0; j < data.executionHooks.length; j++) {
-                assertEq(data.executionHooks[j], bytes32(HookConfig.unwrap(expectedHooks[j])));
+                assertEq(HookConfig.unwrap(data.executionHooks[j]), HookConfig.unwrap(expectedHooks[j]));
             }
         }
     }
 
     function test_moduleLoupe_getValidationData() public {
         ValidationDataView memory data = account1.getValidationData(comprehensiveModuleValidation);
-        bytes32[] memory selectors = data.selectors;
+        bytes4[] memory selectors = data.selectors;
 
         assertTrue(data.isGlobal);
         assertTrue(data.isSignatureValidation);
@@ -122,7 +122,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
 
         assertEq(data.permissionHooks.length, 0);
         assertEq(selectors.length, 1);
-        assertEq(selectors[0], bytes32(comprehensiveModule.foo.selector));
+        assertEq(selectors[0], comprehensiveModule.foo.selector);
     }
 
     // Test config

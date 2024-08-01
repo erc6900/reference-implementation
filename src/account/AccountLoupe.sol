@@ -32,7 +32,12 @@ abstract contract AccountLoupe is IAccountLoupe {
             data.module = executionData.module;
             data.isPublic = executionData.isPublic;
             data.allowGlobalValidation = executionData.allowGlobalValidation;
-            data.executionHooks = executionData.executionHooks.values();
+
+            uint256 executionHooksLen = executionData.executionHooks.length();
+            data.executionHooks = new HookConfig[](executionHooksLen);
+            for (uint256 i = 0; i < executionHooksLen; ++i) {
+                data.executionHooks[i] = HookConfig.wrap(bytes26(executionData.executionHooks.at(i)));
+            }
         }
     }
 
@@ -47,7 +52,18 @@ abstract contract AccountLoupe is IAccountLoupe {
         data.isGlobal = validationData.isGlobal;
         data.isSignatureValidation = validationData.isSignatureValidation;
         data.preValidationHooks = validationData.preValidationHooks;
-        data.permissionHooks = validationData.permissionHooks.values();
-        data.selectors = validationData.selectors.values();
+
+        uint256 permissionHooksLen = validationData.permissionHooks.length();
+        data.permissionHooks = new HookConfig[](permissionHooksLen);
+        for (uint256 i = 0; i < permissionHooksLen; ++i) {
+            data.permissionHooks[i] = HookConfig.wrap(bytes26(validationData.permissionHooks.at(i)));
+        }
+
+        bytes32[] memory selectors = validationData.selectors.values();
+        uint256 selectorsLen = selectors.length;
+        data.selectors = new bytes4[](selectorsLen);
+        for (uint256 j = 0; j < selectorsLen; ++j) {
+            data.selectors[j] = bytes4(selectors[j]);
+        }
     }
 }
