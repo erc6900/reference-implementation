@@ -150,7 +150,7 @@ contract DeployScript is Script {
 
         if (stakeToAdd > 0) {
             console.log("Adding stake: ", stakeToAdd);
-            AccountFactory(factory).addStake{value: stakeAmount}(unstakeDelay);
+            AccountFactory(factory).addStake{value: stakeToAdd}(unstakeDelay);
             console.log("Staked factory: ", address(factory));
             console.log("Total stake amount: ", entryPoint.getDepositInfo(address(factory)).stake);
             console.log("Unstake delay: ", entryPoint.getDepositInfo(address(factory)).unstakeDelaySec);

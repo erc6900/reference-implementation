@@ -90,4 +90,20 @@ contract DeployTest is Test {
         assertEq(depositInfo.stake, 0.1 ether, "Unexpected factory stake amount");
         assertEq(depositInfo.unstakeDelaySec, 1 days, "Unexpected factory unstake delay");
     }
+
+    function test_deployScript_addStake() public {
+        test_deployScript_run();
+
+        vm.setEnv("STAKE_AMOUNT", vm.toString(uint256(0.3 ether)));
+
+        // Refresh script's env vars
+
+        _deployScript = new DeployScript();
+
+        _deployScript.run();
+
+        IStakeManager.DepositInfo memory depositInfo = _entryPoint.getDepositInfo(_factory);
+
+        assertEq(depositInfo.stake, 0.3 ether, "Unexpected factory stake amount");
+    }
 }
