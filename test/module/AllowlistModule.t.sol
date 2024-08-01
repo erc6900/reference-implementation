@@ -6,7 +6,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
@@ -34,6 +34,9 @@ contract AllowlistModuleTest is CustomValidationTestBase {
     );
 
     function setUp() public {
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+
         allowlistModule = new AllowlistModule();
 
         counters = new Counter[](10);
