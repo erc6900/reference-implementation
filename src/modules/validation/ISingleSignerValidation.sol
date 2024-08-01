@@ -19,10 +19,4 @@ interface ISingleSignerValidation is IValidation {
     /// @param entityId The entityId for the account and the signer.
     /// @param newSigner The address of the new signer.
     function transferSigner(uint32 entityId, address newSigner) external;
-
-    /// @notice Get the signer of the `account`'s validation.
-    /// @param entityId The entityId for the account and the signer.
-    /// @param account The account to get the signer of.
-    /// @return The address of the signer.
-    function signerOf(uint32 entityId, address account) external view returns (address);
 }
