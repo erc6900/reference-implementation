@@ -22,8 +22,8 @@ contract AccountExecHooksTest is AccountTestBase {
 
     ExecutionManifest internal _m1;
 
-    event ModuleInstalled(address indexed module);
-    event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
+    event ExecutionInstalled(address indexed module, ExecutionManifest manifest);
+    event ExecutionUninstalled(address indexed module, bool onUninstallSucceeded, ExecutionManifest manifest);
     // emitted by MockModule
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -164,7 +164,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IModule.onInstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit ModuleInstalled(address(mockModule1));
+        emit ExecutionInstalled(address(mockModule1), _m1);
 
         vm.startPrank(address(entryPoint));
         account1.installExecution({
@@ -179,7 +179,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(abi.encodeCall(IModule.onUninstall, (bytes(""))), 0);
         vm.expectEmit(true, true, true, true);
-        emit ModuleUninstalled(address(module), true);
+        emit ExecutionUninstalled(address(module), true, module.executionManifest());
 
         vm.startPrank(address(entryPoint));
         account1.uninstallExecution(address(module), module.executionManifest(), bytes(""));
