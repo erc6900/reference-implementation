@@ -16,6 +16,8 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     DirectCallModule internal _module;
     ModuleEntity internal _moduleEntity;
 
+    event ValidationUninstalled(ModuleEntity indexed moduleEntity, bool indexed onUninstallSucceeded);
+
     function setUp() public {
         _module = new DirectCallModule();
         assertFalse(_module.preHookRan());
@@ -124,6 +126,8 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
     function _uninstallExecution() internal {
         vm.prank(address(entryPoint));
+        vm.expectEmit(true, true, true, true);
+        emit ValidationUninstalled(_moduleEntity, true);
         account1.uninstallValidation(_moduleEntity, "", new bytes[](1));
     }
 

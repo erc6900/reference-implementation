@@ -12,7 +12,6 @@ import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {ERC20TokenLimitModule} from "../../src/modules/ERC20TokenLimitModule.sol";
@@ -38,13 +37,6 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
         erc20 = new MockERC20();
         erc20.mint(address(acct), 10 ether);
-
-        ExecutionHook[] memory permissionHooks = new ExecutionHook[](1);
-        permissionHooks[0] = ExecutionHook({
-            hookFunction: ModuleEntityLib.pack(address(module), 0),
-            isPreHook: true,
-            isPostHook: false
-        });
 
         // arr idx 0 => functionId of 0 has that spend
         uint256[] memory limits = new uint256[](1);

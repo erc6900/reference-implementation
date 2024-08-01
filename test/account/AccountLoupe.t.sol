@@ -5,8 +5,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
-import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
+import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IAccountLoupe.sol";
+import {HookConfig, IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
@@ -31,7 +31,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         vm.stopPrank();
     }
 
-    function test_moduleLoupe_getExecutionFunctionHandler_native() public {
+    function test_moduleLoupe_getExecutionData_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
 
         selectorsToCheck[0] = IStandardExecutor.execute.selector;
@@ -45,13 +45,14 @@ contract AccountLoupeTest is CustomValidationTestBase {
         selectorsToCheck[4] = IModuleManager.uninstallExecution.selector;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            address module = account1.getExecutionFunctionHandler(selectorsToCheck[i]);
-
-            assertEq(module, address(account1));
+            ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);
+            assertEq(data.module, address(account1));
+            assertTrue(data.allowGlobalValidation);
+            assertFalse(data.isPublic);
         }
     }
 
-    function test_moduleLoupe_getExecutionFunctionConfig_module() public {
+    function test_moduleLoupe_getExecutionData_module() public {
         bytes4[] memory selectorsToCheck = new bytes4[](1);
         address[] memory expectedModuleAddress = new address[](1);
 
@@ -59,61 +60,51 @@ contract AccountLoupeTest is CustomValidationTestBase {
         expectedModuleAddress[0] = address(comprehensiveModule);
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
-            address module = account1.getExecutionFunctionHandler(selectorsToCheck[i]);
+            ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);
+            assertEq(data.module, expectedModuleAddress[i]);
+            assertFalse(data.allowGlobalValidation);
+            assertFalse(data.isPublic);
 
-            assertEq(module, expectedModuleAddress[i]);
+            HookConfig[3] memory expectedHooks = [
+                HookConfigLib.packExecHook(
+                    ModuleEntityLib.pack(
+                        address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.BOTH_EXECUTION_HOOKS)
+                    ),
+                    true,
+                    true
+                ),
+                HookConfigLib.packExecHook(
+                    ModuleEntityLib.pack(
+                        address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_EXECUTION_HOOK)
+                    ),
+                    true,
+                    false
+                ),
+                HookConfigLib.packExecHook(
+                    ModuleEntityLib.pack(
+                        address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.POST_EXECUTION_HOOK)
+                    ),
+                    false,
+                    true
+                )
+            ];
+
+            assertEq(data.executionHooks.length, 3);
+            for (uint256 j = 0; j < data.executionHooks.length; j++) {
+                assertEq(HookConfig.unwrap(data.executionHooks[j]), HookConfig.unwrap(expectedHooks[j]));
+            }
         }
     }
 
-    function test_moduleLoupe_getSelectors() public {
-        bytes4[] memory selectors = account1.getSelectors(comprehensiveModuleValidation);
+    function test_moduleLoupe_getValidationData() public {
+        ValidationDataView memory data = account1.getValidationData(comprehensiveModuleValidation);
+        bytes4[] memory selectors = data.selectors;
 
-        assertEq(selectors.length, 1);
-        assertEq(selectors[0], comprehensiveModule.foo.selector);
-    }
-
-    function test_moduleLoupe_getExecutionHooks() public {
-        ExecutionHook[] memory hooks = account1.getExecutionHooks(comprehensiveModule.foo.selector);
-        ExecutionHook[3] memory expectedHooks = [
-            ExecutionHook({
-                hookFunction: ModuleEntityLib.pack(
-                    address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.BOTH_EXECUTION_HOOKS)
-                ),
-                isPreHook: true,
-                isPostHook: true
-            }),
-            ExecutionHook({
-                hookFunction: ModuleEntityLib.pack(
-                    address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_EXECUTION_HOOK)
-                ),
-                isPreHook: true,
-                isPostHook: false
-            }),
-            ExecutionHook({
-                hookFunction: ModuleEntityLib.pack(
-                    address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.POST_EXECUTION_HOOK)
-                ),
-                isPreHook: false,
-                isPostHook: true
-            })
-        ];
-
-        assertEq(hooks.length, 3);
-        for (uint256 i = 0; i < hooks.length; i++) {
-            assertEq(
-                ModuleEntity.unwrap(hooks[i].hookFunction), ModuleEntity.unwrap(expectedHooks[i].hookFunction)
-            );
-            assertEq(hooks[i].isPreHook, expectedHooks[i].isPreHook);
-            assertEq(hooks[i].isPostHook, expectedHooks[i].isPostHook);
-        }
-    }
-
-    function test_moduleLoupe_getValidationHooks() public {
-        ModuleEntity[] memory hooks = account1.getPreValidationHooks(comprehensiveModuleValidation);
-
-        assertEq(hooks.length, 2);
+        assertTrue(data.isGlobal);
+        assertTrue(data.isSignatureValidation);
+        assertEq(data.preValidationHooks.length, 2);
         assertEq(
-            ModuleEntity.unwrap(hooks[0]),
+            ModuleEntity.unwrap(data.preValidationHooks[0]),
             ModuleEntity.unwrap(
                 ModuleEntityLib.pack(
                     address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_1)
@@ -121,13 +112,17 @@ contract AccountLoupeTest is CustomValidationTestBase {
             )
         );
         assertEq(
-            ModuleEntity.unwrap(hooks[1]),
+            ModuleEntity.unwrap(data.preValidationHooks[1]),
             ModuleEntity.unwrap(
                 ModuleEntityLib.pack(
                     address(comprehensiveModule), uint32(ComprehensiveModule.EntityId.PRE_VALIDATION_HOOK_2)
                 )
             )
         );
+
+        assertEq(data.permissionHooks.length, 0);
+        assertEq(selectors.length, 1);
+        assertEq(selectors[0], comprehensiveModule.foo.selector);
     }
 
     // Test config
