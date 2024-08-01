@@ -42,8 +42,8 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     Counter public counter;
     ExecutionManifest internal _manifest;
 
-    event ModuleInstalled(address indexed module);
-    event ModuleUninstalled(address indexed module, bool indexed callbacksSucceeded);
+    event ExecutionInstalled(address indexed module, ExecutionManifest manifest);
+    event ExecutionUninstalled(address indexed module, bool onUninstallSucceeded, ExecutionManifest manifest);
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
     function setUp() public {
@@ -240,7 +240,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
 
         vm.expectEmit(true, true, true, true);
-        emit ModuleInstalled(address(tokenReceiverModule));
+        emit ExecutionInstalled(address(tokenReceiverModule), tokenReceiverModule.executionManifest());
         IModuleManager(account1).installExecution({
             module: address(tokenReceiverModule),
             manifest: tokenReceiverModule.executionManifest(),
@@ -314,7 +314,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         });
 
         vm.expectEmit(true, true, true, true);
-        emit ModuleUninstalled(address(module), true);
+        emit ExecutionUninstalled(address(module), true, module.executionManifest());
         IModuleManager(account1).uninstallExecution({
             module: address(module),
             manifest: module.executionManifest(),
