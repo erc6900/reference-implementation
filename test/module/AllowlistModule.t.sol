@@ -21,6 +21,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
 
     Counter[] public counters;
 
+    uint32 public constant HOOK_ENTITY_ID = 0;
+
     function setUp() public {
         allowlistModule = new AllowlistModule();
 
@@ -147,11 +149,13 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             Call memory call = calls[i];
 
             (bool allowed, bool hasSelectorAllowlist) =
-                allowlistModule.targetAllowlist(call.target, address(account1));
+                allowlistModule.targetAllowlist(HOOK_ENTITY_ID, call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
-                        && !allowlistModule.selectorAllowlist(call.target, bytes4(call.data), address(account1))
+                        && !allowlistModule.selectorAllowlist(
+                            HOOK_ENTITY_ID, call.target, bytes4(call.data), address(account1)
+                        )
                 ) {
                     return abi.encodeWithSelector(
                         IEntryPoint.FailedOpWithRevert.selector,
@@ -178,16 +182,18 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             Call memory call = calls[i];
 
             (bool allowed, bool hasSelectorAllowlist) =
-                allowlistModule.targetAllowlist(call.target, address(account1));
+                allowlistModule.targetAllowlist(HOOK_ENTITY_ID, call.target, address(account1));
             if (allowed) {
                 if (
                     hasSelectorAllowlist
-                        && !allowlistModule.selectorAllowlist(call.target, bytes4(call.data), address(account1))
+                        && !allowlistModule.selectorAllowlist(
+                            HOOK_ENTITY_ID, call.target, bytes4(call.data), address(account1)
+                        )
                 ) {
                     return abi.encodeWithSelector(
                         UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                         address(allowlistModule),
-                        uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK),
+                        HOOK_ENTITY_ID,
                         abi.encodeWithSelector(AllowlistModule.SelectorNotAllowed.selector)
                     );
                 }
@@ -195,7 +201,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
                 return abi.encodeWithSelector(
                     UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
                     address(allowlistModule),
-                    uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK),
+                    HOOK_ENTITY_ID,
                     abi.encodeWithSelector(AllowlistModule.TargetNotAllowed.selector)
                 );
             }
@@ -297,10 +303,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
     {
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
-            HookConfigLib.packValidationHook(
-                address(allowlistModule), uint32(AllowlistModule.EntityId.PRE_VALIDATION_HOOK)
-            ),
-            abi.encode(allowlistInit)
+            HookConfigLib.packValidationHook(address(allowlistModule), HOOK_ENTITY_ID),
+            abi.encode(HOOK_ENTITY_ID, allowlistInit)
         );
 
         return (
