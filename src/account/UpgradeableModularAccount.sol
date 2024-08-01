@@ -282,6 +282,12 @@ contract UpgradeableModularAccount is
         _storage.fallbackSigner = fallbackSigner;
     }
 
+    function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
+        AccountStorage storage _storage = getAccountStorage();
+        _storage.fallbackSignerDisabled = !enabled;
+        // TODO: event
+    }
+
     /// @inheritdoc IModuleManager
     /// @notice May be validated by a global validation.
     function installValidation(
