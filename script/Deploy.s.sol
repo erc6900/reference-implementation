@@ -2,8 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
-import {Script} from "forge-std/Script.sol";
-import {console2} from "forge-std/Test.sol";
+import {Script, console} from "forge-std/Script.sol";
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
@@ -28,10 +27,10 @@ contract DeployScript is Script {
     uint256 public requiredUnstakeDelay = vm.envOr("UNSTAKE_DELAY", uint256(1 days));
 
     function run() public {
-        console2.log("******** Deploying ERC-6900 Reference Implementation ********");
-        console2.log("Chain: ", block.chainid);
-        console2.log("EP: ", address(entryPoint));
-        console2.log("Factory owner: ", owner);
+        console.log("******** Deploying ERC-6900 Reference Implementation ********");
+        console.log("Chain: ", block.chainid);
+        console.log("EP: ", address(entryPoint));
+        console.log("Factory owner: ", owner);
 
         vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
@@ -42,7 +41,7 @@ contract DeployScript is Script {
     }
 
     function _deployAccountImpl(bytes32 salt, address expected) internal {
-        console2.log(string.concat("Deploying AccountImpl with salt: ", vm.toString(salt)));
+        console.log(string.concat("Deploying AccountImpl with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
             salt,
@@ -50,61 +49,61 @@ contract DeployScript is Script {
             CREATE2_FACTORY
         );
         if (addr != expected) {
-            console2.log("Expected address mismatch");
-            console2.log("Expected: ", expected);
-            console2.log("Actual: ", addr);
+            console.log("Expected address mismatch");
+            console.log("Expected: ", expected);
+            console.log("Actual: ", addr);
             revert();
         }
 
         if (addr.code.length == 0) {
-            console2.log("No code found at expected address, deploying...");
+            console.log("No code found at expected address, deploying...");
             UpgradeableModularAccount deployed = new UpgradeableModularAccount{salt: salt}(entryPoint);
 
             if (address(deployed) != expected) {
-                console2.log("Deployed address mismatch");
-                console2.log("Expected: ", expected);
-                console2.log("Deployed: ", address(deployed));
+                console.log("Deployed address mismatch");
+                console.log("Expected: ", expected);
+                console.log("Deployed: ", address(deployed));
                 revert();
             }
 
-            console2.log("Deployed AccountImpl at: ", address(deployed));
+            console.log("Deployed AccountImpl at: ", address(deployed));
         } else {
-            console2.log("Code found at expected address, skipping deployment");
+            console.log("Code found at expected address, skipping deployment");
         }
     }
 
     function _deploySingleSignerValidation(bytes32 salt, address expected) internal {
-        console2.log(string.concat("Deploying SingleSignerValidation with salt: ", vm.toString(salt)));
+        console.log(string.concat("Deploying SingleSignerValidation with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
             salt, keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
         );
         if (addr != expected) {
-            console2.log("Expected address mismatch");
-            console2.log("Expected: ", expected);
-            console2.log("Actual: ", addr);
+            console.log("Expected address mismatch");
+            console.log("Expected: ", expected);
+            console.log("Actual: ", addr);
             revert();
         }
 
         if (addr.code.length == 0) {
-            console2.log("No code found at expected address, deploying...");
+            console.log("No code found at expected address, deploying...");
             SingleSignerValidation deployed = new SingleSignerValidation{salt: salt}();
 
             if (address(deployed) != expected) {
-                console2.log("Deployed address mismatch");
-                console2.log("Expected: ", expected);
-                console2.log("Deployed: ", address(deployed));
+                console.log("Deployed address mismatch");
+                console.log("Expected: ", expected);
+                console.log("Deployed: ", address(deployed));
                 revert();
             }
 
-            console2.log("Deployed SingleSignerValidation at: ", address(deployed));
+            console.log("Deployed SingleSignerValidation at: ", address(deployed));
         } else {
-            console2.log("Code found at expected address, skipping deployment");
+            console.log("Code found at expected address, skipping deployment");
         }
     }
 
     function _deployAccountFactory(bytes32 salt, address expected) internal {
-        console2.log(string.concat("Deploying AccountFactory with salt: ", vm.toString(salt)));
+        console.log(string.concat("Deploying AccountFactory with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
             salt,
@@ -117,46 +116,46 @@ contract DeployScript is Script {
             CREATE2_FACTORY
         );
         if (addr != expected) {
-            console2.log("Expected address mismatch");
-            console2.log("Expected: ", expected);
-            console2.log("Actual: ", addr);
+            console.log("Expected address mismatch");
+            console.log("Expected: ", expected);
+            console.log("Actual: ", addr);
             revert();
         }
 
         if (addr.code.length == 0) {
-            console2.log("No code found at expected address, deploying...");
+            console.log("No code found at expected address, deploying...");
             AccountFactory deployed = new AccountFactory{salt: salt}(
                 entryPoint, UpgradeableModularAccount(payable(accountImpl)), singleSignerValidation, owner
             );
 
             if (address(deployed) != expected) {
-                console2.log("Deployed address mismatch");
-                console2.log("Expected: ", expected);
-                console2.log("Deployed: ", address(deployed));
+                console.log("Deployed address mismatch");
+                console.log("Expected: ", expected);
+                console.log("Deployed: ", address(deployed));
                 revert();
             }
 
-            console2.log("Deployed AccountFactory at: ", address(deployed));
+            console.log("Deployed AccountFactory at: ", address(deployed));
         } else {
-            console2.log("Code found at expected address, skipping deployment");
+            console.log("Code found at expected address, skipping deployment");
         }
     }
 
     function _addStakeForFactory(uint32 unstakeDelay, uint256 stakeAmount) internal {
-        console2.log("Adding stake to factory");
+        console.log("Adding stake to factory");
 
         uint256 currentStake = entryPoint.getDepositInfo(address(factory)).stake;
-        console2.log("Current stake: ", currentStake);
+        console.log("Current stake: ", currentStake);
         uint256 stakeToAdd = stakeAmount - currentStake;
 
         if (stakeToAdd > 0) {
-            console2.log("Adding stake: ", stakeToAdd);
-            entryPoint.addStake{value: stakeToAdd}(unstakeDelay);
-            console2.log("Staked factory: ", address(factory));
-            console2.log("Total stake amount: ", entryPoint.getDepositInfo(address(factory)).stake);
-            console2.log("Unstake delay: ", entryPoint.getDepositInfo(address(factory)).unstakeDelaySec);
+            console.log("Adding stake: ", stakeToAdd);
+            AccountFactory(factory).addStake{value: stakeToAdd}(unstakeDelay);
+            console.log("Staked factory: ", address(factory));
+            console.log("Total stake amount: ", entryPoint.getDepositInfo(address(factory)).stake);
+            console.log("Unstake delay: ", entryPoint.getDepositInfo(address(factory)).unstakeDelaySec);
         } else {
-            console2.log("No stake to add");
+            console.log("No stake to add");
         }
     }
 }
