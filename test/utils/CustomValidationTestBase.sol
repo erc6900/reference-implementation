@@ -28,6 +28,8 @@ abstract contract CustomValidationTestBase is AccountTestBase {
 
         account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
+        _beforeInstallStep(address(account1));
+
         account1.initializeWithValidation(
             ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
             selectors,
@@ -49,4 +51,12 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             bytes memory installData,
             bytes[] memory hooks
         );
+
+    // If the test needs to perform any setup or checks after the account is created, but before the call to
+    // `initializeWithValidation`,
+    // it should override this function.
+    function _beforeInstallStep(address accountImpl) internal virtual {
+        // Does nothing by default
+        (accountImpl);
+    }
 }
