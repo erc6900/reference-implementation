@@ -23,6 +23,16 @@ contract AllowlistModuleTest is CustomValidationTestBase {
 
     uint32 public constant HOOK_ENTITY_ID = 0;
 
+    event AllowlistTargetUpdated(
+        uint32 indexed entityId,
+        address indexed account,
+        address indexed target,
+        AllowlistModule.AllowlistEntry entry
+    );
+    event AllowlistSelectorUpdated(
+        uint32 indexed entityId, address indexed account, bytes24 indexed targetAndSelector, bool allowed
+    );
+
     function setUp() public {
         allowlistModule = new AllowlistModule();
 
@@ -96,6 +106,34 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             _runtimeExecBatchExpFail(calls, "");
         } else {
             _runtimeExecBatch(calls, expectedError);
+        }
+    }
+
+    function _beforeInstallStep(address accountImpl) internal override {
+        // Expect events to be emitted from onInstall
+        for (uint256 i = 0; i < allowlistInit.length; i++) {
+            vm.expectEmit(address(allowlistModule));
+            emit AllowlistTargetUpdated(
+                HOOK_ENTITY_ID,
+                accountImpl,
+                allowlistInit[i].target,
+                AllowlistModule.AllowlistEntry({
+                    allowed: true,
+                    hasSelectorAllowlist: allowlistInit[i].hasSelectorAllowlist
+                })
+            );
+
+            if (!allowlistInit[i].hasSelectorAllowlist) {
+                continue;
+            }
+
+            for (uint256 j = 0; j < allowlistInit[i].selectors.length; j++) {
+                bytes24 targetAndSelector = bytes24(
+                    bytes24(bytes20(allowlistInit[i].target)) | (bytes24(allowlistInit[i].selectors[j]) >> 160)
+                );
+                vm.expectEmit(address(allowlistModule));
+                emit AllowlistSelectorUpdated(HOOK_ENTITY_ID, accountImpl, targetAndSelector, true);
+            }
         }
     }
 
@@ -284,12 +322,6 @@ contract AllowlistModuleTest is CustomValidationTestBase {
 
         return (init, seed);
     }
-
-    // todo: runtime paths
-
-    // fuzz targets, fuzz target selectors.
-
-    // Maybe pull out the helper function for running user ops and possibly expect a failure?
 
     function _next(uint256 seed) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(seed)));
