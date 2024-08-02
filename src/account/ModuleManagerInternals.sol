@@ -279,7 +279,7 @@ abstract contract ModuleManagerInternals is IModuleManager {
         _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
 
         _onInstall(validationConfig.module(), installData);
-        emit ValidationInstalled(moduleEntity);
+        emit ValidationInstalled(validationConfig.module(), validationConfig.entityId());
     }
 
     function _uninstallValidation(
@@ -337,9 +337,9 @@ abstract contract ModuleManagerInternals is IModuleManager {
             _validationData.selectors.remove(selectorSetValue);
         }
 
-        (address module,) = ModuleEntityLib.unpack(validationFunction);
+        (address module, uint32 entityId) = ModuleEntityLib.unpack(validationFunction);
         onUninstallSuccess = onUninstallSuccess && _onUninstall(module, uninstallData);
 
-        emit ValidationUninstalled(validationFunction, onUninstallSuccess);
+        emit ValidationUninstalled(module, entityId, onUninstallSuccess);
     }
 }

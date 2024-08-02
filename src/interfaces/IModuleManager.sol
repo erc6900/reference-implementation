@@ -12,8 +12,8 @@ type HookConfig is bytes26;
 interface IModuleManager {
     event ExecutionInstalled(address indexed module, ExecutionManifest manifest);
     event ExecutionUninstalled(address indexed module, bool onUninstallSucceeded, ExecutionManifest manifest);
-    event ValidationInstalled(ModuleEntity indexed moduleEntity);
-    event ValidationUninstalled(ModuleEntity indexed moduleEntity, bool indexed onUninstallSucceeded);
+    event ValidationInstalled(address indexed module, uint32 indexed entityId);
+    event ValidationUninstalled(address indexed module, uint32 indexed entityId, bool onUninstallSucceeded);
 
     /// @notice Install a module to the modular account.
     /// @param module The module to install.
