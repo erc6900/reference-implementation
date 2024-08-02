@@ -94,7 +94,7 @@ contract UpgradeModuleTest is AccountTestBase {
         );
 
         // test installed, test if old module still installed
-        assertEq(account1.getExecutionFunctionHandler(TestModule.testFunction.selector), address(moduleV2));
+        assertEq(account1.getExecutionData((TestModule.testFunction.selector)).module, address(moduleV2));
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
             abi.encodeCall(IExecutionHook.preExecutionHook, (entityId, address(owner1), 0, callData)), 0
