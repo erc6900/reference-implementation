@@ -7,7 +7,6 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
 
 import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -25,7 +24,7 @@ contract SingleSignerValidationTest is AccountTestBase {
 
     ContractOwner public contractOwner;
 
-    event ValidationInstalled(ModuleEntity indexed moduleEntity);
+    event ValidationInstalled(address indexed module, uint32 indexed entityId);
 
     function setUp() public {
         ethRecipient = makeAddr("ethRecipient");
@@ -84,7 +83,7 @@ contract SingleSignerValidationTest is AccountTestBase {
         vm.prank(address(entryPoint));
 
         vm.expectEmit(true, true, true, true);
-        emit ValidationInstalled(ModuleEntityLib.pack(address(singleSignerValidation), newEntityId));
+        emit ValidationInstalled(address(singleSignerValidation), newEntityId);
         account.installValidation(
             ValidationConfigLib.pack(address(singleSignerValidation), newEntityId, true, false),
             new bytes4[](0),
