@@ -25,7 +25,7 @@ depth = 10
 [profile.optimized-build]
 via_ir = true
 test = 'src'
-optimizer_runs = 20000
+optimizer_runs = 15000
 out = 'out-optimized'
 
 [profile.optimized-test]
