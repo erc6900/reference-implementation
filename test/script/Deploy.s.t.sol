@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {Test} from "forge-std/Test.sol";
 
 import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
+import {IStakeManager} from "@eth-infinitism/account-abstraction/interfaces/IStakeManager.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {DeployScript} from "../../script/Deploy.s.sol";
@@ -25,7 +26,10 @@ contract DeployTest is Test {
 
     function setUp() public {
         _entryPoint = new EntryPoint();
-        _owner = makeAddr("OWNER");
+
+        // Set the owner to the foundry default sender, as this is what will be used as the sender within the
+        // `startBroadcast` segment of the script.
+        _owner = DEFAULT_SENDER;
 
         vm.setEnv("ENTRYPOINT", vm.toString(address(_entryPoint)));
         vm.setEnv("OWNER", vm.toString(_owner));
@@ -72,5 +76,34 @@ contract DeployTest is Test {
         assertTrue(_accountImpl.code.length > 0);
         assertTrue(_factory.code.length > 0);
         assertTrue(_singleSignerValidation.code.length > 0);
+
+        assertEq(
+            _singleSignerValidation.code,
+            type(SingleSignerValidation).runtimeCode,
+            "SingleSignerValidation runtime code mismatch"
+        );
+
+        // Check factory stake
+        IStakeManager.DepositInfo memory depositInfo = _entryPoint.getDepositInfo(_factory);
+
+        assertTrue(depositInfo.staked, "Factory not staked");
+        assertEq(depositInfo.stake, 0.1 ether, "Unexpected factory stake amount");
+        assertEq(depositInfo.unstakeDelaySec, 1 days, "Unexpected factory unstake delay");
+    }
+
+    function test_deployScript_addStake() public {
+        test_deployScript_run();
+
+        vm.setEnv("STAKE_AMOUNT", vm.toString(uint256(0.3 ether)));
+
+        // Refresh script's env vars
+
+        _deployScript = new DeployScript();
+
+        _deployScript.run();
+
+        IStakeManager.DepositInfo memory depositInfo = _entryPoint.getDepositInfo(_factory);
+
+        assertEq(depositInfo.stake, 0.3 ether, "Unexpected factory stake amount");
     }
 }
