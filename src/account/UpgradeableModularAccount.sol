@@ -246,7 +246,7 @@ contract UpgradeableModularAccount is
     /// @notice Initializes the account with a validation function added to the global pool.
     /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
     /// with user install configs.
-    /// @dev This function is only callable once, and only by the EntryPoint.
+    /// @dev This function is only callable once.
     function initializeWithValidation(
         ValidationConfig validationConfig,
         bytes4[] calldata selectors,
