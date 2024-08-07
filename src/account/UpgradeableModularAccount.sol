@@ -458,14 +458,6 @@ contract UpgradeableModularAccount is
             userOp.signature = signatureSegment.getBody();
 
             uint256 currentValidationRes = _execUserOpValidation(userOpValidationFunction, userOp, userOpHash);
-            // if (userOpValidationFunction.eq(_FALLBACK_VALIDATION)) {
-            //     // fallback userop validation
-            //     currentValidationRes = _fallbackUserOpValidation(userOp, userOpHash);
-            // } else {
-            //     (address module, uint32 entityId) = userOpValidationFunction.unpack();
-
-            //     currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
-            // }
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -536,11 +528,6 @@ contract UpgradeableModularAccount is
         bytes calldata callData,
         bytes calldata authorization
     ) internal virtual {
-        // if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
-        //     _fallbackRuntimeValidation();
-        //     return;
-        // }
-
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
 
         try IValidation(module).validateRuntime(

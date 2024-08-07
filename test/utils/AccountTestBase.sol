@@ -62,18 +62,11 @@ abstract contract AccountTestBase is OptimizedTest {
 
         factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
 
-        if (vm.envBool("SMA_TEST")) {
-            account1 = factory.createAccountWithFallbackValidation(owner1, 0);
-        } else {
-            account1 = factory.createAccount(owner1, 0);
-        }
-        // account1 = factory.createAccount(owner1, 0);
+        account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        //TODO: env variable for semi-modular test?
         _signerValidation =
             ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
-        // _signerValidation = ModuleEntity.wrap(bytes24(type(uint192).max));
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
