@@ -354,7 +354,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_transferOwnership() public {
         // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the test
         // to pass by ensuring the signer can be set in the validation
-        assertEq(singleSignerValidation.signerOf(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0));
+        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0));
 
         vm.prank(address(entryPoint));
         account1.execute(

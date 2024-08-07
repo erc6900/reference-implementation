@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {IEntryPoint, UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionHook} from "../../src/interfaces/IAccountLoupe.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 

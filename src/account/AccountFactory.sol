@@ -82,8 +82,8 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function addStake() external payable onlyOwner {
-        ENTRY_POINT.addStake{value: msg.value}(UNSTAKE_DELAY);
+    function addStake(uint32 unstakeDelay) external payable onlyOwner {
+        ENTRY_POINT.addStake{value: msg.value}(unstakeDelay);
     }
 
     function unlockStake() external onlyOwner {
