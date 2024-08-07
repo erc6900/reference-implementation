@@ -88,4 +88,7 @@ jobs:
         run: forge build
 
       - name: Run tests
-        run: forge test -vvv
+        run: SMA_TEST=false forge test -vvv
+
+      - name: Run SMA tests
+        run: SMA_TEST=true forge test -vvv
