@@ -68,22 +68,6 @@ contract SemiModularAccount is UpgradeableModularAccount {
         return super._exec1271Validation(sigValidation, hash, signature);
     }
 
-    function _execRuntimeValidation(
-        ModuleEntity runtimeValidationFunction,
-        bytes calldata callData,
-        bytes calldata authorization
-    ) internal override {
-        if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
-            address fallbackSigner = _getFallbackSigner();
-
-            if (msg.sender != fallbackSigner) {
-                revert FallbackSignerMismatch();
-            }
-            return;
-        }
-        super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
-    }
-
     function _execUserOpValidation(
         ModuleEntity userOpValidationFunction,
         PackedUserOperation memory userOp,
@@ -103,6 +87,22 @@ contract SemiModularAccount is UpgradeableModularAccount {
         }
 
         return super._execUserOpValidation(userOpValidationFunction, userOp, userOpHash);
+    }
+
+    function _execRuntimeValidation(
+        ModuleEntity runtimeValidationFunction,
+        bytes calldata callData,
+        bytes calldata authorization
+    ) internal override {
+        if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
+            address fallbackSigner = _getFallbackSigner();
+
+            if (msg.sender != fallbackSigner) {
+                revert FallbackSignerMismatch();
+            }
+            return;
+        }
+        super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
     }
 
     function _getFallbackSigner() internal view returns (address) {
