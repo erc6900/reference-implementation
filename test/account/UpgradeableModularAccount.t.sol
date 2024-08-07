@@ -10,6 +10,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
+
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {ExecutionDataView, IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
@@ -52,7 +54,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (owner2, owner2Key) = makeAddrAndKey("owner2");
 
         // Compute counterfactual address
-        account2 = UpgradeableModularAccount(payable(factory.getAddressFallbackSigner(owner2, 0)));
+        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
         ethRecipient = makeAddr("ethRecipient");
@@ -93,7 +95,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     function test_basicUserOp_withInitCode() public {
         bytes memory callData = vm.envBool("SMA_TEST")
-            ? abi.encodeCall(UpgradeableModularAccount.updateFallbackSigner, (owner2))
+            ? abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (owner2))
             : abi.encodeCall(
                 UpgradeableModularAccount.execute,
                 (
@@ -132,9 +134,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account2),
             nonce: 0,
-            initCode: abi.encodePacked(
-                address(factory), abi.encodeCall(factory.createAccountWithFallbackValidation, (owner2, 0))
-            ),
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
             callData: abi.encodeCall(UpgradeableModularAccount.execute, (recipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,

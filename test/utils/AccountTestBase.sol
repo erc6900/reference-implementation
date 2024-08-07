@@ -5,6 +5,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
@@ -171,13 +172,22 @@ abstract contract AccountTestBase is OptimizedTest {
         vm.prank(owner1);
         if (vm.envBool("SMA_TEST")) {
             account1.executeWithAuthorization(
-                abi.encodeCall(account1.updateFallbackSigner, (address(this))),
+                abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (address(this))),
                 _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
             );
             return;
         }
         account1.executeWithAuthorization(
-            abi.encodeCall(account1.updateFallbackSigner, (address(this))),
+            abi.encodeCall(
+                account1.execute,
+                (
+                    address(singleSignerValidation),
+                    0,
+                    abi.encodeCall(
+                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
+                    )
+                )
+            ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
