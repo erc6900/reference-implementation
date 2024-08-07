@@ -74,10 +74,7 @@ contract UpgradeableModularAccount is
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
-    ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
-
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
-    event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
 
     error AuthorizeUpgradeReverted(bytes revertReason);
     error ExecFromModuleNotPermitted(address module, bytes4 selector);
@@ -99,8 +96,6 @@ contract UpgradeableModularAccount is
     error ValidationDoesNotApply(bytes4 selector, address module, uint32 entityId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
-    error FallbackSignerMismatch();
-    error FallbackSignerDisabled();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
@@ -270,19 +265,6 @@ contract UpgradeableModularAccount is
     ) external virtual initializer {
         _installValidation(validationConfig, selectors, installData, hooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
-    }
-
-    function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
-        AccountStorage storage _storage = getAccountStorage();
-
-        emit FallbackSignerSet(_storage.fallbackSigner, fallbackSigner);
-        _storage.fallbackSigner = fallbackSigner;
-    }
-
-    function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
-        AccountStorage storage _storage = getAccountStorage();
-        _storage.fallbackSignerDisabled = !enabled;
-        // TODO: event
     }
 
     /// @inheritdoc IModuleManager
@@ -741,12 +723,12 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
+    function _globalValidationAllowed(bytes4 selector) internal view virtual returns (bool) {
         if (
             selector == this.execute.selector || selector == this.executeBatch.selector
                 || selector == this.installExecution.selector || selector == this.uninstallExecution.selector
                 || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
-                || selector == this.upgradeToAndCall.selector || selector == this.updateFallbackSigner.selector
+                || selector == this.upgradeToAndCall.selector
         ) {
             return true;
         }
@@ -762,13 +744,7 @@ contract UpgradeableModularAccount is
 
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (
-                _globalValidationAllowed(selector)
-                    && (
-                        _storage.validationData[validationFunction].isGlobal
-                            || validationFunction.eq(_FALLBACK_VALIDATION)
-                    )
-            ) {
+            if (_globalValidationAllowed(selector) && _isValidationGlobal(_storage, validationFunction)) {
                 return;
             }
             revert ValidationFunctionMissing(selector);
@@ -780,50 +756,12 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _fallbackRuntimeValidation() internal view {
-        if (msg.sender != _getFallbackSigner()) {
-            revert FallbackSignerMismatch();
-        }
-    }
-
-    function _fallbackUserOpValidation(PackedUserOperation memory userOp, bytes32 userOpHash)
+    function _isValidationGlobal(AccountStorage storage _storage, ModuleEntity validationFunction)
         internal
         view
-        returns (uint256)
+        virtual
+        returns (bool)
     {
-        // Validate the user op signature against the owner.
-        (address sigSigner,,) = (userOpHash.toEthSignedMessageHash()).tryRecover(userOp.signature);
-        if (sigSigner == address(0) || sigSigner != _getFallbackSigner()) {
-            return _SIG_VALIDATION_FAILED;
-        }
-        return _SIG_VALIDATION_PASSED;
-    }
-
-    function _fallbackSignatureValidation(bytes32 digest, bytes calldata signature)
-        internal
-        view
-        returns (bytes4)
-    {
-        if (SignatureChecker.isValidSignatureNow(_getFallbackSigner(), digest, signature)) {
-            return _1271_MAGIC_VALUE;
-        }
-        return _1271_INVALID;
-    }
-
-    function _getFallbackSigner() internal view returns (address) {
-        AccountStorage storage _storage = getAccountStorage();
-
-        if (_storage.fallbackSignerDisabled) {
-            revert FallbackSignerDisabled();
-        }
-
-        address storageFallbackSigner = _storage.fallbackSigner;
-        if (storageFallbackSigner != address(0)) {
-            return storageFallbackSigner;
-        }
-
-        bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 20);
-
-        return address(uint160(bytes20(appendedData)));
+        return _storage.validationData[validationFunction].isGlobal;
     }
 }

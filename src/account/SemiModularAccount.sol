@@ -20,6 +20,12 @@ contract SemiModularAccount is UpgradeableModularAccount {
     using MessageHashUtils for bytes32;
     using ModuleEntityLib for ModuleEntity;
 
+    ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
+
+    event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
+
+    error FallbackSignerMismatch();
+    error FallbackSignerDisabled();
     error InitializerDisabled();
 
     constructor(IEntryPoint anEntryPoint) UpgradeableModularAccount(anEntryPoint) {}
@@ -32,6 +38,19 @@ contract SemiModularAccount is UpgradeableModularAccount {
         revert InitializerDisabled();
     }
 
+    function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
+        AccountStorage storage _storage = getAccountStorage();
+
+        emit FallbackSignerSet(_storage.fallbackSigner, fallbackSigner);
+        _storage.fallbackSigner = fallbackSigner;
+    }
+
+    function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
+        AccountStorage storage _storage = getAccountStorage();
+        _storage.fallbackSignerDisabled = !enabled;
+        // TODO: event
+    }
+
     function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
         internal
         view
@@ -39,8 +58,9 @@ contract SemiModularAccount is UpgradeableModularAccount {
         returns (bytes4)
     {
         if (sigValidation.eq(_FALLBACK_VALIDATION)) {
-            // do sig validation
-            if (SignatureChecker.isValidSignatureNow(_getFallbackSigner(), hash, signature)) {
+            address fallbackSigner = _getFallbackSigner();
+
+            if (SignatureChecker.isValidSignatureNow(fallbackSigner, hash, signature)) {
                 return _1271_MAGIC_VALUE;
             }
             return _1271_INVALID;
@@ -54,7 +74,9 @@ contract SemiModularAccount is UpgradeableModularAccount {
         bytes calldata authorization
     ) internal override {
         if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
-            if (msg.sender != _getFallbackSigner()) {
+            address fallbackSigner = _getFallbackSigner();
+
+            if (msg.sender != fallbackSigner) {
                 revert FallbackSignerMismatch();
             }
             return;
@@ -68,11 +90,11 @@ contract SemiModularAccount is UpgradeableModularAccount {
         bytes32 userOpHash
     ) internal override returns (uint256) {
         if (userOpValidationFunction.eq(_FALLBACK_VALIDATION)) {
-            // fallback userop validation
-            // Validate the user op signature against the owner.
+            address fallbackSigner = _getFallbackSigner();
+
             if (
                 SignatureChecker.isValidSignatureNow(
-                    _getFallbackSigner(), userOpHash.toEthSignedMessageHash(), userOp.signature
+                    fallbackSigner, userOpHash.toEthSignedMessageHash(), userOp.signature
                 )
             ) {
                 return _SIG_VALIDATION_PASSED;
@@ -98,5 +120,19 @@ contract SemiModularAccount is UpgradeableModularAccount {
         bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 20);
 
         return address(uint160(bytes20(appendedData)));
+    }
+
+    function _globalValidationAllowed(bytes4 selector) internal view override returns (bool) {
+        return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
+    }
+
+    function _isValidationGlobal(AccountStorage storage _storage, ModuleEntity validationFunction)
+        internal
+        view
+        override
+        returns (bool)
+    {
+        return
+            validationFunction.eq(_FALLBACK_VALIDATION) || super._isValidationGlobal(_storage, validationFunction);
     }
 }
