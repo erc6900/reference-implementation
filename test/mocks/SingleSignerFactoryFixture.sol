@@ -5,6 +5,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
@@ -27,7 +28,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
         entryPoint = _entryPoint;
-        accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
+
+        accountImplementation = vm.envBool("SMA_TEST")
+            ? _deploySemiModularAccount(_entryPoint)
+            : _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
@@ -45,6 +49,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * account creation
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+        if (vm.envBool("SMA_TEST")) {
+            return createAccountWithFallbackValidation(owner, salt);
+        }
+
         address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
 
         // short circuit if exists
@@ -92,6 +100,9 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
     function getAddress(address owner, uint256 salt) public view returns (address) {
+        if (vm.envBool("SMA_TEST")) {
+            return getAddressFallbackSigner(owner, salt);
+        }
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 

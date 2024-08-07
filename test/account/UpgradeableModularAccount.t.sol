@@ -92,13 +92,22 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_basicUserOp_withInitCode() public {
+        bytes memory callData = vm.envBool("SMA_TEST")
+            ? abi.encodeCall(UpgradeableModularAccount.updateFallbackSigner, (owner2))
+            : abi.encodeCall(
+                UpgradeableModularAccount.execute,
+                (
+                    address(singleSignerValidation),
+                    0,
+                    abi.encodeCall(SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
+                )
+            );
+
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account2),
             nonce: 0,
-            initCode: abi.encodePacked(
-                address(factory), abi.encodeCall(factory.createAccountWithFallbackValidation, (owner2, 0))
-            ),
-            callData: abi.encodeCall(UpgradeableModularAccount.updateFallbackSigner, (owner2)),
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
+            callData: callData,
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 2),
@@ -352,9 +361,15 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     // TODO: Consider if this test belongs here or in the tests specific to the SingleSignerValidation
     function test_transferOwnership() public {
-        // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the test
-        // to pass by ensuring the signer can be set in the validation
-        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0));
+        if (vm.envBool("SMA_TEST")) {
+            // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the
+            // test to pass by ensuring the signer can be set in the validation.
+            assertEq(
+                singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0)
+            );
+        } else {
+            assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
+        }
 
         vm.prank(address(entryPoint));
         account1.execute(

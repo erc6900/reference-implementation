@@ -28,14 +28,23 @@ abstract contract CustomValidationTestBase is AccountTestBase {
 
         account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
-        _beforeInstallStep(address(account1));
-
-        account1.initializeWithValidation(
-            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
-            selectors,
-            installData,
-            hooks
-        );
+        if (vm.envBool("SMA_TEST")) {
+            vm.prank(address(entryPoint));
+            // The initializer doesn't work on the SMA
+            account1.installValidation(
+                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
+                selectors,
+                installData,
+                hooks
+            );
+        } else {
+            account1.initializeWithValidation(
+                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
+                selectors,
+                installData,
+                hooks
+            );
+        }
 
         vm.deal(address(account1), 100 ether);
     }

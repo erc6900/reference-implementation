@@ -53,13 +53,27 @@ abstract contract AccountTestBase is OptimizedTest {
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
 
-        singleSignerValidation = _deploySingleSignerValidation();
+        address deployedSingleSignerValidation = address(_deploySingleSignerValidation());
+
+        // We etch the single signer validation to the max address, such that it coincides with the fallback
+        // validation module entity for semi modular account tests.
+        singleSignerValidation = SingleSignerValidation(address(type(uint160).max));
+        vm.etch(address(singleSignerValidation), deployedSingleSignerValidation.code);
+
         factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
 
-        account1 = factory.createAccountWithFallbackValidation(owner1, 0);
+        if (vm.envBool("SMA_TEST")) {
+            account1 = factory.createAccountWithFallbackValidation(owner1, 0);
+        } else {
+            account1 = factory.createAccount(owner1, 0);
+        }
+        // account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
-        _signerValidation = ModuleEntity.wrap(bytes24(type(uint192).max));
+        //TODO: env variable for semi-modular test?
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        // _signerValidation = ModuleEntity.wrap(bytes24(type(uint192).max));
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -162,6 +176,13 @@ abstract contract AccountTestBase is OptimizedTest {
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
+        if (vm.envBool("SMA_TEST")) {
+            account1.executeWithAuthorization(
+                abi.encodeCall(account1.updateFallbackSigner, (address(this))),
+                _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
+            );
+            return;
+        }
         account1.executeWithAuthorization(
             abi.encodeCall(account1.updateFallbackSigner, (address(this))),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")

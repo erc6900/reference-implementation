@@ -35,9 +35,6 @@ import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-
-import {LibClone} from "solady/utils/LibClone.sol";
 
 contract UpgradeableModularAccount is
     AccountExecutor,
@@ -270,7 +267,7 @@ contract UpgradeableModularAccount is
         bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
-    ) external initializer {
+    ) external virtual initializer {
         _installValidation(validationConfig, selectors, installData, hooks);
         emit ModularAccountInitialized(_ENTRY_POINT);
     }
@@ -337,14 +334,18 @@ contract UpgradeableModularAccount is
     }
 
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
-        AccountStorage storage _storage = getAccountStorage();
-
         ModuleEntity sigValidation = ModuleEntity.wrap(bytes24(signature));
 
-        if (sigValidation.eq(_FALLBACK_VALIDATION)) {
-            // do sig validation
-            return _fallbackSignatureValidation(hash, signature[24:]);
-        }
+        return _exec1271Validation(sigValidation, hash, signature[24:]);
+    }
+
+    function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
+        internal
+        view
+        virtual
+        returns (bytes4)
+    {
+        AccountStorage storage _storage = getAccountStorage();
 
         (address module, uint32 entityId) = sigValidation.unpack();
         if (!_storage.validationData[sigValidation].isSignatureValidation) {
@@ -352,7 +353,7 @@ contract UpgradeableModularAccount is
         }
 
         if (
-            IValidation(module).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
+            IValidation(module).validateSignature(address(this), entityId, msg.sender, hash, signature)
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
@@ -456,15 +457,15 @@ contract UpgradeableModularAccount is
 
             userOp.signature = signatureSegment.getBody();
 
-            uint256 currentValidationRes;
-            if (userOpValidationFunction.eq(_FALLBACK_VALIDATION)) {
-                // fallback userop validation
-                currentValidationRes = _fallbackUserOpValidation(userOp, userOpHash);
-            } else {
-                (address module, uint32 entityId) = userOpValidationFunction.unpack();
+            uint256 currentValidationRes = _execUserOpValidation(userOpValidationFunction, userOp, userOpHash);
+            // if (userOpValidationFunction.eq(_FALLBACK_VALIDATION)) {
+            //     // fallback userop validation
+            //     currentValidationRes = _fallbackUserOpValidation(userOp, userOpHash);
+            // } else {
+            //     (address module, uint32 entityId) = userOpValidationFunction.unpack();
 
-                currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
-            }
+            //     currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
+            // }
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -475,6 +476,16 @@ contract UpgradeableModularAccount is
         }
 
         return validationRes;
+    }
+
+    function _execUserOpValidation(
+        ModuleEntity userOpValidationFunction,
+        PackedUserOperation memory userOp,
+        bytes32 userOpHash
+    ) internal virtual returns (uint256) {
+        (address module, uint32 entityId) = userOpValidationFunction.unpack();
+
+        return IValidation(module).validateUserOp(entityId, userOp, userOpHash);
     }
 
     function _doRuntimeValidation(
@@ -517,15 +528,23 @@ contract UpgradeableModularAccount is
             revert ValidationSignatureSegmentMissing();
         }
 
-        if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
-            _fallbackRuntimeValidation();
-            return;
-        }
+        _execRuntimeValidation(runtimeValidationFunction, callData, authSegment.getBody());
+    }
+
+    function _execRuntimeValidation(
+        ModuleEntity runtimeValidationFunction,
+        bytes calldata callData,
+        bytes calldata authorization
+    ) internal virtual {
+        // if (runtimeValidationFunction.eq(_FALLBACK_VALIDATION)) {
+        //     _fallbackRuntimeValidation();
+        //     return;
+        // }
 
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
 
         try IValidation(module).validateRuntime(
-            address(this), entityId, msg.sender, msg.value, callData, authSegment.getBody()
+            address(this), entityId, msg.sender, msg.value, callData, authorization
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks

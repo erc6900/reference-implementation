@@ -79,7 +79,7 @@ contract SingleSignerValidationTest is AccountTestBase {
     }
 
     function test_runtime_with2SameValidationInstalled() public {
-        uint32 newEntityId = TEST_DEFAULT_VALIDATION_ENTITY_ID + 1;
+        uint32 newEntityId = TEST_DEFAULT_VALIDATION_ENTITY_ID - 1;
         vm.prank(address(entryPoint));
 
         vm.expectEmit(true, true, true, true);

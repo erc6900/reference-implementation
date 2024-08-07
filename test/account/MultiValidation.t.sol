@@ -17,6 +17,7 @@ import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerV
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
+import "forge-std/console.sol";
 
 contract MultiValidationTest is AccountTestBase {
     using ECDSA for bytes32;
@@ -64,7 +65,15 @@ contract MultiValidationTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(validator2),
-                1,
+                TEST_DEFAULT_VALIDATION_ENTITY_ID,
+                abi.encodeWithSignature("NotAuthorized()")
+            )
+        );
+        console.logBytes(
+            abi.encodeWithSelector(
+                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                address(validator2),
+                TEST_DEFAULT_VALIDATION_ENTITY_ID,
                 abi.encodeWithSignature("NotAuthorized()")
             )
         );
