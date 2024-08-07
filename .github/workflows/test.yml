@@ -66,7 +66,10 @@ jobs:
         run: FOUNDRY_PROFILE=optimized-build forge build
 
       - name: Run tests
-        run: FOUNDRY_PROFILE=optimized-test-deep forge test -vvv
+        run: FOUNDRY_PROFILE=optimized-test-deep SMA_TEST=false forge test -vvv
+
+      - name: Run SMA tests
+        run: FOUNDRY_PROFILE=optimized-test-deep SMA_TEST=true forge test -vvv
 
   test-default:
     name: Run Forge Tests (default)
