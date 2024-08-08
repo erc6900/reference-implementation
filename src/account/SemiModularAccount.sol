@@ -30,6 +30,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
 
     event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
+    event FallbackSignerEnabledSet(bool prevEnabled, bool newEnabled);
 
     error FallbackSignerMismatch();
     error FallbackSignerDisabled();
@@ -54,8 +55,16 @@ contract SemiModularAccount is UpgradeableModularAccount {
 
     function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
         SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
+        emit FallbackSignerEnabledSet(!_storage.fallbackSignerDisabled, enabled);
         _storage.fallbackSignerDisabled = !enabled;
-        // TODO: event
+    }
+
+    function isFallbackSignerEnabled() external view returns (bool) {
+        return !_getSemiModularAccountStorage().fallbackSignerDisabled;
+    }
+
+    function getFallbackSigner() external view returns (address) {
+        return _getFallbackSigner();
     }
 
     function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
@@ -112,6 +121,14 @@ contract SemiModularAccount is UpgradeableModularAccount {
         super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
     }
 
+    function _globalValidationAllowed(bytes4 selector) internal view override returns (bool) {
+        return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
+    }
+
+    function _isValidationGlobal(ModuleEntity validationFunction) internal view override returns (bool) {
+        return validationFunction.eq(_FALLBACK_VALIDATION) || super._isValidationGlobal(validationFunction);
+    }
+
     function _getFallbackSigner() internal view returns (address) {
         SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
 
@@ -127,20 +144,6 @@ contract SemiModularAccount is UpgradeableModularAccount {
         bytes memory appendedData = LibClone.argsOnERC1967(address(this), 0, 20);
 
         return address(uint160(bytes20(appendedData)));
-    }
-
-    function _globalValidationAllowed(bytes4 selector) internal view override returns (bool) {
-        return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
-    }
-
-    function _isValidationGlobal(ModuleEntity validationFunction)
-        internal
-        view
-        override
-        returns (bool)
-    {
-        return
-            validationFunction.eq(_FALLBACK_VALIDATION) || super._isValidationGlobal(validationFunction);
     }
 
     function _getSemiModularAccountStorage() internal pure returns (SemiModularAccountStorage storage) {
