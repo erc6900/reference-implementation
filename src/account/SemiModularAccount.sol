@@ -133,7 +133,6 @@ contract SemiModularAccount is UpgradeableModularAccount {
         return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
     }
 
-    // todo: remove storage from input
     function _isValidationGlobal(ModuleEntity validationFunction)
         internal
         view
