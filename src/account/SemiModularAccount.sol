@@ -10,8 +10,6 @@ import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {IValidation} from "../interfaces/IValidation.sol";
 
-import {AccountStorage, getAccountStorage} from "./AccountStorage.sol";
-
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
@@ -19,6 +17,15 @@ import {LibClone} from "solady/utils/LibClone.sol";
 contract SemiModularAccount is UpgradeableModularAccount {
     using MessageHashUtils for bytes32;
     using ModuleEntityLib for ModuleEntity;
+
+    struct SemiModularAccountStorage {
+        address fallbackSigner;
+        bool fallbackSignerDisabled;
+    }
+
+    // keccak256("ERC6900.SemiModularAccount.Storage")
+    uint256 constant _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT =
+        0x5b9dc9aa943f8fa2653ceceda5e3798f0686455280432166ba472eca0bc17a32;
 
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
 
@@ -39,14 +46,14 @@ contract SemiModularAccount is UpgradeableModularAccount {
     }
 
     function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
-        AccountStorage storage _storage = getAccountStorage();
+        SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
 
         emit FallbackSignerSet(_storage.fallbackSigner, fallbackSigner);
         _storage.fallbackSigner = fallbackSigner;
     }
 
     function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
-        AccountStorage storage _storage = getAccountStorage();
+        SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
         _storage.fallbackSignerDisabled = !enabled;
         // TODO: event
     }
@@ -106,7 +113,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     }
 
     function _getFallbackSigner() internal view returns (address) {
-        AccountStorage storage _storage = getAccountStorage();
+        SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
 
         if (_storage.fallbackSignerDisabled) {
             revert FallbackSignerDisabled();
@@ -126,13 +133,22 @@ contract SemiModularAccount is UpgradeableModularAccount {
         return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
     }
 
-    function _isValidationGlobal(AccountStorage storage _storage, ModuleEntity validationFunction)
+    // todo: remove storage from input
+    function _isValidationGlobal(ModuleEntity validationFunction)
         internal
         view
         override
         returns (bool)
     {
         return
-            validationFunction.eq(_FALLBACK_VALIDATION) || super._isValidationGlobal(_storage, validationFunction);
+            validationFunction.eq(_FALLBACK_VALIDATION) || super._isValidationGlobal(validationFunction);
+    }
+
+    function _getSemiModularAccountStorage() internal pure returns (SemiModularAccountStorage storage) {
+        SemiModularAccountStorage storage _storage;
+        assembly ("memory-safe") {
+            _storage.slot := _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT
+        }
+        return _storage;
     }
 }

@@ -676,11 +676,9 @@ contract UpgradeableModularAccount is
         internal
         view
     {
-        AccountStorage storage _storage = getAccountStorage();
-
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (_globalValidationAllowed(selector) && _isValidationGlobal(_storage, validationFunction)) {
+            if (_globalValidationAllowed(selector) && _isValidationGlobal(validationFunction)) {
                 return;
             }
             revert ValidationFunctionMissing(selector);
@@ -755,12 +753,7 @@ contract UpgradeableModularAccount is
         return getAccountStorage().executionData[selector].allowGlobalValidation;
     }
 
-    function _isValidationGlobal(AccountStorage storage _storage, ModuleEntity validationFunction)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
-        return _storage.validationData[validationFunction].isGlobal;
+    function _isValidationGlobal(ModuleEntity validationFunction) internal view virtual returns (bool) {
+        return getAccountStorage().validationData[validationFunction].isGlobal;
     }
 }

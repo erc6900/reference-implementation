@@ -41,11 +41,6 @@ struct AccountStorage {
     // AccountStorageInitializable variables
     uint8 initialized;
     bool initializing;
-    // Address for fallback single signer validation
-    address fallbackSigner;
-    // Whether or not the fallback signer is enabled, we can't use a zero fallbackSigner for this since it defaults
-    // to reading the bytecode-appended signer.
-    bool fallbackSignerDisabled;
     // Execution functions and their associated functions
     mapping(bytes4 selector => ExecutionData) executionData;
     mapping(ModuleEntity validationFunction => ValidationData) validationData;
