@@ -5,7 +5,6 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";

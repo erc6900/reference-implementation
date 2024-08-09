@@ -21,7 +21,6 @@ import {IValidationHook} from "../../src/interfaces/IValidationHook.sol";
 import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 interface TestModule {
     function testFunction() external;

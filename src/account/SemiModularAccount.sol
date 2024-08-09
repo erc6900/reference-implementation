@@ -7,8 +7,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 
-import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
-import {IValidation} from "../interfaces/IValidation.sol";
+import {ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
@@ -24,7 +23,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     }
 
     // keccak256("ERC6900.SemiModularAccount.Storage")
-    uint256 constant _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT =
+    uint256 internal constant _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT =
         0x5b9dc9aa943f8fa2653ceceda5e3798f0686455280432166ba472eca0bc17a32;
 
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
@@ -38,6 +37,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
 
     constructor(IEntryPoint anEntryPoint) UpgradeableModularAccount(anEntryPoint) {}
 
+    /// Override reverts on initialization, effectively disabling the initializer.
     function initializeWithValidation(ValidationConfig, bytes4[] calldata, bytes calldata, bytes[] calldata)
         external
         override
@@ -46,16 +46,22 @@ contract SemiModularAccount is UpgradeableModularAccount {
         revert InitializerDisabled();
     }
 
+    /// @notice Updates the fallback signer address in storage.
+    /// @dev This function causes the fallback signer getter to ignore the bytecode signer if it is nonzero. It can
+    /// also be used to revert back to the bytecode signer by setting to zero.
+    /// @param fallbackSigner The new signer to set.
     function updateFallbackSigner(address fallbackSigner) external wrapNativeFunction {
         SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
-
         emit FallbackSignerSet(_storage.fallbackSigner, fallbackSigner);
+
         _storage.fallbackSigner = fallbackSigner;
     }
 
+    /// @notice Sets whether the fallback signer validation should be enabled or disabled.
     function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
         SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
         emit FallbackSignerEnabledSet(!_storage.fallbackSignerDisabled, enabled);
+
         _storage.fallbackSignerDisabled = !enabled;
     }
 
@@ -65,23 +71,6 @@ contract SemiModularAccount is UpgradeableModularAccount {
 
     function getFallbackSigner() external view returns (address) {
         return _getFallbackSigner();
-    }
-
-    function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
-        internal
-        view
-        override
-        returns (bytes4)
-    {
-        if (sigValidation.eq(_FALLBACK_VALIDATION)) {
-            address fallbackSigner = _getFallbackSigner();
-
-            if (SignatureChecker.isValidSignatureNow(fallbackSigner, hash, signature)) {
-                return _1271_MAGIC_VALUE;
-            }
-            return _1271_INVALID;
-        }
-        return super._exec1271Validation(sigValidation, hash, signature);
     }
 
     function _execUserOpValidation(
@@ -119,6 +108,23 @@ contract SemiModularAccount is UpgradeableModularAccount {
             return;
         }
         super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
+    }
+
+    function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
+        internal
+        view
+        override
+        returns (bytes4)
+    {
+        if (sigValidation.eq(_FALLBACK_VALIDATION)) {
+            address fallbackSigner = _getFallbackSigner();
+
+            if (SignatureChecker.isValidSignatureNow(fallbackSigner, hash, signature)) {
+                return _1271_MAGIC_VALUE;
+            }
+            return _1271_INVALID;
+        }
+        return super._exec1271Validation(sigValidation, hash, signature);
     }
 
     function _globalValidationAllowed(bytes4 selector) internal view override returns (bool) {

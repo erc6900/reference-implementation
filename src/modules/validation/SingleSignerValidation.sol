@@ -6,7 +6,6 @@ import {IValidation} from "../../interfaces/IValidation.sol";
 import {BaseModule} from "../BaseModule.sol";
 import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 

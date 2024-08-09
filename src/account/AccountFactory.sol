@@ -25,7 +25,7 @@ contract AccountFactory is Ownable {
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
-        _PROXY_BYTECODE_HASH =
+       _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
         SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
@@ -111,7 +111,7 @@ contract AccountFactory is Ownable {
         return keccak256(abi.encodePacked(owner, salt, entityId));
     }
 
-    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) public view returns (address) {
+    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) internal view returns (address) {
         return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
     }
 
