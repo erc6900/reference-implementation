@@ -25,7 +25,7 @@ contract AccountFactory is Ownable {
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
-       _PROXY_BYTECODE_HASH =
+        _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
         SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
