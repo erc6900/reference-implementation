@@ -49,7 +49,9 @@ abstract contract OptimizedTest is Test {
     function _deploySemiModularAccount(IEntryPoint entryPoint) internal returns (UpgradeableModularAccount) {
         return _isOptimizedTest()
             ? UpgradeableModularAccount(
-                payable(deployCode("out-optimized/SemiModularAccount.sol/SemiModularAccount.json"))
+                payable(
+                    deployCode("out-optimized/SemiModularAccount.sol/SemiModularAccount.json", abi.encode(entryPoint))
+                )
             )
             : UpgradeableModularAccount(new SemiModularAccount(entryPoint));
     }
