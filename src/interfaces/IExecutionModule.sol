@@ -31,7 +31,7 @@ struct ExecutionManifest {
     bytes4[] interfaceIds;
 }
 
-interface IExecution is IModule {
+interface IExecutionModule is IModule {
     /// @notice Describe the contents and intended configuration of the module.
     /// @dev This manifest MUST stay constant over time.
     /// @return A manifest describing the contents and intended configuration of the module.

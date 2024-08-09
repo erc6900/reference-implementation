@@ -5,20 +5,27 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {
     ExecutionManifest,
-    IExecution,
+    IExecutionModule,
     ManifestExecutionFunction,
     ManifestExecutionHook
-} from "../../../src/interfaces/IExecution.sol";
+} from "../../../src/interfaces/IExecutionModule.sol";
 
-import {IExecution} from "../../../src/interfaces/IExecution.sol";
-import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
+import {IExecutionModule} from "../../../src/interfaces/IExecutionModule.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
-import {IValidation} from "../../../src/interfaces/IValidation.sol";
-import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
+
+import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
+import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-contract ComprehensiveModule is IExecution, IValidation, IValidationHook, IExecutionHook, BaseModule {
+contract ComprehensiveModule is
+    IExecutionModule,
+    IValidationModule,
+    IValidationHookModule,
+    IExecutionHookModule,
+    BaseModule
+{
     enum EntityId {
         PRE_VALIDATION_HOOK_1,
         PRE_VALIDATION_HOOK_2,

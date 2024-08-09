@@ -16,13 +16,12 @@ Chain ID: 421614
 | v0.8.0-alpha.1 | `0xC64Cb5192a1440Fea12CE03D000EAeB247B2369B` | [explorer](https://sepolia.arbiscan.io/address/0xC64Cb5192a1440Fea12CE03D000EAeB247B2369B) | `0`  |
 | v0.8.0-alpha.0 | `0x0809BF385117a43A322A4E31d459c0EcaA3B1A08` | [explorer](https://sepolia.arbiscan.io/address/0x0809BF385117a43A322A4E31d459c0EcaA3B1A08) | `0`  |
 
-## SingleSignerValidation
+## SingleSignerValidationModule
 
 | Version        | Address                                      | Explorer                                                                                   | Salt |
 | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ | ---- |
 | v0.8.0-alpha.1 | `0xEa3a0b544d517f6Ed3Dc2186C74D869c702C376e` | [explorer](https://sepolia.arbiscan.io/address/0xEa3a0b544d517f6Ed3Dc2186C74D869c702C376e) | `0`  |
 | v0.8.0-alpha.0 | `0x9DA8c098A483E257dd96022831DF308cB24fCBE6` | [explorer](https://sepolia.arbiscan.io/address/0x9DA8c098A483E257dd96022831DF308cB24fCBE6) | `0`  |
-
 
 ## AllowlistModule
 

@@ -12,7 +12,7 @@ import {
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
@@ -25,7 +25,7 @@ import {BaseModule, IERC165} from "./BaseModule.sol";
 /// Note: this module is opinionated on what selectors can be called for token contracts to guard against weird
 /// edge cases like DAI. You wouldn't be able to use uni v2 pairs directly as the pair contract is also the LP
 /// token contract
-contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
+contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.AddressSet;
     using AssociatedLinkedListSetLib for AssociatedLinkedListSet;
@@ -51,7 +51,7 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
         limits[entityId][token][msg.sender] = newLimit;
     }
 
-    /// @inheritdoc IExecutionHook
+    /// @inheritdoc IExecutionHookModule
     function preExecutionHook(uint32 entityId, address, uint256, bytes calldata data)
         external
         override
@@ -108,7 +108,7 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHook {
         return tokens;
     }
 
-    /// @inheritdoc IExecutionHook
+    /// @inheritdoc IExecutionHookModule
     function postExecutionHook(uint32, bytes calldata) external pure override {
         revert NotImplemented();
     }

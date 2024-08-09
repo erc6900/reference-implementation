@@ -21,12 +21,13 @@ import {_coalescePreValidation, _coalesceValidation} from "../helpers/Validation
 
 import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
 
-import {ExecutionManifest} from "../interfaces/IExecution.sol";
-import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
+import {ExecutionManifest} from "../interfaces/IExecutionModule.sol";
 import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {IValidation} from "../interfaces/IValidation.sol";
-import {IValidationHook} from "../interfaces/IValidationHook.sol";
+
+import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
+import {IValidationModule} from "../interfaces/IValidationModule.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
 import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./AccountStorage.sol";
@@ -310,7 +311,7 @@ contract UpgradeableModularAccount is
         }
 
         if (
-            IValidation(module).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
+            IValidationModule(module).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
@@ -397,7 +398,7 @@ contract UpgradeableModularAccount is
 
             (address module, uint32 entityId) = preUserOpValidationHooks[i].unpack();
             uint256 currentValidationRes =
-                IValidationHook(module).preUserOpValidationHook(entityId, userOp, userOpHash);
+                IValidationHookModule(module).preUserOpValidationHook(entityId, userOp, userOpHash);
 
             if (uint160(currentValidationRes) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
@@ -415,7 +416,7 @@ contract UpgradeableModularAccount is
             userOp.signature = signatureSegment.getBody();
 
             (address module, uint32 entityId) = userOpValidationFunction.unpack();
-            uint256 currentValidationRes = IValidation(module).validateUserOp(entityId, userOp, userOpHash);
+            uint256 currentValidationRes = IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -470,7 +471,7 @@ contract UpgradeableModularAccount is
 
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
 
-        try IValidation(module).validateRuntime(
+        try IValidationModule(module).validateRuntime(
             address(this), entityId, msg.sender, msg.value, callData, authSegment.getBody()
         )
         // forgefmt: disable-start
@@ -521,7 +522,7 @@ contract UpgradeableModularAccount is
         returns (bytes memory preExecHookReturnData)
     {
         (address module, uint32 entityId) = preExecHook.unpack();
-        try IExecutionHook(module).preExecutionHook(entityId, msg.sender, msg.value, data) returns (
+        try IExecutionHookModule(module).preExecutionHook(entityId, msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
@@ -547,7 +548,7 @@ contract UpgradeableModularAccount is
 
             (address module, uint32 entityId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
-            try IExecutionHook(module).postExecutionHook(entityId, postHookToRun.preExecHookReturnData) {}
+            try IExecutionHookModule(module).postExecutionHook(entityId, postHookToRun.preExecHookReturnData) {}
             catch (bytes memory revertReason) {
                 revert PostExecHookReverted(module, entityId, revertReason);
             }
@@ -560,7 +561,7 @@ contract UpgradeableModularAccount is
         bytes memory currentAuthData
     ) internal {
         (address hookModule, uint32 hookEntityId) = validationHook.unpack();
-        try IValidationHook(hookModule).preRuntimeValidationHook(
+        try IValidationHookModule(hookModule).preRuntimeValidationHook(
             hookEntityId, msg.sender, msg.value, callData, currentAuthData
         )
         // forgefmt: disable-start

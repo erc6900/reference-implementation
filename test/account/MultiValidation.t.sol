@@ -13,7 +13,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
+import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
@@ -22,13 +22,13 @@ contract MultiValidationTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    SingleSignerValidation public validator2;
+    SingleSignerValidationModule public validator2;
 
     address public owner2;
     uint256 public owner2Key;
 
     function setUp() public {
-        validator2 = new SingleSignerValidation();
+        validator2 = new SingleSignerValidationModule();
 
         (owner2, owner2Key) = makeAddrAndKey("owner2");
     }
@@ -43,7 +43,8 @@ contract MultiValidationTest is AccountTestBase {
         );
 
         ModuleEntity[] memory validations = new ModuleEntity[](2);
-        validations[0] = ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        validations[0] =
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
         validations[1] = ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         bytes4[] memory selectors0 = account1.getValidationData(validations[0]).selectors;

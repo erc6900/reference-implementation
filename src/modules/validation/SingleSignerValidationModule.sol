@@ -6,9 +6,9 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IModule, ModuleMetadata} from "../../interfaces/IModule.sol";
-import {IValidation} from "../../interfaces/IValidation.sol";
+import {IValidationModule} from "../../interfaces/IValidationModule.sol";
 import {BaseModule} from "../BaseModule.sol";
-import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
+import {ISingleSignerValidationModule} from "./ISingleSignerValidationModule.sol";
 
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
@@ -23,7 +23,7 @@ import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
 ///
 /// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
-contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
+contract SingleSignerValidationModule is ISingleSignerValidationModule, BaseModule {
     using MessageHashUtils for bytes32;
 
     string internal constant _NAME = "SingleSigner Validation";
@@ -39,7 +39,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
 
     mapping(uint32 entityId => mapping(address account => address)) public signers;
 
-    /// @inheritdoc ISingleSignerValidation
+    /// @inheritdoc ISingleSignerValidationModule
     function transferSigner(uint32 entityId, address newSigner) external {
         _transferSigner(entityId, newSigner);
     }
@@ -57,7 +57,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         _transferSigner(abi.decode(data, (uint32)), address(0));
     }
 
-    /// @inheritdoc IValidation
+    /// @inheritdoc IValidationModule
     function validateUserOp(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         view
@@ -75,7 +75,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         return _SIG_VALIDATION_FAILED;
     }
 
-    /// @inheritdoc IValidation
+    /// @inheritdoc IValidationModule
     function validateRuntime(
         address account,
         uint32 entityId,
@@ -91,7 +91,7 @@ contract SingleSignerValidation is ISingleSignerValidation, BaseModule {
         return;
     }
 
-    /// @inheritdoc IValidation
+    /// @inheritdoc IValidationModule
     /// @dev The signature is valid if it is signed by the owner's private key
     /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
     /// owner (if the owner is a contract). Note that unlike the signature

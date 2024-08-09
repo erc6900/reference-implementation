@@ -8,7 +8,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
-import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
+import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from
@@ -17,7 +17,7 @@ import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_E
 import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 
 /// @dev This contract handles common boilerplate setup for tests using UpgradeableModularAccount with
-/// SingleSignerValidation.
+/// SingleSignerValidationModule.
 abstract contract AccountTestBase is OptimizedTest {
     using ModuleEntityLib for ModuleEntity;
     using MessageHashUtils for bytes32;
@@ -25,7 +25,7 @@ abstract contract AccountTestBase is OptimizedTest {
     EntryPoint public entryPoint;
     address payable public beneficiary;
 
-    SingleSignerValidation public singleSignerValidation;
+    SingleSignerValidationModule public singleSignerValidationModule;
     SingleSignerFactoryFixture public factory;
 
     address public owner1;
@@ -53,14 +53,14 @@ abstract contract AccountTestBase is OptimizedTest {
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
 
-        singleSignerValidation = _deploySingleSignerValidation();
-        factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
+        singleSignerValidationModule = _deploySingleSignerValidationModule();
+        factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidationModule);
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
         _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -103,7 +103,7 @@ abstract contract AccountTestBase is OptimizedTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
         userOp.signature = _encodeSignature(
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
             GLOBAL_VALIDATION,
             abi.encodePacked(r, s, v)
         );
@@ -156,7 +156,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -171,7 +171,7 @@ abstract contract AccountTestBase is OptimizedTest {
         account1.executeWithAuthorization(
             callData,
             _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -185,15 +185,16 @@ abstract contract AccountTestBase is OptimizedTest {
             abi.encodeCall(
                 account1.execute,
                 (
-                    address(singleSignerValidation),
+                    address(singleSignerValidationModule),
                     0,
                     abi.encodeCall(
-                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
+                        SingleSignerValidationModule.transferSigner,
+                        (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
                     )
                 )
             ),
             _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )

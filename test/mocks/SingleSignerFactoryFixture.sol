@@ -7,14 +7,14 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
+import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
-    SingleSignerValidation public singleSignerValidation;
+    SingleSignerValidationModule public singleSignerValidationModule;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
     uint32 public constant UNSTAKE_DELAY = 1 weeks;
@@ -23,13 +23,13 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     address public self;
 
-    constructor(IEntryPoint _entryPoint, SingleSignerValidation _singleSignerValidation) {
+    constructor(IEntryPoint _entryPoint, SingleSignerValidationModule _singleSignerValidationModule) {
         entryPoint = _entryPoint;
         accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
-        singleSignerValidation = _singleSignerValidation;
+        singleSignerValidationModule = _singleSignerValidationModule;
         self = address(this);
     }
 
@@ -52,7 +52,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
             // point proxy to actual implementation and init modules
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(
-                    address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
+                    address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
                 ),
                 new bytes4[](0),
                 moduleInstallData,

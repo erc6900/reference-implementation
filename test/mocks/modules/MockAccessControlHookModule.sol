@@ -5,14 +5,14 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
-import {IValidationHook} from "../../../src/interfaces/IValidationHook.sol";
+import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
 // A pre validaiton hook module that uses per-hook data.
 // This example enforces that the target of an `execute` call must only be the previously specified address.
 // This is just a mock - it does not enforce this over `executeBatch` and other methods of making calls, and should
 // not be used in production..
-contract MockAccessControlHookModule is IValidationHook, BaseModule {
+contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
     enum EntityId {
         PRE_VALIDATION_HOOK
     }
