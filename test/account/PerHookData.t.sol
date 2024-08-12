@@ -344,13 +344,15 @@ contract PerHookDataTest is CustomValidationTestBase {
             ),
             abi.encode(_counter)
         );
-
+        // patched to also work during SMA tests by differentiating the validation
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID - 1);
         return (
             _signerValidation,
             true,
             true,
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
+            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID - 1, owner1),
             hooks
         );
     }

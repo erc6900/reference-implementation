@@ -64,7 +64,7 @@ contract MultiValidationTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(validator2),
-                1,
+                TEST_DEFAULT_VALIDATION_ENTITY_ID,
                 abi.encodeWithSignature("NotAuthorized()")
             )
         );

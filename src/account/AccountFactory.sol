@@ -114,7 +114,7 @@ contract AccountFactory is Ownable {
         return keccak256(abi.encodePacked(owner, salt, entityId));
     }
 
-    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) public view returns (address) {
+    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) internal view returns (address) {
         return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
     }
 

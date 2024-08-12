@@ -27,7 +27,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     constructor(IEntryPoint _entryPoint, SingleSignerValidationModule _singleSignerValidationModule) {
         entryPoint = _entryPoint;
-        accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
+
+        accountImplementation = vm.envBool("SMA_TEST")
+            ? _deploySemiModularAccount(_entryPoint)
+            : _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
@@ -45,6 +48,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * account creation
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+        if (vm.envBool("SMA_TEST")) {
+            return createAccountWithFallbackValidation(owner, salt);
+        }
+
         address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
 
         // short circuit if exists
@@ -92,6 +99,9 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
     function getAddress(address owner, uint256 salt) public view returns (address) {
+        if (vm.envBool("SMA_TEST")) {
+            return getAddressFallbackSigner(owner, salt);
+        }
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 
