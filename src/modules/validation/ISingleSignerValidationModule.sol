@@ -7,11 +7,11 @@ interface ISingleSignerValidationModule is IValidationModule {
     /// @notice This event is emitted when Signer of the account's validation changes.
     /// @param account The account whose validation Signer changed.
     /// @param entityId The entityId for the account and the signer.
-    /// @param previousSigner The address of the previous signer.
     /// @param newSigner The address of the new signer.
+    /// @param previousSigner The address of the previous signer.
     event SignerTransferred(
-        address indexed account, uint32 indexed entityId, address previousSigner, address newSigner
-    );
+        address indexed account, uint32 indexed entityId, address indexed newSigner, address previousSigner
+    ) anonymous;
 
     error NotAuthorized();
 

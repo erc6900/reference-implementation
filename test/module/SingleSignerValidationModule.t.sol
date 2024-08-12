@@ -26,6 +26,10 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
 
     event ValidationInstalled(address indexed module, uint32 indexed entityId);
 
+    event SignerTransferred(
+        address indexed account, uint32 indexed entityId, address indexed newSigner, address previousSigner
+    ) anonymous;
+
     function setUp() public {
         ethRecipient = makeAddr("ethRecipient");
         (owner2, owner2Key) = makeAddrAndKey("owner2");
@@ -82,6 +86,8 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
         uint32 newEntityId = TEST_DEFAULT_VALIDATION_ENTITY_ID + 1;
         vm.prank(address(entryPoint));
 
+        vm.expectEmit(address(singleSignerValidationModule));
+        emit SignerTransferred(address(account), newEntityId, owner2, address(0));
         vm.expectEmit(true, true, true, true);
         emit ValidationInstalled(address(singleSignerValidationModule), newEntityId);
         account.installValidation(
