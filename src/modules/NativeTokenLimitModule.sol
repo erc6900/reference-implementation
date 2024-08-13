@@ -68,6 +68,8 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
                 revert ExceededNativeTokenLimit();
             }
             limits[entityId][msg.sender] = limit - usage;
+
+            // adding comment 
         }
         return 0;
     }
