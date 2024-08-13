@@ -68,24 +68,18 @@ contract UpgradeableModularAccount is
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
-    error AuthorizeUpgradeReverted(bytes revertReason);
-    error ExecFromModuleNotPermitted(address module, bytes4 selector);
-    error ExecFromModuleExternalNotPermitted(address module, address target, uint256 value, bytes data);
-    error NativeTokenSpendingNotPermitted(address module);
     error NonCanonicalEncoding();
     error NotEntryPoint();
     error PostExecHookReverted(address module, uint32 entityId, bytes revertReason);
     error PreExecHookReverted(address module, uint32 entityId, bytes revertReason);
     error PreRuntimeValidationHookFailed(address module, uint32 entityId, bytes revertReason);
     error RequireUserOperationContext();
-    error RuntimeValidationFunctionMissing(bytes4 selector);
     error RuntimeValidationFunctionReverted(address module, uint32 entityId, bytes revertReason);
     error SelfCallRecursionDepthExceeded();
     error SignatureValidationInvalid(address module, uint32 entityId);
     error UnexpectedAggregator(address module, uint32 entityId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error ValidationFunctionMissing(bytes4 selector);
-    error ValidationDoesNotApply(bytes4 selector, address module, uint32 entityId, bool isGlobal);
     error ValidationSignatureSegmentMissing();
     error SignatureSegmentOutOfOrder();
 
