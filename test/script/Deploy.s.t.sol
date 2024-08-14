@@ -21,7 +21,7 @@ contract DeployTest is Test {
     address internal _owner;
 
     address internal _accountImpl;
-    address internal _singleSignerValidationModuleAddress;
+    address internal _singleSignerValidationModule;
     address internal _factory;
 
     function setUp() public {
@@ -42,7 +42,7 @@ contract DeployTest is Test {
             CREATE2_FACTORY
         );
 
-        _singleSignerValidationModuleAddress = Create2.computeAddress(
+        _singleSignerValidationModule = Create2.computeAddress(
             bytes32(0),
             keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)),
             CREATE2_FACTORY
@@ -53,7 +53,7 @@ contract DeployTest is Test {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(address(_entryPoint), _accountImpl, _singleSignerValidationModuleAddress, _owner)
+                    abi.encode(address(_entryPoint), _accountImpl, _singleSignerValidationModule, _owner)
                 )
             ),
             CREATE2_FACTORY
@@ -61,7 +61,7 @@ contract DeployTest is Test {
 
         vm.setEnv("ACCOUNT_IMPL", vm.toString(address(_accountImpl)));
         vm.setEnv("FACTORY", vm.toString(address(_factory)));
-        vm.setEnv("SINGLE_SIGNER_VALIDATION_MODULE_ADDRESS", vm.toString(_singleSignerValidationModuleAddress));
+        vm.setEnv("SINGLE_SIGNER_VALIDATION_MODULE", vm.toString(_singleSignerValidationModule));
 
         vm.setEnv("ACCOUNT_IMPL_SALT", vm.toString(uint256(0)));
         vm.setEnv("FACTORY_SALT", vm.toString(uint256(0)));
@@ -77,10 +77,10 @@ contract DeployTest is Test {
 
         assertTrue(_accountImpl.code.length > 0);
         assertTrue(_factory.code.length > 0);
-        assertTrue(_singleSignerValidationModuleAddress.code.length > 0);
+        assertTrue(_singleSignerValidationModule.code.length > 0);
 
         assertEq(
-            _singleSignerValidationModuleAddress.code,
+            _singleSignerValidationModule.code,
             type(SingleSignerValidationModule).runtimeCode,
             "SingleSignerValidationModule runtime code mismatch"
         );

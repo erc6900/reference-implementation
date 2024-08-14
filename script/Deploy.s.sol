@@ -17,8 +17,7 @@ contract DeployScript is Script {
 
     address public accountImpl = vm.envOr("ACCOUNT_IMPL", address(0));
     address public factory = vm.envOr("FACTORY", address(0));
-    address public singleSignerValidationModuleAddress =
-        vm.envOr("SINGLE_SIGNER_VALIDATION_MODULE_ADDRESS", address(0));
+    address public singleSignerValidationModule = vm.envOr("SINGLE_SIGNER_VALIDATION_MODULE", address(0));
 
     bytes32 public accountImplSalt = bytes32(vm.envOr("ACCOUNT_IMPL_SALT", uint256(0)));
     bytes32 public factorySalt = bytes32(vm.envOr("FACTORY_SALT", uint256(0)));
@@ -36,7 +35,7 @@ contract DeployScript is Script {
 
         vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
-        _deploySingleSignerValidationModule(singleSignerValidationModuleSalt, singleSignerValidationModuleAddress);
+        _deploySingleSignerValidationModule(singleSignerValidationModuleSalt, singleSignerValidationModule);
         _deployAccountFactory(factorySalt, factory);
         _addStakeForFactory(uint32(requiredUnstakeDelay), requiredStakeAmount);
         vm.stopBroadcast();
@@ -112,7 +111,7 @@ contract DeployScript is Script {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(entryPoint, accountImpl, singleSignerValidationModuleAddress, owner)
+                    abi.encode(entryPoint, accountImpl, singleSignerValidationModule, owner)
                 )
             ),
             CREATE2_FACTORY
@@ -127,10 +126,7 @@ contract DeployScript is Script {
         if (addr.code.length == 0) {
             console.log("No code found at expected address, deploying...");
             AccountFactory deployed = new AccountFactory{salt: salt}(
-                entryPoint,
-                UpgradeableModularAccount(payable(accountImpl)),
-                singleSignerValidationModuleAddress,
-                owner
+                entryPoint, UpgradeableModularAccount(payable(accountImpl)), singleSignerValidationModule, owner
             );
 
             if (address(deployed) != expected) {
