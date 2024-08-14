@@ -113,8 +113,10 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
 
         address accountAddr = address(account);
 
+        bytes32 replaySafeHash = singleSignerValidationModule.replaySafeHash(accountAddr, digest);
+
         vm.startPrank(accountAddr);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, replaySafeHash);
 
         // sig check should fail
         assertEq(
@@ -141,7 +143,10 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
         address accountAddr = address(account);
         vm.startPrank(accountAddr);
         singleSignerValidationModule.transferSigner(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(contractOwner));
-        bytes memory signature = contractOwner.sign(digest);
+
+        bytes32 replaySafeHash = singleSignerValidationModule.replaySafeHash(accountAddr, digest);
+
+        bytes memory signature = contractOwner.sign(replaySafeHash);
         assertEq(
             singleSignerValidationModule.validateSignature(
                 accountAddr, TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this), digest, signature
