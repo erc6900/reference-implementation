@@ -29,7 +29,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
 
     event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
-    event FallbackSignerEnabledSet(bool prevEnabled, bool newEnabled);
+    event FallbackSignerDisabledSet(bool prevDisabled, bool newDisabled);
 
     error FallbackSignerMismatch();
     error FallbackSignerDisabled();
@@ -58,17 +58,24 @@ contract SemiModularAccount is UpgradeableModularAccount {
     }
 
     /// @notice Sets whether the fallback signer validation should be enabled or disabled.
-    function setFallbackSignerEnabled(bool enabled) external wrapNativeFunction {
+    /// @dev Due to being initially zero, we need to store "disabled" rather than "enabled" in storage.
+    /// @param isDisabled True to disable fallback signer validation, false to enable it.
+    function setFallbackSignerDisabled(bool isDisabled) external wrapNativeFunction {
         SemiModularAccountStorage storage _storage = _getSemiModularAccountStorage();
-        emit FallbackSignerEnabledSet(!_storage.fallbackSignerDisabled, enabled);
+        emit FallbackSignerDisabledSet(_storage.fallbackSignerDisabled, isDisabled);
 
-        _storage.fallbackSignerDisabled = !enabled;
+        _storage.fallbackSignerDisabled = isDisabled;
     }
 
-    function isFallbackSignerEnabled() external view returns (bool) {
-        return !_getSemiModularAccountStorage().fallbackSignerDisabled;
+    /// @notice Returns whether the fallback signer validation is disabled.
+    /// @return True if the fallback signer validation is disabled, false if it is enabled.
+    function isFallbackSignerDisabled() external view returns (bool) {
+        return _getSemiModularAccountStorage().fallbackSignerDisabled;
     }
 
+    /// @notice Returns the fallback signer associated with this account, regardless if the fallback signer
+    /// validation is enabled or not.
+    /// @return The fallback signer address, either overriden in storage, or read from bytecode.
     function getFallbackSigner() external view returns (address) {
         return _getFallbackSigner();
     }
@@ -142,6 +149,14 @@ contract SemiModularAccount is UpgradeableModularAccount {
             revert FallbackSignerDisabled();
         }
 
+        return _retrieveFallbackSignerUnchecked(_storage);
+    }
+
+    function _retrieveFallbackSignerUnchecked(SemiModularAccountStorage storage _storage)
+        internal
+        view
+        returns (address)
+    {
         address storageFallbackSigner = _storage.fallbackSigner;
         if (storageFallbackSigner != address(0)) {
             return storageFallbackSigner;
