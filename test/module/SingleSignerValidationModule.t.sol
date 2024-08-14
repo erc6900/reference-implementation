@@ -12,7 +12,7 @@ import {ContractOwner} from "../mocks/ContractOwner.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
-contract SingleSignerValidationTest is AccountTestBase {
+contract SingleSignerValidationModuleTest is AccountTestBase {
     using MessageHashUtils for bytes32;
 
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
