@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ExecutionManifest, IExecution, ManifestExecutionFunction} from "../../../src/interfaces/IExecution.sol";
+import {
+    ExecutionManifest,
+    IExecutionModule,
+    ManifestExecutionFunction
+} from "../../../src/interfaces/IExecutionModule.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 import {ResultCreatorModule} from "./ReturnDataModuleMocks.sol";
 
-contract PermittedCallerModule is IExecution, BaseModule {
+contract PermittedCallerModule is IExecutionModule, BaseModule {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}

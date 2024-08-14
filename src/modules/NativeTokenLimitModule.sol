@@ -5,11 +5,11 @@ import {UserOperationLib} from "@eth-infinitism/account-abstraction/core/UserOpe
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
 import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
-import {IValidationHook} from "../interfaces/IValidationHook.sol";
+import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {BaseModule, IERC165} from "./BaseModule.sol";
 
 /// @title Native Token Limit Module
@@ -18,7 +18,7 @@ import {BaseModule, IERC165} from "./BaseModule.sol";
 /// It tracks a total spend limit across UserOperation gas limits and native token transfers.
 /// If a non whitelisted paymaster is used, UO gas would not cause the limit to decrease.
 /// If a whitelisted paymaster is used, gas is still counted towards the limit
-contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
+contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidationHookModule {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -42,7 +42,7 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
         specialPaymasters[paymaster][msg.sender] = allowed;
     }
 
-    /// @inheritdoc IValidationHook
+    /// @inheritdoc IValidationHookModule
     function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32)
         external
         returns (uint256)
@@ -72,7 +72,7 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
         return 0;
     }
 
-    /// @inheritdoc IExecutionHook
+    /// @inheritdoc IExecutionHookModule
     function preExecutionHook(uint32 entityId, address, uint256, bytes calldata data)
         external
         override
@@ -103,7 +103,7 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
         }
     }
 
-    /// @inheritdoc IExecutionHook
+    /// @inheritdoc IExecutionHookModule
     function postExecutionHook(uint32, bytes calldata) external pure override {
         revert NotImplemented();
     }
@@ -135,7 +135,7 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHook, IValidationHook {
 
     /// @inheritdoc BaseModule
     function supportsInterface(bytes4 interfaceId) public view override(BaseModule, IERC165) returns (bool) {
-        return interfaceId == type(IExecutionHook).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IExecutionHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _checkAndDecrementLimit(uint32 entityId, bytes calldata data) internal returns (bytes memory) {

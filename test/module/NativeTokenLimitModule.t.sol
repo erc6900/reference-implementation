@@ -10,7 +10,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
 import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";

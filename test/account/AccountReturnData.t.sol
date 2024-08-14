@@ -68,7 +68,7 @@ contract AccountReturnDataTest is AccountTestBase {
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
             _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )
@@ -96,7 +96,7 @@ contract AccountReturnDataTest is AccountTestBase {
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
             _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID),
+                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
                 ""
             )

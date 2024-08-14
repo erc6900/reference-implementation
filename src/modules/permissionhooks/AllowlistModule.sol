@@ -6,10 +6,10 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {ModuleMetadata} from "../../interfaces/IModule.sol";
 
 import {Call, IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
-import {IValidationHook} from "../../interfaces/IValidationHook.sol";
+import {IValidationHookModule} from "../../interfaces/IValidationHookModule.sol";
 import {BaseModule} from "../../modules/BaseModule.sol";
 
-contract AllowlistModule is IValidationHook, BaseModule {
+contract AllowlistModule is IValidationHookModule, BaseModule {
     struct AllowlistInit {
         address target;
         bool hasSelectorAllowlist;

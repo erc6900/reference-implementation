@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
-import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 import {IModule, ModuleMetadata} from "../../src/interfaces/IModule.sol";
-import {IValidation} from "../../src/interfaces/IValidation.sol";
+import {IValidationModule} from "../../src/interfaces/IValidationModule.sol";
 
 contract MockModule is ERC165 {
     // It's super inefficient to hold the entire abi-encoded manifest in storage, but this is fine since it's
@@ -82,8 +82,9 @@ contract MockModule is ERC165 {
     fallback() external payable {
         emit ReceivedCall(msg.data, msg.value);
         if (
-            msg.sig == IValidation.validateUserOp.selector || msg.sig == IValidation.validateRuntime.selector
-                || msg.sig == IExecutionHook.preExecutionHook.selector
+            msg.sig == IValidationModule.validateUserOp.selector
+                || msg.sig == IValidationModule.validateRuntime.selector
+                || msg.sig == IExecutionHookModule.preExecutionHook.selector
         ) {
             // return 0 for userOp/runtimeVal case, return bytes("") for preExecutionHook case
             assembly ("memory-safe") {

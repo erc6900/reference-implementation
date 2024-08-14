@@ -9,13 +9,14 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 
-import {IExecution} from "../interfaces/IExecution.sol";
-import {IExecutionHook} from "../interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
+import {IExecutionModule} from "../interfaces/IExecutionModule.sol";
 import {IModule} from "../interfaces/IModule.sol";
 import {IModuleManager} from "../interfaces/IModuleManager.sol";
 import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-import {IValidation} from "../interfaces/IValidation.sol";
-import {IValidationHook} from "../interfaces/IValidationHook.sol";
+
+import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
+import {IValidationModule} from "../interfaces/IValidationModule.sol";
 
 /// @dev Library to help to check if a selector is a know function selector of the modular account or ERC-4337
 /// contract.
@@ -49,11 +50,13 @@ library KnownSelectors {
 
     function isIModuleFunction(bytes4 selector) internal pure returns (bool) {
         return selector == IModule.onInstall.selector || selector == IModule.onUninstall.selector
-            || selector == IExecution.executionManifest.selector || selector == IModule.moduleMetadata.selector
-            || selector == IExecutionHook.preExecutionHook.selector
-            || selector == IExecutionHook.postExecutionHook.selector || selector == IValidation.validateUserOp.selector
-            || selector == IValidation.validateRuntime.selector || selector == IValidation.validateSignature.selector
-            || selector == IValidationHook.preUserOpValidationHook.selector
-            || selector == IValidationHook.preRuntimeValidationHook.selector;
+            || selector == IExecutionModule.executionManifest.selector || selector == IModule.moduleMetadata.selector
+            || selector == IExecutionHookModule.preExecutionHook.selector
+            || selector == IExecutionHookModule.postExecutionHook.selector
+            || selector == IValidationModule.validateUserOp.selector
+            || selector == IValidationModule.validateRuntime.selector
+            || selector == IValidationModule.validateSignature.selector
+            || selector == IValidationHookModule.preUserOpValidationHook.selector
+            || selector == IValidationHookModule.preRuntimeValidationHook.selector;
     }
 }

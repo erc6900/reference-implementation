@@ -3,13 +3,17 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ExecutionManifest, IExecution, ManifestExecutionFunction} from "../../../src/interfaces/IExecution.sol";
+import {
+    ExecutionManifest,
+    IExecutionModule,
+    ManifestExecutionFunction
+} from "../../../src/interfaces/IExecutionModule.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../../src/helpers/Constants.sol";
 
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
-import {IValidation} from "../../../src/interfaces/IValidation.sol";
+import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
@@ -23,7 +27,7 @@ contract RegularResultContract {
     }
 }
 
-contract ResultCreatorModule is IExecution, BaseModule {
+contract ResultCreatorModule is IExecutionModule, BaseModule {
     function onInstall(bytes calldata) external override {}
 
     function onUninstall(bytes calldata) external override {}
@@ -57,7 +61,7 @@ contract ResultCreatorModule is IExecution, BaseModule {
     function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 }
 
-contract ResultConsumerModule is IExecution, BaseModule, IValidation {
+contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule {
     ResultCreatorModule public immutable RESULT_CREATOR;
     RegularResultContract public immutable REGULAR_RESULT_CONTRACT;
 

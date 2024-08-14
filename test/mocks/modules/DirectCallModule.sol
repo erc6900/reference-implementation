@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {IExecutionHook} from "../../../src/interfaces/IExecutionHook.sol";
+import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
-contract DirectCallModule is BaseModule, IExecutionHook {
+contract DirectCallModule is BaseModule, IExecutionHookModule {
     bool public preHookRan = false;
     bool public postHookRan = false;
 

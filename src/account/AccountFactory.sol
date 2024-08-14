@@ -14,19 +14,19 @@ contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
     IEntryPoint public immutable ENTRY_POINT;
-    address public immutable SINGLE_SIGNER_VALIDATION;
+    address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
 
     constructor(
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
-        address _singleSignerValidation,
+        address _singleSignerValidationModule,
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
-        SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
+        SINGLE_SIGNER_VALIDATION_MODULE = _singleSignerValidationModule;
     }
 
     /**
@@ -50,7 +50,7 @@ contract AccountFactory is Ownable {
             new ERC1967Proxy{salt: combinedSalt}(address(ACCOUNT_IMPL), "");
             // point proxy to actual implementation and init plugins
             UpgradeableModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION, entityId, true, true),
+                ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION_MODULE, entityId, true, true),
                 new bytes4[](0),
                 pluginInstallData,
                 new bytes[](0)

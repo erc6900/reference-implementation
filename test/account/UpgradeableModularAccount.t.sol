@@ -13,12 +13,12 @@ import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.s
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {ExecutionDataView, IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
-import {ExecutionManifest} from "../../src/interfaces/IExecution.sol";
+import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
-import {SingleSignerValidation} from "../../src/modules/validation/SingleSignerValidation.sol";
+import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 
@@ -99,9 +99,11 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             callData: abi.encodeCall(
                 UpgradeableModularAccount.execute,
                 (
-                    address(singleSignerValidation),
+                    address(singleSignerValidationModule),
                     0,
-                    abi.encodeCall(SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
+                    abi.encodeCall(
+                        SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2)
+                    )
                 )
             ),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
@@ -354,16 +356,22 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_transferOwnership() public {
-        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
+        assertEq(
+            singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1
+        );
 
         vm.prank(address(entryPoint));
         account1.execute(
-            address(singleSignerValidation),
+            address(singleSignerValidationModule),
             0,
-            abi.encodeCall(SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
+            abi.encodeCall(
+                SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2)
+            )
         );
 
-        assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner2);
+        assertEq(
+            singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner2
+        );
     }
 
     function test_isValidSignature() public {
@@ -371,10 +379,10 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, message);
 
-        // singleSignerValidation.ownerOf(address(account1));
+        // singleSignerValidationModule.ownerOf(address(account1));
 
         bytes memory signature =
-            abi.encodePacked(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID, r, s, v);
+            abi.encodePacked(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, r, s, v);
 
         bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);
 

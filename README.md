@@ -2,7 +2,7 @@
 
 Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900). It is an early draft implementation.
 
-The implementation includes an upgradable modular account with three modules (`SingleSignerValidation`, `TokenReceiverModule`, and `AllowlistModule`). It is compliant with ERC-6900 with the latest updates.
+The implementation includes an upgradable modular account with three modules (`SingleSignerValidationModule`, `TokenReceiverModule`, and `AllowlistModule`). It is compliant with ERC-6900 with the latest updates.
 
 ## Important Callouts
 
@@ -31,9 +31,10 @@ FOUNDRY_PROFILE=optimized-test forge test -vvv
 
 ## Integration testing
 
-The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidation`. This is not auditted, nor intended for production use. Limitations set by the GPL-V3 license apply.
+The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidationModule`. This is not auditted, nor intended for production use. Limitations set by the GPL-V3 license apply.
 
 To run this script, provide appropriate values in a `.env` file based on the `.env.example` template, then run:
+
 ```bash
 forge script script/Deploy.s.sol <wallet options> -r <rpc_url> --broadcast
 ```

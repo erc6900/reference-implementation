@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
 import {
     ExecutionManifest,
     IModule,
     ManifestExecutionFunction,
     ManifestExecutionHook
-} from "../../src/interfaces/IExecution.sol";
-import {IExecutionHook} from "../../src/interfaces/IExecutionHook.sol";
+} from "../../src/interfaces/IExecutionModule.sol";
 
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -58,7 +58,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
             abi.encodeWithSelector(
-                IExecutionHook.preExecutionHook.selector,
+                IExecutionHookModule.preExecutionHook.selector,
                 _PRE_HOOK_FUNCTION_ID_1,
                 address(this), // caller
                 uint256(0), // msg.value in call to account
@@ -97,7 +97,7 @@ contract AccountExecHooksTest is AccountTestBase {
         // pre hook call
         emit ReceivedCall(
             abi.encodeWithSelector(
-                IExecutionHook.preExecutionHook.selector,
+                IExecutionHookModule.preExecutionHook.selector,
                 _BOTH_HOOKS_FUNCTION_ID_3,
                 address(this), // caller
                 uint256(0), // msg.value in call to account
@@ -111,7 +111,7 @@ contract AccountExecHooksTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         // post hook call
         emit ReceivedCall(
-            abi.encodeCall(IExecutionHook.postExecutionHook, (_BOTH_HOOKS_FUNCTION_ID_3, "")),
+            abi.encodeCall(IExecutionHookModule.postExecutionHook, (_BOTH_HOOKS_FUNCTION_ID_3, "")),
             0 // msg value in call to module
         );
 
@@ -143,7 +143,7 @@ contract AccountExecHooksTest is AccountTestBase {
 
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
-            abi.encodeCall(IExecutionHook.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
+            abi.encodeCall(IExecutionHookModule.postExecutionHook, (_POST_HOOK_FUNCTION_ID_2, "")),
             0 // msg value in call to module
         );
 

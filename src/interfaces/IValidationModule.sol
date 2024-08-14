@@ -5,26 +5,28 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {IModule} from "./IModule.sol";
 
-interface IValidationHook is IModule {
-    /// @notice Run the pre user operation validation hook specified by the `entityId`.
-    /// @dev Pre user operation validation hooks MUST NOT return an authorizer value other than 0 or 1.
+interface IValidationModule is IModule {
+    /// @notice Run the user operation validationFunction specified by the `entityId`.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param userOp The user operation.
     /// @param userOpHash The user operation hash.
     /// @return Packed validation data for validAfter (6 bytes), validUntil (6 bytes), and authorizer (20 bytes).
-    function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function validateUserOp(uint32 entityId, PackedUserOperation calldata userOp, bytes32 userOpHash)
         external
         returns (uint256);
 
-    /// @notice Run the pre runtime validation hook specified by the `entityId`.
+    /// @notice Run the runtime validationFunction specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
+    /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
-    function preRuntimeValidationHook(
+    /// @param authorization Additional data for the validation function to use.
+    function validateRuntime(
+        address account,
         uint32 entityId,
         address sender,
         uint256 value,
@@ -32,18 +34,20 @@ interface IValidationHook is IModule {
         bytes calldata authorization
     ) external;
 
-    // TODO: support this hook type within the account & in the manifest
-
-    /// @notice Run the pre signature validation hook specified by the `entityId`.
-    /// @dev To indicate the call should revert, the function MUST revert.
+    /// @notice Validates a signature using ERC-1271.
+    /// @dev To indicate the entire call should revert, the function MUST revert.
+    /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
-    /// @param sender The caller address.
-    /// @param hash The hash of the message being signed.
-    /// @param signature The signature of the message.
-    // function preSignatureValidationHook(uint32 entityId, address sender, bytes32 hash, bytes calldata
-    // signature)
-    //     external
-    //     view
-    //     returns (bytes4);
+    /// @param sender the address that sent the ERC-1271 request to the smart account
+    /// @param hash the hash of the ERC-1271 request
+    /// @param signature the signature of the ERC-1271 request
+    /// @return the ERC-1271 `MAGIC_VALUE` if the signature is valid, or 0xFFFFFFFF if invalid.
+    function validateSignature(
+        address account,
+        uint32 entityId,
+        address sender,
+        bytes32 hash,
+        bytes calldata signature
+    ) external view returns (bytes4);
 }
