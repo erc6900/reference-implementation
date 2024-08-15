@@ -40,8 +40,6 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         self = address(this);
     }
 
-    // TODO: Make createAccount use createAccountFallbackSigner for testing
-
     /**
      * create an account, and return its address.
      * returns the address even if the account is already deployed.
@@ -50,6 +48,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * account creation
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+        // We cast the SemiModularAccount to an UpgradeableModularAccount to facilitate equivalence testing.
+        // However, we don't do this in the actual factory.
         if (vm.envBool("SMA_TEST")) {
             return createSemiModularAccount(owner, salt);
         }
