@@ -85,6 +85,9 @@ contract AllowlistModule is IValidationHookModule, BaseModule {
         return;
     }
 
+    // solhint-disable-next-line no-empty-blocks
+    function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {}
+
     function moduleMetadata() external pure override returns (ModuleMetadata memory) {
         ModuleMetadata memory metadata;
         metadata.name = "Allowlist Module";

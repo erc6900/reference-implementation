@@ -32,8 +32,6 @@ interface IValidationHookModule is IModule {
         bytes calldata authorization
     ) external;
 
-    // TODO: support this hook type within the account & in the manifest
-
     /// @notice Run the pre signature validation hook specified by the `entityId`.
     /// @dev To indicate the call should revert, the function MUST revert.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
@@ -41,9 +39,7 @@ interface IValidationHookModule is IModule {
     /// @param sender The caller address.
     /// @param hash The hash of the message being signed.
     /// @param signature The signature of the message.
-    // function preSignatureValidationHook(uint32 entityId, address sender, bytes32 hash, bytes calldata
-    // signature)
-    //     external
-    //     view
-    //     returns (bytes4);
+    function preSignatureValidationHook(uint32 entityId, address sender, bytes32 hash, bytes calldata signature)
+        external
+        view;
 }

@@ -72,5 +72,17 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         revert NotImplemented();
     }
 
+    function preSignatureValidationHook(uint32, address, bytes32 hash, bytes calldata signature)
+        external
+        pure
+        override
+    {
+        // Simulates some signature checking by requiring a preimage of the hash.
+
+        require(keccak256(signature) == hash, "Preimage not provided");
+
+        return;
+    }
+
     function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
 }

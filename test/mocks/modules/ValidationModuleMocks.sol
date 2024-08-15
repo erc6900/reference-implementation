@@ -64,6 +64,8 @@ abstract contract MockBaseUserOpValidationModule is
         revert NotImplemented();
     }
 
+    function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {}
+
     function validateSignature(address, uint32, address, bytes32, bytes calldata)
         external
         pure

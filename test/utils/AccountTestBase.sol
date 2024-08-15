@@ -198,6 +198,21 @@ abstract contract AccountTestBase is OptimizedTest {
         return bytes32(uint256((g1 << 128) + uint128(g2)));
     }
 
+    // helper function to encode a 1271 signature, according to the per-hook and per-validation data format.
+    function _encode1271Signature(
+        ModuleEntity validationFunction,
+        PreValidationHookData[] memory preValidationHookData,
+        bytes memory validationData
+    ) internal pure returns (bytes memory) {
+        bytes memory sig = abi.encodePacked(validationFunction);
+
+        sig = abi.encodePacked(sig, _packPreHookDatas(preValidationHookData));
+
+        sig = abi.encodePacked(sig, _packValidationResWithIndex(255, validationData));
+
+        return sig;
+    }
+
     // helper function to encode a signature, according to the per-hook and per-validation data format.
     function _encodeSignature(
         ModuleEntity validationFunction,
@@ -207,17 +222,8 @@ abstract contract AccountTestBase is OptimizedTest {
     ) internal pure returns (bytes memory) {
         bytes memory sig = abi.encodePacked(validationFunction, globalOrNot);
 
-        for (uint256 i = 0; i < preValidationHookData.length; ++i) {
-            sig = abi.encodePacked(
-                sig,
-                _packValidationResWithIndex(
-                    preValidationHookData[i].index, preValidationHookData[i].validationData
-                )
-            );
-        }
+        sig = abi.encodePacked(sig, _packPreHookDatas(preValidationHookData));
 
-        // Index of the actual validation data is the length of the preValidationHooksRetrieved - aka
-        // one-past-the-end
         sig = abi.encodePacked(sig, _packValidationResWithIndex(255, validationData));
 
         return sig;
@@ -231,6 +237,36 @@ abstract contract AccountTestBase is OptimizedTest {
     {
         PreValidationHookData[] memory emptyPreValidationHookData = new PreValidationHookData[](0);
         return _encodeSignature(validationFunction, globalOrNot, emptyPreValidationHookData, validationData);
+    }
+
+    // overload for the case where there are no pre-validation hooks
+    function _encode1271Signature(ModuleEntity validationFunction, bytes memory validationData)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        PreValidationHookData[] memory emptyPreValidationHookData = new PreValidationHookData[](0);
+        return _encode1271Signature(validationFunction, emptyPreValidationHookData, validationData);
+    }
+
+    // helper function to pack pre-validation hook datas, according to the sparse calldata segment spec.
+    function _packPreHookDatas(PreValidationHookData[] memory preValidationHookData)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory res = "";
+
+        for (uint256 i = 0; i < preValidationHookData.length; ++i) {
+            res = abi.encodePacked(
+                res,
+                _packValidationResWithIndex(
+                    preValidationHookData[i].index, preValidationHookData[i].validationData
+                )
+            );
+        }
+
+        return res;
     }
 
     // helper function to pack validation data with an index, according to the sparse calldata segment spec.

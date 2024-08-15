@@ -116,6 +116,9 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidation
         override
     {} // solhint-disable-line no-empty-blocks
 
+    // solhint-disable-next-line no-empty-blocks
+    function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {}
+
     /// @inheritdoc IModule
     function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
         ModuleMetadata memory metadata;

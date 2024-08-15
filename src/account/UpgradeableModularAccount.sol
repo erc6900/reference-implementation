@@ -295,8 +295,27 @@ contract UpgradeableModularAccount is
 
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
         ModuleEntity sigValidation = ModuleEntity.wrap(bytes24(signature));
+        signature = signature[24:];
 
-        return _exec1271Validation(sigValidation, hash, signature[24:]);
+        ModuleEntity[] memory preSignatureValidationHooks =
+            getAccountStorage().validationData[sigValidation].preValidationHooks;
+
+        for (uint256 i = 0; i < preSignatureValidationHooks.length; ++i) {
+            (address hookModule, uint32 hookEntityId) = preSignatureValidationHooks[i].unpack();
+
+            bytes memory currentSignatureSegment;
+
+            (currentSignatureSegment, signature) = signature.advanceSegmentIfAtIndex(uint8(i));
+
+            // If this reverts, bubble up revert reason.
+            IValidationHookModule(hookModule).preSignatureValidationHook(
+                hookEntityId, msg.sender, hash, currentSignatureSegment
+            );
+        }
+
+        signature = signature.getFinalSegment();
+
+        return _exec1271Validation(sigValidation, hash, signature);
     }
 
     /// @notice Gets the entry point for this account

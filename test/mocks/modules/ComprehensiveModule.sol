@@ -104,6 +104,10 @@ contract ComprehensiveModule is
         revert NotImplemented();
     }
 
+    function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {
+        return;
+    }
+
     function validateSignature(address, uint32 entityId, address, bytes32, bytes calldata)
         external
         pure
