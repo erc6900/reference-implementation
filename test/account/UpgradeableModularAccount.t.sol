@@ -101,7 +101,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
                 (
                     address(singleSignerValidationModule),
                     0,
-                    abi.encodeCall(SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
+                    abi.encodeCall(
+                        SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2)
+                    )
                 )
             );
 
@@ -365,10 +367,13 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the
             // test to pass by ensuring the signer can be set in the validation.
             assertEq(
-                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0)
+                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)),
+                address(0)
             );
         } else {
-            assertEq(singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
+            assertEq(
+                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1
+            );
         }
 
         vm.prank(address(entryPoint));
