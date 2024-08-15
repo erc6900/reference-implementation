@@ -25,6 +25,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     address public self;
 
+    error SemiModularAccountAddressMismatch(address expected, address returned);
+
     constructor(IEntryPoint _entryPoint, SingleSignerValidationModule _singleSignerValidationModule) {
         entryPoint = _entryPoint;
 
@@ -81,12 +83,12 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         address addr = _getAddressFallbackSigner(immutables, fullSalt);
 
-        // short circuit if exists
-        if (addr.code.length == 0) {
-            // not necessary to check return addr since next call will fail if so
-            // new ERC1967Proxy{salt: getSalt(owner, salt, type(uint32).max)}(address(ACCOUNT_IMPL), "");
-            // UpgradeableModularAccount(payable(addr)).initialize(owner);
+        // LibClone short-circuits if it's already deployed.
+        (, address instance) =
             LibClone.createDeterministicERC1967(address(accountImplementation), immutables, fullSalt);
+
+        if (instance != addr) {
+            revert SemiModularAccountAddressMismatch(addr, instance);
         }
 
         return UpgradeableModularAccount(payable(addr));

@@ -21,6 +21,8 @@ contract AccountFactory is Ownable {
     address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
 
     event ModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
+    
+    error SemiModularAccountAddressMismatch(address expected, address returned);
 
     constructor(
         IEntryPoint _entryPoint,
@@ -69,7 +71,7 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function createSemiModularAccount(address owner, uint256 salt) external returns (UpgradeableModularAccount) {
+    function createSemiModularAccount(address owner, uint256 salt) external returns (SemiModularAccount) {
         // both module address and entityId for fallback validations are hardcoded at the maximum value.
         bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
 
@@ -77,13 +79,15 @@ contract AccountFactory is Ownable {
 
         address addr = _getAddressFallbackSigner(immutables, fullSalt);
 
-        // short circuit if exists
-        if (addr.code.length == 0) {
-            // not necessary to check return addr since next call will fail if so
+        // LibClone short-circuits if it's already deployed.
+        (, address instance) =
             LibClone.createDeterministicERC1967(address(SEMI_MODULAR_ACCOUNT_IMPL), immutables, fullSalt);
+
+        if (instance != addr) {
+            revert SemiModularAccountAddressMismatch(addr, instance);
         }
 
-        return UpgradeableModularAccount(payable(addr));
+        return SemiModularAccount(payable(addr));
     }
 
     function addStake(uint32 unstakeDelay) external payable onlyOwner {
