@@ -9,6 +9,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {SparseCalldataSegmentLib} from "../../src/helpers/SparseCalldataSegmentLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
@@ -123,7 +124,7 @@ contract PerHookDataTest is CustomValidationTestBase {
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.ValidationSignatureSegmentMissing.selector)
+                abi.encodeWithSelector(SparseCalldataSegmentLib.ValidationSignatureSegmentMissing.selector)
             )
         );
         entryPoint.handleOps(userOps, beneficiary);
@@ -187,7 +188,35 @@ contract PerHookDataTest is CustomValidationTestBase {
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.NonCanonicalEncoding.selector)
+                abi.encodeWithSelector(SparseCalldataSegmentLib.NonCanonicalEncoding.selector)
+            )
+        );
+        entryPoint.handleOps(userOps, beneficiary);
+    }
+
+    function test_failPerHookData_excessData_userOp() public {
+        (PackedUserOperation memory userOp, bytes32 userOpHash) = _getCounterUserOP();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+
+        userOp.signature = abi.encodePacked(
+            _encodeSignature(
+                _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+            ),
+            "extra data"
+        );
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = userOp;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEntryPoint.FailedOpWithRevert.selector,
+                0,
+                "AA23 reverted",
+                abi.encodeWithSelector(SparseCalldataSegmentLib.NonCanonicalEncoding.selector)
             )
         );
         entryPoint.handleOps(userOps, beneficiary);
@@ -262,7 +291,7 @@ contract PerHookDataTest is CustomValidationTestBase {
 
         vm.prank(owner1);
         vm.expectRevert(
-            abi.encodeWithSelector(UpgradeableModularAccount.ValidationSignatureSegmentMissing.selector)
+            abi.encodeWithSelector(SparseCalldataSegmentLib.ValidationSignatureSegmentMissing.selector)
         );
         account1.executeWithAuthorization(
             abi.encodeCall(
@@ -299,13 +328,30 @@ contract PerHookDataTest is CustomValidationTestBase {
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: ""});
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.NonCanonicalEncoding.selector));
+        vm.expectRevert(abi.encodeWithSelector(SparseCalldataSegmentLib.NonCanonicalEncoding.selector));
         account1.executeWithAuthorization(
             abi.encodeCall(
                 UpgradeableModularAccount.execute,
                 (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
             ),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
+        );
+    }
+
+    function test_failPerHookData_excessData_runtime() public {
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(SparseCalldataSegmentLib.NonCanonicalEncoding.selector));
+        account1.executeWithAuthorization(
+            abi.encodeCall(
+                UpgradeableModularAccount.execute,
+                (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+            ),
+            abi.encodePacked(
+                _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, ""), "extra data"
+            )
         );
     }
 
