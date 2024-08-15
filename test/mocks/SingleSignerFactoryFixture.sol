@@ -74,10 +74,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function createSemiModularAccount(address owner, uint256 salt)
-        public
-        returns (UpgradeableModularAccount)
-    {
+    function createSemiModularAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
         bytes32 fullSalt = getSalt(owner, salt);
 
         bytes memory immutables = _getImmutableArgs(owner);

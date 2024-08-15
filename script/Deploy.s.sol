@@ -148,7 +148,9 @@ contract DeployScript is Script {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(entryPoint, accountImpl, semiModularAccountImpl, singleSignerValidationModule, owner)
+                    abi.encode(
+                        entryPoint, accountImpl, semiModularAccountImpl, singleSignerValidationModule, owner
+                    )
                 )
             ),
             CREATE2_FACTORY

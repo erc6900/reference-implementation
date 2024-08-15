@@ -7,8 +7,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {SemiModularAccount} from "../account/SemiModularAccount.sol";
+import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
 import {LibClone} from "solady/utils/LibClone.sol";
@@ -69,10 +69,7 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function createSemiModularAccount(address owner, uint256 salt)
-        external
-        returns (UpgradeableModularAccount)
-    {
+    function createSemiModularAccount(address owner, uint256 salt) external returns (UpgradeableModularAccount) {
         // both module address and entityId for fallback validations are hardcoded at the maximum value.
         bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
 

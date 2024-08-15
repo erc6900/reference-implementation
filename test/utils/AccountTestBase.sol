@@ -184,7 +184,8 @@ abstract contract AccountTestBase is OptimizedTest {
                     address(singleSignerValidationModule),
                     0,
                     abi.encodeCall(
-                        SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
+                        SingleSignerValidationModule.transferSigner,
+                        (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
                     )
                 )
             ),

@@ -52,7 +52,9 @@ contract DeployTest is Test {
         );
 
         _singleSignerValidationModule = Create2.computeAddress(
-            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)), CREATE2_FACTORY
+            bytes32(0),
+            keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)),
+            CREATE2_FACTORY
         );
 
         _factory = Create2.computeAddress(
@@ -60,13 +62,7 @@ contract DeployTest is Test {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(
-                        address(_entryPoint),
-                        _accountImpl,
-                        _smaImpl,
-                        _singleSignerValidationModule,
-                        _owner
-                    )
+                    abi.encode(address(_entryPoint), _accountImpl, _smaImpl, _singleSignerValidationModule, _owner)
                 )
             ),
             CREATE2_FACTORY
