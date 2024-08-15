@@ -94,10 +94,7 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, BaseModu
     /// @inheritdoc IValidationModule
     /// @dev The signature is valid if it is signed by the owner's private key
     /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-    /// owner (if the owner is a contract). Note that unlike the signature
-    /// validation used in `validateUserOp`, this does///*not** wrap the digest in
-    /// an "Ethereum Signed Message" envelope before checking the signature in
-    /// the EOA-owner case.
+    /// owner (if the owner is a contract). Note that the signature is wrapped in an EIP-191 message
     function validateSignature(address account, uint32 entityId, address, bytes32 digest, bytes calldata signature)
         external
         view
@@ -130,6 +127,6 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, BaseModu
     function _transferSigner(uint32 entityId, address newSigner) internal {
         address previousSigner = signers[entityId][msg.sender];
         signers[entityId][msg.sender] = newSigner;
-        emit SignerTransferred(msg.sender, entityId, previousSigner, newSigner);
+        emit SignerTransferred(msg.sender, entityId, newSigner, previousSigner);
     }
 }
