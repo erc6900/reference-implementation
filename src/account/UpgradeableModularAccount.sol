@@ -247,7 +247,6 @@ contract UpgradeableModularAccount is
         _uninstallExecution(module, manifest, moduleUninstallData);
     }
 
-    // TODO: Remove this function for SMA
     /// @notice Initializes the account with a validation function added to the global pool.
     /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall
     // workflow
