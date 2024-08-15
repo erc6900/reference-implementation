@@ -130,9 +130,10 @@ contract UpgradeableModularAccount is
         return execReturnData;
     }
 
+    /// @inheritdoc IAccountExecute
     /// @notice Execution function that allows UO context to be passed to execution hooks
     /// @dev This function is only callable by the EntryPoint
-    function executeUserOp(PackedUserOperation calldata userOp, bytes32) external {
+    function executeUserOp(PackedUserOperation calldata userOp, bytes32) external override {
         if (msg.sender != address(_ENTRY_POINT)) {
             revert NotEntryPoint();
         }
@@ -473,7 +474,7 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason){
+        {} catch (bytes memory revertReason) {
         // forgefmt: disable-end
             revert RuntimeValidationFunctionReverted(module, entityId, revertReason);
         }
@@ -563,7 +564,7 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason){
+        {} catch (bytes memory revertReason) {
         // forgefmt: disable-end
             revert PreRuntimeValidationHookFailed(hookModule, hookEntityId, revertReason);
         }
