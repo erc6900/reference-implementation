@@ -67,8 +67,6 @@ contract UpgradeableModularAccount is
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    event ModularAccountInitialized(IEntryPoint indexed entryPoint);
-
     error NonCanonicalEncoding();
     error NotEntryPoint();
     error PostExecHookReverted(address module, uint32 entityId, bytes revertReason);
@@ -249,7 +247,6 @@ contract UpgradeableModularAccount is
         bytes[] calldata hooks
     ) external initializer {
         _installValidation(validationConfig, selectors, installData, hooks);
-        emit ModularAccountInitialized(_ENTRY_POINT);
     }
 
     /// @inheritdoc IModuleManager
