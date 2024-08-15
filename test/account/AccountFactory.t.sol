@@ -17,7 +17,7 @@ contract AccountFactoryTest is AccountTestBase {
         _semiModularAccount = new SemiModularAccount(entryPoint);
 
         _factory = new AccountFactory(
-            entryPoint, _account, _semiModularAccount, address(singleSignerValidation), address(this)
+            entryPoint, _account, _semiModularAccount, address(singleSignerValidationModule), address(this)
         );
     }
 

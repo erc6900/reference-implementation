@@ -24,7 +24,7 @@ contract DeployTest is Test {
 
     address internal _accountImpl;
     address internal _smaImpl;
-    address internal _singleSignerValidation;
+    address internal _singleSignerValidationModule;
     address internal _factory;
 
     function setUp() public {
@@ -51,8 +51,8 @@ contract DeployTest is Test {
             CREATE2_FACTORY
         );
 
-        _singleSignerValidation = Create2.computeAddress(
-            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
+        _singleSignerValidationModule = Create2.computeAddress(
+            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)), CREATE2_FACTORY
         );
 
         _factory = Create2.computeAddress(
@@ -64,7 +64,7 @@ contract DeployTest is Test {
                         address(_entryPoint),
                         _accountImpl,
                         _smaImpl,
-                        _singleSignerValidation,
+                        _singleSignerValidationModule,
                         _owner
                     )
                 )

@@ -621,7 +621,7 @@ contract UpgradeableModularAccount is
     ) internal virtual returns (uint256) {
         (address module, uint32 entityId) = userOpValidationFunction.unpack();
 
-        return IValidation(module).validateUserOp(entityId, userOp, userOpHash);
+        return IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
     }
 
     function _execRuntimeValidation(
@@ -631,7 +631,7 @@ contract UpgradeableModularAccount is
     ) internal virtual {
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
 
-        try IValidation(module).validateRuntime(
+        try IValidationModule(module).validateRuntime(
             address(this), entityId, msg.sender, msg.value, callData, authorization
         )
         // forgefmt: disable-start
@@ -656,7 +656,7 @@ contract UpgradeableModularAccount is
         }
 
         if (
-            IValidation(module).validateSignature(address(this), entityId, msg.sender, hash, signature)
+            IValidationModule(module).validateSignature(address(this), entityId, msg.sender, hash, signature)
                 == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;

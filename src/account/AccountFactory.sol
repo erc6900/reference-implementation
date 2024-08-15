@@ -26,7 +26,7 @@ contract AccountFactory is Ownable {
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
         SemiModularAccount _semiModularImpl,
-        address _singleSignerValidation,
+        address _singleSignerValidationModule,
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
@@ -34,7 +34,7 @@ contract AccountFactory is Ownable {
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
         SEMI_MODULAR_ACCOUNT_IMPL = _semiModularImpl;
-        SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
+        SINGLE_SIGNER_VALIDATION_MODULE = _singleSignerValidationModule;
     }
 
     /**

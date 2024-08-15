@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {IModule, ModuleMetadata} from "../../interfaces/IModule.sol";
 import {IValidationModule} from "../../interfaces/IValidationModule.sol";
 import {BaseModule} from "../BaseModule.sol";
-import {ISingleSignerValidation} from "./ISingleSignerValidation.sol";
+import {ISingleSignerValidationModule} from "./ISingleSignerValidationModule.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";

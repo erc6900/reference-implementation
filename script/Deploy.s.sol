@@ -40,7 +40,7 @@ contract DeployScript is Script {
         vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
         _deploySemiModularAccountImpl(semiModularAccountImplSalt, semiModularAccountImpl);
-        _deploySingleSignerValidation(singleSignerValidationSalt, singleSignerValidation);
+        _deploySingleSignerValidation(singleSignerValidationModuleSalt, singleSignerValidationModule);
         _deployAccountFactory(factorySalt, factory);
         _addStakeForFactory(uint32(requiredUnstakeDelay), requiredStakeAmount);
         vm.stopBroadcast();
@@ -111,7 +111,7 @@ contract DeployScript is Script {
     }
 
     function _deploySingleSignerValidation(bytes32 salt, address expected) internal {
-        console.log(string.concat("Deploying SingleSignerValidation with salt: ", vm.toString(salt)));
+        console.log(string.concat("Deploying SingleSignerValidationModule with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
             salt, keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)), CREATE2_FACTORY
@@ -148,7 +148,7 @@ contract DeployScript is Script {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(entryPoint, accountImpl, semiModularAccountImpl, singleSignerValidation, owner)
+                    abi.encode(entryPoint, accountImpl, semiModularAccountImpl, singleSignerValidationModule, owner)
                 )
             ),
             CREATE2_FACTORY
@@ -167,7 +167,7 @@ contract DeployScript is Script {
                 entryPoint,
                 UpgradeableModularAccount(payable(accountImpl)),
                 SemiModularAccount(payable(semiModularAccountImpl)),
-                singleSignerValidation,
+                singleSignerValidationModule,
                 owner
             );
 

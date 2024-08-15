@@ -54,20 +54,20 @@ abstract contract AccountTestBase is OptimizedTest {
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
 
-        address deployedSingleSignerValidation = address(_deploySingleSignerValidation());
+        address deployedSingleSignerValidation = address(_deploySingleSignerValidationModule());
 
         // We etch the single signer validation to the max address, such that it coincides with the fallback
         // validation module entity for semi modular account tests.
-        singleSignerValidation = SingleSignerValidation(address(type(uint160).max));
-        vm.etch(address(singleSignerValidation), deployedSingleSignerValidation.code);
+        singleSignerValidationModule = SingleSignerValidationModule(address(type(uint160).max));
+        vm.etch(address(singleSignerValidationModule), deployedSingleSignerValidation.code);
 
-        factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidation);
+        factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidationModule);
 
         account1 = factory.createAccount(owner1, 0);
         vm.deal(address(account1), 100 ether);
 
         _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
@@ -181,10 +181,10 @@ abstract contract AccountTestBase is OptimizedTest {
             abi.encodeCall(
                 account1.execute,
                 (
-                    address(singleSignerValidation),
+                    address(singleSignerValidationModule),
                     0,
                     abi.encodeCall(
-                        SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
+                        SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, address(this))
                     )
                 )
             ),

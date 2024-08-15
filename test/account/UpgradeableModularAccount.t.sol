@@ -99,9 +99,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             : abi.encodeCall(
                 UpgradeableModularAccount.execute,
                 (
-                    address(singleSignerValidation),
+                    address(singleSignerValidationModule),
                     0,
-                    abi.encodeCall(SingleSignerValidation.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
+                    abi.encodeCall(SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2))
                 )
             );
 
@@ -359,16 +359,16 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(address(account3), address(uint160(uint256(vm.load(address(account1), slot)))));
     }
 
-    // TODO: Consider if this test belongs here or in the tests specific to the SingleSignerValidation
+    // TODO: Consider if this test belongs here or in the tests specific to the SingleSignerValidationModule
     function test_transferOwnership() public {
         if (vm.envBool("SMA_TEST")) {
             // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the
             // test to pass by ensuring the signer can be set in the validation.
             assertEq(
-                singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0)
+                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), address(0)
             );
         } else {
-            assertEq(singleSignerValidation.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
+            assertEq(singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1);
         }
 
         vm.prank(address(entryPoint));

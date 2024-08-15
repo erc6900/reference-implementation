@@ -35,7 +35,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
 
     function setUp() public {
         _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         allowlistModule = new AllowlistModule();
 
@@ -343,7 +343,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         );
         // patched to also work during SMA tests by differentiating the validation
         _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidation), TEST_DEFAULT_VALIDATION_ENTITY_ID - 1);
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID - 1);
         return (
             _signerValidation,
             true,
