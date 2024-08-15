@@ -474,7 +474,7 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason) {
+        {} catch (bytes memory revertReason){
         // forgefmt: disable-end
             revert RuntimeValidationFunctionReverted(module, entityId, revertReason);
         }
@@ -564,7 +564,7 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason) {
+        {} catch (bytes memory revertReason){
         // forgefmt: disable-end
             revert PreRuntimeValidationHookFailed(hookModule, hookEntityId, revertReason);
         }
