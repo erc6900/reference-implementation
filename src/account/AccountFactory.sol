@@ -16,6 +16,8 @@ contract AccountFactory is Ownable {
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
 
+    event ModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
+
     constructor(
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
@@ -55,6 +57,7 @@ contract AccountFactory is Ownable {
                 pluginInstallData,
                 new bytes[](0)
             );
+            emit ModularAccountDeployed(addr, owner, salt);
         }
 
         return UpgradeableModularAccount(payable(addr));
