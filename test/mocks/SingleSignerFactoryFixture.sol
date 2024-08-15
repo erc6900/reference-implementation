@@ -49,7 +49,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
         if (vm.envBool("SMA_TEST")) {
-            return createAccountWithFallbackValidation(owner, salt);
+            return createSemiModularAccount(owner, salt);
         }
 
         address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
@@ -74,7 +74,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function createAccountWithFallbackValidation(address owner, uint256 salt)
+    function createSemiModularAccount(address owner, uint256 salt)
         public
         returns (UpgradeableModularAccount)
     {

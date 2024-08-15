@@ -8,12 +8,14 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
+import {SemiModularAccount} from "../account/SemiModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
 import {LibClone} from "solady/utils/LibClone.sol";
 
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
+    SemiModularAccount public immutable SEMI_MODULAR_ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
@@ -23,14 +25,16 @@ contract AccountFactory is Ownable {
     constructor(
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
-        address _singleSignerValidationModule,
+        SemiModularAccount _semiModularImpl,
+        address _singleSignerValidation,
         address owner
     ) Ownable(owner) {
         ENTRY_POINT = _entryPoint;
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
-        SINGLE_SIGNER_VALIDATION_MODULE = _singleSignerValidationModule;
+        SEMI_MODULAR_ACCOUNT_IMPL = _semiModularImpl;
+        SINGLE_SIGNER_VALIDATION = _singleSignerValidation;
     }
 
     /**
@@ -65,7 +69,7 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
-    function createAccountWithFallbackValidation(address owner, uint256 salt)
+    function createSemiModularAccount(address owner, uint256 salt)
         external
         returns (UpgradeableModularAccount)
     {
@@ -79,7 +83,7 @@ contract AccountFactory is Ownable {
         // short circuit if exists
         if (addr.code.length == 0) {
             // not necessary to check return addr since next call will fail if so
-            LibClone.createDeterministicERC1967(address(ACCOUNT_IMPL), immutables, fullSalt);
+            LibClone.createDeterministicERC1967(address(SEMI_MODULAR_ACCOUNT_IMPL), immutables, fullSalt);
         }
 
         return UpgradeableModularAccount(payable(addr));

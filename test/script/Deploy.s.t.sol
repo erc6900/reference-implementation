@@ -10,6 +10,8 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {DeployScript} from "../../script/Deploy.s.sol";
 
 import {AccountFactory} from "../../src/account/AccountFactory.sol";
+
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
@@ -21,7 +23,8 @@ contract DeployTest is Test {
     address internal _owner;
 
     address internal _accountImpl;
-    address internal _singleSignerValidationModule;
+    address internal _smaImpl;
+    address internal _singleSignerValidation;
     address internal _factory;
 
     function setUp() public {
@@ -42,10 +45,14 @@ contract DeployTest is Test {
             CREATE2_FACTORY
         );
 
-        _singleSignerValidationModule = Create2.computeAddress(
+        _smaImpl = Create2.computeAddress(
             bytes32(0),
-            keccak256(abi.encodePacked(type(SingleSignerValidationModule).creationCode)),
+            keccak256(abi.encodePacked(type(SemiModularAccount).creationCode, abi.encode(address(_entryPoint)))),
             CREATE2_FACTORY
+        );
+
+        _singleSignerValidation = Create2.computeAddress(
+            bytes32(0), keccak256(abi.encodePacked(type(SingleSignerValidation).creationCode)), CREATE2_FACTORY
         );
 
         _factory = Create2.computeAddress(
@@ -53,17 +60,25 @@ contract DeployTest is Test {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(address(_entryPoint), _accountImpl, _singleSignerValidationModule, _owner)
+                    abi.encode(
+                        address(_entryPoint),
+                        _accountImpl,
+                        _smaImpl,
+                        _singleSignerValidation,
+                        _owner
+                    )
                 )
             ),
             CREATE2_FACTORY
         );
 
         vm.setEnv("ACCOUNT_IMPL", vm.toString(address(_accountImpl)));
+        vm.setEnv("SMA_IMPL", vm.toString(address(_smaImpl)));
         vm.setEnv("FACTORY", vm.toString(address(_factory)));
         vm.setEnv("SINGLE_SIGNER_VALIDATION_MODULE", vm.toString(_singleSignerValidationModule));
 
         vm.setEnv("ACCOUNT_IMPL_SALT", vm.toString(uint256(0)));
+        vm.setEnv("SMA_IMPL_SALT", vm.toString(uint256(0)));
         vm.setEnv("FACTORY_SALT", vm.toString(uint256(0)));
         vm.setEnv("SINGLE_SIGNER_VALIDATION_MODULE_SALT", vm.toString(uint256(0)));
 

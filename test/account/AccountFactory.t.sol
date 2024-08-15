@@ -2,16 +2,23 @@
 pragma solidity ^0.8.19;
 
 import {AccountFactory} from "../../src/account/AccountFactory.sol";
+
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountFactoryTest is AccountTestBase {
     AccountFactory internal _factory;
     UpgradeableModularAccount internal _account;
+    SemiModularAccount internal _semiModularAccount;
 
     function setUp() public {
         _account = new UpgradeableModularAccount(entryPoint);
-        _factory = new AccountFactory(entryPoint, _account, address(singleSignerValidationModule), address(this));
+        _semiModularAccount = new SemiModularAccount(entryPoint);
+
+        _factory = new AccountFactory(
+            entryPoint, _account, _semiModularAccount, address(singleSignerValidation), address(this)
+        );
     }
 
     function test_createAccount() public {
