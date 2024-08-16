@@ -21,7 +21,8 @@ contract AccountFactory is Ownable {
     address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
 
     event ModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
-    
+    event SemiModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
+
     error SemiModularAccountAddressMismatch(address expected, address returned);
 
     constructor(
@@ -80,11 +81,15 @@ contract AccountFactory is Ownable {
         address addr = _getAddressFallbackSigner(immutables, fullSalt);
 
         // LibClone short-circuits if it's already deployed.
-        (, address instance) =
+        (bool alreadyDeployed, address instance) =
             LibClone.createDeterministicERC1967(address(SEMI_MODULAR_ACCOUNT_IMPL), immutables, fullSalt);
 
         if (instance != addr) {
             revert SemiModularAccountAddressMismatch(addr, instance);
+        }
+
+        if (!alreadyDeployed) {
+            emit SemiModularAccountDeployed(addr, owner, salt);
         }
 
         return SemiModularAccount(payable(addr));
