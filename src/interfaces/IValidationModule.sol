@@ -6,7 +6,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {IModule} from "./IModule.sol";
 
 interface IValidationModule is IModule {
-    /// @notice Run the user operation validationFunction specified by the `entityId`.
+    /// @notice Run the user operation validation function specified by the `entityId`.
     /// @param entityId An identifier that routes the call to different internal implementations, should there
     /// be more than one.
     /// @param userOp The user operation.
@@ -16,7 +16,7 @@ interface IValidationModule is IModule {
         external
         returns (uint256);
 
-    /// @notice Run the runtime validationFunction specified by the `entityId`.
+    /// @notice Run the runtime validation function specified by the `entityId`.
     /// @dev To indicate the entire call should revert, the function MUST revert.
     /// @param account the account to validate for.
     /// @param entityId An identifier that routes the call to different internal implementations, should there

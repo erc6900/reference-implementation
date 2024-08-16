@@ -41,7 +41,7 @@ interface IAccountLoupe {
 
     /// @notice Get the validation data for a validation.
     /// @dev If the selector is a native function, the module address will be the address of the account.
-    /// @param validationFunction The validationFunction to get the data for.
+    /// @param validationFunction The validation function to get the data for.
     /// @return ValidationData The module address for this selector.
     function getValidationData(ModuleEntity validationFunction)
         external

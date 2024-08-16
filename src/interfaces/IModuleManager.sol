@@ -26,11 +26,8 @@ interface IModuleManager {
         bytes calldata moduleInstallData
     ) external;
 
-    /// @notice Temporary install function - pending a different user-supplied install config & manifest validation
-    /// path.
-    /// Installs a validation function across a set of execution selectors, and optionally mark it as a global
-    /// validation.
-    /// TODO: remove or update.
+    /// @notice Installs a validation function across a set of execution selectors, and optionally mark it as a
+    /// global validation.
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
@@ -46,7 +43,6 @@ interface IModuleManager {
     ) external;
 
     /// @notice Uninstall a validation function from a set of execution selectors.
-    /// TODO: remove or update.
     /// @param validationFunction The validation function to uninstall.
     /// @param uninstallData Optional data to be decoded and used by the module to clear module data for the
     /// account.
