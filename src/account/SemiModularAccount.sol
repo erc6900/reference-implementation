@@ -28,6 +28,9 @@ contract SemiModularAccount is UpgradeableModularAccount {
 
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
 
+    uint256 internal constant _SIG_VALIDATION_PASSED = 0;
+    uint256 internal constant _SIG_VALIDATION_FAILED = 1;
+
     event FallbackSignerSet(address indexed previousFallbackSigner, address indexed newFallbackSigner);
     event FallbackSignerDisabledSet(bool prevDisabled, bool newDisabled);
 

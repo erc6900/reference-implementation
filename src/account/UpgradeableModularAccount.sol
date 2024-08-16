@@ -34,9 +34,6 @@ import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./Acc
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-
 contract UpgradeableModularAccount is
     AccountExecutor,
     AccountLoupe,
@@ -54,8 +51,6 @@ contract UpgradeableModularAccount is
     using ValidationConfigLib for ValidationConfig;
     using HookConfigLib for HookConfig;
     using SparseCalldataSegmentLib for bytes;
-    using MessageHashUtils for bytes32;
-    using ECDSA for bytes32;
 
     struct PostExecToRun {
         bytes preExecHookReturnData;
@@ -71,9 +66,6 @@ contract UpgradeableModularAccount is
     // bytes4(keccak256("isValidSignature(bytes32,bytes)"))
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
-
-    uint256 internal constant _SIG_VALIDATION_PASSED = 0;
-    uint256 internal constant _SIG_VALIDATION_FAILED = 1;
 
     event ModularAccountInitialized(IEntryPoint indexed entryPoint);
 
