@@ -30,7 +30,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     constructor(IEntryPoint _entryPoint, SingleSignerValidationModule _singleSignerValidationModule) {
         entryPoint = _entryPoint;
 
-        accountImplementation = vm.envBool("SMA_TEST")
+        accountImplementation = vm.envOr("SMA_TEST", false)
             ? _deploySemiModularAccount(_entryPoint)
             : _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
@@ -50,7 +50,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
         // We cast the SemiModularAccount to an UpgradeableModularAccount to facilitate equivalence testing.
         // However, we don't do this in the actual factory.
-        if (vm.envBool("SMA_TEST")) {
+        if (vm.envOr("SMA_TEST", false)) {
             return createSemiModularAccount(owner, salt);
         }
 
@@ -97,8 +97,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
     /**
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(address owner, uint256 salt) public view returns (address) {
-        if (vm.envBool("SMA_TEST")) {
+    function getAddress(address owner, uint256 salt) public returns (address) {
+        if (vm.envOr("SMA_TEST", false)) {
             return getAddressFallbackSigner(owner, salt);
         }
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);

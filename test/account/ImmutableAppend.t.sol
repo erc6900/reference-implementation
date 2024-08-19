@@ -14,7 +14,7 @@ contract ImmutableAppendTest is AccountTestBase {
     /* -------------------------------------------------------------------------- */
 
     function test_success_getData() public {
-        if (!vm.envBool("SMA_TEST")) {
+        if (!vm.envOr("SMA_TEST", false)) {
             // this test isn't relevant at all for non-SMA, and is temporary.
             return;
         }

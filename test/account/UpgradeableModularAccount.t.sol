@@ -94,7 +94,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_basicUserOp_withInitCode() public {
-        bytes memory callData = vm.envBool("SMA_TEST")
+        bytes memory callData = vm.envOr("SMA_TEST", false)
             ? abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (owner2))
             : abi.encodeCall(
                 UpgradeableModularAccount.execute,
@@ -363,7 +363,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     // TODO: Consider if this test belongs here or in the tests specific to the SingleSignerValidationModule
     function test_transferOwnership() public {
-        if (vm.envBool("SMA_TEST")) {
+        if (vm.envOr("SMA_TEST", false)) {
             // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the
             // test to pass by ensuring the signer can be set in the validation.
             assertEq(

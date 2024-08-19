@@ -170,7 +170,7 @@ abstract contract AccountTestBase is OptimizedTest {
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
-        if (vm.envBool("SMA_TEST")) {
+        if (vm.envOr("SMA_TEST", false)) {
             account1.executeWithAuthorization(
                 abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (address(this))),
                 _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")

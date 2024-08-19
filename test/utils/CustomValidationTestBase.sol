@@ -28,7 +28,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
 
         account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
-        if (vm.envBool("SMA_TEST")) {
+        if (vm.envOr("SMA_TEST", false)) {
             vm.prank(address(entryPoint));
             // The initializer doesn't work on the SMA
             account1.installValidation(
