@@ -23,8 +23,6 @@ contract AccountFactory is Ownable {
     event ModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
     event SemiModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
 
-    error SemiModularAccountAddressMismatch(address expected, address returned);
-
     constructor(
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
@@ -78,21 +76,15 @@ contract AccountFactory is Ownable {
 
         bytes memory immutables = _getImmutableArgs(owner);
 
-        address addr = _getAddressSemiModular(immutables, fullSalt);
-
         // LibClone short-circuits if it's already deployed.
         (bool alreadyDeployed, address instance) =
             LibClone.createDeterministicERC1967(address(SEMI_MODULAR_ACCOUNT_IMPL), immutables, fullSalt);
 
-        if (instance != addr) {
-            revert SemiModularAccountAddressMismatch(addr, instance);
-        }
-
         if (!alreadyDeployed) {
-            emit SemiModularAccountDeployed(addr, owner, salt);
+            emit SemiModularAccountDeployed(instance, owner, salt);
         }
 
-        return SemiModularAccount(payable(addr));
+        return SemiModularAccount(payable(instance));
     }
 
     function addStake(uint32 unstakeDelay) external payable onlyOwner {
