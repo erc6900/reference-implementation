@@ -731,10 +731,9 @@ contract UpgradeableModularAccount is
     {
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (_globalValidationAllowed(selector) && _isValidationGlobal(validationFunction)) {
-                return;
+            if (!_globalValidationAllowed(selector) || !_isValidationGlobal(validationFunction)) {
+                revert ValidationFunctionMissing(selector);
             }
-            revert ValidationFunctionMissing(selector);
         } else {
             // Not global validation, but per-selector
             if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
