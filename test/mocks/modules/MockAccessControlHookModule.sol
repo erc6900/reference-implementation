@@ -3,8 +3,8 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
+import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
 import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
@@ -35,7 +35,7 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         returns (uint256)
     {
         if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
-            if (bytes4(userOp.callData[:4]) == IStandardExecutor.execute.selector) {
+            if (bytes4(userOp.callData[:4]) == IModularAccount.execute.selector) {
                 address target = abi.decode(userOp.callData[4:36], (address));
 
                 // Simulate a merkle proof - require that the target address is also provided in the signature
@@ -56,7 +56,7 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         bytes calldata authorization
     ) external view override {
         if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
-            if (bytes4(data[:4]) == IStandardExecutor.execute.selector) {
+            if (bytes4(data[:4]) == IModularAccount.execute.selector) {
                 address target = abi.decode(data[4:36], (address));
 
                 // Simulate a merkle proof - require that the target address is also provided in the authorization

@@ -2,14 +2,12 @@
 pragma solidity ^0.8.25;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ExecutionDataView, IAccountLoupe, ValidationDataView} from "../interfaces/IAccountLoupe.sol";
-import {HookConfig, IModuleManager, ModuleEntity} from "../interfaces/IModuleManager.sol";
-import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
+import {HookConfig, IModularAccount, ModuleEntity} from "../interfaces/IModularAccount.sol";
 import {ExecutionData, ValidationData, getAccountStorage} from "./AccountStorage.sol";
 
 abstract contract AccountLoupe is IAccountLoupe {
@@ -20,10 +18,10 @@ abstract contract AccountLoupe is IAccountLoupe {
     /// @inheritdoc IAccountLoupe
     function getExecutionData(bytes4 selector) external view override returns (ExecutionDataView memory data) {
         if (
-            selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
+            selector == IModularAccount.execute.selector || selector == IModularAccount.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
-                || selector == IModuleManager.installExecution.selector
-                || selector == IModuleManager.uninstallExecution.selector
+                || selector == IModularAccount.installExecution.selector
+                || selector == IModularAccount.uninstallExecution.selector
         ) {
             data.module = address(this);
             data.allowGlobalValidation = true;

@@ -5,7 +5,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ModuleMetadata} from "../../interfaces/IModule.sol";
 
-import {Call, IStandardExecutor} from "../../interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount} from "../../interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../../interfaces/IValidationHookModule.sol";
 import {BaseModule} from "../../modules/BaseModule.sol";
 
@@ -110,10 +110,10 @@ contract AllowlistModule is IValidationHookModule, BaseModule {
     }
 
     function checkAllowlistCalldata(uint32 entityId, bytes calldata callData) public view {
-        if (bytes4(callData[:4]) == IStandardExecutor.execute.selector) {
+        if (bytes4(callData[:4]) == IModularAccount.execute.selector) {
             (address target,, bytes memory data) = abi.decode(callData[4:], (address, uint256, bytes));
             _checkCallPermission(entityId, msg.sender, target, data);
-        } else if (bytes4(callData[:4]) == IStandardExecutor.executeBatch.selector) {
+        } else if (bytes4(callData[:4]) == IModularAccount.executeBatch.selector) {
             Call[] memory calls = abi.decode(callData[4:], (Call[]));
 
             for (uint256 i = 0; i < calls.length; i++) {

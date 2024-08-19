@@ -6,9 +6,8 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
+import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
 import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
-import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {BaseModule, IERC165} from "./BaseModule.sol";
 
@@ -146,9 +145,9 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidation
 
         uint256 value;
         // Get value being sent
-        if (selector == IStandardExecutor.execute.selector) {
+        if (selector == IModularAccount.execute.selector) {
             (, value) = abi.decode(callData, (address, uint256));
-        } else if (selector == IStandardExecutor.executeBatch.selector) {
+        } else if (selector == IModularAccount.executeBatch.selector) {
             Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 value += calls[i].value;

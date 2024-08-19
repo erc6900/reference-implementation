@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
+import {ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 
 // Validation config is a packed representation of a validation function and flags for its configuration.
 // Layout:

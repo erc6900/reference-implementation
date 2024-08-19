@@ -13,8 +13,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
+import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
 import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
-import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
 
 import {BaseModule, IERC165} from "./BaseModule.sol";
 
@@ -59,12 +59,12 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
     {
         (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
 
-        if (selector == IStandardExecutor.execute.selector) {
+        if (selector == IModularAccount.execute.selector) {
             (address token,, bytes memory innerCalldata) = abi.decode(callData, (address, uint256, bytes));
             if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(token))))) {
                 _decrementLimit(entityId, token, innerCalldata);
             }
-        } else if (selector == IStandardExecutor.executeBatch.selector) {
+        } else if (selector == IModularAccount.executeBatch.selector) {
             Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
                 if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(calls[i].target))))) {

@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
+import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
 import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
-
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
 contract DirectCallModule is BaseModule, IExecutionHookModule {
@@ -16,7 +15,7 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
     function onUninstall(bytes calldata) external override {}
 
     function directCall() external returns (bytes memory) {
-        return IStandardExecutor(msg.sender).execute(address(this), 0, abi.encodeCall(this.getData, ()));
+        return IModularAccount(msg.sender).execute(address(this), 0, abi.encodeCall(this.getData, ()));
     }
 
     function getData() external pure returns (bytes memory) {

@@ -8,7 +8,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
@@ -71,19 +71,19 @@ abstract contract AccountTestBase is OptimizedTest {
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
-        _runUserOp(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)));
+        _runUserOp(abi.encodeCall(IModularAccount.execute, (target, 0, callData)));
     }
 
     function _runExecUserOp(address target, bytes memory callData, bytes memory revertReason) internal {
-        _runUserOp(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), revertReason);
+        _runUserOp(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), revertReason);
     }
 
     function _runExecBatchUserOp(Call[] memory calls) internal {
-        _runUserOp(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        _runUserOp(abi.encodeCall(IModularAccount.executeBatch, (calls)));
     }
 
     function _runExecBatchUserOp(Call[] memory calls, bytes memory revertReason) internal {
-        _runUserOp(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), revertReason);
+        _runUserOp(abi.encodeCall(IModularAccount.executeBatch, (calls)), revertReason);
     }
 
     function _runUserOp(bytes memory callData) internal {
@@ -121,29 +121,29 @@ abstract contract AccountTestBase is OptimizedTest {
     }
 
     function _runtimeExec(address target, bytes memory callData) internal {
-        _runtimeCall(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)));
+        _runtimeCall(abi.encodeCall(IModularAccount.execute, (target, 0, callData)));
     }
 
     function _runtimeExec(address target, bytes memory callData, bytes memory expectedRevertData) internal {
-        _runtimeCall(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
+        _runtimeCall(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), expectedRevertData);
     }
 
     function _runtimeExecExpFail(address target, bytes memory callData, bytes memory expectedRevertData)
         internal
     {
-        _runtimeCallExpFail(abi.encodeCall(IStandardExecutor.execute, (target, 0, callData)), expectedRevertData);
+        _runtimeCallExpFail(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), expectedRevertData);
     }
 
     function _runtimeExecBatch(Call[] memory calls) internal {
-        _runtimeCall(abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        _runtimeCall(abi.encodeCall(IModularAccount.executeBatch, (calls)));
     }
 
     function _runtimeExecBatch(Call[] memory calls, bytes memory expectedRevertData) internal {
-        _runtimeCall(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), expectedRevertData);
+        _runtimeCall(abi.encodeCall(IModularAccount.executeBatch, (calls)), expectedRevertData);
     }
 
     function _runtimeExecBatchExpFail(Call[] memory calls, bytes memory expectedRevertData) internal {
-        _runtimeCallExpFail(abi.encodeCall(IStandardExecutor.executeBatch, (calls)), expectedRevertData);
+        _runtimeCallExpFail(abi.encodeCall(IModularAccount.executeBatch, (calls)), expectedRevertData);
     }
 
     function _runtimeCall(bytes memory callData) internal {

@@ -8,13 +8,10 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
-
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {IExecutionModule} from "../interfaces/IExecutionModule.sol";
+import {IModularAccount} from "../interfaces/IModularAccount.sol";
 import {IModule} from "../interfaces/IModule.sol";
-import {IModuleManager} from "../interfaces/IModuleManager.sol";
-import {IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../interfaces/IValidationModule.sol";
 
@@ -25,18 +22,18 @@ library KnownSelectors {
         return
         // check against IAccount methods
         selector == IAccount.validateUserOp.selector
-        // check against IModuleManager methods
-        || selector == IModuleManager.installExecution.selector
-            || selector == IModuleManager.uninstallExecution.selector
+        // check against module manager methods
+        || selector == IModularAccount.installExecution.selector
+            || selector == IModularAccount.uninstallExecution.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods
         || selector == UUPSUpgradeable.proxiableUUID.selector
             || selector == UUPSUpgradeable.upgradeToAndCall.selector
-        // check against IStandardExecutor methods
-        || selector == IStandardExecutor.execute.selector || selector == IStandardExecutor.executeBatch.selector
-            || selector == IStandardExecutor.executeWithAuthorization.selector
-        // check against IAccountLoupe methods
+        // check against IModularAccount methods
+        || selector == IModularAccount.execute.selector || selector == IModularAccount.executeBatch.selector
+            || selector == IModularAccount.executeWithAuthorization.selector
+        // check against account loupe methods
         || selector == IAccountLoupe.getExecutionData.selector
             || selector == IAccountLoupe.getValidationData.selector;
     }

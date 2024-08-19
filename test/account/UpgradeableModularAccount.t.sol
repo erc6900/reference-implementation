@@ -14,10 +14,10 @@ import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.s
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
-import {ExecutionDataView, IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {IModuleManager} from "../../src/interfaces/IModuleManager.sol";
-import {Call} from "../../src/interfaces/IStandardExecutor.sol";
+
+import {ExecutionDataView} from "../../src/interfaces/IAccountLoupe.sol";
+import {Call} from "../../src/interfaces/IModularAccount.sol";
 
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
@@ -249,14 +249,13 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         vm.expectEmit(true, true, true, true);
         emit ExecutionInstalled(address(tokenReceiverModule), tokenReceiverModule.executionManifest());
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(tokenReceiverModule),
             manifest: tokenReceiverModule.executionManifest(),
             moduleInstallData: abi.encode(uint48(1 days))
         });
 
-        ExecutionDataView memory data =
-            IAccountLoupe(account1).getExecutionData(TokenReceiverModule.onERC721Received.selector);
+        ExecutionDataView memory data = account1.getExecutionData(TokenReceiverModule.onERC721Received.selector);
         assertEq(data.module, address(tokenReceiverModule));
     }
 
@@ -267,7 +266,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         MockModule mockModuleWithBadPermittedExec = new MockModule(m);
 
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(mockModuleWithBadPermittedExec),
             manifest: mockModuleWithBadPermittedExec.executionManifest(),
             moduleInstallData: ""
@@ -284,14 +283,14 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         ExecutionManifest memory m;
 
-        IModuleManager(account1).installExecution({module: address(badModule), manifest: m, moduleInstallData: ""});
+        account1.installExecution({module: address(badModule), manifest: m, moduleInstallData: ""});
     }
 
     function test_installExecution_alreadyInstalled() public {
         ExecutionManifest memory m = tokenReceiverModule.executionManifest();
 
         vm.prank(address(entryPoint));
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
@@ -304,7 +303,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
                 TokenReceiverModule.onERC721Received.selector
             )
         );
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(tokenReceiverModule),
             manifest: m,
             moduleInstallData: abi.encode(uint48(1 days))
@@ -315,7 +314,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
 
         ComprehensiveModule module = new ComprehensiveModule();
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleInstallData: ""
@@ -323,13 +322,13 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         vm.expectEmit(true, true, true, true);
         emit ExecutionUninstalled(address(module), true, module.executionManifest());
-        IModuleManager(account1).uninstallExecution({
+        account1.uninstallExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleUninstallData: ""
         });
 
-        ExecutionDataView memory data = IAccountLoupe(account1).getExecutionData(module.foo.selector);
+        ExecutionDataView memory data = account1.getExecutionData(module.foo.selector);
         assertEq(data.module, address(0));
     }
 
@@ -338,7 +337,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         module = new MockModule(_manifest);
 
-        IModuleManager(account1).installExecution({
+        account1.installExecution({
             module: address(module),
             manifest: module.executionManifest(),
             moduleInstallData: ""

@@ -6,7 +6,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -32,7 +32,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
     function test_Fail_DirectCallModuleNotInstalled() external {
         vm.prank(address(_module));
-        vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
+        vm.expectRevert(_buildDirectCallDisallowedError(IModularAccount.execute.selector));
         account1.execute(address(0), 0, "");
     }
 
@@ -42,7 +42,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         _uninstallValidation();
 
         vm.prank(address(_module));
-        vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
+        vm.expectRevert(_buildDirectCallDisallowedError(IModularAccount.execute.selector));
         account1.execute(address(0), 0, "");
     }
 
@@ -52,7 +52,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         Call[] memory calls = new Call[](0);
 
         vm.prank(address(_module));
-        vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.executeBatch.selector));
+        vm.expectRevert(_buildDirectCallDisallowedError(IModularAccount.executeBatch.selector));
         account1.executeBatch(calls);
     }
 
@@ -100,7 +100,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         _uninstallValidation();
 
         vm.prank(address(_module));
-        vm.expectRevert(_buildDirectCallDisallowedError(IStandardExecutor.execute.selector));
+        vm.expectRevert(_buildDirectCallDisallowedError(IModularAccount.execute.selector));
         account1.execute(address(0), 0, "");
     }
 
@@ -110,7 +110,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
     function _installValidation() internal {
         bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IStandardExecutor.execute.selector;
+        selectors[0] = IModularAccount.execute.selector;
 
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(

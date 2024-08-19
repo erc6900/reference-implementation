@@ -4,11 +4,9 @@ pragma solidity ^0.8.25;
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
-
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-
+import {Call} from "../../src/interfaces/IModularAccount.sol";
 import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
 
 import {Counter} from "../mocks/Counter.sol";

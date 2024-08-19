@@ -7,7 +7,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 
-import {ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
+import {ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";

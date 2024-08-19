@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
+import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 
 // bytes = keccak256("ERC6900.UpgradeableModularAccount.Storage")
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0x9f09680beaa4e5c9f38841db2460c401499164f368baef687948c315d9073e40;

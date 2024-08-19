@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
@@ -11,8 +10,8 @@ import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecutionModule.sol";
+import {HookConfig, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 import {IModule} from "../interfaces/IModule.sol";
-import {HookConfig, IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
 import {
     AccountStorage,
     ExecutionData,
@@ -22,7 +21,7 @@ import {
     toSetValue
 } from "./AccountStorage.sol";
 
-abstract contract ModuleManagerInternals is IModuleManager {
+abstract contract ModuleManagerInternals is IModularAccount {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
     using ValidationConfigLib for ValidationConfig;

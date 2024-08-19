@@ -9,7 +9,7 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -100,7 +100,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         _runUserOp(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
+            abi.encodeCall(IModularAccount.executeBatch, (calls)),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
@@ -135,7 +135,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         _runUserOp(
             abi.encodePacked(
-                IAccountExecute.executeUserOp.selector, abi.encodeCall(IStandardExecutor.executeBatch, (calls))
+                IAccountExecute.executeUserOp.selector, abi.encodeCall(IModularAccount.executeBatch, (calls))
             ),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
@@ -176,9 +176,8 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         calls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
         calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
-        PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls))
-        );
+        PackedUserOperation memory userOp =
+            _generateUserOpWithComprehensiveModuleValidation(abi.encodeCall(IModularAccount.executeBatch, (calls)));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -196,7 +195,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodePacked(
-                IAccountExecute.executeUserOp.selector, abi.encodeCall(IStandardExecutor.executeBatch, (calls))
+                IAccountExecute.executeUserOp.selector, abi.encodeCall(IModularAccount.executeBatch, (calls))
             )
         );
 
@@ -216,7 +215,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
 
         vm.expectCall(address(comprehensiveModule), abi.encodeCall(ComprehensiveModule.foo, ()), 2);
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls)),
+            abi.encodeCall(IModularAccount.executeBatch, (calls)),
             _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
     }
@@ -228,10 +227,10 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
-        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
+        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IModularAccount.executeBatch, (innerCalls)));
 
         PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
-            abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
+            abi.encodeCall(IModularAccount.executeBatch, (outerCalls))
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -255,12 +254,11 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
-        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
+        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IModularAccount.executeBatch, (innerCalls)));
 
         PackedUserOperation memory userOp = _generateUserOpWithComprehensiveModuleValidation(
             abi.encodePacked(
-                IAccountExecute.executeUserOp.selector,
-                abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls))
+                IAccountExecute.executeUserOp.selector, abi.encodeCall(IModularAccount.executeBatch, (outerCalls))
             )
         );
 
@@ -285,11 +283,11 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         innerCalls[0] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         Call[] memory outerCalls = new Call[](1);
-        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IStandardExecutor.executeBatch, (innerCalls)));
+        outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IModularAccount.executeBatch, (innerCalls)));
 
         vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector));
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.executeBatch, (outerCalls)),
+            abi.encodeCall(IModularAccount.executeBatch, (outerCalls)),
             _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
     }
@@ -299,7 +297,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         // self-call.
 
         bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IStandardExecutor.executeBatch.selector;
+        selectors[0] = IModularAccount.executeBatch.selector;
 
         vm.prank(owner1);
         account1.executeWithAuthorization(
