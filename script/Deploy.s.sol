@@ -164,7 +164,6 @@ contract DeployScript is Script {
 
         if (addr.code.length == 0) {
             console.log("No code found at expected address, deploying...");
-            // Patched
             AccountFactory deployed = new AccountFactory{salt: salt}(
                 entryPoint,
                 UpgradeableModularAccount(payable(accountImpl)),
