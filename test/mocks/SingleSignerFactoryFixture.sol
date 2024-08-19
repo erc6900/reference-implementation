@@ -81,7 +81,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         bytes memory immutables = _getImmutableArgs(owner);
 
-        address addr = _getAddressFallbackSigner(immutables, fullSalt);
+        address addr = _getAddressSemiModular(immutables, fullSalt);
 
         // LibClone short-circuits if it's already deployed.
         (, address instance) =
@@ -99,15 +99,15 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      */
     function getAddress(address owner, uint256 salt) public returns (address) {
         if (vm.envOr("SMA_TEST", false)) {
-            return getAddressFallbackSigner(owner, salt);
+            return getAddressSemiModular(owner, salt);
         }
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
     }
 
-    function getAddressFallbackSigner(address owner, uint256 salt) public view returns (address) {
+    function getAddressSemiModular(address owner, uint256 salt) public view returns (address) {
         bytes32 fullSalt = getSalt(owner, salt);
         bytes memory immutables = _getImmutableArgs(owner);
-        return _getAddressFallbackSigner(immutables, fullSalt);
+        return _getAddressSemiModular(immutables, fullSalt);
     }
 
     function addStake() external payable {
@@ -118,7 +118,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return keccak256(abi.encodePacked(owner, salt));
     }
 
-    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) internal view returns (address) {
+    function _getAddressSemiModular(bytes memory immutables, bytes32 salt) internal view returns (address) {
         return LibClone.predictDeterministicAddressERC1967(
             address(accountImplementation), immutables, salt, address(this)
         );

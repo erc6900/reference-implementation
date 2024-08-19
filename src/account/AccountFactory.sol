@@ -78,7 +78,7 @@ contract AccountFactory is Ownable {
 
         bytes memory immutables = _getImmutableArgs(owner);
 
-        address addr = _getAddressFallbackSigner(immutables, fullSalt);
+        address addr = _getAddressSemiModular(immutables, fullSalt);
 
         // LibClone short-circuits if it's already deployed.
         (bool alreadyDeployed, address instance) =
@@ -114,17 +114,17 @@ contract AccountFactory is Ownable {
         return Create2.computeAddress(getSalt(owner, salt, entityId), _PROXY_BYTECODE_HASH);
     }
 
-    function getAddressFallbackSigner(address owner, uint256 salt) public view returns (address) {
+    function getAddressSemiModular(address owner, uint256 salt) public view returns (address) {
         bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
         bytes memory immutables = _getImmutableArgs(owner);
-        return _getAddressFallbackSigner(immutables, fullSalt);
+        return _getAddressSemiModular(immutables, fullSalt);
     }
 
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt, entityId));
     }
 
-    function _getAddressFallbackSigner(bytes memory immutables, bytes32 salt) internal view returns (address) {
+    function _getAddressSemiModular(bytes memory immutables, bytes32 salt) internal view returns (address) {
         return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
     }
 
