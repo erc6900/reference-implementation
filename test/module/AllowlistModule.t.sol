@@ -342,16 +342,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
             abi.encode(HOOK_ENTITY_ID, allowlistInit)
         );
         // patched to also work during SMA tests by differentiating the validation
-        _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidationModule),  type(uint32).max - 1);
-        return (
-            _signerValidation,
-            true,
-            true,
-            new bytes4[](0),
-            abi.encode(type(uint32).max - 1, owner1),
-            hooks
-        );
+        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), type(uint32).max - 1);
+        return (_signerValidation, true, true, new bytes4[](0), abi.encode(type(uint32).max - 1, owner1), hooks);
     }
 
     // Unfortunately, this is a feature that solidity has only implemented in via-ir, so we need to do it manually
