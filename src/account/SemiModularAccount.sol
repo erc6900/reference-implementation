@@ -80,7 +80,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     /// validation is enabled or not.
     /// @return The fallback signer address, either overriden in storage, or read from bytecode.
     function getFallbackSigner() external view returns (address) {
-        return _getFallbackSigner();
+        return _retrieveFallbackSignerUnchecked(_getSemiModularAccountStorage());
     }
 
     function _execUserOpValidation(
