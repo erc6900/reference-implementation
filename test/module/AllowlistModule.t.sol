@@ -343,13 +343,13 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         );
         // patched to also work during SMA tests by differentiating the validation
         _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID - 1);
+            ModuleEntityLib.pack(address(singleSignerValidationModule),  type(uint32).max - 1);
         return (
             _signerValidation,
             true,
             true,
             new bytes4[](0),
-            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID - 1, owner1),
+            abi.encode(type(uint32).max - 1, owner1),
             hooks
         );
     }
