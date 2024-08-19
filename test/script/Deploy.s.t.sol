@@ -87,6 +87,7 @@ contract DeployTest is Test {
         _deployScript.run();
 
         assertTrue(_accountImpl.code.length > 0);
+        assertTrue(_smaImpl.code.length > 0);
         assertTrue(_factory.code.length > 0);
         assertTrue(_singleSignerValidationModule.code.length > 0);
 
