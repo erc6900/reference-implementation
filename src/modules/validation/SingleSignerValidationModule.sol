@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
+import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
 import {IModule} from "../../interfaces/IModule.sol";
 import {IValidationModule} from "../../interfaces/IValidationModule.sol";
 import {BaseModule} from "../BaseModule.sol";
 
 import {ReplaySafeWrapper} from "../ReplaySafeWrapper.sol";
 import {ISingleSignerValidationModule} from "./ISingleSignerValidationModule.sol";
-import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 /// @title ECSDA Validation
 /// @author ERC-6900 Authors
@@ -113,6 +115,16 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySa
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
         return "erc6900/single-signer-validation-module/1.0.0";
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(BaseModule, IERC165)
+        returns (bool)
+    {
+        return (interfaceId == type(IValidationModule).interfaceId || super.supportsInterface(interfaceId));
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

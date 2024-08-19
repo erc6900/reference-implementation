@@ -288,7 +288,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         address badModule = address(1);
         vm.expectRevert(
-            abi.encodeWithSelector(ModuleManagerInternals.ModuleInterfaceNotSupported.selector, address(badModule))
+            abi.encodeWithSelector(ModuleManagerInternals.InterfaceNotSupported.selector, address(badModule))
         );
 
         ExecutionManifest memory m;

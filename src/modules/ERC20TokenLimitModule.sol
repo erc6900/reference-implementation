@@ -120,7 +120,7 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
 
     /// @inheritdoc BaseModule
     function supportsInterface(bytes4 interfaceId) public view override(BaseModule, IERC165) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == type(IExecutionHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _decrementLimit(uint32 entityId, address token, bytes memory innerCalldata) internal {

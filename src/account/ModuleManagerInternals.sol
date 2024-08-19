@@ -10,9 +10,13 @@ import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
+import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecutionModule.sol";
 import {HookConfig, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 import {IModule} from "../interfaces/IModule.sol";
+import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
+import {IValidationModule} from "../interfaces/IValidationModule.sol";
+
 import {
     AccountStorage,
     ExecutionData,
@@ -32,11 +36,11 @@ abstract contract ModuleManagerInternals is IModularAccount {
     error Erc4337FunctionNotAllowed(bytes4 selector);
     error ExecutionFunctionAlreadySet(bytes4 selector);
     error IModuleFunctionNotAllowed(bytes4 selector);
+    error InterfaceNotSupported(address module);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
     error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookConfig);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
-    error ModuleInterfaceNotSupported(address module);
     error ModuleNotInstalled(address module);
     error PreValidationHookLimitExceeded();
     error ValidationAlreadySet(bytes4 selector, ModuleEntity validationFunction);
@@ -134,10 +138,8 @@ abstract contract ModuleManagerInternals is IModularAccount {
             revert NullModule();
         }
 
-        // TODO: do we need this check? Or switch to a non-165 checking function?
-        // Check that the module supports the IModule interface.
         if (!ERC165Checker.supportsInterface(module, type(IModule).interfaceId)) {
-            revert ModuleInterfaceNotSupported(module);
+            revert InterfaceNotSupported(module);
         }
 
         // Update components according to the manifest.
@@ -228,6 +230,16 @@ abstract contract ModuleManagerInternals is IModularAccount {
         }
     }
 
+    function _onInstall(address module, bytes calldata data, bytes4 interfaceId) internal {
+        if (data.length > 0) {
+            if (!ERC165Checker.supportsInterface(module, interfaceId)) {
+                revert InterfaceNotSupported(module);
+            }
+
+            IModule(module).onInstall(data);
+        }
+    }
+
     function _onUninstall(address module, bytes calldata data) internal returns (bool onUninstallSuccess) {
         onUninstallSuccess = true;
         if (data.length > 0) {
@@ -261,12 +273,17 @@ abstract contract ModuleManagerInternals is IModularAccount {
                 if (_validationData.preValidationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
                     revert PreValidationHookLimitExceeded();
                 }
-            } // Hook is an execution hook
-            else if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
+
+                _onInstall(hookConfig.module(), hookData, type(IValidationHookModule).interfaceId);
+
+                continue;
+            }
+            // Hook is a permission hook
+            if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
                 revert PermissionAlreadySet(moduleEntity, hookConfig);
             }
 
-            _onInstall(hookConfig.module(), hookData);
+            _onInstall(hookConfig.module(), hookData, type(IExecutionHookModule).interfaceId);
         }
 
         for (uint256 i = 0; i < selectors.length; ++i) {
@@ -279,7 +296,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
         _validationData.isGlobal = validationConfig.isGlobal();
         _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
 
-        _onInstall(validationConfig.module(), installData);
+        _onInstall(validationConfig.module(), installData, type(IValidationModule).interfaceId);
         emit ValidationInstalled(validationConfig.module(), validationConfig.entityId());
     }
 
