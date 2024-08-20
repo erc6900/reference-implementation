@@ -397,7 +397,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         // singleSignerValidationModule.ownerOf(address(account1));
 
-        bytes memory signature = abi.encodePacked(_signerValidation, r, s, v);
+        bytes memory signature = _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v));
 
         bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);
 

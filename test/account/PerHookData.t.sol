@@ -355,6 +355,53 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
     }
 
+    function test_pass1271AccessControl() public {
+        string memory message = "Hello, world!";
+
+        bytes32 messageHash = keccak256(abi.encodePacked(message));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, messageHash);
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(message)});
+
+        bytes4 result = account1.isValidSignature(
+            messageHash, _encode1271Signature(_signerValidation, preValidationHookData, abi.encodePacked(r, s, v))
+        );
+
+        assertEq(result, bytes4(0x1626ba7e));
+    }
+
+    function test_fail1271AccessControl_badSigData() public {
+        string memory message = "Hello, world!";
+
+        bytes32 messageHash = keccak256(abi.encodePacked(message));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, messageHash);
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
+        preValidationHookData[0] = PreValidationHookData({
+            index: 0,
+            validationData: abi.encodePacked(address(0x1234123412341234123412341234123412341234))
+        });
+
+        vm.expectRevert("Preimage not provided");
+        account1.isValidSignature(
+            messageHash, _encode1271Signature(_signerValidation, preValidationHookData, abi.encodePacked(r, s, v))
+        );
+    }
+
+    function test_fail1271AccessControl_noSigData() public {
+        string memory message = "Hello, world!";
+
+        bytes32 messageHash = keccak256(abi.encodePacked(message));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, messageHash);
+
+        vm.expectRevert("Preimage not provided");
+        account1.isValidSignature(messageHash, _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v)));
+    }
+
     function _getCounterUserOP() internal view returns (PackedUserOperation memory, bytes32) {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
