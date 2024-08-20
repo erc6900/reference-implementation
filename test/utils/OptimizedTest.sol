@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
@@ -43,6 +44,16 @@ abstract contract OptimizedTest is Test {
                 )
             )
             : new UpgradeableModularAccount(entryPoint);
+    }
+
+    function _deploySemiModularAccount(IEntryPoint entryPoint) internal returns (UpgradeableModularAccount) {
+        return _isOptimizedTest()
+            ? UpgradeableModularAccount(
+                payable(
+                    deployCode("out-optimized/SemiModularAccount.sol/SemiModularAccount.json", abi.encode(entryPoint))
+                )
+            )
+            : UpgradeableModularAccount(new SemiModularAccount(entryPoint));
     }
 
     function _deployTokenReceiverModule() internal returns (TokenReceiverModule) {

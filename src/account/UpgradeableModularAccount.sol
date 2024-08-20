@@ -238,15 +238,13 @@ contract UpgradeableModularAccount is
     }
 
     /// @notice Initializes the account with a validation function added to the global pool.
-    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall workflow
-    /// with user install configs.
     /// @dev This function is only callable once.
     function initializeWithValidation(
         ValidationConfig validationConfig,
         bytes4[] calldata selectors,
         bytes calldata installData,
         bytes[] calldata hooks
-    ) external initializer {
+    ) external virtual initializer {
         _installValidation(validationConfig, selectors, installData, hooks);
     }
 
@@ -299,22 +297,9 @@ contract UpgradeableModularAccount is
     }
 
     function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4) {
-        AccountStorage storage _storage = getAccountStorage();
-
         ModuleEntity sigValidation = ModuleEntity.wrap(bytes24(signature));
 
-        (address module, uint32 entityId) = sigValidation.unpack();
-        if (!_storage.validationData[sigValidation].isSignatureValidation) {
-            revert SignatureValidationInvalid(module, entityId);
-        }
-
-        if (
-            IValidationModule(module).validateSignature(address(this), entityId, msg.sender, hash, signature[24:])
-                == _1271_MAGIC_VALUE
-        ) {
-            return _1271_MAGIC_VALUE;
-        }
-        return _1271_INVALID;
+        return _exec1271Validation(sigValidation, hash, signature[24:]);
     }
 
     /// @notice Gets the entry point for this account
@@ -328,7 +313,6 @@ contract UpgradeableModularAccount is
     // Parent function validateUserOp enforces that this call can only be made by the EntryPoint
     function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
-        virtual
         override
         returns (uint256 validationData)
     {
@@ -413,8 +397,7 @@ contract UpgradeableModularAccount is
 
             userOp.signature = signatureSegment.getBody();
 
-            (address module, uint32 entityId) = userOpValidationFunction.unpack();
-            uint256 currentValidationRes = IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
+            uint256 currentValidationRes = _execUserOpValidation(userOpValidationFunction, userOp, userOpHash);
 
             if (preUserOpValidationHooks.length != 0) {
                 // If we have other validation data we need to coalesce with
@@ -467,17 +450,7 @@ contract UpgradeableModularAccount is
             revert ValidationSignatureSegmentMissing();
         }
 
-        (address module, uint32 entityId) = runtimeValidationFunction.unpack();
-
-        try IValidationModule(module).validateRuntime(
-            address(this), entityId, msg.sender, msg.value, callData, authSegment.getBody()
-        )
-        // forgefmt: disable-start
-        // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason){
-        // forgefmt: disable-end
-            revert RuntimeValidationFunctionReverted(module, entityId, revertReason);
-        }
+        _execRuntimeValidation(runtimeValidationFunction, callData, authSegment.getBody());
     }
 
     function _doPreHooks(EnumerableSet.Bytes32Set storage executionHooks, bytes memory data)
@@ -627,6 +600,73 @@ contract UpgradeableModularAccount is
         return (postPermissionHooks, postExecutionHooks);
     }
 
+    function _execUserOpValidation(
+        ModuleEntity userOpValidationFunction,
+        PackedUserOperation memory userOp,
+        bytes32 userOpHash
+    ) internal virtual returns (uint256) {
+        (address module, uint32 entityId) = userOpValidationFunction.unpack();
+
+        return IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
+    }
+
+    function _execRuntimeValidation(
+        ModuleEntity runtimeValidationFunction,
+        bytes calldata callData,
+        bytes calldata authorization
+    ) internal virtual {
+        (address module, uint32 entityId) = runtimeValidationFunction.unpack();
+
+        try IValidationModule(module).validateRuntime(
+            address(this), entityId, msg.sender, msg.value, callData, authorization
+        )
+        // forgefmt: disable-start
+        // solhint-disable-next-line no-empty-blocks
+        {} catch (bytes memory revertReason){
+        // forgefmt: disable-end
+            revert RuntimeValidationFunctionReverted(module, entityId, revertReason);
+        }
+    }
+
+    function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
+        internal
+        view
+        virtual
+        returns (bytes4)
+    {
+        AccountStorage storage _storage = getAccountStorage();
+
+        (address module, uint32 entityId) = sigValidation.unpack();
+        if (!_storage.validationData[sigValidation].isSignatureValidation) {
+            revert SignatureValidationInvalid(module, entityId);
+        }
+
+        if (
+            IValidationModule(module).validateSignature(address(this), entityId, msg.sender, hash, signature)
+                == _1271_MAGIC_VALUE
+        ) {
+            return _1271_MAGIC_VALUE;
+        }
+        return _1271_INVALID;
+    }
+
+    function _globalValidationAllowed(bytes4 selector) internal view virtual returns (bool) {
+        if (
+            selector == this.execute.selector || selector == this.executeBatch.selector
+                || selector == this.installExecution.selector || selector == this.uninstallExecution.selector
+                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
+                || selector == this.upgradeToAndCall.selector
+        ) {
+            return true;
+        }
+
+        return getAccountStorage().executionData[selector].allowGlobalValidation;
+    }
+
+    function _isValidationGlobal(ModuleEntity validationFunction) internal view virtual returns (bool) {
+        return getAccountStorage().validationData[validationFunction].isGlobal;
+    }
+
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
         ModuleEntity validationFunction,
@@ -680,28 +720,13 @@ contract UpgradeableModularAccount is
         }
     }
 
-    function _globalValidationAllowed(bytes4 selector) internal view returns (bool) {
-        if (
-            selector == this.execute.selector || selector == this.executeBatch.selector
-                || selector == this.installExecution.selector || selector == this.uninstallExecution.selector
-                || selector == this.installValidation.selector || selector == this.uninstallValidation.selector
-                || selector == this.upgradeToAndCall.selector
-        ) {
-            return true;
-        }
-
-        return getAccountStorage().executionData[selector].allowGlobalValidation;
-    }
-
     function _checkIfValidationAppliesSelector(bytes4 selector, ModuleEntity validationFunction, bool isGlobal)
         internal
         view
     {
-        AccountStorage storage _storage = getAccountStorage();
-
         // Check that the provided validation function is applicable to the selector
         if (isGlobal) {
-            if (!_globalValidationAllowed(selector) || !_storage.validationData[validationFunction].isGlobal) {
+            if (!_globalValidationAllowed(selector) || !_isValidationGlobal(validationFunction)) {
                 revert ValidationFunctionMissing(selector);
             }
         } else {

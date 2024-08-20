@@ -43,8 +43,7 @@ contract MultiValidationTest is AccountTestBase {
         );
 
         ModuleEntity[] memory validations = new ModuleEntity[](2);
-        validations[0] =
-            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+        validations[0] = _signerValidation;
         validations[1] = ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID);
 
         bytes4[] memory selectors0 = account1.getValidationData(validations[0]).selectors;
@@ -65,7 +64,7 @@ contract MultiValidationTest is AccountTestBase {
             abi.encodeWithSelector(
                 UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(validator2),
-                1,
+                TEST_DEFAULT_VALIDATION_ENTITY_ID,
                 abi.encodeWithSignature("NotAuthorized()")
             )
         );

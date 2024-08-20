@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call} from "../../src/interfaces/IStandardExecutor.sol";
 import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
@@ -13,7 +12,6 @@ import {
     ResultCreatorModule
 } from "../mocks/modules/ReturnDataModuleMocks.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 // Tests all the different ways that return data can be read from modules through an account
 contract AccountReturnDataTest is AccountTestBase {
@@ -67,11 +65,7 @@ contract AccountReturnDataTest is AccountTestBase {
                 account1.execute,
                 (address(regularResultContract), 0, abi.encodeCall(RegularResultContract.foo, ()))
             ),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 
         bytes32 result = abi.decode(abi.decode(returnData, (bytes)), (bytes32));
@@ -95,11 +89,7 @@ contract AccountReturnDataTest is AccountTestBase {
 
         bytes memory retData = account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 
         bytes[] memory returnDatas = abi.decode(retData, (bytes[]));

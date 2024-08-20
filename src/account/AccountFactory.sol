@@ -7,20 +7,26 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
+import {SemiModularAccount} from "../account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../account/UpgradeableModularAccount.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 contract AccountFactory is Ownable {
     UpgradeableModularAccount public immutable ACCOUNT_IMPL;
+    SemiModularAccount public immutable SEMI_MODULAR_ACCOUNT_IMPL;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
     IEntryPoint public immutable ENTRY_POINT;
     address public immutable SINGLE_SIGNER_VALIDATION_MODULE;
 
     event ModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
+    event SemiModularAccountDeployed(address indexed account, address indexed owner, uint256 salt);
 
     constructor(
         IEntryPoint _entryPoint,
         UpgradeableModularAccount _accountImpl,
+        SemiModularAccount _semiModularImpl,
         address _singleSignerValidationModule,
         address owner
     ) Ownable(owner) {
@@ -28,6 +34,7 @@ contract AccountFactory is Ownable {
         _PROXY_BYTECODE_HASH =
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(_accountImpl), "")));
         ACCOUNT_IMPL = _accountImpl;
+        SEMI_MODULAR_ACCOUNT_IMPL = _semiModularImpl;
         SINGLE_SIGNER_VALIDATION_MODULE = _singleSignerValidationModule;
     }
 
@@ -63,6 +70,23 @@ contract AccountFactory is Ownable {
         return UpgradeableModularAccount(payable(addr));
     }
 
+    function createSemiModularAccount(address owner, uint256 salt) external returns (SemiModularAccount) {
+        // both module address and entityId for fallback validations are hardcoded at the maximum value.
+        bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
+
+        bytes memory immutables = _getImmutableArgs(owner);
+
+        // LibClone short-circuits if it's already deployed.
+        (bool alreadyDeployed, address instance) =
+            LibClone.createDeterministicERC1967(address(SEMI_MODULAR_ACCOUNT_IMPL), immutables, fullSalt);
+
+        if (!alreadyDeployed) {
+            emit SemiModularAccountDeployed(instance, owner, salt);
+        }
+
+        return SemiModularAccount(payable(instance));
+    }
+
     function addStake(uint32 unstakeDelay) external payable onlyOwner {
         ENTRY_POINT.addStake{value: msg.value}(unstakeDelay);
     }
@@ -82,7 +106,21 @@ contract AccountFactory is Ownable {
         return Create2.computeAddress(getSalt(owner, salt, entityId), _PROXY_BYTECODE_HASH);
     }
 
+    function getAddressSemiModular(address owner, uint256 salt) public view returns (address) {
+        bytes32 fullSalt = getSalt(owner, salt, type(uint32).max);
+        bytes memory immutables = _getImmutableArgs(owner);
+        return _getAddressSemiModular(immutables, fullSalt);
+    }
+
     function getSalt(address owner, uint256 salt, uint32 entityId) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt, entityId));
+    }
+
+    function _getAddressSemiModular(bytes memory immutables, bytes32 salt) internal view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(address(ACCOUNT_IMPL), immutables, salt, address(this));
+    }
+
+    function _getImmutableArgs(address owner) private pure returns (bytes memory) {
+        return abi.encodePacked(owner);
     }
 }

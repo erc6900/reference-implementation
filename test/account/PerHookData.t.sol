@@ -8,7 +8,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
@@ -22,6 +22,9 @@ contract PerHookDataTest is CustomValidationTestBase {
     Counter internal _counter;
 
     function setUp() public {
+        _signerValidation =
+            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
+
         _counter = new Counter();
 
         _accessControlHookModule = new MockAccessControlHookModule();
@@ -341,14 +344,8 @@ contract PerHookDataTest is CustomValidationTestBase {
             ),
             abi.encode(_counter)
         );
-
-        return (
-            _signerValidation,
-            true,
-            true,
-            new bytes4[](0),
-            abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner1),
-            hooks
-        );
+        // patched to also work during SMA tests by differentiating the validation
+        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), type(uint32).max - 1);
+        return (_signerValidation, true, true, new bytes4[](0), abi.encode(type(uint32).max - 1, owner1), hooks);
     }
 }

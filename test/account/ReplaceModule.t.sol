@@ -21,7 +21,6 @@ import {IValidationHookModule} from "../../src/interfaces/IValidationHookModule.
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
 interface TestModule {
     function testFunction() external;
@@ -86,11 +85,7 @@ contract UpgradeModuleTest is AccountTestBase {
         });
         account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 
         // test installed, test if old module still installed
@@ -189,11 +184,7 @@ contract UpgradeModuleTest is AccountTestBase {
         });
         account1.executeWithAuthorization(
             abi.encodeCall(account1.executeBatch, (calls)),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 
         // Test if old validation still works, expect fail

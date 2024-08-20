@@ -10,6 +10,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
+
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {ExecutionDataView, IAccountLoupe} from "../../src/interfaces/IAccountLoupe.sol";
@@ -92,11 +94,9 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     }
 
     function test_basicUserOp_withInitCode() public {
-        PackedUserOperation memory userOp = PackedUserOperation({
-            sender: address(account2),
-            nonce: 0,
-            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
-            callData: abi.encodeCall(
+        bytes memory callData = vm.envOr("SMA_TEST", false)
+            ? abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (owner2))
+            : abi.encodeCall(
                 UpgradeableModularAccount.execute,
                 (
                     address(singleSignerValidationModule),
@@ -105,7 +105,13 @@ contract UpgradeableModularAccountTest is AccountTestBase {
                         SingleSignerValidationModule.transferSigner, (TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2)
                     )
                 )
-            ),
+            );
+
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(account2),
+            nonce: 0,
+            initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
+            callData: callData,
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 2),
@@ -355,10 +361,20 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(address(account3), address(uint160(uint256(vm.load(address(account1), slot)))));
     }
 
+    // TODO: Consider if this test belongs here or in the tests specific to the SingleSignerValidationModule
     function test_transferOwnership() public {
-        assertEq(
-            singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1
-        );
+        if (vm.envOr("SMA_TEST", false)) {
+            // Note: replaced "owner1" with address(0), this doesn't actually affect the account, but allows the
+            // test to pass by ensuring the signer can be set in the validation.
+            assertEq(
+                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)),
+                address(0)
+            );
+        } else {
+            assertEq(
+                singleSignerValidationModule.signers(TEST_DEFAULT_VALIDATION_ENTITY_ID, address(account1)), owner1
+            );
+        }
 
         vm.prank(address(entryPoint));
         account1.execute(
@@ -381,8 +397,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         // singleSignerValidationModule.ownerOf(address(account1));
 
-        bytes memory signature =
-            abi.encodePacked(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, r, s, v);
+        bytes memory signature = abi.encodePacked(_signerValidation, r, s, v);
 
         bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);
 

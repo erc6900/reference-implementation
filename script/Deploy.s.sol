@@ -7,6 +7,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {AccountFactory} from "../src/account/AccountFactory.sol";
+
+import {SemiModularAccount} from "../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../src/account/UpgradeableModularAccount.sol";
 import {SingleSignerValidationModule} from "../src/modules/validation/SingleSignerValidationModule.sol";
 
@@ -16,10 +18,12 @@ contract DeployScript is Script {
     address public owner = vm.envAddress("OWNER");
 
     address public accountImpl = vm.envOr("ACCOUNT_IMPL", address(0));
+    address public semiModularAccountImpl = vm.envOr("SMA_IMPL", address(0));
     address public factory = vm.envOr("FACTORY", address(0));
     address public singleSignerValidationModule = vm.envOr("SINGLE_SIGNER_VALIDATION_MODULE", address(0));
 
     bytes32 public accountImplSalt = bytes32(vm.envOr("ACCOUNT_IMPL_SALT", uint256(0)));
+    bytes32 public semiModularAccountImplSalt = bytes32(vm.envOr("SMA_IMPL_SALT", uint256(0)));
     bytes32 public factorySalt = bytes32(vm.envOr("FACTORY_SALT", uint256(0)));
     bytes32 public singleSignerValidationModuleSalt =
         bytes32(vm.envOr("SINGLE_SIGNER_VALIDATION_MODULE_SALT", uint256(0)));
@@ -35,7 +39,8 @@ contract DeployScript is Script {
 
         vm.startBroadcast();
         _deployAccountImpl(accountImplSalt, accountImpl);
-        _deploySingleSignerValidationModule(singleSignerValidationModuleSalt, singleSignerValidationModule);
+        _deploySemiModularAccountImpl(semiModularAccountImplSalt, semiModularAccountImpl);
+        _deploySingleSignerValidation(singleSignerValidationModuleSalt, singleSignerValidationModule);
         _deployAccountFactory(factorySalt, factory);
         _addStakeForFactory(uint32(requiredUnstakeDelay), requiredStakeAmount);
         vm.stopBroadcast();
@@ -73,7 +78,39 @@ contract DeployScript is Script {
         }
     }
 
-    function _deploySingleSignerValidationModule(bytes32 salt, address expected) internal {
+    function _deploySemiModularAccountImpl(bytes32 salt, address expected) internal {
+        console.log(string.concat("Deploying SemiModularAccountImpl with salt: ", vm.toString(salt)));
+
+        address addr = Create2.computeAddress(
+            salt,
+            keccak256(abi.encodePacked(type(SemiModularAccount).creationCode, abi.encode(entryPoint))),
+            CREATE2_FACTORY
+        );
+        if (addr != expected) {
+            console.log("Expected address mismatch");
+            console.log("Expected: ", expected);
+            console.log("Actual: ", addr);
+            revert();
+        }
+
+        if (addr.code.length == 0) {
+            console.log("No code found at expected address, deploying...");
+            SemiModularAccount deployed = new SemiModularAccount{salt: salt}(entryPoint);
+
+            if (address(deployed) != expected) {
+                console.log("Deployed address mismatch");
+                console.log("Expected: ", expected);
+                console.log("Deployed: ", address(deployed));
+                revert();
+            }
+
+            console.log("Deployed SemiModularAccount at: ", address(deployed));
+        } else {
+            console.log("Code found at expected address, skipping deployment");
+        }
+    }
+
+    function _deploySingleSignerValidation(bytes32 salt, address expected) internal {
         console.log(string.concat("Deploying SingleSignerValidationModule with salt: ", vm.toString(salt)));
 
         address addr = Create2.computeAddress(
@@ -111,7 +148,9 @@ contract DeployScript is Script {
             keccak256(
                 abi.encodePacked(
                     type(AccountFactory).creationCode,
-                    abi.encode(entryPoint, accountImpl, singleSignerValidationModule, owner)
+                    abi.encode(
+                        entryPoint, accountImpl, semiModularAccountImpl, singleSignerValidationModule, owner
+                    )
                 )
             ),
             CREATE2_FACTORY
@@ -126,7 +165,11 @@ contract DeployScript is Script {
         if (addr.code.length == 0) {
             console.log("No code found at expected address, deploying...");
             AccountFactory deployed = new AccountFactory{salt: salt}(
-                entryPoint, UpgradeableModularAccount(payable(accountImpl)), singleSignerValidationModule, owner
+                entryPoint,
+                UpgradeableModularAccount(payable(accountImpl)),
+                SemiModularAccount(payable(semiModularAccountImpl)),
+                singleSignerValidationModule,
+                owner
             );
 
             if (address(deployed) != expected) {

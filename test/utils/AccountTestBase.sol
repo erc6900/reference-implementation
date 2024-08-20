@@ -5,6 +5,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
@@ -53,7 +54,13 @@ abstract contract AccountTestBase is OptimizedTest {
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
 
-        singleSignerValidationModule = _deploySingleSignerValidationModule();
+        address deployedSingleSignerValidation = address(_deploySingleSignerValidationModule());
+
+        // We etch the single signer validation to the max address, such that it coincides with the fallback
+        // validation module entity for semi modular account tests.
+        singleSignerValidationModule = SingleSignerValidationModule(address(type(uint160).max));
+        vm.etch(address(singleSignerValidationModule), deployedSingleSignerValidation.code);
+
         factory = new SingleSignerFactoryFixture(entryPoint, singleSignerValidationModule);
 
         account1 = factory.createAccount(owner1, 0);
@@ -102,11 +109,7 @@ abstract contract AccountTestBase is OptimizedTest {
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
 
-        userOp.signature = _encodeSignature(
-            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-            GLOBAL_VALIDATION,
-            abi.encodePacked(r, s, v)
-        );
+        userOp.signature = _encodeSignature(_signerValidation, GLOBAL_VALIDATION, abi.encodePacked(r, s, v));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
@@ -153,14 +156,7 @@ abstract contract AccountTestBase is OptimizedTest {
         }
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(
-            callData,
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
-        );
+        account1.executeWithAuthorization(callData, _encodeSignature(_signerValidation, GLOBAL_VALIDATION, ""));
     }
 
     // Always expects a revert, even if the revert data is zero-length.
@@ -168,19 +164,19 @@ abstract contract AccountTestBase is OptimizedTest {
         vm.expectRevert(expectedRevertData);
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(
-            callData,
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
-        );
+        account1.executeWithAuthorization(callData, _encodeSignature(_signerValidation, GLOBAL_VALIDATION, ""));
     }
 
     function _transferOwnershipToTest() internal {
         // Transfer ownership to test contract for easier invocation.
         vm.prank(owner1);
+        if (vm.envOr("SMA_TEST", false)) {
+            account1.executeWithAuthorization(
+                abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (address(this))),
+                _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
+            );
+            return;
+        }
         account1.executeWithAuthorization(
             abi.encodeCall(
                 account1.execute,
@@ -193,11 +189,7 @@ abstract contract AccountTestBase is OptimizedTest {
                     )
                 )
             ),
-            _encodeSignature(
-                ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
-                GLOBAL_VALIDATION,
-                ""
-            )
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }
 

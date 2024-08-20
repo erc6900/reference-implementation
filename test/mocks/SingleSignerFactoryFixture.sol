@@ -12,6 +12,8 @@ import {SingleSignerValidationModule} from "../../src/modules/validation/SingleS
 import {OptimizedTest} from "../utils/OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
+import {LibClone} from "solady/utils/LibClone.sol";
+
 contract SingleSignerFactoryFixture is OptimizedTest {
     UpgradeableModularAccount public accountImplementation;
     SingleSignerValidationModule public singleSignerValidationModule;
@@ -23,9 +25,14 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     address public self;
 
+    error SemiModularAccountAddressMismatch(address expected, address returned);
+
     constructor(IEntryPoint _entryPoint, SingleSignerValidationModule _singleSignerValidationModule) {
         entryPoint = _entryPoint;
-        accountImplementation = _deployUpgradeableModularAccount(_entryPoint);
+
+        accountImplementation = vm.envOr("SMA_TEST", false)
+            ? _deploySemiModularAccount(_entryPoint)
+            : _deployUpgradeableModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
@@ -41,6 +48,12 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * account creation
      */
     function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+        // We cast the SemiModularAccount to an UpgradeableModularAccount to facilitate equivalence testing.
+        // However, we don't do this in the actual factory.
+        if (vm.envOr("SMA_TEST", false)) {
+            return createSemiModularAccount(owner, salt);
+        }
+
         address addr = Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
 
         // short circuit if exists
@@ -63,11 +76,38 @@ contract SingleSignerFactoryFixture is OptimizedTest {
         return UpgradeableModularAccount(payable(addr));
     }
 
+    function createSemiModularAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+        bytes32 fullSalt = getSalt(owner, salt);
+
+        bytes memory immutables = _getImmutableArgs(owner);
+
+        address addr = _getAddressSemiModular(immutables, fullSalt);
+
+        // LibClone short-circuits if it's already deployed.
+        (, address instance) =
+            LibClone.createDeterministicERC1967(address(accountImplementation), immutables, fullSalt);
+
+        if (instance != addr) {
+            revert SemiModularAccountAddressMismatch(addr, instance);
+        }
+
+        return UpgradeableModularAccount(payable(addr));
+    }
+
     /**
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(address owner, uint256 salt) public view returns (address) {
+    function getAddress(address owner, uint256 salt) public returns (address) {
+        if (vm.envOr("SMA_TEST", false)) {
+            return getAddressSemiModular(owner, salt);
+        }
         return Create2.computeAddress(getSalt(owner, salt), _PROXY_BYTECODE_HASH);
+    }
+
+    function getAddressSemiModular(address owner, uint256 salt) public view returns (address) {
+        bytes32 fullSalt = getSalt(owner, salt);
+        bytes memory immutables = _getImmutableArgs(owner);
+        return _getAddressSemiModular(immutables, fullSalt);
     }
 
     function addStake() external payable {
@@ -76,5 +116,15 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
     function getSalt(address owner, uint256 salt) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, salt));
+    }
+
+    function _getAddressSemiModular(bytes memory immutables, bytes32 salt) internal view returns (address) {
+        return LibClone.predictDeterministicAddressERC1967(
+            address(accountImplementation), immutables, salt, address(this)
+        );
+    }
+
+    function _getImmutableArgs(address owner) private pure returns (bytes memory) {
+        return abi.encodePacked(owner);
     }
 }
