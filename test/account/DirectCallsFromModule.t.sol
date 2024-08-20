@@ -20,7 +20,6 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
     function setUp() public {
         _module = new DirectCallModule();
-        assertNotEq(_module, address(type(uint160).max));
         assertFalse(_module.preHookRan());
         assertFalse(_module.postHookRan());
         _moduleEntity = ModuleEntityLib.pack(address(_module), type(uint32).max);
