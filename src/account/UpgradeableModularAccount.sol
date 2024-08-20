@@ -19,7 +19,7 @@ import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol"
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 
-import {DIRECT_CALL_VALIDATION_ENTITYID, RESERVED_VALIDATION_DATA_INDEX} from "../helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../helpers/Constants.sol";
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest} from "../interfaces/IExecutionModule.sol";
@@ -67,7 +67,6 @@ contract UpgradeableModularAccount is
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    error NonCanonicalEncoding();
     error NotEntryPoint();
     error PostExecHookReverted(address module, uint32 entityId, bytes revertReason);
     error PreExecHookReverted(address module, uint32 entityId, bytes revertReason);
@@ -79,8 +78,6 @@ contract UpgradeableModularAccount is
     error UnexpectedAggregator(address module, uint32 entityId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error ValidationFunctionMissing(bytes4 selector);
-    error ValidationSignatureSegmentMissing();
-    error SignatureSegmentOutOfOrder();
 
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
@@ -347,10 +344,6 @@ contract UpgradeableModularAccount is
         bytes calldata signature,
         bytes32 userOpHash
     ) internal returns (uint256) {
-        // Set up the per-hook data tracking fields
-        bytes calldata signatureSegment;
-        (signatureSegment, signature) = signature.getNextSegment();
-
         uint256 validationRes;
 
         // Do preUserOpValidation hooks
@@ -358,25 +351,7 @@ contract UpgradeableModularAccount is
             getAccountStorage().validationData[userOpValidationFunction].preValidationHooks;
 
         for (uint256 i = 0; i < preUserOpValidationHooks.length; ++i) {
-            // Load per-hook data, if any is present
-            // The segment index is the first byte of the signature
-            if (signatureSegment.getIndex() == i) {
-                // Use the current segment
-                userOp.signature = signatureSegment.getBody();
-
-                if (userOp.signature.length == 0) {
-                    revert NonCanonicalEncoding();
-                }
-
-                // Load the next per-hook data segment
-                (signatureSegment, signature) = signature.getNextSegment();
-
-                if (signatureSegment.getIndex() <= i) {
-                    revert SignatureSegmentOutOfOrder();
-                }
-            } else {
-                userOp.signature = "";
-            }
+            (userOp.signature, signature) = signature.advanceSegmentIfAtIndex(uint8(i));
 
             (address module, uint32 entityId) = preUserOpValidationHooks[i].unpack();
             uint256 currentValidationRes =
@@ -389,13 +364,9 @@ contract UpgradeableModularAccount is
             validationRes = _coalescePreValidation(validationRes, currentValidationRes);
         }
 
-        // Run the user op validationFunction
+        // Run the user op validation function
         {
-            if (signatureSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
-                revert ValidationSignatureSegmentMissing();
-            }
-
-            userOp.signature = signatureSegment.getBody();
+            userOp.signature = signature.getFinalSegment();
 
             uint256 currentValidationRes = _execUserOpValidation(userOpValidationFunction, userOp, userOpHash);
 
@@ -415,42 +386,21 @@ contract UpgradeableModularAccount is
         bytes calldata callData,
         bytes calldata authorizationData
     ) internal {
-        // Set up the per-hook data tracking fields
-        bytes calldata authSegment;
-        (authSegment, authorizationData) = authorizationData.getNextSegment();
-
         // run all preRuntimeValidation hooks
         ModuleEntity[] memory preRuntimeValidationHooks =
             getAccountStorage().validationData[runtimeValidationFunction].preValidationHooks;
 
         for (uint256 i = 0; i < preRuntimeValidationHooks.length; ++i) {
-            bytes memory currentAuthData;
+            bytes memory currentAuthSegment;
 
-            if (authSegment.getIndex() == i) {
-                // Use the current segment
-                currentAuthData = authSegment.getBody();
+            (currentAuthSegment, authorizationData) = authorizationData.advanceSegmentIfAtIndex(uint8(i));
 
-                if (currentAuthData.length == 0) {
-                    revert NonCanonicalEncoding();
-                }
-
-                // Load the next per-hook data segment
-                (authSegment, authorizationData) = authorizationData.getNextSegment();
-
-                if (authSegment.getIndex() <= i) {
-                    revert SignatureSegmentOutOfOrder();
-                }
-            } else {
-                currentAuthData = "";
-            }
-            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthData);
+            _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], callData, currentAuthSegment);
         }
 
-        if (authSegment.getIndex() != RESERVED_VALIDATION_DATA_INDEX) {
-            revert ValidationSignatureSegmentMissing();
-        }
+        authorizationData = authorizationData.getFinalSegment();
 
-        _execRuntimeValidation(runtimeValidationFunction, callData, authSegment.getBody());
+        _execRuntimeValidation(runtimeValidationFunction, callData, authorizationData);
     }
 
     function _doPreHooks(EnumerableSet.Bytes32Set storage executionHooks, bytes memory data)
