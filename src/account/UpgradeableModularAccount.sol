@@ -67,8 +67,6 @@ contract UpgradeableModularAccount is
     bytes4 internal constant _1271_MAGIC_VALUE = 0x1626ba7e;
     bytes4 internal constant _1271_INVALID = 0xffffffff;
 
-    event ModularAccountInitialized(IEntryPoint indexed entryPoint);
-
     error NonCanonicalEncoding();
     error NotEntryPoint();
     error PostExecHookReverted(address module, uint32 entityId, bytes revertReason);
@@ -240,9 +238,6 @@ contract UpgradeableModularAccount is
     }
 
     /// @notice Initializes the account with a validation function added to the global pool.
-    /// TODO: remove and merge with regular initialization, after we figure out a better install/uninstall
-    // workflow
-    /// with user install configs.
     /// @dev This function is only callable once.
     function initializeWithValidation(
         ValidationConfig validationConfig,
