@@ -138,7 +138,8 @@ contract SemiModularAccount is UpgradeableModularAccount {
     }
 
     function _globalValidationAllowed(bytes4 selector) internal view override returns (bool) {
-        return selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
+        return selector == this.setFallbackSignerDisabled.selector
+            || selector == this.updateFallbackSigner.selector || super._globalValidationAllowed(selector);
     }
 
     function _isValidationGlobal(ModuleEntity validationFunction) internal view override returns (bool) {
