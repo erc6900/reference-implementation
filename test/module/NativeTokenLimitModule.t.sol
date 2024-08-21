@@ -11,7 +11,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
 
@@ -132,7 +132,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         assertEq(module.limits(0, address(acct)), 10 ether);
         acct.executeUserOp(
-            _getPackedUO(0, 0, 0, 0, abi.encodeCall(IStandardExecutor.executeBatch, (calls))), bytes32(0)
+            _getPackedUO(0, 0, 0, 0, abi.encodeCall(IModularAccount.executeBatch, (calls))), bytes32(0)
         );
         assertEq(module.limits(0, address(acct)), 10 ether - 6 ether - 100_001);
         assertEq(recipient.balance, 6 ether + 100_001);
@@ -157,8 +157,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         assertEq(module.limits(0, address(acct)), 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
-        uos[0] =
-            _getPackedUO(200_000, 200_000, 200_000, 1, abi.encodeCall(IStandardExecutor.executeBatch, (calls)));
+        uos[0] = _getPackedUO(200_000, 200_000, 200_000, 1, abi.encodeCall(IModularAccount.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
 
         assertEq(module.limits(0, address(acct)), 10 ether - 6 ether - 700_001);
@@ -189,7 +188,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
 
         assertEq(module.limits(0, address(acct)), 10 ether);
         acct.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.executeBatch, (calls)), _encodeSignature(validationFunction, 1, "")
+            abi.encodeCall(IModularAccount.executeBatch, (calls)), _encodeSignature(validationFunction, 1, "")
         );
         assertEq(module.limits(0, address(acct)), 4 ether - 100_001);
     }

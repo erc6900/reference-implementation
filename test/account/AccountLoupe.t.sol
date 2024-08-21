@@ -6,8 +6,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IAccountLoupe.sol";
-import {HookConfig, IModuleManager} from "../../src/interfaces/IModuleManager.sol";
-import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
@@ -34,15 +33,15 @@ contract AccountLoupeTest is CustomValidationTestBase {
     function test_moduleLoupe_getExecutionData_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
 
-        selectorsToCheck[0] = IStandardExecutor.execute.selector;
+        selectorsToCheck[0] = IModularAccount.execute.selector;
 
-        selectorsToCheck[1] = IStandardExecutor.executeBatch.selector;
+        selectorsToCheck[1] = IModularAccount.executeBatch.selector;
 
         selectorsToCheck[2] = UUPSUpgradeable.upgradeToAndCall.selector;
 
-        selectorsToCheck[3] = IModuleManager.installExecution.selector;
+        selectorsToCheck[3] = IModularAccount.installExecution.selector;
 
-        selectorsToCheck[4] = IModuleManager.uninstallExecution.selector;
+        selectorsToCheck[4] = IModularAccount.uninstallExecution.selector;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
             ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);

@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {HookConfig, ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
+import {HookConfig, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
 
 contract HookConfigLibTest is Test {
     using ModuleEntityLib for ModuleEntity;

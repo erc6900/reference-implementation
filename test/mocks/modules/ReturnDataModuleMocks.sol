@@ -12,7 +12,7 @@ import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../../src/helpers/Constants.sol";
 
-import {IStandardExecutor} from "../../../src/interfaces/IStandardExecutor.sol";
+import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
 import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
@@ -103,8 +103,8 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
     // Check the return data through the execute with authorization case
     function checkResultExecuteWithAuthorization(address target, bytes32 expected) external returns (bool) {
         // This result should be allowed based on the manifest permission request
-        bytes memory returnData = IStandardExecutor(msg.sender).executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
+        bytes memory returnData = IModularAccount(msg.sender).executeWithAuthorization(
+            abi.encodeCall(IModularAccount.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
             abi.encodePacked(this, DIRECT_CALL_VALIDATION_ENTITYID, uint8(0), uint32(1), uint8(255)) // Validation
                 // function of self,
                 // selector-associated, with no auth data

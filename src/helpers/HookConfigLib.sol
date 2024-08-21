@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {HookConfig, ModuleEntity} from "../interfaces/IModuleManager.sol";
+import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 
 // Hook types:
 // Exec hook: bools for hasPre, hasPost

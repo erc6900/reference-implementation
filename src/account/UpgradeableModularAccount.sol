@@ -2,7 +2,6 @@
 pragma solidity ^0.8.25;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
-
 import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
@@ -12,20 +11,15 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../helpers/Constants.sol";
 import {HookConfig, HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
-
 import {SparseCalldataSegmentLib} from "../helpers/SparseCalldataSegmentLib.sol";
 import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
-
-import {DIRECT_CALL_VALIDATION_ENTITYID} from "../helpers/Constants.sol";
-
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest} from "../interfaces/IExecutionModule.sol";
-import {IModuleManager, ModuleEntity, ValidationConfig} from "../interfaces/IModuleManager.sol";
-import {Call, IStandardExecutor} from "../interfaces/IStandardExecutor.sol";
-
+import {Call, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../interfaces/IValidationModule.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
@@ -35,13 +29,13 @@ import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract UpgradeableModularAccount is
+    IModularAccount,
     AccountExecutor,
     AccountLoupe,
     AccountStorageInitializable,
     BaseAccount,
     IERC165,
     IERC1271,
-    IStandardExecutor,
     IAccountExecute,
     ModuleManagerInternals,
     UUPSUpgradeable
@@ -152,7 +146,7 @@ contract UpgradeableModularAccount is
         _doCachedPostExecHooks(postPermissionHooks);
     }
 
-    /// @inheritdoc IStandardExecutor
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     function execute(address target, uint256 value, bytes calldata data)
         external
@@ -164,7 +158,7 @@ contract UpgradeableModularAccount is
         result = _exec(target, value, data);
     }
 
-    /// @inheritdoc IStandardExecutor
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation function.
     function executeBatch(Call[] calldata calls)
         external
@@ -181,7 +175,7 @@ contract UpgradeableModularAccount is
         }
     }
 
-    /// @inheritdoc IStandardExecutor
+    /// @inheritdoc IModularAccount
     function executeWithAuthorization(bytes calldata data, bytes calldata authorization)
         external
         payable
@@ -214,7 +208,7 @@ contract UpgradeableModularAccount is
         return returnData;
     }
 
-    /// @inheritdoc IModuleManager
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     function installExecution(
         address module,
@@ -224,7 +218,7 @@ contract UpgradeableModularAccount is
         _installExecution(module, manifest, moduleInstallData);
     }
 
-    /// @inheritdoc IModuleManager
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     function uninstallExecution(
         address module,
@@ -245,7 +239,7 @@ contract UpgradeableModularAccount is
         _installValidation(validationConfig, selectors, installData, hooks);
     }
 
-    /// @inheritdoc IModuleManager
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     function installValidation(
         ValidationConfig validationConfig,
@@ -256,7 +250,7 @@ contract UpgradeableModularAccount is
         _installValidation(validationConfig, selectors, installData, hooks);
     }
 
-    /// @inheritdoc IModuleManager
+    /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     function uninstallValidation(
         ModuleEntity validationFunction,
@@ -651,7 +645,7 @@ contract UpgradeableModularAccount is
 
         _checkIfValidationAppliesSelector(outerSelector, validationFunction, isGlobal);
 
-        if (outerSelector == IStandardExecutor.execute.selector) {
+        if (outerSelector == IModularAccount.execute.selector) {
             (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
 
             if (target == address(this)) {
@@ -659,7 +653,7 @@ contract UpgradeableModularAccount is
                 // the calldata as a top-level call.
                 revert SelfCallRecursionDepthExceeded();
             }
-        } else if (outerSelector == IStandardExecutor.executeBatch.selector) {
+        } else if (outerSelector == IModularAccount.executeBatch.selector) {
             // executeBatch may be used to batch account actions together, by targetting the account itself.
             // If this is done, we must ensure all of the inner calls are allowed by the provided validation
             // function.
@@ -671,8 +665,8 @@ contract UpgradeableModularAccount is
                     bytes4 nestedSelector = bytes4(calls[i].data);
 
                     if (
-                        nestedSelector == IStandardExecutor.execute.selector
-                            || nestedSelector == IStandardExecutor.executeBatch.selector
+                        nestedSelector == IModularAccount.execute.selector
+                            || nestedSelector == IModularAccount.executeBatch.selector
                     ) {
                         // To prevent arbitrarily-deep recursive checking, we limit the depth of self-calls to one
                         // for the purposes of batching.

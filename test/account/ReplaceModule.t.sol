@@ -15,8 +15,7 @@ import {
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
 
-import {IModuleManager, ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
-import {Call, IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call, IModularAccount, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../../src/interfaces/IValidationHookModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
@@ -73,14 +72,14 @@ contract UpgradeModuleTest is AccountTestBase {
             target: address(account1),
             value: 0,
             data: abi.encodeCall(
-                IModuleManager.uninstallExecution, (address(moduleV1), moduleV1.executionManifest(), "")
+                IModularAccount.uninstallExecution, (address(moduleV1), moduleV1.executionManifest(), "")
             )
         });
         calls[1] = Call({
             target: address(account1),
             value: 0,
             data: abi.encodeCall(
-                IModuleManager.installExecution, (address(moduleV2), moduleV2.executionManifest(), "")
+                IModularAccount.installExecution, (address(moduleV2), moduleV2.executionManifest(), "")
             )
         });
         account1.executeWithAuthorization(
@@ -133,7 +132,7 @@ contract UpgradeModuleTest is AccountTestBase {
         );
         // Test that setup worked. Pre val + pre exec hooks should run
         vm.startPrank(owner1);
-        bytes memory callData = abi.encodeCall(IStandardExecutor.execute, (address(target), sendAmount, ""));
+        bytes memory callData = abi.encodeCall(IModularAccount.execute, (address(target), sendAmount, ""));
         vm.expectEmit(true, true, true, true);
         emit ReceivedCall(
             abi.encodeCall(
@@ -166,14 +165,14 @@ contract UpgradeModuleTest is AccountTestBase {
             target: address(account1),
             value: 0,
             data: abi.encodeCall(
-                IModuleManager.uninstallValidation, (currModuleEntity, abi.encode(validationEntityId1), emptyBytesArr)
+                IModularAccount.uninstallValidation, (currModuleEntity, abi.encode(validationEntityId1), emptyBytesArr)
             )
         });
         calls[1] = Call({
             target: address(account1),
             value: 0,
             data: abi.encodeCall(
-                IModuleManager.installValidation,
+                IModularAccount.installValidation,
                 (
                     ValidationConfigLib.pack(newModuleEntity, true, false),
                     new bytes4[](0),
@@ -191,11 +190,11 @@ contract UpgradeModuleTest is AccountTestBase {
         vm.expectRevert(
             abi.encodePacked(
                 UpgradeableModularAccount.ValidationFunctionMissing.selector,
-                abi.encode(IStandardExecutor.execute.selector)
+                abi.encode(IModularAccount.execute.selector)
             )
         );
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (target, sendAmount, "")),
+            abi.encodeCall(IModularAccount.execute, (target, sendAmount, "")),
             _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, "")
         );
 

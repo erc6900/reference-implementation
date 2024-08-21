@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {Call} from "../../src/interfaces/IStandardExecutor.sol";
-import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+import {Call} from "../../src/interfaces/IModularAccount.sol";
+import {IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 
 import {
     RegularResultContract,
@@ -41,7 +41,7 @@ contract AccountReturnDataTest is AccountTestBase {
         });
         // Allow the result consumer module to perform direct calls to the account
         bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IStandardExecutor.execute.selector;
+        selectors[0] = IModularAccount.execute.selector;
         account1.installValidation(
             ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
             selectors,
@@ -58,7 +58,7 @@ contract AccountReturnDataTest is AccountTestBase {
         assertEq(result, keccak256("bar"));
     }
 
-    // Tests the ability to read the results of contracts called via IStandardExecutor.execute
+    // Tests the ability to read the results of contracts called via IModularAccount.execute
     function test_returnData_singular_execute() public {
         bytes memory returnData = account1.executeWithAuthorization(
             abi.encodeCall(
@@ -73,7 +73,7 @@ contract AccountReturnDataTest is AccountTestBase {
         assertEq(result, keccak256("bar"));
     }
 
-    // Tests the ability to read the results of multiple contract calls via IStandardExecutor.executeBatch
+    // Tests the ability to read the results of multiple contract calls via IModularAccount.executeBatch
     function test_returnData_executeBatch() public {
         Call[] memory calls = new Call[](2);
         calls[0] = Call({

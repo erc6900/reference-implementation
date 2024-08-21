@@ -11,8 +11,8 @@ import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAcc
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ModuleEntity} from "../../src/interfaces/IModuleManager.sol";
-import {IStandardExecutor} from "../../src/interfaces/IStandardExecutor.sol";
+
+import {IModularAccount, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -69,7 +69,7 @@ contract MultiValidationTest is AccountTestBase {
             )
         );
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
+            abi.encodeCall(IModularAccount.execute, (address(0), 0, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
@@ -77,7 +77,7 @@ contract MultiValidationTest is AccountTestBase {
 
         vm.prank(owner2);
         account1.executeWithAuthorization(
-            abi.encodeCall(IStandardExecutor.execute, (address(0), 0, "")),
+            abi.encodeCall(IModularAccount.execute, (address(0), 0, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
             )
