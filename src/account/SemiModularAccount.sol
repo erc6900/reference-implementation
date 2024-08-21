@@ -40,15 +40,6 @@ contract SemiModularAccount is UpgradeableModularAccount {
 
     constructor(IEntryPoint anEntryPoint) UpgradeableModularAccount(anEntryPoint) {}
 
-    /// Override reverts on initialization, effectively disabling the initializer.
-    function initializeWithValidation(ValidationConfig, bytes4[] calldata, bytes calldata, bytes[] calldata)
-        external
-        override
-        initializer
-    {
-        revert InitializerDisabled();
-    }
-
     /// @notice Updates the fallback signer address in storage.
     /// @dev This function causes the fallback signer getter to ignore the bytecode signer if it is nonzero. It can
     /// also be used to revert back to the bytecode signer by setting to zero.
@@ -81,6 +72,15 @@ contract SemiModularAccount is UpgradeableModularAccount {
     /// @return The fallback signer address, either overriden in storage, or read from bytecode.
     function getFallbackSigner() external view returns (address) {
         return _retrieveFallbackSignerUnchecked(_getSemiModularAccountStorage());
+    }
+
+    /// Override reverts on initialization, effectively disabling the initializer.
+    function initializeWithValidation(ValidationConfig, bytes4[] calldata, bytes calldata, bytes[] calldata)
+        external
+        pure
+        override
+    {
+        revert InitializerDisabled();
     }
 
     function _execUserOpValidation(
