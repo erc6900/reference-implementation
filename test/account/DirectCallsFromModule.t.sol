@@ -11,6 +11,8 @@ import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
+import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
+
 contract DirectCallsFromModuleTest is AccountTestBase {
     using ValidationConfigLib for ValidationConfig;
 
@@ -23,7 +25,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         _module = new DirectCallModule();
         assertFalse(_module.preHookRan());
         assertFalse(_module.postHookRan());
-        _moduleEntity = ModuleEntityLib.pack(address(_module), type(uint32).max);
+        _moduleEntity = ModuleEntityLib.pack(address(_module), DIRECT_CALL_VALIDATION_ENTITYID);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -102,6 +104,25 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         vm.prank(address(_module));
         vm.expectRevert(_buildDirectCallDisallowedError(IModularAccount.execute.selector));
         account1.execute(address(0), 0, "");
+    }
+
+    function test_directCallsFromEOA() external {
+        address extraOwner = makeAddr("extraOwner");
+
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = IModularAccount.execute.selector;
+
+        vm.prank(address(entryPoint));
+
+        account1.installValidation(
+            ValidationConfigLib.pack(extraOwner, DIRECT_CALL_VALIDATION_ENTITYID, false, false),
+            selectors,
+            "",
+            new bytes[](0)
+        );
+
+        vm.prank(extraOwner);
+        account1.execute(makeAddr("dead"), 0, "");
     }
 
     /* -------------------------------------------------------------------------- */

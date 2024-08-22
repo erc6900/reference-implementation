@@ -129,17 +129,15 @@ abstract contract ModuleManagerInternals is IModularAccount {
         hooks.remove(toSetValue(hookConfig));
     }
 
-    function _installExecution(address module, ExecutionManifest calldata manifest, bytes memory moduleInstallData)
-        internal
-    {
+    function _installExecution(
+        address module,
+        ExecutionManifest calldata manifest,
+        bytes calldata moduleInstallData
+    ) internal {
         AccountStorage storage _storage = getAccountStorage();
 
         if (module == address(0)) {
             revert NullModule();
-        }
-
-        if (!ERC165Checker.supportsInterface(module, type(IModule).interfaceId)) {
-            revert InterfaceNotSupported(module);
         }
 
         // Update components according to the manifest.
@@ -170,18 +168,12 @@ abstract contract ModuleManagerInternals is IModularAccount {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
         }
 
-        // Initialize the module storage for the account.
-        // solhint-disable-next-line no-empty-blocks
-        try IModule(module).onInstall(moduleInstallData) {}
-        catch {
-            bytes memory revertReason = collectReturnData();
-            revert ModuleInstallCallbackFailed(module, revertReason);
-        }
+        _onInstall(module, moduleInstallData, type(IModule).interfaceId);
 
         emit ExecutionInstalled(module, manifest);
     }
 
-    function _uninstallExecution(address module, ExecutionManifest calldata manifest, bytes memory uninstallData)
+    function _uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata uninstallData)
         internal
     {
         AccountStorage storage _storage = getAccountStorage();
@@ -214,20 +206,9 @@ abstract contract ModuleManagerInternals is IModularAccount {
         }
 
         // Clear the module storage for the account.
-        bool onUninstallSuccess = true;
-        // solhint-disable-next-line no-empty-blocks
-        try IModule(module).onUninstall(uninstallData) {}
-        catch {
-            onUninstallSuccess = false;
-        }
+        bool onUninstallSuccess = _onUninstall(module, uninstallData);
 
         emit ExecutionUninstalled(module, onUninstallSuccess, manifest);
-    }
-
-    function _onInstall(address module, bytes calldata data) internal {
-        if (data.length > 0) {
-            IModule(module).onInstall(data);
-        }
     }
 
     function _onInstall(address module, bytes calldata data, bytes4 interfaceId) internal {
@@ -235,8 +216,12 @@ abstract contract ModuleManagerInternals is IModularAccount {
             if (!ERC165Checker.supportsInterface(module, interfaceId)) {
                 revert InterfaceNotSupported(module);
             }
-
-            IModule(module).onInstall(data);
+            // solhint-disable-next-line no-empty-blocks
+            try IModule(module).onInstall(data) {}
+            catch {
+                bytes memory revertReason = collectReturnData();
+                revert ModuleInstallCallbackFailed(module, revertReason);
+            }
         }
     }
 

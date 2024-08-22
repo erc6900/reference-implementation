@@ -293,7 +293,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
         ExecutionManifest memory m;
 
-        account1.installExecution({module: address(badModule), manifest: m, moduleInstallData: ""});
+        account1.installExecution({module: address(badModule), manifest: m, moduleInstallData: "a"});
     }
 
     function test_installExecution_alreadyInstalled() public {

@@ -162,7 +162,7 @@ contract AccountExecHooksTest is AccountTestBase {
         mockModule1 = new MockModule(_m1);
 
         vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IModule.onInstall, (bytes(""))), 0);
+        emit ReceivedCall(abi.encodeCall(IModule.onInstall, (bytes("a"))), 0);
         vm.expectEmit(true, true, true, true);
         emit ExecutionInstalled(address(mockModule1), _m1);
 
@@ -170,19 +170,19 @@ contract AccountExecHooksTest is AccountTestBase {
         account1.installExecution({
             module: address(mockModule1),
             manifest: mockModule1.executionManifest(),
-            moduleInstallData: bytes("")
+            moduleInstallData: bytes("a")
         });
         vm.stopPrank();
     }
 
     function _uninstallExecution(MockModule module) internal {
         vm.expectEmit(true, true, true, true);
-        emit ReceivedCall(abi.encodeCall(IModule.onUninstall, (bytes(""))), 0);
+        emit ReceivedCall(abi.encodeCall(IModule.onUninstall, (bytes("b"))), 0);
         vm.expectEmit(true, true, true, true);
         emit ExecutionUninstalled(address(module), true, module.executionManifest());
 
         vm.startPrank(address(entryPoint));
-        account1.uninstallExecution(address(module), module.executionManifest(), bytes(""));
+        account1.uninstallExecution(address(module), module.executionManifest(), bytes("b"));
         vm.stopPrank();
     }
 }
