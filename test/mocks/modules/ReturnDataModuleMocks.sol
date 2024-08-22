@@ -8,7 +8,6 @@ import {
     IExecutionModule,
     ManifestExecutionFunction
 } from "../../../src/interfaces/IExecutionModule.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../../src/helpers/Constants.sol";
 
@@ -58,7 +57,9 @@ contract ResultCreatorModule is IExecutionModule, BaseModule {
         return manifest;
     }
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/result-creator-module/1.0.0";
+    }
 }
 
 contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule {
@@ -137,5 +138,7 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
         return manifest;
     }
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/result-consumer-module/1.0.0";
+    }
 }

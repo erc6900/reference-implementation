@@ -4,7 +4,6 @@ pragma solidity ^0.8.25;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
@@ -84,5 +83,7 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         return;
     }
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/mock-access-control-hook-module/1.0.0";
+    }
 }

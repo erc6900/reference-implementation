@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
 import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
 contract DirectCallModule is BaseModule, IExecutionHookModule {
@@ -22,7 +21,9 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
         return hex"04546b";
     }
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/direct-call-module/1.0.0";
+    }
 
     function preExecutionHook(uint32, address sender, uint256, bytes calldata)
         external

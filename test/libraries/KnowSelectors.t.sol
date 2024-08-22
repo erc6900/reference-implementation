@@ -18,6 +18,6 @@ contract KnownSelectorsTest is Test {
     }
 
     function test_isIModuleFunction() public {
-        assertTrue(KnownSelectors.isIModuleFunction(IModule.moduleMetadata.selector));
+        assertTrue(KnownSelectors.isIModuleFunction(IModule.moduleId.selector));
     }
 }

@@ -7,7 +7,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
-import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {BaseModule, IERC165} from "./BaseModule.sol";
 
@@ -20,10 +20,6 @@ import {BaseModule, IERC165} from "./BaseModule.sol";
 contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidationHookModule {
     using UserOperationLib for PackedUserOperation;
     using EnumerableSet for EnumerableSet.Bytes32Set;
-
-    string internal constant _NAME = "Native Token Limit";
-    string internal constant _VERSION = "1.0.0";
-    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     mapping(uint256 funcIds => mapping(address account => uint256 limit)) public limits;
     // Accounts should add paymasters that still use the accounts tokens here
@@ -119,16 +115,8 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidation
     function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {}
 
     /// @inheritdoc IModule
-    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-
-        metadata.permissionRequest = new string[](2);
-        metadata.permissionRequest[0] = "native-token-limit";
-        metadata.permissionRequest[1] = "gas-limit";
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/native-token-limit-module/1.0.0";
     }
 
     // ┏━━━━━━━━━━━━━━━┓

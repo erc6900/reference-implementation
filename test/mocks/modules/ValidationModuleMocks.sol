@@ -8,7 +8,6 @@ import {
     IExecutionModule,
     ManifestExecutionFunction
 } from "../../../src/interfaces/IExecutionModule.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
@@ -75,9 +74,11 @@ abstract contract MockBaseUserOpValidationModule is
         revert NotImplemented();
     }
 
-    // Empty stubs
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/mock-user-op-validation-module/1.0.0";
+    }
 
+    // Empty stubs
     function preRuntimeValidationHook(uint32, address, uint256, bytes calldata, bytes calldata)
         external
         pure

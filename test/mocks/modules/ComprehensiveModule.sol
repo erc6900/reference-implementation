@@ -12,7 +12,6 @@ import {
 
 import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
 import {IExecutionModule} from "../../../src/interfaces/IExecutionModule.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
@@ -175,11 +174,7 @@ contract ComprehensiveModule is
         return manifest;
     }
 
-    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/comprehensive-module/1.0.0";
     }
 }
