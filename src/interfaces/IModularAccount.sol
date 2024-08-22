@@ -97,4 +97,9 @@ interface IModularAccount {
         ExecutionManifest calldata manifest,
         bytes calldata moduleUninstallData
     ) external;
+
+    /// @notice Return a unique identifier for the account implementation.
+    /// @dev This function MUST return a string in the format "vendor/account/semver".
+    /// @return The account ID.
+    function accountId() external view returns (string memory);
 }

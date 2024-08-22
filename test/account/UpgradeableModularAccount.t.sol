@@ -184,6 +184,16 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         _printStorageReadsAndWrites(address(account2));
     }
 
+    function test_accountId() public {
+        string memory accountId = account1.accountId();
+        assertEq(
+            accountId,
+            vm.envOr("SMA_TEST", false)
+                ? "erc6900/reference-semi-modular-account/0.8.0"
+                : "erc6900/reference-modular-account/0.8.0"
+        );
+    }
+
     function test_contractInteraction() public {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),

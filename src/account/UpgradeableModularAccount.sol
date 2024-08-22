@@ -276,6 +276,11 @@ contract UpgradeableModularAccount is
         return getAccountStorage().supportedIfaces[interfaceId] > 0;
     }
 
+    /// @inheritdoc IModularAccount
+    function accountId() external pure virtual returns (string memory) {
+        return "erc6900/reference-modular-account/0.8.0";
+    }
+
     /// @inheritdoc UUPSUpgradeable
     /// @notice May be validated by a global validation.
     function upgradeToAndCall(address newImplementation, bytes memory data)
