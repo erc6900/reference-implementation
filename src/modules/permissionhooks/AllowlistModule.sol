@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ModuleMetadata} from "../../interfaces/IModule.sol";
+import {IModule} from "../../interfaces/IModule.sol";
 
 import {Call, IModularAccount} from "../../interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../../interfaces/IValidationHookModule.sol";
@@ -88,13 +88,9 @@ contract AllowlistModule is IValidationHookModule, BaseModule {
     // solhint-disable-next-line no-empty-blocks
     function preSignatureValidationHook(uint32, address, bytes32, bytes calldata) external pure override {}
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = "Allowlist Module";
-        metadata.version = "v0.0.1";
-        metadata.author = "ERC-6900 Working Group";
-
-        return metadata;
+    /// @inheritdoc IModule
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/allowlist-module/0.0.1";
     }
 
     function setAllowlistTarget(uint32 entityId, address target, bool allowed, bool hasSelectorAllowlist) public {

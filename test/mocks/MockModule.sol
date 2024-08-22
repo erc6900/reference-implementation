@@ -5,7 +5,7 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {IModule, ModuleMetadata} from "../../src/interfaces/IModule.sol";
+import {IModule} from "../../src/interfaces/IModule.sol";
 import {IValidationModule} from "../../src/interfaces/IValidationModule.sol";
 
 contract MockModule is ERC165 {
@@ -17,10 +17,6 @@ contract MockModule is ERC165 {
     // Error: Unimplemented feature (/solidity/libsolidity/codegen/ArrayUtils.cpp:228):Copying of type
     // struct ManifestAssociatedFunction memory[] memory to storage not yet supported.
     bytes internal _manifest;
-
-    string internal constant _NAME = "Mock Module Modifiable";
-    string internal constant _VERSION = "1.0.0";
-    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
 
@@ -51,12 +47,8 @@ contract MockModule is ERC165 {
         return _castToPure(_getManifest)();
     }
 
-    function moduleMetadata() external pure returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/mock-module/1.0.0";
     }
 
     /// @dev Returns true if this contract implements the interface defined by

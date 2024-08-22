@@ -49,7 +49,7 @@ library KnownSelectors {
 
     function isIModuleFunction(bytes4 selector) internal pure returns (bool) {
         return selector == IModule.onInstall.selector || selector == IModule.onUninstall.selector
-            || selector == IExecutionModule.executionManifest.selector || selector == IModule.moduleMetadata.selector
+            || selector == IModule.moduleId.selector || selector == IExecutionModule.executionManifest.selector
             || selector == IExecutionHookModule.preExecutionHook.selector
             || selector == IExecutionHookModule.postExecutionHook.selector
             || selector == IValidationModule.validateUserOp.selector

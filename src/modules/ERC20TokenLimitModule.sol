@@ -14,7 +14,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
-import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
+import {IModule} from "../interfaces/IModule.sol";
 
 import {BaseModule, IERC165} from "./BaseModule.sol";
 
@@ -114,15 +114,8 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
     }
 
     /// @inheritdoc IModule
-    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-
-        metadata.permissionRequest = new string[](1);
-        metadata.permissionRequest[0] = "erc20-token-limit";
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/erc20-token-limit-module/1.0.0";
     }
 
     /// @inheritdoc BaseModule

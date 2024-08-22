@@ -6,7 +6,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 
 import {ExecutionManifest, ManifestExecutionFunction} from "../interfaces/IExecutionModule.sol";
 import {ExecutionManifest, IExecutionModule} from "../interfaces/IExecutionModule.sol";
-import {IModule, ModuleMetadata} from "../interfaces/IModule.sol";
+import {IModule} from "../interfaces/IModule.sol";
 import {BaseModule} from "./BaseModule.sol";
 
 /// @title Token Receiver Module
@@ -14,10 +14,6 @@ import {BaseModule} from "./BaseModule.sol";
 /// @notice This module allows modular accounts to receive various types of tokens by implementing
 /// required token receiver interfaces.
 contract TokenReceiverModule is BaseModule, IExecutionModule, IERC721Receiver, IERC1155Receiver {
-    string internal constant _NAME = "Token Receiver Module";
-    string internal constant _VERSION = "1.0.0";
-    string internal constant _AUTHOR = "ERC-6900 Authors";
-
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     // ┃    Execution functions    ┃
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -85,11 +81,7 @@ contract TokenReceiverModule is BaseModule, IExecutionModule, IERC721Receiver, I
     }
 
     /// @inheritdoc IModule
-    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/token-receiver-module/1.0.0";
     }
 }

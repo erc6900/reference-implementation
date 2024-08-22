@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {IModule, ModuleMetadata} from "../../interfaces/IModule.sol";
+import {IModule} from "../../interfaces/IModule.sol";
 import {IValidationModule} from "../../interfaces/IValidationModule.sol";
 import {BaseModule} from "../BaseModule.sol";
 
@@ -25,10 +25,6 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 /// to validate partially or fully.
 contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySafeWrapper, BaseModule {
     using MessageHashUtils for bytes32;
-
-    string internal constant _NAME = "SingleSigner Validation";
-    string internal constant _VERSION = "1.0.0";
-    string internal constant _AUTHOR = "ERC-6900 Authors";
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
     uint256 internal constant _SIG_VALIDATION_FAILED = 1;
@@ -115,12 +111,8 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySa
     // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
     /// @inheritdoc IModule
-    function moduleMetadata() external pure virtual override returns (ModuleMetadata memory) {
-        ModuleMetadata memory metadata;
-        metadata.name = _NAME;
-        metadata.version = _VERSION;
-        metadata.author = _AUTHOR;
-        return metadata;
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/single-signer-validation-module/1.0.0";
     }
 
     // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

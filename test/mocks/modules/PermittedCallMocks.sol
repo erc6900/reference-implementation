@@ -6,7 +6,6 @@ import {
     IExecutionModule,
     ManifestExecutionFunction
 } from "../../../src/interfaces/IExecutionModule.sol";
-import {ModuleMetadata} from "../../../src/interfaces/IModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 import {ResultCreatorModule} from "./ReturnDataModuleMocks.sol";
@@ -30,7 +29,9 @@ contract PermittedCallerModule is IExecutionModule, BaseModule {
         return manifest;
     }
 
-    function moduleMetadata() external pure override returns (ModuleMetadata memory) {}
+    function moduleId() external pure returns (string memory) {
+        return "erc6900/permitted-caller-module/1.0.0";
+    }
 
     // The manifest requested access to use the module-defined method "foo"
     function usePermittedCallAllowed() external view returns (bytes memory) {
