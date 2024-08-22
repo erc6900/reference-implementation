@@ -402,17 +402,15 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_isValidSignature() public {
         bytes32 message = keccak256("hello world");
 
+        bytes32 replaySafeHash = vm.envOr("SMA_TEST", false)
+            ? SemiModularAccount(payable(account1)).replaySafeHash(message)
+            : singleSignerValidationModule.replaySafeHash(address(account1), message);
+
         uint8 v;
         bytes32 r;
         bytes32 s;
 
-        if (vm.envOr("SMA_TEST", false)) {
-            // todo: implement replay-safe hashing for SMA
-            (v, r, s) = vm.sign(owner1Key, message);
-        } else {
-            bytes32 replaySafeHash = singleSignerValidationModule.replaySafeHash(address(account1), message);
-            (v, r, s) = vm.sign(owner1Key, replaySafeHash);
-        }
+        (v, r, s) = vm.sign(owner1Key, replaySafeHash);
 
         bytes memory signature = _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v));
 
