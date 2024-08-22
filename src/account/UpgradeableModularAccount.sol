@@ -11,6 +11,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {collectReturnData} from "../helpers/CollectReturnData.sol";
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../helpers/Constants.sol";
 import {HookConfig, HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
@@ -460,8 +461,8 @@ contract UpgradeableModularAccount is
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
-        } catch (bytes memory revertReason) {
-            // TODO: same issue with EP0.6 - we can't do bytes4 error codes in modules
+        } catch {
+            bytes memory revertReason = collectReturnData();
             revert PreExecHookReverted(module, entityId, revertReason);
         }
     }
@@ -483,7 +484,8 @@ contract UpgradeableModularAccount is
             (address module, uint32 entityId) = postHookToRun.postExecHook.unpack();
             // solhint-disable-next-line no-empty-blocks
             try IExecutionHookModule(module).postExecutionHook(entityId, postHookToRun.preExecHookReturnData) {}
-            catch (bytes memory revertReason) {
+            catch {
+                bytes memory revertReason = collectReturnData();
                 revert PostExecHookReverted(module, entityId, revertReason);
             }
         }
@@ -500,8 +502,9 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason){
+        {} catch{
         // forgefmt: disable-end
+            bytes memory revertReason = collectReturnData();
             revert PreRuntimeValidationHookFailed(hookModule, hookEntityId, revertReason);
         }
     }
@@ -585,8 +588,9 @@ contract UpgradeableModularAccount is
         )
         // forgefmt: disable-start
         // solhint-disable-next-line no-empty-blocks
-        {} catch (bytes memory revertReason){
+        {} catch{
         // forgefmt: disable-end
+            bytes memory revertReason = collectReturnData();
             revert RuntimeValidationFunctionReverted(module, entityId, revertReason);
         }
     }

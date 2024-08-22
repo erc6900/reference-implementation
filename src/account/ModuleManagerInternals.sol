@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import {collectReturnData} from "../helpers/CollectReturnData.sol";
 import {MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {KnownSelectors} from "../helpers/KnownSelectors.sol";
@@ -170,7 +171,8 @@ abstract contract ModuleManagerInternals is IModularAccount {
         // Initialize the module storage for the account.
         // solhint-disable-next-line no-empty-blocks
         try IModule(module).onInstall(moduleInstallData) {}
-        catch (bytes memory revertReason) {
+        catch {
+            bytes memory revertReason = collectReturnData();
             revert ModuleInstallCallbackFailed(module, revertReason);
         }
 
