@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -17,13 +17,13 @@ contract GlobalValidationTest is AccountTestBase {
     // A separate account and owner that isn't deployed yet, used to test initcode
     address public owner2;
     uint256 public owner2Key;
-    UpgradeableModularAccount public account2;
+    ReferenceModularAccount public account2;
 
     function setUp() public {
         (owner2, owner2Key) = makeAddrAndKey("owner2");
 
         // Compute counterfactual address
-        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
+        account2 = ReferenceModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
         _signerValidation =
@@ -38,7 +38,7 @@ contract GlobalValidationTest is AccountTestBase {
             sender: address(account2),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -65,7 +65,7 @@ contract GlobalValidationTest is AccountTestBase {
 
         vm.prank(owner2);
         account2.executeWithAuthorization(
-            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
 

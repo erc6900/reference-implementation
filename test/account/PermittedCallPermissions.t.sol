@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {PermittedCallerModule} from "../mocks/modules/PermittedCallMocks.sol";
 import {ResultCreatorModule} from "../mocks/modules/ReturnDataModuleMocks.sol";
@@ -46,7 +46,7 @@ contract PermittedCallPermissionsTest is AccountTestBase {
     function test_permittedCall_NotAllowed() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ResultCreatorModule.bar.selector
+                ReferenceModularAccount.ValidationFunctionMissing.selector, ResultCreatorModule.bar.selector
             )
         );
         PermittedCallerModule(address(account1)).usePermittedCallNotAllowed();

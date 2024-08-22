@@ -29,7 +29,7 @@ import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./Acc
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
-contract UpgradeableModularAccount is
+contract ReferenceModularAccount is
     IModularAccount,
     AccountExecutor,
     AccountLoupe,

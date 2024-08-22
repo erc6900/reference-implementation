@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
@@ -26,7 +26,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
 
         address accountImplementation = address(factory.accountImplementation());
 
-        account1 = UpgradeableModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
+        account1 = ReferenceModularAccount(payable(new ERC1967Proxy{salt: 0}(accountImplementation, "")));
 
         if (vm.envOr("SMA_TEST", false)) {
             vm.prank(address(entryPoint));

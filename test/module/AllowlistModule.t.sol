@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call} from "../../src/interfaces/IModularAccount.sol";
@@ -230,7 +230,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
                         )
                 ) {
                     return abi.encodeWithSelector(
-                        UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
+                        ReferenceModularAccount.PreRuntimeValidationHookFailed.selector,
                         address(allowlistModule),
                         HOOK_ENTITY_ID,
                         abi.encodeWithSelector(AllowlistModule.SelectorNotAllowed.selector)
@@ -238,7 +238,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
                 }
             } else {
                 return abi.encodeWithSelector(
-                    UpgradeableModularAccount.PreRuntimeValidationHookFailed.selector,
+                    ReferenceModularAccount.PreRuntimeValidationHookFailed.selector,
                     address(allowlistModule),
                     HOOK_ENTITY_ID,
                     abi.encodeWithSelector(AllowlistModule.TargetNotAllowed.selector)

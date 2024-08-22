@@ -7,7 +7,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
@@ -62,7 +62,7 @@ contract MultiValidationTest is AccountTestBase {
         vm.prank(owner1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.RuntimeValidationFunctionReverted.selector,
+                ReferenceModularAccount.RuntimeValidationFunctionReverted.selector,
                 address(validator2),
                 TEST_DEFAULT_VALIDATION_ENTITY_ID,
                 abi.encodeWithSignature("NotAuthorized()")
@@ -93,7 +93,7 @@ contract MultiValidationTest is AccountTestBase {
             sender: address(account1),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (address(0), 0, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (address(0), 0, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),

@@ -5,8 +5,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
@@ -30,30 +30,27 @@ abstract contract OptimizedTest is Test {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
-    function _deployUpgradeableModularAccount(IEntryPoint entryPoint)
-        internal
-        returns (UpgradeableModularAccount)
-    {
+    function _deployReferenceModularAccount(IEntryPoint entryPoint) internal returns (ReferenceModularAccount) {
         return _isOptimizedTest()
-            ? UpgradeableModularAccount(
+            ? ReferenceModularAccount(
                 payable(
                     deployCode(
-                        "out-optimized/UpgradeableModularAccount.sol/UpgradeableModularAccount.json",
+                        "out-optimized/ReferenceModularAccount.sol/ReferenceModularAccount.json",
                         abi.encode(entryPoint)
                     )
                 )
             )
-            : new UpgradeableModularAccount(entryPoint);
+            : new ReferenceModularAccount(entryPoint);
     }
 
-    function _deploySemiModularAccount(IEntryPoint entryPoint) internal returns (UpgradeableModularAccount) {
+    function _deploySemiModularAccount(IEntryPoint entryPoint) internal returns (ReferenceModularAccount) {
         return _isOptimizedTest()
-            ? UpgradeableModularAccount(
+            ? ReferenceModularAccount(
                 payable(
                     deployCode("out-optimized/SemiModularAccount.sol/SemiModularAccount.json", abi.encode(entryPoint))
                 )
             )
-            : UpgradeableModularAccount(new SemiModularAccount(entryPoint));
+            : ReferenceModularAccount(new SemiModularAccount(entryPoint));
     }
 
     function _deployTokenReceiverModule() internal returns (TokenReceiverModule) {

@@ -8,8 +8,8 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {AccountFactory} from "../src/account/AccountFactory.sol";
 
+import {ReferenceModularAccount} from "../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../src/account/UpgradeableModularAccount.sol";
 import {SingleSignerValidationModule} from "../src/modules/validation/SingleSignerValidationModule.sol";
 
 contract DeployScript is Script {
@@ -51,7 +51,7 @@ contract DeployScript is Script {
 
         address addr = Create2.computeAddress(
             salt,
-            keccak256(abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(entryPoint))),
+            keccak256(abi.encodePacked(type(ReferenceModularAccount).creationCode, abi.encode(entryPoint))),
             CREATE2_FACTORY
         );
         if (addr != expected) {
@@ -63,7 +63,7 @@ contract DeployScript is Script {
 
         if (addr.code.length == 0) {
             console.log("No code found at expected address, deploying...");
-            UpgradeableModularAccount deployed = new UpgradeableModularAccount{salt: salt}(entryPoint);
+            ReferenceModularAccount deployed = new ReferenceModularAccount{salt: salt}(entryPoint);
 
             if (address(deployed) != expected) {
                 console.log("Deployed address mismatch");
@@ -166,7 +166,7 @@ contract DeployScript is Script {
             console.log("No code found at expected address, deploying...");
             AccountFactory deployed = new AccountFactory{salt: salt}(
                 entryPoint,
-                UpgradeableModularAccount(payable(accountImpl)),
+                ReferenceModularAccount(payable(accountImpl)),
                 SemiModularAccount(payable(semiModularAccountImpl)),
                 singleSignerValidationModule,
                 owner

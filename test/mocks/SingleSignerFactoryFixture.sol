@@ -5,7 +5,7 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
@@ -15,7 +15,7 @@ import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
 contract SingleSignerFactoryFixture is OptimizedTest {
-    UpgradeableModularAccount public accountImplementation;
+    ReferenceModularAccount public accountImplementation;
     SingleSignerValidationModule public singleSignerValidationModule;
     bytes32 private immutable _PROXY_BYTECODE_HASH;
 
@@ -32,7 +32,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
 
         accountImplementation = vm.envOr("SMA_TEST", false)
             ? _deploySemiModularAccount(_entryPoint)
-            : _deployUpgradeableModularAccount(_entryPoint);
+            : _deployReferenceModularAccount(_entryPoint);
         _PROXY_BYTECODE_HASH = keccak256(
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(address(accountImplementation), ""))
         );
@@ -47,8 +47,8 @@ contract SingleSignerFactoryFixture is OptimizedTest {
      * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after
      * account creation
      */
-    function createAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
-        // We cast the SemiModularAccount to an UpgradeableModularAccount to facilitate equivalence testing.
+    function createAccount(address owner, uint256 salt) public returns (ReferenceModularAccount) {
+        // We cast the SemiModularAccount to an ReferenceModularAccount to facilitate equivalence testing.
         // However, we don't do this in the actual factory.
         if (vm.envOr("SMA_TEST", false)) {
             return createSemiModularAccount(owner, salt);
@@ -63,7 +63,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
             new ERC1967Proxy{salt: getSalt(owner, salt)}(address(accountImplementation), "");
 
             // point proxy to actual implementation and init modules
-            UpgradeableModularAccount(payable(addr)).initializeWithValidation(
+            ReferenceModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(
                     address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
                 ),
@@ -73,10 +73,10 @@ contract SingleSignerFactoryFixture is OptimizedTest {
             );
         }
 
-        return UpgradeableModularAccount(payable(addr));
+        return ReferenceModularAccount(payable(addr));
     }
 
-    function createSemiModularAccount(address owner, uint256 salt) public returns (UpgradeableModularAccount) {
+    function createSemiModularAccount(address owner, uint256 salt) public returns (ReferenceModularAccount) {
         bytes32 fullSalt = getSalt(owner, salt);
 
         bytes memory immutables = _getImmutableArgs(owner);
@@ -91,7 +91,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
             revert SemiModularAccountAddressMismatch(addr, instance);
         }
 
-        return UpgradeableModularAccount(payable(addr));
+        return ReferenceModularAccount(payable(addr));
     }
 
     /**

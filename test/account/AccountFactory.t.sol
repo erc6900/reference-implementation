@@ -3,17 +3,17 @@ pragma solidity ^0.8.19;
 
 import {AccountFactory} from "../../src/account/AccountFactory.sol";
 
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
 contract AccountFactoryTest is AccountTestBase {
     AccountFactory internal _factory;
-    UpgradeableModularAccount internal _account;
+    ReferenceModularAccount internal _account;
     SemiModularAccount internal _semiModularAccount;
 
     function setUp() public {
-        _account = new UpgradeableModularAccount(entryPoint);
+        _account = new ReferenceModularAccount(entryPoint);
         _semiModularAccount = new SemiModularAccount(entryPoint);
 
         _factory = new AccountFactory(
@@ -22,23 +22,23 @@ contract AccountFactoryTest is AccountTestBase {
     }
 
     function test_createAccount() public {
-        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
+        ReferenceModularAccount account = _factory.createAccount(address(this), 100, 0);
 
         assertEq(address(account.entryPoint()), address(entryPoint));
     }
 
     function test_createAccountAndGetAddress() public {
-        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
+        ReferenceModularAccount account = _factory.createAccount(address(this), 100, 0);
 
         assertEq(address(account), address(_factory.createAccount(address(this), 100, 0)));
     }
 
     function test_multipleDeploy() public {
-        UpgradeableModularAccount account = _factory.createAccount(address(this), 100, 0);
+        ReferenceModularAccount account = _factory.createAccount(address(this), 100, 0);
 
         uint256 startGas = gasleft();
 
-        UpgradeableModularAccount account2 = _factory.createAccount(address(this), 100, 0);
+        ReferenceModularAccount account2 = _factory.createAccount(address(this), 100, 0);
 
         // Assert that the 2nd deployment call cost less than 1 sstore
         // Implies that no deployment was done on the second calls
