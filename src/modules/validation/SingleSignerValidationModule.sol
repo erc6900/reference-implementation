@@ -4,6 +4,8 @@ pragma solidity ^0.8.25;
 import {IModule, ModuleMetadata} from "../../interfaces/IModule.sol";
 import {IValidationModule} from "../../interfaces/IValidationModule.sol";
 import {BaseModule} from "../BaseModule.sol";
+
+import {ReplaySafeWrapper} from "../ReplaySafeWrapper.sol";
 import {ISingleSignerValidationModule} from "./ISingleSignerValidationModule.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -17,12 +19,11 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 /// the account. Account states are to be retrieved from this global singleton directly.
 ///
 /// - This validation supports ERC-1271. The signature is valid if it is signed by the owner's private key
-/// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-/// owner (if the owner is a contract).
+/// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the owner (if the owner is a contract).
 ///
 /// - This validation supports composition that other validation can relay on entities in this validation
 /// to validate partially or fully.
-contract SingleSignerValidationModule is ISingleSignerValidationModule, BaseModule {
+contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySafeWrapper, BaseModule {
     using MessageHashUtils for bytes32;
 
     string internal constant _NAME = "SingleSigner Validation";
@@ -93,14 +94,17 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, BaseModu
     /// @inheritdoc IValidationModule
     /// @dev The signature is valid if it is signed by the owner's private key
     /// (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-    /// owner (if the owner is a contract). Note that the signature is wrapped in an EIP-191 message
+    /// owner (if the owner is a contract).
+    /// Note that the digest is wrapped in an EIP-712 struct to prevent cross-account replay attacks. The
+    /// replay-safe hash may be retrieved by calling the public function `replaySafeHash`.
     function validateSignature(address account, uint32 entityId, address, bytes32 digest, bytes calldata signature)
         external
         view
         override
         returns (bytes4)
     {
-        if (SignatureChecker.isValidSignatureNow(signers[entityId][account], digest, signature)) {
+        bytes32 _replaySafeHash = replaySafeHash(account, digest);
+        if (SignatureChecker.isValidSignatureNow(signers[entityId][account], _replaySafeHash, signature)) {
             return _1271_MAGIC_VALUE;
         }
         return _1271_INVALID;

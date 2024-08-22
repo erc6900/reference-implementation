@@ -392,9 +392,17 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     function test_isValidSignature() public {
         bytes32 message = keccak256("hello world");
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, message);
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
 
-        // singleSignerValidationModule.ownerOf(address(account1));
+        if (vm.envOr("SMA_TEST", false)) {
+            // todo: implement replay-safe hashing for SMA
+            (v, r, s) = vm.sign(owner1Key, message);
+        } else {
+            bytes32 replaySafeHash = singleSignerValidationModule.replaySafeHash(address(account1), message);
+            (v, r, s) = vm.sign(owner1Key, replaySafeHash);
+        }
 
         bytes memory signature = _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v));
 

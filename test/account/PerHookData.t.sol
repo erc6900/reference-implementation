@@ -23,9 +23,6 @@ contract PerHookDataTest is CustomValidationTestBase {
     Counter internal _counter;
 
     function setUp() public {
-        _signerValidation =
-            ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID);
-
         _counter = new Counter();
 
         _accessControlHookModule = new MockAccessControlHookModule();
@@ -360,7 +357,8 @@ contract PerHookDataTest is CustomValidationTestBase {
 
         bytes32 messageHash = keccak256(abi.encodePacked(message));
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, messageHash);
+        bytes32 replaySafeHash = singleSignerValidationModule.replaySafeHash(address(account1), messageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, replaySafeHash);
 
         PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
         preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(message)});
