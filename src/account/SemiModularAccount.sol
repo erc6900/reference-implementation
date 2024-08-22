@@ -7,7 +7,7 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
 
-import {ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
+import {IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
@@ -81,6 +81,11 @@ contract SemiModularAccount is UpgradeableModularAccount {
         override
     {
         revert InitializerDisabled();
+    }
+
+    /// @inheritdoc IModularAccount
+    function accountId() external pure override returns (string memory) {
+        return "erc6900/reference-semi-modular-account/0.8.0";
     }
 
     function _execUserOpValidation(

@@ -22,18 +22,20 @@ library KnownSelectors {
         return
         // check against IAccount methods
         selector == IAccount.validateUserOp.selector
-        // check against module manager methods
+        // check against IModularAccount methods
         || selector == IModularAccount.installExecution.selector
             || selector == IModularAccount.uninstallExecution.selector
+            || selector == IModularAccount.installValidation.selector
+            || selector == IModularAccount.uninstallValidation.selector || selector == IModularAccount.execute.selector
+            || selector == IModularAccount.executeBatch.selector
+            || selector == IModularAccount.executeWithAuthorization.selector
+            || selector == IModularAccount.accountId.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector
         // check against UUPSUpgradeable methods
         || selector == UUPSUpgradeable.proxiableUUID.selector
             || selector == UUPSUpgradeable.upgradeToAndCall.selector
-        // check against IModularAccount methods
-        || selector == IModularAccount.execute.selector || selector == IModularAccount.executeBatch.selector
-            || selector == IModularAccount.executeWithAuthorization.selector
-        // check against account loupe methods
+        // check against IAccountLoupe methods
         || selector == IAccountLoupe.getExecutionData.selector
             || selector == IAccountLoupe.getValidationData.selector;
     }
