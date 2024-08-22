@@ -26,6 +26,14 @@ contract SemiModularAccount is UpgradeableModularAccount {
     uint256 internal constant _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT =
         0x5b9dc9aa943f8fa2653ceceda5e3798f0686455280432166ba472eca0bc17a32;
 
+    // keccak256("EIP712Domain(uint256 chainId,address verifyingContract)")
+    bytes32 private constant _DOMAIN_SEPARATOR_TYPEHASH =
+        0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
+
+    // keccak256("ReplaySafeHash(bytes32 hash)")
+    bytes32 private constant _REPLAY_SAFE_HASH_TYPEHASH =
+        0x294a8735843d4afb4f017c76faf3b7731def145ed0025fc9b1d5ce30adf113ff;
+
     ModuleEntity internal constant _FALLBACK_VALIDATION = ModuleEntity.wrap(bytes24(type(uint192).max));
 
     uint256 internal constant _SIG_VALIDATION_PASSED = 0;
@@ -88,6 +96,11 @@ contract SemiModularAccount is UpgradeableModularAccount {
         return "erc6900/reference-semi-modular-account/0.8.0";
     }
 
+    function replaySafeHash(bytes32 hash) public view virtual returns (bytes32) {
+        return
+            MessageHashUtils.toTypedDataHash({domainSeparator: _domainSeparator(), structHash: _hashStruct(hash)});
+    }
+
     function _execUserOpValidation(
         ModuleEntity userOpValidationFunction,
         PackedUserOperation memory userOp,
@@ -120,9 +133,9 @@ contract SemiModularAccount is UpgradeableModularAccount {
             if (msg.sender != fallbackSigner) {
                 revert FallbackSignerMismatch();
             }
-            return;
+        } else {
+            super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
         }
-        super._execRuntimeValidation(runtimeValidationFunction, callData, authorization);
     }
 
     function _exec1271Validation(ModuleEntity sigValidation, bytes32 hash, bytes calldata signature)
@@ -134,7 +147,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
         if (sigValidation.eq(_FALLBACK_VALIDATION)) {
             address fallbackSigner = _getFallbackSigner();
 
-            if (SignatureChecker.isValidSignatureNow(fallbackSigner, hash, signature)) {
+            if (SignatureChecker.isValidSignatureNow(fallbackSigner, replaySafeHash(hash), signature)) {
                 return _1271_MAGIC_VALUE;
             }
             return _1271_INVALID;
@@ -176,11 +189,25 @@ contract SemiModularAccount is UpgradeableModularAccount {
         return address(uint160(bytes20(appendedData)));
     }
 
+    function _domainSeparator() internal view returns (bytes32) {
+        return keccak256(abi.encode(_DOMAIN_SEPARATOR_TYPEHASH, block.chainid, address(this)));
+    }
+
     function _getSemiModularAccountStorage() internal pure returns (SemiModularAccountStorage storage) {
         SemiModularAccountStorage storage _storage;
         assembly ("memory-safe") {
             _storage.slot := _SEMI_MODULAR_ACCOUNT_STORAGE_SLOT
         }
         return _storage;
+    }
+
+    function _hashStruct(bytes32 hash) internal pure virtual returns (bytes32) {
+        bytes32 res;
+        assembly ("memory-safe") {
+            mstore(0x00, _REPLAY_SAFE_HASH_TYPEHASH)
+            mstore(0x20, hash)
+            res := keccak256(0, 0x40)
+        }
+        return res;
     }
 }

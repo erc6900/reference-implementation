@@ -26,7 +26,13 @@ abstract contract ReplaySafeWrapper is ModuleEIP712 {
         });
     }
 
-    function _hashStruct(bytes32 hash) internal view virtual returns (bytes32) {
-        return keccak256(abi.encode(_REPLAY_SAFE_HASH_TYPEHASH, hash));
+    function _hashStruct(bytes32 hash) internal pure virtual returns (bytes32) {
+        bytes32 res;
+        assembly ("memory-safe") {
+            mstore(0x00, _REPLAY_SAFE_HASH_TYPEHASH)
+            mstore(0x20, hash)
+            res := keccak256(0x00, 0x40)
+        }
+        return res;
     }
 }
