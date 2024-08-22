@@ -406,11 +406,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             ? SemiModularAccount(payable(account1)).replaySafeHash(message)
             : singleSignerValidationModule.replaySafeHash(address(account1), message);
 
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-
-        (v, r, s) = vm.sign(owner1Key, replaySafeHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, replaySafeHash);
 
         bytes memory signature = _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v));
 
