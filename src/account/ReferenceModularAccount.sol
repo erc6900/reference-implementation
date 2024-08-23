@@ -242,6 +242,9 @@ contract ReferenceModularAccount is
 
     /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
+    /// @dev This function can be used to update (to a certain degree) previously installed validation functions.
+    ///      - preValidationHook, permissionHook, and selectors can be added later. Though they won't be deleted.
+    ///      - isGlobal and isSignatureValidation can also be updated later.
     function installValidation(
         ValidationConfig validationConfig,
         bytes4[] calldata selectors,
