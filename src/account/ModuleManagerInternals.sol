@@ -89,25 +89,6 @@ abstract contract ModuleManagerInternals is IModularAccount {
         _executionData.allowGlobalValidation = false;
     }
 
-    function _addValidationFunction(ValidationConfig validationConfig, bytes4[] memory selectors) internal {
-        ValidationData storage _validationData =
-            getAccountStorage().validationData[validationConfig.moduleEntity()];
-
-        if (validationConfig.isGlobal()) {
-            _validationData.isGlobal = true;
-        }
-
-        if (validationConfig.isSignatureValidation()) {
-            _validationData.isSignatureValidation = true;
-        }
-
-        // Add the validation function to the selectors.
-        uint256 length = selectors.length;
-        for (uint256 i = 0; i < length; ++i) {
-            _validationData.selectors.add(toSetValue(selectors[i]));
-        }
-    }
-
     function _removeValidationFunction(ModuleEntity validationFunction) internal {
         ValidationData storage _validationData = getAccountStorage().validationData[validationFunction];
 
