@@ -2,11 +2,9 @@
 pragma solidity ^0.8.19;
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 import {SemiModularAccount} from "src/account/SemiModularAccount.sol";
 import {ValidationConfig} from "src/helpers/ValidationConfigLib.sol";
 
-import {console} from "forge-std/Test.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
 contract SemiModularAccountTest is AccountTestBase {
