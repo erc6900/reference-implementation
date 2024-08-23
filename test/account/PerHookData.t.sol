@@ -6,10 +6,10 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {SparseCalldataSegmentLib} from "../../src/helpers/SparseCalldataSegmentLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
 import {Counter} from "../mocks/Counter.sol";
 import {MockAccessControlHookModule} from "../mocks/modules/MockAccessControlHookModule.sol";
@@ -21,6 +21,10 @@ contract PerHookDataTest is CustomValidationTestBase {
     MockAccessControlHookModule internal _accessControlHookModule;
 
     Counter internal _counter;
+
+    uint32 internal constant _VALIDATION_ENTITY_ID = 0;
+    uint32 internal constant _PRE_HOOK_ENTITY_ID_1 = 0;
+    uint32 internal constant _PRE_HOOK_ENTITY_ID_2 = 1;
 
     function setUp() public {
         _counter = new Counter();
@@ -127,7 +131,58 @@ contract PerHookDataTest is CustomValidationTestBase {
         entryPoint.handleOps(userOps, beneficiary);
     }
 
-    // todo: index out of order failure case with 2 pre hooks
+    function test_passAccessControl_twoHooks_userOp() public {
+        _installSecondPreHook();
+
+        assertEq(_counter.number(), 0);
+
+        (PackedUserOperation memory userOp, bytes32 userOpHash) = _getCounterUserOP();
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](2);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+        preValidationHookData[1] = PreValidationHookData({index: 1, validationData: abi.encodePacked(_counter)});
+
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = userOp;
+
+        entryPoint.handleOps(userOps, beneficiary);
+
+        assertEq(_counter.number(), 1);
+    }
+
+    function test_failAccessControl_indexOutOfOrder_userOp() public {
+        _installSecondPreHook();
+
+        (PackedUserOperation memory userOp, bytes32 userOpHash) = _getCounterUserOP();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](3);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+        preValidationHookData[1] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+
+        userOp.signature = _encodeSignature(
+            _signerValidation, GLOBAL_VALIDATION, preValidationHookData, abi.encodePacked(r, s, v)
+        );
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = userOp;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEntryPoint.FailedOpWithRevert.selector,
+                0,
+                "AA23 reverted",
+                abi.encodeWithSelector(SparseCalldataSegmentLib.SegmentOutOfOrder.selector)
+            )
+        );
+        entryPoint.handleOps(userOps, beneficiary);
+    }
 
     function test_failAccessControl_badTarget_userOp() public {
         PackedUserOperation memory userOp = PackedUserOperation({
@@ -248,7 +303,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 ReferenceModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookModule,
-                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
+                _PRE_HOOK_ENTITY_ID_1,
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -266,7 +321,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 ReferenceModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookModule,
-                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
+                _PRE_HOOK_ENTITY_ID_1,
                 abi.encodeWithSignature("Error(string)", "Proof doesn't match target")
             )
         );
@@ -295,7 +350,42 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
     }
 
-    //todo: index out of order failure case with 2 pre hooks
+    function test_passAccessControl_twoHooks_runtime() public {
+        _installSecondPreHook();
+
+        assertEq(_counter.number(), 0);
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](2);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+        preValidationHookData[1] = PreValidationHookData({index: 1, validationData: abi.encodePacked(_counter)});
+
+        vm.prank(owner1);
+        account1.executeWithAuthorization(
+            abi.encodeCall(
+                ReferenceModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+            ),
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
+        );
+
+        assertEq(_counter.number(), 1);
+    }
+
+    function test_failAccessControl_indexOutOfOrder_runtime() public {
+        _installSecondPreHook();
+
+        PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](3);
+        preValidationHookData[0] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+        preValidationHookData[1] = PreValidationHookData({index: 0, validationData: abi.encodePacked(_counter)});
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(SparseCalldataSegmentLib.SegmentOutOfOrder.selector));
+        account1.executeWithAuthorization(
+            abi.encodeCall(
+                ReferenceModularAccount.execute, (address(_counter), 0 wei, abi.encodeCall(Counter.increment, ()))
+            ),
+            _encodeSignature(_signerValidation, GLOBAL_VALIDATION, preValidationHookData, "")
+        );
+    }
 
     function test_failAccessControl_badTarget_runtime() public {
         PreValidationHookData[] memory preValidationHookData = new PreValidationHookData[](1);
@@ -306,7 +396,7 @@ contract PerHookDataTest is CustomValidationTestBase {
             abi.encodeWithSelector(
                 ReferenceModularAccount.PreRuntimeValidationHookFailed.selector,
                 _accessControlHookModule,
-                uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK),
+                _PRE_HOOK_ENTITY_ID_1,
                 abi.encodeWithSignature("Error(string)", "Target not allowed")
             )
         );
@@ -394,6 +484,19 @@ contract PerHookDataTest is CustomValidationTestBase {
         account1.isValidSignature(messageHash, _encode1271Signature(_signerValidation, abi.encodePacked(r, s, v)));
     }
 
+    function _installSecondPreHook() internal {
+        // depends on the ability of `installValidation` to append hooks
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packValidationHook(address(_accessControlHookModule), _PRE_HOOK_ENTITY_ID_2),
+            abi.encode(_PRE_HOOK_ENTITY_ID_2, _counter)
+        );
+        vm.prank(address(entryPoint));
+        account1.installValidation(
+            ValidationConfigLib.pack(_signerValidation, true, false), new bytes4[](0), "", hooks
+        );
+    }
+
     function _getCounterUserOP() internal view returns (PackedUserOperation memory, bytes32) {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
@@ -424,13 +527,11 @@ contract PerHookDataTest is CustomValidationTestBase {
     {
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
-            HookConfigLib.packValidationHook(
-                address(_accessControlHookModule), uint32(MockAccessControlHookModule.EntityId.PRE_VALIDATION_HOOK)
-            ),
-            abi.encode(_counter)
+            HookConfigLib.packValidationHook(address(_accessControlHookModule), _PRE_HOOK_ENTITY_ID_1),
+            abi.encode(_PRE_HOOK_ENTITY_ID_1, _counter)
         );
         // patched to also work during SMA tests by differentiating the validation
-        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), type(uint32).max - 1);
-        return (_signerValidation, true, true, new bytes4[](0), abi.encode(type(uint32).max - 1, owner1), hooks);
+        _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), _VALIDATION_ENTITY_ID);
+        return (_signerValidation, true, true, new bytes4[](0), abi.encode(_VALIDATION_ENTITY_ID, owner1), hooks);
     }
 }

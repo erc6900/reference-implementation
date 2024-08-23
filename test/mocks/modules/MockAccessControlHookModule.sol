@@ -13,19 +13,16 @@ import {BaseModule} from "../../../src/modules/BaseModule.sol";
 // This is just a mock - it does not enforce this over `executeBatch` and other methods of making calls, and should
 // not be used in production..
 contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
-    enum EntityId {
-        PRE_VALIDATION_HOOK
-    }
-
-    mapping(address account => address allowedTarget) public allowedTargets;
+    mapping(uint32 entityId => mapping(address account => address allowedTarget)) public allowedTargets;
 
     function onInstall(bytes calldata data) external override {
-        address allowedTarget = abi.decode(data, (address));
-        allowedTargets[msg.sender] = allowedTarget;
+        (uint32 entityId, address allowedTarget) = abi.decode(data, (uint32, address));
+        allowedTargets[entityId][msg.sender] = allowedTarget;
     }
 
-    function onUninstall(bytes calldata) external override {
-        delete allowedTargets[msg.sender];
+    function onUninstall(bytes calldata data) external override {
+        uint32 entityId = abi.decode(data, (uint32));
+        delete allowedTargets[entityId][msg.sender];
     }
 
     function preUserOpValidationHook(uint32 entityId, PackedUserOperation calldata userOp, bytes32)
@@ -34,18 +31,17 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         override
         returns (uint256)
     {
-        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
-            if (bytes4(userOp.callData[:4]) == IModularAccount.execute.selector) {
-                address target = abi.decode(userOp.callData[4:36], (address));
+        if (bytes4(userOp.callData[:4]) == IModularAccount.execute.selector) {
+            address target = abi.decode(userOp.callData[4:36], (address));
 
-                // Simulate a merkle proof - require that the target address is also provided in the signature
-                address proof = address(bytes20(userOp.signature));
-                require(proof == target, "Proof doesn't match target");
-                require(target == allowedTargets[msg.sender], "Target not allowed");
-                return 0;
-            }
+            // Simulate a merkle proof - require that the target address is also provided in the signature
+            address proof = address(bytes20(userOp.signature));
+            require(proof == target, "Proof doesn't match target");
+            require(target == allowedTargets[entityId][msg.sender], "Target not allowed");
+            return 0;
         }
-        revert NotImplemented();
+
+        revert("Unsupported method");
     }
 
     function preRuntimeValidationHook(
@@ -55,21 +51,19 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
         bytes calldata data,
         bytes calldata authorization
     ) external view override {
-        if (entityId == uint32(EntityId.PRE_VALIDATION_HOOK)) {
-            if (bytes4(data[:4]) == IModularAccount.execute.selector) {
-                address target = abi.decode(data[4:36], (address));
+        if (bytes4(data[:4]) == IModularAccount.execute.selector) {
+            address target = abi.decode(data[4:36], (address));
 
-                // Simulate a merkle proof - require that the target address is also provided in the authorization
-                // data
-                address proof = address(bytes20(authorization));
-                require(proof == target, "Proof doesn't match target");
-                require(target == allowedTargets[msg.sender], "Target not allowed");
+            // Simulate a merkle proof - require that the target address is also provided in the authorization
+            // data
+            address proof = address(bytes20(authorization));
+            require(proof == target, "Proof doesn't match target");
+            require(target == allowedTargets[entityId][msg.sender], "Target not allowed");
 
-                return;
-            }
+            return;
         }
 
-        revert NotImplemented();
+        revert("Unsupported method");
     }
 
     function preSignatureValidationHook(uint32, address, bytes32 hash, bytes calldata signature)
