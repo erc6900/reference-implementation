@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
@@ -155,6 +155,6 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     }
 
     function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(UpgradeableModularAccount.ValidationFunctionMissing.selector, selector);
+        return abi.encodeWithSelector(ReferenceModularAccount.ValidationFunctionMissing.selector, selector);
     }
 }

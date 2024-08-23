@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 
@@ -189,7 +189,7 @@ contract UpgradeModuleTest is AccountTestBase {
         // Test if old validation still works, expect fail
         vm.expectRevert(
             abi.encodePacked(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector,
+                ReferenceModularAccount.ValidationFunctionMissing.selector,
                 abi.encode(IModularAccount.execute.selector)
             )
         );

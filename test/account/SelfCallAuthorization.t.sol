@@ -5,7 +5,7 @@ import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IA
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
@@ -50,7 +50,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                    ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -65,7 +65,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                    ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -76,7 +76,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _runtimeCall(
             abi.encodeCall(ComprehensiveModule.foo, ()),
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
             )
         );
     }
@@ -85,14 +85,14 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runUserOp(
             abi.encodeCall(
-                UpgradeableModularAccount.execute,
+                ReferenceModularAccount.execute,
                 (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
             abi.encodeWithSelector(
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
+                abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector)
             )
         );
 
@@ -106,7 +106,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                    ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -118,7 +118,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
             abi.encodePacked(
                 IAccountExecute.executeUserOp.selector,
                 abi.encodeCall(
-                    UpgradeableModularAccount.execute,
+                    ReferenceModularAccount.execute,
                     (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
                 )
             ),
@@ -126,7 +126,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
+                abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector)
             )
         );
 
@@ -142,7 +142,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 0,
                 "AA23 reverted",
                 abi.encodeWithSelector(
-                    UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                    ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
                 )
             )
         );
@@ -152,10 +152,10 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         // Using global validation, self-call bypasses custom validation needed for ComprehensiveModule.foo
         _runtimeCall(
             abi.encodeCall(
-                UpgradeableModularAccount.execute,
+                ReferenceModularAccount.execute,
                 (address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()))
             ),
-            abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
+            abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector)
         );
 
         Call[] memory calls = new Call[](1);
@@ -164,7 +164,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         _runtimeExecBatchExpFail(
             calls,
             abi.encodeWithSelector(
-                UpgradeableModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
+                ReferenceModularAccount.ValidationFunctionMissing.selector, ComprehensiveModule.foo.selector
             )
         );
     }
@@ -241,7 +241,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
+                abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector)
             )
         );
         entryPoint.handleOps(userOps, beneficiary);
@@ -270,7 +270,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
                 IEntryPoint.FailedOpWithRevert.selector,
                 0,
                 "AA23 reverted",
-                abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector)
+                abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector)
             )
         );
         entryPoint.handleOps(userOps, beneficiary);
@@ -285,7 +285,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         Call[] memory outerCalls = new Call[](1);
         outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IModularAccount.executeBatch, (innerCalls)));
 
-        vm.expectRevert(abi.encodeWithSelector(UpgradeableModularAccount.SelfCallRecursionDepthExceeded.selector));
+        vm.expectRevert(abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector));
         account1.executeWithAuthorization(
             abi.encodeCall(IModularAccount.executeBatch, (outerCalls)),
             _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
@@ -302,7 +302,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         vm.prank(owner1);
         account1.executeWithAuthorization(
             abi.encodeCall(
-                UpgradeableModularAccount.installValidation,
+                ReferenceModularAccount.installValidation,
                 (
                     ValidationConfigLib.pack(comprehensiveModuleValidation, false, false),
                     selectors,

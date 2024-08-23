@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 
@@ -20,7 +20,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
     address public ethRecipient;
     address public owner2;
     uint256 public owner2Key;
-    UpgradeableModularAccount public account;
+    ReferenceModularAccount public account;
 
     ContractOwner public contractOwner;
 
@@ -44,7 +44,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
             sender: address(account),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -72,7 +72,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
     function test_runtimeValidate() public {
         vm.prank(owner1);
         account.executeWithAuthorization(
-            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
                 GLOBAL_VALIDATION,
@@ -99,7 +99,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
 
         vm.prank(owner2);
         account.executeWithAuthorization(
-            abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId), GLOBAL_VALIDATION, ""
             )

@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
@@ -24,7 +24,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
     MockModule public validationModule = new MockModule(_m);
     ModuleEntity public validationFunction;
 
-    UpgradeableModularAccount public acct;
+    ReferenceModularAccount public acct;
     NativeTokenLimitModule public module = new NativeTokenLimitModule();
     uint256 public spendLimit = 10 ether;
 
@@ -62,7 +62,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
     }
 
     function _getExecuteWithValue(uint256 value) internal view returns (bytes memory) {
-        return abi.encodeCall(UpgradeableModularAccount.execute, (recipient, value, ""));
+        return abi.encodeCall(ReferenceModularAccount.execute, (recipient, value, ""));
     }
 
     function _getPackedUO(uint256 gas1, uint256 gas2, uint256 gas3, uint256 gasPrice, bytes memory callData)
@@ -74,7 +74,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
             sender: address(acct),
             nonce: 0,
             initCode: "",
-            callData: abi.encodePacked(UpgradeableModularAccount.executeUserOp.selector, callData),
+            callData: abi.encodePacked(ReferenceModularAccount.executeUserOp.selector, callData),
             accountGasLimits: bytes32(bytes16(uint128(gas1))) | bytes32(uint256(gas2)),
             preVerificationGas: gas3,
             gasFees: bytes32(uint256(uint128(gasPrice))),
@@ -112,7 +112,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         // uses 5e + 1wei of native tokens
         vm.expectRevert(
             abi.encodePacked(
-                UpgradeableModularAccount.PreExecHookReverted.selector,
+                ReferenceModularAccount.PreExecHookReverted.selector,
                 abi.encode(
                     address(module),
                     uint32(0),

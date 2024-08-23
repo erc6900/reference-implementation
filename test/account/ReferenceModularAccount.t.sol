@@ -11,8 +11,8 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
 
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 
@@ -29,7 +29,7 @@ import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
 
-contract UpgradeableModularAccountTest is AccountTestBase {
+contract ReferenceModularAccountTest is AccountTestBase {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -38,7 +38,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
     // A separate account and owner that isn't deployed yet, used to test initcode
     address public owner2;
     uint256 public owner2Key;
-    UpgradeableModularAccount public account2;
+    ReferenceModularAccount public account2;
 
     address public ethRecipient;
     Counter public counter;
@@ -54,7 +54,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         (owner2, owner2Key) = makeAddrAndKey("owner2");
 
         // Compute counterfactual address
-        account2 = UpgradeableModularAccount(payable(factory.getAddress(owner2, 0)));
+        account2 = ReferenceModularAccount(payable(factory.getAddress(owner2, 0)));
         vm.deal(address(account2), 100 ether);
 
         ethRecipient = makeAddr("ethRecipient");
@@ -72,7 +72,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             sender: address(account1),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -97,7 +97,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         bytes memory callData = vm.envOr("SMA_TEST", false)
             ? abi.encodeCall(SemiModularAccount(payable(account1)).updateFallbackSigner, (owner2))
             : abi.encodeCall(
-                UpgradeableModularAccount.execute,
+                ReferenceModularAccount.execute,
                 (
                     address(singleSignerValidationModule),
                     0,
@@ -137,7 +137,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             sender: address(account2),
             nonce: 0,
             initCode: abi.encodePacked(address(factory), abi.encodeCall(factory.createAccount, (owner2, 0))),
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (recipient, 1 wei, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (recipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -158,12 +158,12 @@ contract UpgradeableModularAccountTest is AccountTestBase {
         assertEq(recipient.balance, 1 wei);
     }
 
-    function test_debug_upgradeableModularAccount_storageAccesses() public {
+    function test_debug_ReferenceModularAccount_storageAccesses() public {
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(account1),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.execute, (ethRecipient, 1 wei, "")),
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -200,7 +200,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             nonce: 0,
             initCode: "",
             callData: abi.encodeCall(
-                UpgradeableModularAccount.execute, (address(counter), 0, abi.encodeCall(counter.increment, ()))
+                ReferenceModularAccount.execute, (address(counter), 0, abi.encodeCall(counter.increment, ()))
             ),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
@@ -232,7 +232,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
             sender: address(account1),
             nonce: 0,
             initCode: "",
-            callData: abi.encodeCall(UpgradeableModularAccount.executeBatch, (calls)),
+            callData: abi.encodeCall(ReferenceModularAccount.executeBatch, (calls)),
             accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
             preVerificationGas: 0,
             gasFees: _encodeGas(1, 1),
@@ -358,7 +358,7 @@ contract UpgradeableModularAccountTest is AccountTestBase {
 
     function test_upgradeToAndCall() public {
         vm.startPrank(address(entryPoint));
-        UpgradeableModularAccount account3 = new UpgradeableModularAccount(entryPoint);
+        ReferenceModularAccount account3 = new ReferenceModularAccount(entryPoint);
         bytes32 slot = account3.proxiableUUID();
 
         // account has impl from factory

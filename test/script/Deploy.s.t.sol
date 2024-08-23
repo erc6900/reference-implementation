@@ -11,8 +11,8 @@ import {DeployScript} from "../../script/Deploy.s.sol";
 
 import {AccountFactory} from "../../src/account/AccountFactory.sol";
 
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 contract DeployTest is Test {
@@ -40,7 +40,7 @@ contract DeployTest is Test {
         _accountImpl = Create2.computeAddress(
             bytes32(0),
             keccak256(
-                abi.encodePacked(type(UpgradeableModularAccount).creationCode, abi.encode(address(_entryPoint)))
+                abi.encodePacked(type(ReferenceModularAccount).creationCode, abi.encode(address(_entryPoint)))
             ),
             CREATE2_FACTORY
         );

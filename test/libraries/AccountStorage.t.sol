@@ -7,7 +7,7 @@ import {MockDiamondStorageContract} from "../mocks/MockDiamondStorageContract.so
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Test} from "forge-std/Test.sol";
 
-// Test implementation of AccountStorageInitializable which is contained in UpgradeableModularAccount
+// Test implementation of AccountStorageInitializable which is contained in ReferenceModularAccount
 contract AccountStorageTest is Test {
     MockDiamondStorageContract public impl;
     address public proxy;

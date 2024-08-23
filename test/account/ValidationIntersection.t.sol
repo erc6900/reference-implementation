@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
@@ -199,7 +199,7 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.prank(address(entryPoint));
         vm.expectRevert(
             abi.encodeWithSelector(
-                UpgradeableModularAccount.UnexpectedAggregator.selector,
+                ReferenceModularAccount.UnexpectedAggregator.selector,
                 address(oneHookModule),
                 MockBaseUserOpValidationModule.EntityId.PRE_VALIDATION_HOOK_1,
                 badAuthorizer

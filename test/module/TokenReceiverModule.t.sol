@@ -6,7 +6,7 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 
 import {MockERC1155} from "../mocks/MockERC1155.sol";
@@ -17,7 +17,7 @@ import {OptimizedTest} from "../utils/OptimizedTest.sol";
 
 contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
     EntryPoint public entryPoint;
-    UpgradeableModularAccount public acct;
+    ReferenceModularAccount public acct;
     TokenReceiverModule public module;
 
     MockERC721 public t0;
@@ -63,7 +63,7 @@ contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
     function test_failERC721Transfer() public {
         vm.expectRevert(
             abi.encodePacked(
-                UpgradeableModularAccount.UnrecognizedFunction.selector,
+                ReferenceModularAccount.UnrecognizedFunction.selector,
                 IERC721Receiver.onERC721Received.selector,
                 bytes28(0)
             )
@@ -82,7 +82,7 @@ contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
         // for 1155, reverts are caught in a try catch and bubbled up with the reason from the account
         vm.expectRevert(
             abi.encodePacked(
-                UpgradeableModularAccount.UnrecognizedFunction.selector,
+                ReferenceModularAccount.UnrecognizedFunction.selector,
                 IERC1155Receiver.onERC1155Received.selector,
                 bytes28(0)
             )
@@ -92,7 +92,7 @@ contract TokenReceiverModuleTest is OptimizedTest, IERC1155Receiver {
         // for 1155, reverts are caught in a try catch and bubbled up with the reason from the account
         vm.expectRevert(
             abi.encodePacked(
-                UpgradeableModularAccount.UnrecognizedFunction.selector,
+                ReferenceModularAccount.UnrecognizedFunction.selector,
                 IERC1155Receiver.onERC1155BatchReceived.selector,
                 bytes28(0)
             )

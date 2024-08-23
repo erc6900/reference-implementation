@@ -5,8 +5,8 @@ import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.so
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
@@ -17,7 +17,7 @@ import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_E
 
 import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.sol";
 
-/// @dev This contract handles common boilerplate setup for tests using UpgradeableModularAccount with
+/// @dev This contract handles common boilerplate setup for tests using ReferenceModularAccount with
 /// SingleSignerValidationModule.
 abstract contract AccountTestBase is OptimizedTest {
     using ModuleEntityLib for ModuleEntity;
@@ -31,7 +31,7 @@ abstract contract AccountTestBase is OptimizedTest {
 
     address public owner1;
     uint256 public owner1Key;
-    UpgradeableModularAccount public account1;
+    ReferenceModularAccount public account1;
 
     ModuleEntity internal _signerValidation;
 

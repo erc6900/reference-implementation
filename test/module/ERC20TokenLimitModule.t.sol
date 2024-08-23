@@ -5,7 +5,7 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {UpgradeableModularAccount} from "../../src/account/UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
@@ -27,7 +27,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
     MockModule public validationModule = new MockModule(_m);
     ModuleEntity public validationFunction;
 
-    UpgradeableModularAccount public acct;
+    ReferenceModularAccount public acct;
     ERC20TokenLimitModule public module = new ERC20TokenLimitModule();
     uint256 public spendLimit = 10 ether;
 
@@ -64,7 +64,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
             sender: address(acct),
             nonce: 0,
             initCode: "",
-            callData: abi.encodePacked(UpgradeableModularAccount.executeUserOp.selector, callData),
+            callData: abi.encodePacked(ReferenceModularAccount.executeUserOp.selector, callData),
             accountGasLimits: bytes32(bytes16(uint128(200_000))) | bytes32(uint256(200_000)),
             preVerificationGas: 200_000,
             gasFees: bytes32(uint256(uint128(0))),
@@ -75,7 +75,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function _getExecuteWithSpend(uint256 value) internal view returns (bytes memory) {
         return abi.encodeCall(
-            UpgradeableModularAccount.execute,
+            ReferenceModularAccount.execute,
             (address(erc20), 0, abi.encodeCall(IERC20.transfer, (recipient, value)))
         );
     }

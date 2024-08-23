@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.25;
 
-import {UpgradeableModularAccount} from "./UpgradeableModularAccount.sol";
+import {ReferenceModularAccount} from "./ReferenceModularAccount.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
@@ -13,7 +13,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
-contract SemiModularAccount is UpgradeableModularAccount {
+contract SemiModularAccount is ReferenceModularAccount {
     using MessageHashUtils for bytes32;
     using ModuleEntityLib for ModuleEntity;
 
@@ -46,7 +46,7 @@ contract SemiModularAccount is UpgradeableModularAccount {
     error FallbackSignerDisabled();
     error InitializerDisabled();
 
-    constructor(IEntryPoint anEntryPoint) UpgradeableModularAccount(anEntryPoint) {}
+    constructor(IEntryPoint anEntryPoint) ReferenceModularAccount(anEntryPoint) {}
 
     /// @notice Updates the fallback signer address in storage.
     /// @dev This function causes the fallback signer getter to ignore the bytecode signer if it is nonzero. It can
