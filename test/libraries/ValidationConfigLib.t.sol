@@ -8,7 +8,7 @@ import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/Validatio
 
 contract ValidationConfigLibTest is Test {
     using ModuleEntityLib for ModuleEntity;
-    using ValidationConfigLib for ValidationConfig;
+    using ValidationConfigLib for *;
 
     // Tests the packing and unpacking of a validation config with a randomized state
 
@@ -16,33 +16,35 @@ contract ValidationConfigLibTest is Test {
         address module,
         uint32 entityId,
         bool isGlobal,
-        bool isSignatureValidation
+        bool isSignatureValidation,
+        bool isUserOpValidation
     ) public {
         ValidationConfig validationConfig =
-            ValidationConfigLib.pack(module, entityId, isGlobal, isSignatureValidation);
+            ValidationConfigLib.pack(module, entityId, isGlobal, isSignatureValidation, isUserOpValidation);
 
         // Test unpacking underlying
-        (address module2, uint32 entityId2, bool isGlobal2, bool isSignatureValidation2) =
-            validationConfig.unpackUnderlying();
+        (address module2, uint32 entityId2, uint8 flags2) = validationConfig.unpackUnderlying();
 
         assertEq(module, module2, "module mismatch");
         assertEq(entityId, entityId2, "entityId mismatch");
-        assertEq(isGlobal, isGlobal2, "isGlobal mismatch");
-        assertEq(isSignatureValidation, isSignatureValidation2, "isSignatureValidation mismatch");
+        assertEq(isGlobal, flags2.isGlobal(), "isGlobal mismatch");
+        assertEq(isSignatureValidation, flags2.isSignatureValidation(), "isSignatureValidation mismatch");
+        assertEq(isUserOpValidation, flags2.isUserOpValidation(), "isUserOpValidation mismatch");
 
         // Test unpacking to ModuleEntity
 
         ModuleEntity expectedModuleEntity = ModuleEntityLib.pack(module, entityId);
 
-        (ModuleEntity validationFunction, bool isGlobal3, bool isSignatureValidation3) = validationConfig.unpack();
+        (ModuleEntity validationFunction, uint8 flags3) = validationConfig.unpack();
 
         assertEq(
             ModuleEntity.unwrap(validationFunction),
             ModuleEntity.unwrap(expectedModuleEntity),
             "validationFunction mismatch"
         );
-        assertEq(isGlobal, isGlobal3, "isGlobal mismatch");
-        assertEq(isSignatureValidation, isSignatureValidation3, "isSignatureValidation mismatch");
+        assertEq(isGlobal, flags3.isGlobal(), "isGlobal mismatch");
+        assertEq(isSignatureValidation, flags3.isSignatureValidation(), "isSignatureValidation mismatch");
+        assertEq(isUserOpValidation, flags3.isUserOpValidation(), "isUserOpValidation mismatch");
 
         // Test individual view functions
 
@@ -55,39 +57,42 @@ contract ValidationConfigLibTest is Test {
         );
         assertEq(validationConfig.isGlobal(), isGlobal, "isGlobal mismatch");
         assertEq(validationConfig.isSignatureValidation(), isSignatureValidation, "isSignatureValidation mismatch");
+        assertEq(validationConfig.isUserOpValidation(), isUserOpValidation, "isUserOpValidation mismatch");
     }
 
     function testFuzz_validationConfig_packingModuleEntity(
         ModuleEntity validationFunction,
         bool isGlobal,
-        bool isSignatureValidation
+        bool isSignatureValidation,
+        bool isUserOpValidation
     ) public {
         ValidationConfig validationConfig =
-            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation);
+            ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation, isUserOpValidation);
 
         // Test unpacking underlying
 
         (address expectedModule, uint32 expectedEntityId) = validationFunction.unpack();
 
-        (address module, uint32 entityId, bool isGlobal2, bool isSignatureValidation2) =
-            validationConfig.unpackUnderlying();
+        (address module, uint32 entityId, uint8 flags2) = validationConfig.unpackUnderlying();
 
         assertEq(expectedModule, module, "module mismatch");
         assertEq(expectedEntityId, entityId, "entityId mismatch");
-        assertEq(isGlobal, isGlobal2, "isGlobal mismatch");
-        assertEq(isSignatureValidation, isSignatureValidation2, "isSignatureValidation mismatch");
+        assertEq(isGlobal, flags2.isGlobal(), "isGlobal mismatch");
+        assertEq(isSignatureValidation, flags2.isSignatureValidation(), "isSignatureValidation mismatch");
+        assertEq(isUserOpValidation, flags2.isUserOpValidation(), "isUserOpValidation mismatch");
 
         // Test unpacking to ModuleEntity
 
-        (ModuleEntity validationFunction2, bool isGlobal3, bool isSignatureValidation3) = validationConfig.unpack();
+        (ModuleEntity validationFunction2, uint8 flags3) = validationConfig.unpack();
 
         assertEq(
             ModuleEntity.unwrap(validationFunction),
             ModuleEntity.unwrap(validationFunction2),
             "validationFunction mismatch"
         );
-        assertEq(isGlobal, isGlobal3, "isGlobal mismatch");
-        assertEq(isSignatureValidation, isSignatureValidation3, "isSignatureValidation mismatch");
+        assertEq(isGlobal, flags3.isGlobal(), "isGlobal mismatch");
+        assertEq(isSignatureValidation, flags3.isSignatureValidation(), "isSignatureValidation mismatch");
+        assertEq(isUserOpValidation, flags3.isUserOpValidation(), "isUserOpValidation mismatch");
 
         // Test individual view functions
 
@@ -100,5 +105,6 @@ contract ValidationConfigLibTest is Test {
         );
         assertEq(validationConfig.isGlobal(), isGlobal, "isGlobal mismatch");
         assertEq(validationConfig.isSignatureValidation(), isSignatureValidation, "isSignatureValidation mismatch");
+        assertEq(validationConfig.isUserOpValidation(), isUserOpValidation, "isUserOpValidation mismatch");
     }
 }

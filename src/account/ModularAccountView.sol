@@ -49,6 +49,7 @@ abstract contract ModularAccountView is IModularAccountView {
         ValidationData storage validationData = getAccountStorage().validationData[validationFunction];
         data.isGlobal = validationData.isGlobal;
         data.isSignatureValidation = validationData.isSignatureValidation;
+        data.isUserOpValidation = validationData.isUserOpValidation;
         data.preValidationHooks = validationData.preValidationHooks;
 
         uint256 permissionHooksLen = validationData.permissionHooks.length();

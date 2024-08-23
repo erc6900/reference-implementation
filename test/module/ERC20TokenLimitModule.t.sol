@@ -53,7 +53,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
         vm.prank(address(acct));
         acct.installValidation(
-            ValidationConfigLib.pack(address(validationModule), 0, true, true), new bytes4[](0), "", hooks
+            ValidationConfigLib.pack(address(validationModule), 0, true, true, true), new bytes4[](0), "", hooks
         );
 
         validationFunction = ModuleEntityLib.pack(address(validationModule), 0);

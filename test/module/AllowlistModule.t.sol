@@ -332,7 +332,7 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
+        returns (ModuleEntity, bool, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
@@ -341,7 +341,8 @@ contract AllowlistModuleTest is CustomValidationTestBase {
         );
         // patched to also work during SMA tests by differentiating the validation
         _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), type(uint32).max - 1);
-        return (_signerValidation, true, true, new bytes4[](0), abi.encode(type(uint32).max - 1, owner1), hooks);
+        return
+            (_signerValidation, true, true, true, new bytes4[](0), abi.encode(type(uint32).max - 1, owner1), hooks);
     }
 
     // Unfortunately, this is a feature that solidity has only implemented in via-ir, so we need to do it manually

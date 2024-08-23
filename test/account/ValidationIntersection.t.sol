@@ -54,7 +54,10 @@ contract ValidationIntersectionTest is AccountTestBase {
         vm.startPrank(address(entryPoint));
         // Install noHookValidation
         account1.installValidation(
-            ValidationConfigLib.pack(noHookValidation, true, true), validationSelectors, bytes(""), new bytes[](0)
+            ValidationConfigLib.pack(noHookValidation, true, true, true),
+            validationSelectors,
+            bytes(""),
+            new bytes[](0)
         );
 
         // Install oneHookValidation
@@ -66,7 +69,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             )
         );
         account1.installValidation(
-            ValidationConfigLib.pack(oneHookValidation, true, true), validationSelectors, bytes(""), hooks
+            ValidationConfigLib.pack(oneHookValidation, true, true, true), validationSelectors, bytes(""), hooks
         );
 
         // Install twoHookValidation
@@ -83,7 +86,7 @@ contract ValidationIntersectionTest is AccountTestBase {
             )
         );
         account1.installValidation(
-            ValidationConfigLib.pack(twoHookValidation, true, true), validationSelectors, bytes(""), hooks
+            ValidationConfigLib.pack(twoHookValidation, true, true, true), validationSelectors, bytes(""), hooks
         );
         vm.stopPrank();
     }

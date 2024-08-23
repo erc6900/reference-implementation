@@ -59,7 +59,7 @@ contract AccountFactory is Ownable {
             new ERC1967Proxy{salt: combinedSalt}(address(ACCOUNT_IMPL), "");
             // point proxy to actual implementation and init plugins
             ReferenceModularAccount(payable(addr)).initializeWithValidation(
-                ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION_MODULE, entityId, true, true),
+                ValidationConfigLib.pack(SINGLE_SIGNER_VALIDATION_MODULE, entityId, true, true, true),
                 new bytes4[](0),
                 pluginInstallData,
                 new bytes[](0)

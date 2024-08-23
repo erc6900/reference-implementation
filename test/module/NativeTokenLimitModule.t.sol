@@ -52,7 +52,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
 
         vm.prank(address(acct));
         acct.installValidation(
-            ValidationConfigLib.pack(address(validationModule), 0, true, true),
+            ValidationConfigLib.pack(address(validationModule), 0, true, true, true),
             new bytes4[](0),
             new bytes(0),
             hooks

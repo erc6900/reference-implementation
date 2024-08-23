@@ -102,6 +102,7 @@ contract ModularAccountViewTest is CustomValidationTestBase {
 
         assertTrue(data.isGlobal);
         assertTrue(data.isSignatureValidation);
+        assertTrue(data.isUserOpValidation);
         assertEq(data.preValidationHooks.length, 2);
         assertEq(
             ModuleEntity.unwrap(data.preValidationHooks[0]),
@@ -131,7 +132,7 @@ contract ModularAccountViewTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
+        returns (ModuleEntity, bool, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
         bytes[] memory hooks = new bytes[](2);
         hooks[0] = abi.encodePacked(
@@ -148,6 +149,6 @@ contract ModularAccountViewTest is CustomValidationTestBase {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = comprehensiveModule.foo.selector;
 
-        return (comprehensiveModuleValidation, true, true, selectors, bytes(""), hooks);
+        return (comprehensiveModuleValidation, true, true, true, selectors, bytes(""), hooks);
     }
 }

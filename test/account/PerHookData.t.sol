@@ -493,7 +493,7 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ValidationConfigLib.pack(_signerValidation, true, false), new bytes4[](0), "", hooks
+            ValidationConfigLib.pack(_signerValidation, true, false, true), new bytes4[](0), "", hooks
         );
     }
 
@@ -523,7 +523,7 @@ contract PerHookDataTest is CustomValidationTestBase {
         internal
         virtual
         override
-        returns (ModuleEntity, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
+        returns (ModuleEntity, bool, bool, bool, bytes4[] memory, bytes memory, bytes[] memory)
     {
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
@@ -532,6 +532,8 @@ contract PerHookDataTest is CustomValidationTestBase {
         );
         // patched to also work during SMA tests by differentiating the validation
         _signerValidation = ModuleEntityLib.pack(address(singleSignerValidationModule), _VALIDATION_ENTITY_ID);
-        return (_signerValidation, true, true, new bytes4[](0), abi.encode(_VALIDATION_ENTITY_ID, owner1), hooks);
+        return (
+            _signerValidation, true, true, true, new bytes4[](0), abi.encode(_VALIDATION_ENTITY_ID, owner1), hooks
+        );
     }
 }

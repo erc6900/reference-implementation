@@ -261,6 +261,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
         _validationData.isGlobal = validationConfig.isGlobal();
         _validationData.isSignatureValidation = validationConfig.isSignatureValidation();
+        _validationData.isUserOpValidation = validationConfig.isUserOpValidation();
 
         _onInstall(validationConfig.module(), installData, type(IValidationModule).interfaceId);
         emit ValidationInstalled(validationConfig.module(), validationConfig.entityId());

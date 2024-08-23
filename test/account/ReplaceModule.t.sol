@@ -125,7 +125,7 @@ contract UpgradeModuleTest is AccountTestBase {
 
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ValidationConfigLib.pack(currModuleEntity, true, false),
+            ValidationConfigLib.pack(currModuleEntity, true, false, true),
             new bytes4[](0),
             abi.encode(validationEntityId1, owner1),
             hooksForVal1
@@ -174,7 +174,7 @@ contract UpgradeModuleTest is AccountTestBase {
             data: abi.encodeCall(
                 IModularAccount.installValidation,
                 (
-                    ValidationConfigLib.pack(newModuleEntity, true, false),
+                    ValidationConfigLib.pack(newModuleEntity, true, false, true),
                     new bytes4[](0),
                     abi.encode(validationEntityId2, owner1),
                     hooksForVal2
