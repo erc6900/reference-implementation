@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+
 import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
 import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
@@ -41,5 +43,15 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
             "mock direct call post permission hook failed"
         );
         postHookRan = true;
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(BaseModule, IERC165)
+        returns (bool)
+    {
+        return interfaceId == type(IExecutionHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 }

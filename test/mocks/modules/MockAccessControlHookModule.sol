@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 import {IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
@@ -85,5 +86,15 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
 
     function moduleId() external pure returns (string memory) {
         return "erc6900/mock-access-control-hook-module/1.0.0";
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(BaseModule, IERC165)
+        returns (bool)
+    {
+        return interfaceId == type(IValidationHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 }

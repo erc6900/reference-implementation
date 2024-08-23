@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 import {IModule} from "../../interfaces/IModule.sol";
 
@@ -116,6 +117,16 @@ contract AllowlistModule is IValidationHookModule, BaseModule {
                 _checkCallPermission(entityId, msg.sender, calls[i].target, calls[i].data);
             }
         }
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(BaseModule, IERC165)
+        returns (bool)
+    {
+        return interfaceId == type(IValidationHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _checkCallPermission(uint32 entityId, address account, address target, bytes memory data)
