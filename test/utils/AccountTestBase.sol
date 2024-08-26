@@ -229,7 +229,7 @@ abstract contract AccountTestBase is OptimizedTest {
         return sig;
     }
 
-    // overload for the case where there are no pre-validation hooks
+    // overload for the case where there are no pre validation hooks
     function _encodeSignature(ModuleEntity validationFunction, uint8 globalOrNot, bytes memory validationData)
         internal
         pure
@@ -239,7 +239,7 @@ abstract contract AccountTestBase is OptimizedTest {
         return _encodeSignature(validationFunction, globalOrNot, emptyPreValidationHookData, validationData);
     }
 
-    // overload for the case where there are no pre-validation hooks
+    // overload for the case where there are no pre validation hooks
     function _encode1271Signature(ModuleEntity validationFunction, bytes memory validationData)
         internal
         pure
@@ -249,7 +249,7 @@ abstract contract AccountTestBase is OptimizedTest {
         return _encode1271Signature(validationFunction, emptyPreValidationHookData, validationData);
     }
 
-    // helper function to pack pre-validation hook datas, according to the sparse calldata segment spec.
+    // helper function to pack pre validation hook datas, according to the sparse calldata segment spec.
     function _packPreHookDatas(PreValidationHookData[] memory preValidationHookData)
         internal
         pure

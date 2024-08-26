@@ -442,7 +442,7 @@ contract ReferenceModularAccount is
             }
         }
 
-        // Run the pre hooks and copy their return data to the post hooks array, if an associated post-exec hook
+        // Run the pre hooks and copy their return data to the post hooks array, if an associated post exec hook
         // exists.
         for (uint256 i = 0; i < hooksLength; ++i) {
             HookConfig hookConfig = toHookConfig(executionHooks.at(i));
@@ -452,7 +452,7 @@ contract ReferenceModularAccount is
 
                 preExecHookReturnData = _runPreExecHook(hookConfig.moduleEntity(), data);
 
-                // If there is an associated post-exec hook, save the return data.
+                // If there is an associated post exec hook, save the return data.
                 if (hookConfig.hasPostHook()) {
                     postHooksToRun[i].preExecHookReturnData = preExecHookReturnData;
                 }
@@ -523,15 +523,15 @@ contract ReferenceModularAccount is
     /**
      * Order of operations:
      *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
-     *          - Yes: Return an empty array, there are no post-permissionHooks.
+     *          - Yes: Return an empty array, there are no post permissionHooks.
      *          - No: Continue
      *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
      *         directly call.
      *          - Yes: Continue
      *          - No: Revert, the caller is not allowed to call this selector
      *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
-     *      4. Run the pre-permissionHooks associated with this caller-sig combination, and return the
-     *         post-permissionHooks to run later.
+     *      4. Run the pre permissionHooks associated with this caller-sig combination, and return the
+     *         post permissionHooks to run later.
      */
     function _checkPermittedCallerAndAssociatedHooks()
         internal
