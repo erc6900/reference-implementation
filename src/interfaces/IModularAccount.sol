@@ -99,7 +99,8 @@ interface IModularAccount {
     ) external;
 
     /// @notice Return a unique identifier for the account implementation.
-    /// @dev This function MUST return a string in the format "vendor/account/semver".
+    /// @dev This function MUST return a string in the format "vendor.account.semver". The vendor and account
+    /// names MUST NOT contain a period character.
     /// @return The account ID.
     function accountId() external view returns (string memory);
 }

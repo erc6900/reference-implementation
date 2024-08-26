@@ -24,7 +24,7 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/direct-call-module/1.0.0";
+        return "erc6900.direct-call-module.1.0.0";
     }
 
     function preExecutionHook(uint32, address sender, uint256, bytes calldata)

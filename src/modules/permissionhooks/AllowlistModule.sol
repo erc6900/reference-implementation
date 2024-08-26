@@ -91,7 +91,7 @@ contract AllowlistModule is IValidationHookModule, BaseModule {
 
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
-        return "erc6900/allowlist-module/0.0.1";
+        return "erc6900.allowlist-module.0.0.1";
     }
 
     function setAllowlistTarget(uint32 entityId, address target, bool allowed, bool hasSelectorAllowlist) public {

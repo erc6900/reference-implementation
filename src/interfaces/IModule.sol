@@ -17,7 +17,8 @@ interface IModule is IERC165 {
     function onUninstall(bytes calldata data) external;
 
     /// @notice Return a unique identifier for the module.
-    /// @dev This function MUST return a string in the format "vendor/module/semver".
+    /// @dev This function MUST return a string in the format "vendor.module.semver". The vendor and module
+    /// names MUST NOT contain a period character.
     /// @return The module ID.
     function moduleId() external view returns (string memory);
 }

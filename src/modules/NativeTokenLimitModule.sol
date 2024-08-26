@@ -116,7 +116,7 @@ contract NativeTokenLimitModule is BaseModule, IExecutionHookModule, IValidation
 
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
-        return "erc6900/native-token-limit-module/1.0.0";
+        return "erc6900.native-token-limit-module.1.0.0";
     }
 
     // ┏━━━━━━━━━━━━━━━┓

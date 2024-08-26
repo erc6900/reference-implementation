@@ -114,7 +114,7 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySa
 
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
-        return "erc6900/single-signer-validation-module/1.0.0";
+        return "erc6900.single-signer-validation-module.1.0.0";
     }
 
     function supportsInterface(bytes4 interfaceId)
