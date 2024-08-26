@@ -30,7 +30,7 @@ contract PermittedCallerModule is IExecutionModule, BaseModule {
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/permitted-caller-module/1.0.0";
+        return "erc6900.permitted-caller-module.1.0.0";
     }
 
     // The manifest requested access to use the module-defined method "foo"

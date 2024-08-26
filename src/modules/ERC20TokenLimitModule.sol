@@ -115,7 +115,7 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
 
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
-        return "erc6900/erc20-token-limit-module/1.0.0";
+        return "erc6900.erc20-token-limit-module.1.0.0";
     }
 
     /// @inheritdoc BaseModule

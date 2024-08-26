@@ -189,8 +189,8 @@ contract ReferenceModularAccountTest is AccountTestBase {
         assertEq(
             accountId,
             vm.envOr("SMA_TEST", false)
-                ? "erc6900/reference-semi-modular-account/0.8.0"
-                : "erc6900/reference-modular-account/0.8.0"
+                ? "erc6900.reference-semi-modular-account.0.8.0"
+                : "erc6900.reference-modular-account.0.8.0"
         );
     }
 

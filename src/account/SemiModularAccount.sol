@@ -93,7 +93,7 @@ contract SemiModularAccount is ReferenceModularAccount {
 
     /// @inheritdoc IModularAccount
     function accountId() external pure override returns (string memory) {
-        return "erc6900/reference-semi-modular-account/0.8.0";
+        return "erc6900.reference-semi-modular-account.0.8.0";
     }
 
     function replaySafeHash(bytes32 hash) public view virtual returns (bytes32) {

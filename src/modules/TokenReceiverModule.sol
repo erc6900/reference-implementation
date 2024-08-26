@@ -82,6 +82,6 @@ contract TokenReceiverModule is BaseModule, IExecutionModule, IERC721Receiver, I
 
     /// @inheritdoc IModule
     function moduleId() external pure returns (string memory) {
-        return "erc6900/token-receiver-module/1.0.0";
+        return "erc6900.token-receiver-module.1.0.0";
     }
 }

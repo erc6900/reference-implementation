@@ -281,7 +281,7 @@ contract ReferenceModularAccount is
 
     /// @inheritdoc IModularAccount
     function accountId() external pure virtual returns (string memory) {
-        return "erc6900/reference-modular-account/0.8.0";
+        return "erc6900.reference-modular-account.0.8.0";
     }
 
     /// @inheritdoc UUPSUpgradeable

@@ -79,7 +79,7 @@ contract MockAccessControlHookModule is IValidationHookModule, BaseModule {
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/mock-access-control-hook-module/1.0.0";
+        return "erc6900.mock-access-control-hook-module.1.0.0";
     }
 
     function supportsInterface(bytes4 interfaceId)

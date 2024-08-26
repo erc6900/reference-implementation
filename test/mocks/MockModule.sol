@@ -48,7 +48,7 @@ contract MockModule is ERC165 {
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/mock-module/1.0.0";
+        return "erc6900.mock-module.1.0.0";
     }
 
     /// @dev Returns true if this contract implements the interface defined by

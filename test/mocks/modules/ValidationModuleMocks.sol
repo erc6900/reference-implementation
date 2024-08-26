@@ -75,7 +75,7 @@ abstract contract MockBaseUserOpValidationModule is
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/mock-user-op-validation-module/1.0.0";
+        return "erc6900.mock-user-op-validation-module.1.0.0";
     }
 
     // Empty stubs

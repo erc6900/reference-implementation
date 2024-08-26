@@ -58,7 +58,7 @@ contract ResultCreatorModule is IExecutionModule, BaseModule {
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/result-creator-module/1.0.0";
+        return "erc6900.result-creator-module.1.0.0";
     }
 }
 
@@ -139,6 +139,6 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
     }
 
     function moduleId() external pure returns (string memory) {
-        return "erc6900/result-consumer-module/1.0.0";
+        return "erc6900.result-consumer-module.1.0.0";
     }
 }
