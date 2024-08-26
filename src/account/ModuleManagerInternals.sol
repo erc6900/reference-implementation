@@ -286,7 +286,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
                 revert ArrayLengthMismatch();
             }
 
-            // Hook uninstall data is provided in the order of pre-validation hooks, then permission hooks.
+            // Hook uninstall data is provided in the order of pre validation hooks, then permission hooks.
             uint256 hookIndex = 0;
             for (uint256 i = 0; i < _validationData.preValidationHooks.length; ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
