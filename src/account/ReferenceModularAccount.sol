@@ -52,6 +52,12 @@ contract ReferenceModularAccount is
         ModuleEntity postExecHook;
     }
 
+    enum ValidationCheckingType {
+        GLOBAL,
+        SELECTOR,
+        EITHER
+    }
+
     IEntryPoint private immutable _ENTRY_POINT;
 
     // As per the EIP-165 spec, no interface should ever match 0xffffffff
@@ -187,7 +193,11 @@ contract ReferenceModularAccount is
 
         // Check if the runtime validation function is allowed to be called
         bool isGlobalValidation = uint8(authorization[24]) == 1;
-        _checkIfValidationAppliesCallData(data, runtimeValidationFunction, isGlobalValidation);
+        _checkIfValidationAppliesCallData(
+            data,
+            runtimeValidationFunction,
+            isGlobalValidation ? ValidationCheckingType.GLOBAL : ValidationCheckingType.SELECTOR
+        );
 
         _doRuntimeValidation(runtimeValidationFunction, data, authorization[25:]);
 
@@ -343,7 +353,11 @@ contract ReferenceModularAccount is
         ModuleEntity userOpValidationFunction = ModuleEntity.wrap(bytes24(userOp.signature[:24]));
         bool isGlobalValidation = uint8(userOp.signature[24]) == 1;
 
-        _checkIfValidationAppliesCallData(userOp.callData, userOpValidationFunction, isGlobalValidation);
+        _checkIfValidationAppliesCallData(
+            userOp.callData,
+            userOpValidationFunction,
+            isGlobalValidation ? ValidationCheckingType.GLOBAL : ValidationCheckingType.SELECTOR
+        );
 
         // Check if there are permission hooks associated with the validator, and revert if the call isn't to
         // `executeUserOp`
@@ -549,7 +563,7 @@ contract ReferenceModularAccount is
             ModuleEntity directCallValidationKey =
                 ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
 
-            _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, false);
+            _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, ValidationCheckingType.EITHER);
 
             // Direct call is allowed, run associated permission & validation hooks
 
@@ -645,7 +659,7 @@ contract ReferenceModularAccount is
     function _checkIfValidationAppliesCallData(
         bytes calldata callData,
         ModuleEntity validationFunction,
-        bool isGlobal
+        ValidationCheckingType checkingType
     ) internal view {
         bytes4 outerSelector = bytes4(callData[:4]);
         if (outerSelector == this.executeUserOp.selector) {
@@ -655,7 +669,7 @@ contract ReferenceModularAccount is
             outerSelector = bytes4(callData[:4]);
         }
 
-        _checkIfValidationAppliesSelector(outerSelector, validationFunction, isGlobal);
+        _checkIfValidationAppliesSelector(outerSelector, validationFunction, checkingType);
 
         if (outerSelector == IModularAccount.execute.selector) {
             (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
@@ -689,26 +703,50 @@ contract ReferenceModularAccount is
                         revert SelfCallRecursionDepthExceeded();
                     }
 
-                    _checkIfValidationAppliesSelector(nestedSelector, validationFunction, isGlobal);
+                    _checkIfValidationAppliesSelector(nestedSelector, validationFunction, checkingType);
                 }
             }
         }
     }
 
-    function _checkIfValidationAppliesSelector(bytes4 selector, ModuleEntity validationFunction, bool isGlobal)
-        internal
-        view
-    {
+    function _checkIfValidationAppliesSelector(
+        bytes4 selector,
+        ModuleEntity validationFunction,
+        ValidationCheckingType checkingType
+    ) internal view {
         // Check that the provided validation function is applicable to the selector
-        if (isGlobal) {
-            if (!_globalValidationAllowed(selector) || !_isValidationGlobal(validationFunction)) {
+
+        if (checkingType == ValidationCheckingType.GLOBAL) {
+            if (!_globalValidationApplies(selector, validationFunction)) {
+                revert ValidationFunctionMissing(selector);
+            }
+        } else if (checkingType == ValidationCheckingType.SELECTOR) {
+            if (!_selectorValidationApplies(selector, validationFunction)) {
                 revert ValidationFunctionMissing(selector);
             }
         } else {
-            // Not global validation, but per-selector
-            if (!getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector))) {
+            if (
+                !_globalValidationApplies(selector, validationFunction)
+                    && !_selectorValidationApplies(selector, validationFunction)
+            ) {
                 revert ValidationFunctionMissing(selector);
             }
         }
+    }
+
+    function _globalValidationApplies(bytes4 selector, ModuleEntity validationFunction)
+        internal
+        view
+        returns (bool)
+    {
+        return _globalValidationAllowed(selector) && _isValidationGlobal(validationFunction);
+    }
+
+    function _selectorValidationApplies(bytes4 selector, ModuleEntity validationFunction)
+        internal
+        view
+        returns (bool)
+    {
+        return getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector));
     }
 }
