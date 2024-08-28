@@ -24,15 +24,15 @@ import {Call, IModularAccount, ModuleEntity, ValidationConfig} from "../interfac
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../interfaces/IValidationModule.sol";
 import {AccountExecutor} from "./AccountExecutor.sol";
-import {AccountLoupe} from "./AccountLoupe.sol";
 import {AccountStorage, getAccountStorage, toHookConfig, toSetValue} from "./AccountStorage.sol";
 import {AccountStorageInitializable} from "./AccountStorageInitializable.sol";
+import {ModularAccountView} from "./ModularAccountView.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract ReferenceModularAccount is
     IModularAccount,
     AccountExecutor,
-    AccountLoupe,
+    ModularAccountView,
     AccountStorageInitializable,
     BaseAccount,
     IERC165,

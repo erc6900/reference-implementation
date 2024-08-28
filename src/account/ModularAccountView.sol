@@ -6,16 +6,16 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
-import {ExecutionDataView, IAccountLoupe, ValidationDataView} from "../interfaces/IAccountLoupe.sol";
 import {HookConfig, IModularAccount, ModuleEntity} from "../interfaces/IModularAccount.sol";
+import {ExecutionDataView, IModularAccountView, ValidationDataView} from "../interfaces/IModularAccountView.sol";
 import {ExecutionData, ValidationData, getAccountStorage} from "./AccountStorage.sol";
 
-abstract contract AccountLoupe is IAccountLoupe {
+abstract contract ModularAccountView is IModularAccountView {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using HookConfigLib for HookConfig;
 
-    /// @inheritdoc IAccountLoupe
+    /// @inheritdoc IModularAccountView
     function getExecutionData(bytes4 selector) external view override returns (ExecutionDataView memory data) {
         if (
             selector == IModularAccount.execute.selector || selector == IModularAccount.executeBatch.selector
@@ -39,7 +39,7 @@ abstract contract AccountLoupe is IAccountLoupe {
         }
     }
 
-    /// @inheritdoc IAccountLoupe
+    /// @inheritdoc IModularAccountView
     function getValidationData(ModuleEntity validationFunction)
         external
         view

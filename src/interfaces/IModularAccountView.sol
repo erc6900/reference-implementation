@@ -32,7 +32,7 @@ struct ValidationDataView {
     bytes4[] selectors;
 }
 
-interface IAccountLoupe {
+interface IModularAccountView {
     /// @notice Get the execution data for a selector.
     /// @dev If the selector is a native function, the module address will be the address of the account.
     /// @param selector The selector to get the data for.

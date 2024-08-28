@@ -5,13 +5,14 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IAccountLoupe.sol";
+
 import {HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IModularAccountView.sol";
 
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
-contract AccountLoupeTest is CustomValidationTestBase {
+contract ModularAccountViewTest is CustomValidationTestBase {
     ComprehensiveModule public comprehensiveModule;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -30,7 +31,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         vm.stopPrank();
     }
 
-    function test_moduleLoupe_getExecutionData_native() public {
+    function test_moduleView_getExecutionData_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
 
         selectorsToCheck[0] = IModularAccount.execute.selector;
@@ -51,7 +52,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         }
     }
 
-    function test_moduleLoupe_getExecutionData_module() public {
+    function test_moduleView_getExecutionData_module() public {
         bytes4[] memory selectorsToCheck = new bytes4[](1);
         address[] memory expectedModuleAddress = new address[](1);
 
@@ -95,7 +96,7 @@ contract AccountLoupeTest is CustomValidationTestBase {
         }
     }
 
-    function test_moduleLoupe_getValidationData() public {
+    function test_moduleView_getValidationData() public {
         ValidationDataView memory data = account1.getValidationData(comprehensiveModuleValidation);
         bytes4[] memory selectors = data.selectors;
 
