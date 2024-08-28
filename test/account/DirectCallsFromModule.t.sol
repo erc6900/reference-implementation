@@ -21,6 +21,15 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
     event ValidationUninstalled(address indexed module, uint32 indexed entityId, bool onUninstallSucceeded);
 
+    modifier randomizedValidationType(bool selectorValidation) {
+        if (selectorValidation) {
+            _installValidationSelector();
+        } else {
+            _installValidationGlobal();
+        }
+        _;
+    }
+
     function setUp() public {
         _module = new DirectCallModule();
         assertFalse(_module.preHookRan());
@@ -38,9 +47,10 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         account1.execute(address(0), 0, "");
     }
 
-    function test_Fail_DirectCallModuleUninstalled() external {
-        _installValidation();
-
+    function testFuzz_Fail_DirectCallModuleUninstalled(bool validationType)
+        external
+        randomizedValidationType(validationType)
+    {
         _uninstallValidation();
 
         vm.prank(address(_module));
@@ -49,7 +59,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     }
 
     function test_Fail_DirectCallModuleCallOtherSelector() external {
-        _installValidation();
+        _installValidationSelector();
 
         Call[] memory calls = new Call[](0);
 
@@ -62,9 +72,10 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     /*                                  Positives                                 */
     /* -------------------------------------------------------------------------- */
 
-    function test_Pass_DirectCallFromModulePrank() external {
-        _installValidation();
-
+    function testFuzz_Pass_DirectCallFromModulePrank(bool validationType)
+        external
+        randomizedValidationType(validationType)
+    {
         vm.prank(address(_module));
         account1.execute(address(0), 0, "");
 
@@ -72,9 +83,10 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         assertTrue(_module.postHookRan());
     }
 
-    function test_Pass_DirectCallFromModuleCallback() external {
-        _installValidation();
-
+    function testFuzz_Pass_DirectCallFromModuleCallback(bool validationType)
+        external
+        randomizedValidationType(validationType)
+    {
         bytes memory encodedCall = abi.encodeCall(DirectCallModule.directCall, ());
 
         vm.prank(address(entryPoint));
@@ -88,10 +100,11 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         assertEq(abi.decode(result, (bytes)), abi.encode(_module.getData()));
     }
 
-    function test_Flow_DirectCallFromModuleSequence() external {
+    function testFuzz_Flow_DirectCallFromModuleSequence(bool validationType)
+        external
+        randomizedValidationType(validationType)
+    {
         // Install => Succeesfully call => uninstall => fail to call
-
-        _installValidation();
 
         vm.prank(address(_module));
         account1.execute(address(0), 0, "");
@@ -129,7 +142,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
     /*                                  Internals                                 */
     /* -------------------------------------------------------------------------- */
 
-    function _installValidation() internal {
+    function _installValidationSelector() internal {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = IModularAccount.execute.selector;
 
@@ -144,6 +157,20 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, false, false);
 
         account1.installValidation(validationConfig, selectors, "", hooks);
+    }
+
+    function _installValidationGlobal() internal {
+        bytes[] memory hooks = new bytes[](1);
+        hooks[0] = abi.encodePacked(
+            HookConfigLib.packExecHook({_hookFunction: _moduleEntity, _hasPre: true, _hasPost: true}),
+            hex"00" // onInstall data
+        );
+
+        vm.prank(address(entryPoint));
+
+        ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, true, false);
+
+        account1.installValidation(validationConfig, new bytes4[](0), "", hooks);
     }
 
     function _uninstallValidation() internal {
