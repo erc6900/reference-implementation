@@ -16,8 +16,8 @@ import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
 
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 
-import {ExecutionDataView} from "../../src/interfaces/IAccountLoupe.sol";
 import {Call} from "../../src/interfaces/IModularAccount.sol";
+import {ExecutionDataView} from "../../src/interfaces/IModularAccountView.sol";
 
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";

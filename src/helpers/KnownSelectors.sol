@@ -7,10 +7,10 @@ import {IPaymaster} from "@eth-infinitism/account-abstraction/interfaces/IPaymas
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {IAccountLoupe} from "../interfaces/IAccountLoupe.sol";
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {IExecutionModule} from "../interfaces/IExecutionModule.sol";
 import {IModularAccount} from "../interfaces/IModularAccount.sol";
+import {IModularAccountView} from "../interfaces/IModularAccountView.sol";
 import {IModule} from "../interfaces/IModule.sol";
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../interfaces/IValidationModule.sol";
@@ -35,9 +35,9 @@ library KnownSelectors {
         // check against UUPSUpgradeable methods
         || selector == UUPSUpgradeable.proxiableUUID.selector
             || selector == UUPSUpgradeable.upgradeToAndCall.selector
-        // check against IAccountLoupe methods
-        || selector == IAccountLoupe.getExecutionData.selector
-            || selector == IAccountLoupe.getValidationData.selector;
+        // check against IModularAccountView methods
+        || selector == IModularAccountView.getExecutionData.selector
+            || selector == IModularAccountView.getValidationData.selector;
     }
 
     function isErc4337Function(bytes4 selector) internal pure returns (bool) {
