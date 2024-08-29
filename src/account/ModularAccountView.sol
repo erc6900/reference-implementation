@@ -8,7 +8,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {HookConfig, IModularAccount, ModuleEntity} from "../interfaces/IModularAccount.sol";
 import {ExecutionDataView, IModularAccountView, ValidationDataView} from "../interfaces/IModularAccountView.sol";
-import {ExecutionData, ValidationData, getAccountStorage} from "./AccountStorage.sol";
+import {ExecutionData, ValidationData, getAccountStorage, toHookConfig} from "./AccountStorage.sol";
 
 abstract contract ModularAccountView is IModularAccountView {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -34,7 +34,7 @@ abstract contract ModularAccountView is IModularAccountView {
             uint256 executionHooksLen = executionData.executionHooks.length();
             data.executionHooks = new HookConfig[](executionHooksLen);
             for (uint256 i = 0; i < executionHooksLen; ++i) {
-                data.executionHooks[i] = HookConfig.wrap(bytes26(executionData.executionHooks.at(i)));
+                data.executionHooks[i] = toHookConfig(executionData.executionHooks.at(i));
             }
         }
     }
@@ -55,7 +55,7 @@ abstract contract ModularAccountView is IModularAccountView {
         uint256 permissionHooksLen = validationData.permissionHooks.length();
         data.permissionHooks = new HookConfig[](permissionHooksLen);
         for (uint256 i = 0; i < permissionHooksLen; ++i) {
-            data.permissionHooks[i] = HookConfig.wrap(bytes26(validationData.permissionHooks.at(i)));
+            data.permissionHooks[i] = toHookConfig(validationData.permissionHooks.at(i));
         }
 
         bytes32[] memory selectors = validationData.selectors.values();

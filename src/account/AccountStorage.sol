@@ -76,7 +76,7 @@ function toSetValue(HookConfig hookConfig) pure returns (bytes32) {
 }
 
 function toHookConfig(bytes32 setValue) pure returns (HookConfig) {
-    return HookConfig.wrap(bytes26(setValue));
+    return HookConfig.wrap(bytes25(setValue));
 }
 
 function toSetValue(bytes4 selector) pure returns (bytes32) {

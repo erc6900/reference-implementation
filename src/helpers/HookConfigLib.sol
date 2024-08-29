@@ -17,18 +17,13 @@ import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 // Layout:
 // 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
 // 0x________________________________________BBBBBBBB________________ // Entity ID
-// 0x________________________________________________CC______________ // Type
-// 0x__________________________________________________DD____________ // exec hook flags
-//
+// 0x________________________________________________CC______________ // Hook Flags
 
-// Hook types:
-// 0x00 // Exec (selector and validation associated)
-// 0x01 // Validation
-
-// Exec hook flags layout:
-// 0b000000__ // unused
-// 0b______A_ // hasPre
-// 0b_______B // hasPost
+// Hook flags layout:
+// 0b00000___ // unused
+// 0b_____A__ // hasPre (exec only)
+// 0b______B_ // hasPost (exec only)
+// 0b_______C // hook type (0 for exec, 1 for validation)
 
 library HookConfigLib {
     // Hook type constants
@@ -38,14 +33,14 @@ library HookConfigLib {
     bytes32 internal constant _HOOK_TYPE_VALIDATION = bytes32(uint256(1) << 56);
 
     // Exec hook flags constants
-    // Pre hook has 1 in 2's bit in the 26th byte
-    bytes32 internal constant _EXEC_HOOK_HAS_PRE = bytes32(uint256(1) << 49);
-    // Post hook has 1 in 1's bit in the 26th byte
-    bytes32 internal constant _EXEC_HOOK_HAS_POST = bytes32(uint256(1) << 48);
+    // Pre hook has 1 in 4's bit in the 25th byte
+    bytes32 internal constant _EXEC_HOOK_HAS_PRE = bytes32(uint256(1) << 58);
+    // Post hook has 1 in 2's bit in the 25th byte
+    bytes32 internal constant _EXEC_HOOK_HAS_POST = bytes32(uint256(1) << 57);
 
     function packValidationHook(ModuleEntity _hookFunction) internal pure returns (HookConfig) {
         return
-            HookConfig.wrap(bytes26(bytes26(ModuleEntity.unwrap(_hookFunction)) | bytes26(_HOOK_TYPE_VALIDATION)));
+            HookConfig.wrap(bytes25(bytes25(ModuleEntity.unwrap(_hookFunction)) | bytes25(_HOOK_TYPE_VALIDATION)));
     }
 
     function packValidationHook(address _module, uint32 _entityId) internal pure returns (HookConfig) {
@@ -65,11 +60,11 @@ library HookConfigLib {
         returns (HookConfig)
     {
         return HookConfig.wrap(
-            bytes26(
-                bytes26(ModuleEntity.unwrap(_hookFunction))
-                // | bytes26(_HOOK_TYPE_EXEC) // Can omit because exec type is 0
-                | bytes26(_hasPre ? _EXEC_HOOK_HAS_PRE : bytes32(0))
-                    | bytes26(_hasPost ? _EXEC_HOOK_HAS_POST : bytes32(0))
+            bytes25(
+                bytes25(ModuleEntity.unwrap(_hookFunction))
+                // | bytes25(_HOOK_TYPE_EXEC) // Can omit because exec type is 0
+                | bytes25(_hasPre ? _EXEC_HOOK_HAS_PRE : bytes32(0))
+                    | bytes25(_hasPost ? _EXEC_HOOK_HAS_POST : bytes32(0))
             )
         );
     }
@@ -80,20 +75,20 @@ library HookConfigLib {
         returns (HookConfig)
     {
         return HookConfig.wrap(
-            bytes26(
+            bytes25(
                 // module address stored in the first 20 bytes
-                bytes26(bytes20(_module))
+                bytes25(bytes20(_module))
                 // entityId stored in the 21st - 24th byte
-                | bytes26(bytes24(uint192(_entityId)))
-                // | bytes26(_HOOK_TYPE_EXEC) // Can omit because exec type is 0
-                | bytes26(_hasPre ? _EXEC_HOOK_HAS_PRE : bytes32(0))
-                    | bytes26(_hasPost ? _EXEC_HOOK_HAS_POST : bytes32(0))
+                | bytes25(bytes24(uint192(_entityId)))
+                // | bytes25(_HOOK_TYPE_EXEC) // Can omit because exec type is 0
+                | bytes25(_hasPre ? _EXEC_HOOK_HAS_PRE : bytes32(0))
+                    | bytes25(_hasPost ? _EXEC_HOOK_HAS_POST : bytes32(0))
             )
         );
     }
 
     function unpackValidationHook(HookConfig _config) internal pure returns (ModuleEntity _hookFunction) {
-        bytes26 configBytes = HookConfig.unwrap(_config);
+        bytes25 configBytes = HookConfig.unwrap(_config);
         _hookFunction = ModuleEntity.wrap(bytes24(configBytes));
     }
 
@@ -102,7 +97,7 @@ library HookConfigLib {
         pure
         returns (ModuleEntity _hookFunction, bool _hasPre, bool _hasPost)
     {
-        bytes26 configBytes = HookConfig.unwrap(_config);
+        bytes25 configBytes = HookConfig.unwrap(_config);
         _hookFunction = ModuleEntity.wrap(bytes24(configBytes));
         _hasPre = configBytes & _EXEC_HOOK_HAS_PRE != 0;
         _hasPost = configBytes & _EXEC_HOOK_HAS_POST != 0;
