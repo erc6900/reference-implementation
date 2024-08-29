@@ -43,7 +43,9 @@ contract AccountReturnDataTest is AccountTestBase {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = IModularAccount.execute.selector;
         account1.installValidation(
-            ValidationConfigLib.pack(address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false),
+            ValidationConfigLib.pack(
+                address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false, true
+            ), // todo: does this need UO validation permission?
             selectors,
             "",
             new bytes[](0)

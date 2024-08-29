@@ -27,8 +27,10 @@ struct ExecutionData {
 struct ValidationData {
     // Whether or not this validation can be used as a global validation function.
     bool isGlobal;
-    // Whether or not this validation is a signature validator.
+    // Whether or not this validation is allowed to validate ERC-1271 signatures.
     bool isSignatureValidation;
+    // Whether or not this validation is allowed to validate ERC-4337 user operations.
+    bool isUserOpValidation;
     // The pre validation hooks for this validation function.
     ModuleEntity[] preValidationHooks;
     // Permission hooks for this validation function.

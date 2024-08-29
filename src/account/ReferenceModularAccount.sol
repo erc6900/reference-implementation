@@ -76,6 +76,7 @@ contract ReferenceModularAccount is
     error RuntimeValidationFunctionReverted(address module, uint32 entityId, bytes revertReason);
     error SelfCallRecursionDepthExceeded();
     error SignatureValidationInvalid(address module, uint32 entityId);
+    error UserOpValidationInvalid(address module, uint32 entityId);
     error UnexpectedAggregator(address module, uint32 entityId, address aggregator);
     error UnrecognizedFunction(bytes4 selector);
     error ValidationFunctionMissing(bytes4 selector);
@@ -593,7 +594,13 @@ contract ReferenceModularAccount is
         PackedUserOperation memory userOp,
         bytes32 userOpHash
     ) internal virtual returns (uint256) {
+        AccountStorage storage _storage = getAccountStorage();
+
         (address module, uint32 entityId) = userOpValidationFunction.unpack();
+
+        if (!_storage.validationData[userOpValidationFunction].isUserOpValidation) {
+            revert UserOpValidationInvalid(module, entityId);
+        }
 
         return IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
     }

@@ -128,7 +128,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         vm.prank(address(entryPoint));
 
         account1.installValidation(
-            ValidationConfigLib.pack(extraOwner, DIRECT_CALL_VALIDATION_ENTITYID, false, false),
+            ValidationConfigLib.pack(extraOwner, DIRECT_CALL_VALIDATION_ENTITYID, false, false, false),
             selectors,
             "",
             new bytes[](0)
@@ -154,7 +154,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
         vm.prank(address(entryPoint));
 
-        ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, false, false);
+        ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, false, false, false);
 
         account1.installValidation(validationConfig, selectors, "", hooks);
     }
@@ -168,7 +168,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
 
         vm.prank(address(entryPoint));
 
-        ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, true, false);
+        ValidationConfig validationConfig = ValidationConfigLib.pack(_moduleEntity, true, false, false);
 
         account1.installValidation(validationConfig, new bytes4[](0), "", hooks);
     }

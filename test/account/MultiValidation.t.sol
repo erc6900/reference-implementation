@@ -36,7 +36,7 @@ contract MultiValidationTest is AccountTestBase {
     function test_overlappingValidationInstall() public {
         vm.prank(address(entryPoint));
         account1.installValidation(
-            ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true),
+            ValidationConfigLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true, true),
             new bytes4[](0),
             abi.encode(TEST_DEFAULT_VALIDATION_ENTITY_ID, owner2),
             new bytes[](0)

@@ -3,27 +3,24 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/Test.sol";
 
+import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
-
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-
+import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-
 import {Call} from "../../src/interfaces/IModularAccount.sol";
 import {ExecutionDataView} from "../../src/interfaces/IModularAccountView.sol";
-
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {Counter} from "../mocks/Counter.sol";
-
 import {MockModule} from "../mocks/MockModule.sol";
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
@@ -413,6 +410,101 @@ contract ReferenceModularAccountTest is AccountTestBase {
         bytes4 validationResult = IERC1271(address(account1)).isValidSignature(message, signature);
 
         assertEq(validationResult, bytes4(0x1626ba7e));
+    }
+
+    // Only need a test case for the negative case, as the positive case is covered by the isValidSignature test
+    function test_signatureValidationFlag_enforce() public {
+        // Install a new copy of SingleSignerValidationModule with the signature validation flag set to false
+        uint32 newEntityId = 2;
+        vm.prank(address(entryPoint));
+        account1.installValidation(
+            ValidationConfigLib.pack(address(singleSignerValidationModule), newEntityId, false, false, true),
+            new bytes4[](0),
+            abi.encode(newEntityId, owner1),
+            new bytes[](0)
+        );
+
+        bytes32 message = keccak256("hello world");
+
+        bytes32 replaySafeHash = vm.envOr("SMA_TEST", false)
+            ? SemiModularAccount(payable(account1)).replaySafeHash(message)
+            : singleSignerValidationModule.replaySafeHash(address(account1), message);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, replaySafeHash);
+
+        bytes memory signature = _encode1271Signature(
+            ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId), abi.encodePacked(r, s, v)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ReferenceModularAccount.SignatureValidationInvalid.selector,
+                singleSignerValidationModule,
+                newEntityId
+            )
+        );
+        IERC1271(address(account1)).isValidSignature(message, signature);
+    }
+
+    function test_userOpValidationFlag_enforce() public {
+        // Install a new copy of SingleSignerValidationModule with the userOp validation flag set to false
+        uint32 newEntityId = 2;
+        vm.prank(address(entryPoint));
+        account1.installValidation(
+            ValidationConfigLib.pack(address(singleSignerValidationModule), newEntityId, true, false, false),
+            new bytes4[](0),
+            abi.encode(newEntityId, owner1),
+            new bytes[](0)
+        );
+
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(account1),
+            nonce: 0,
+            initCode: "",
+            callData: abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
+            accountGasLimits: _encodeGas(VERIFICATION_GAS_LIMIT, CALL_GAS_LIMIT),
+            preVerificationGas: 0,
+            gasFees: _encodeGas(1, 1),
+            paymasterAndData: "",
+            signature: ""
+        });
+
+        // Generate signature
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner1Key, userOpHash.toEthSignedMessageHash());
+        userOp.signature = _encodeSignature(
+            ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId),
+            GLOBAL_VALIDATION,
+            abi.encodePacked(r, s, v)
+        );
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = userOp;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEntryPoint.FailedOpWithRevert.selector,
+                0,
+                "AA23 reverted",
+                abi.encodeWithSelector(
+                    ReferenceModularAccount.UserOpValidationInvalid.selector,
+                    singleSignerValidationModule,
+                    newEntityId
+                )
+            )
+        );
+        entryPoint.handleOps(userOps, beneficiary);
+
+        //show working rt validation
+        vm.startPrank(address(owner1));
+        account1.executeWithAuthorization(
+            abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
+            _encodeSignature(
+                ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId), GLOBAL_VALIDATION, ""
+            )
+        );
+
+        assertEq(ethRecipient.balance, 2 wei);
     }
 
     // Internal Functions

@@ -19,6 +19,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             ModuleEntity validationFunction,
             bool isGlobal,
             bool isSignatureValidation,
+            bool isUserOpValidation,
             bytes4[] memory selectors,
             bytes memory installData,
             bytes[] memory hooks
@@ -32,14 +33,14 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             vm.prank(address(entryPoint));
             // The initializer doesn't work on the SMA
             account1.installValidation(
-                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
+                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation, isUserOpValidation),
                 selectors,
                 installData,
                 hooks
             );
         } else {
             account1.initializeWithValidation(
-                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation),
+                ValidationConfigLib.pack(validationFunction, isGlobal, isSignatureValidation, isUserOpValidation),
                 selectors,
                 installData,
                 hooks
@@ -56,6 +57,7 @@ abstract contract CustomValidationTestBase is AccountTestBase {
             ModuleEntity validationFunction,
             bool shared,
             bool isSignatureValidation,
+            bool isUserOpValidation,
             bytes4[] memory selectors,
             bytes memory installData,
             bytes[] memory hooks

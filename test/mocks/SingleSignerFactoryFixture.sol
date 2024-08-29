@@ -65,7 +65,7 @@ contract SingleSignerFactoryFixture is OptimizedTest {
             // point proxy to actual implementation and init modules
             ReferenceModularAccount(payable(addr)).initializeWithValidation(
                 ValidationConfigLib.pack(
-                    address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true
+                    address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID, true, true, true
                 ),
                 new bytes4[](0),
                 moduleInstallData,

@@ -4,8 +4,25 @@ pragma solidity ^0.8.25;
 import {ExecutionManifest} from "./IExecutionModule.sol";
 
 type ModuleEntity is bytes24;
+// ModuleEntity is a packed representation of a module function
+// Layout:
+// 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
+// 0x________________________________________BBBBBBBB________________ // Entity ID
+// 0x________________________________________________0000000000000000 // unused
 
-type ValidationConfig is bytes26;
+type ValidationConfig is bytes25;
+// ValidationConfig is a packed representation of a validation function and flags for its configuration.
+// Layout:
+// 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
+// 0x________________________________________BBBBBBBB________________ // Entity ID
+// 0x________________________________________________CC______________ // validation flags
+// 0x__________________________________________________00000000000000 // unused
+//
+// Validation flags layout:
+// 0b00000___ // unused
+// 0b_____A__ // isGlobal
+// 0b______B_ // isSignatureValidation
+// 0b_______C // isUserOpValidation
 
 type HookConfig is bytes26;
 

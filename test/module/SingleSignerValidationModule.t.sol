@@ -91,7 +91,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
         vm.expectEmit(true, true, true, true);
         emit ValidationInstalled(address(singleSignerValidationModule), newEntityId);
         account.installValidation(
-            ValidationConfigLib.pack(address(singleSignerValidationModule), newEntityId, true, false),
+            ValidationConfigLib.pack(address(singleSignerValidationModule), newEntityId, true, false, false),
             new bytes4[](0),
             abi.encode(newEntityId, owner2),
             new bytes[](0)
