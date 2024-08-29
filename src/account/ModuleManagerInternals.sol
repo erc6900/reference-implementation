@@ -229,8 +229,8 @@ abstract contract ModuleManagerInternals is IModularAccount {
         ModuleEntity moduleEntity = validationConfig.moduleEntity();
 
         for (uint256 i = 0; i < hooks.length; ++i) {
-            HookConfig hookConfig = HookConfig.wrap(bytes26(hooks[i][:26]));
-            bytes calldata hookData = hooks[i][26:];
+            HookConfig hookConfig = HookConfig.wrap(bytes25(hooks[i][:25]));
+            bytes calldata hookData = hooks[i][25:];
 
             if (hookConfig.isValidationHook()) {
                 _validationData.preValidationHooks.push(hookConfig.moduleEntity());

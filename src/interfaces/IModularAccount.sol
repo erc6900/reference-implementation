@@ -24,7 +24,18 @@ type ValidationConfig is bytes25;
 // 0b______B_ // isSignatureValidation
 // 0b_______C // isUserOpValidation
 
-type HookConfig is bytes26;
+type HookConfig is bytes25;
+// HookConfig is a packed representation of a hook function and flags for its configuration.
+// Layout:
+// 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
+// 0x________________________________________BBBBBBBB________________ // Entity ID
+// 0x________________________________________________CC______________ // Hook Flags
+//
+// Hook flags layout:
+// 0b00000___ // unused
+// 0b_____A__ // hasPre (exec only)
+// 0b______B_ // hasPost (exec only)
+// 0b_______C // hook type (0 for exec, 1 for validation)
 
 struct Call {
     // The target address for the account to call.
@@ -82,7 +93,7 @@ interface IModularAccount {
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be decoded and used by the module to setup initial module state.
     /// @param hooks Optional hooks to install, associated with the validation function. These may be
-    /// pre validation hooks or execution hooks. The expected format is a bytes26 HookConfig, followed by the
+    /// pre validation hooks or execution hooks. The expected format is a bytes25 HookConfig, followed by the
     /// install data, if any.
     function installValidation(
         ValidationConfig validationConfig,
