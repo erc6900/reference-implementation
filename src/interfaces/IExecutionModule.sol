@@ -4,7 +4,6 @@ pragma solidity ^0.8.25;
 import {IModule} from "./IModule.sol";
 
 struct ManifestExecutionFunction {
-    // TODO(erc6900 spec): These fields can be packed into a single word
     // The selector to install
     bytes4 executionSelector;
     // If true, the function won't need runtime validation, and can be called by anyone.
@@ -14,7 +13,6 @@ struct ManifestExecutionFunction {
 }
 
 struct ManifestExecutionHook {
-    // TODO(erc6900 spec): These fields can be packed into a single word
     bytes4 executionSelector;
     uint32 entityId;
     bool isPreHook;

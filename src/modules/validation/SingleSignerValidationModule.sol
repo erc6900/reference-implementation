@@ -50,9 +50,8 @@ contract SingleSignerValidationModule is ISingleSignerValidationModule, ReplaySa
 
     /// @inheritdoc IModule
     function onUninstall(bytes calldata data) external override {
-        // ToDo: what does it mean in the world of composable validation world to uninstall one type of validation
-        // We can either get rid of all SingleSigner signers. What about the nested ones?
-        _transferSigner(abi.decode(data, (uint32)), address(0));
+        uint32 entityId = abi.decode(data, (uint32));
+        _transferSigner(entityId, address(0));
     }
 
     /// @inheritdoc IValidationModule
