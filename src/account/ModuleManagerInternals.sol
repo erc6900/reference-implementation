@@ -39,7 +39,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
     error InterfaceNotSupported(address module);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
-    error ExecutionHookAlreadySet(ModuleEntity validationFunction, HookConfig hookConfig);
+    error ExecutionHookAlreadySet(HookConfig hookConfig);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleNotInstalled(address module);
     error PreValidationHookLimitExceeded();
@@ -103,7 +103,9 @@ abstract contract ModuleManagerInternals is IModularAccount {
     }
 
     function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
-        hooks.add(toSetValue(hookConfig));
+        if (!hooks.add(toSetValue(hookConfig))) {
+            revert ExecutionHookAlreadySet(hookConfig);
+        }
     }
 
     function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
@@ -245,9 +247,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
                 continue;
             }
             // Hook is an execution hook
-            if (!_validationData.executionHooks.add(toSetValue(hookConfig))) {
-                revert ExecutionHookAlreadySet(moduleEntity, hookConfig);
-            }
+            _addExecHooks(_validationData.executionHooks, hookConfig);
 
             _onInstall(hookConfig.module(), hookData, type(IExecutionHookModule).interfaceId);
         }
