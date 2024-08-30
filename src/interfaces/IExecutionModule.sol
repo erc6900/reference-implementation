@@ -7,7 +7,7 @@ struct ManifestExecutionFunction {
     // The selector to install
     bytes4 executionSelector;
     // If true, the function won't need runtime validation, and can be called by anyone.
-    bool isPublic;
+    bool skipRuntimeValidation;
     // If true, the function can be validated by a global validation function.
     bool allowGlobalValidation;
 }

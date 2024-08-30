@@ -47,9 +47,12 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
     // Storage update operations
 
-    function _setExecutionFunction(bytes4 selector, bool isPublic, bool allowGlobalValidation, address module)
-        internal
-    {
+    function _setExecutionFunction(
+        bytes4 selector,
+        bool skipRuntimeValidation,
+        bool allowGlobalValidation,
+        address module
+    ) internal {
         ExecutionData storage _executionData = getAccountStorage().executionData[selector];
 
         if (_executionData.module != address(0)) {
@@ -77,7 +80,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
         }
 
         _executionData.module = module;
-        _executionData.isPublic = isPublic;
+        _executionData.skipRuntimeValidation = skipRuntimeValidation;
         _executionData.allowGlobalValidation = allowGlobalValidation;
     }
 
@@ -85,7 +88,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
         ExecutionData storage _executionData = getAccountStorage().executionData[selector];
 
         _executionData.module = address(0);
-        _executionData.isPublic = false;
+        _executionData.skipRuntimeValidation = false;
         _executionData.allowGlobalValidation = false;
     }
 
@@ -125,9 +128,9 @@ abstract contract ModuleManagerInternals is IModularAccount {
         uint256 length = manifest.executionFunctions.length;
         for (uint256 i = 0; i < length; ++i) {
             bytes4 selector = manifest.executionFunctions[i].executionSelector;
-            bool isPublic = manifest.executionFunctions[i].isPublic;
+            bool skipRuntimeValidation = manifest.executionFunctions[i].skipRuntimeValidation;
             bool allowGlobalValidation = manifest.executionFunctions[i].allowGlobalValidation;
-            _setExecutionFunction(selector, isPublic, allowGlobalValidation, module);
+            _setExecutionFunction(selector, skipRuntimeValidation, allowGlobalValidation, module);
         }
 
         length = manifest.executionHooks.length;

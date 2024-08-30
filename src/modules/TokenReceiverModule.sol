@@ -59,17 +59,17 @@ contract TokenReceiverModule is BaseModule, IExecutionModule, IERC721Receiver, I
         manifest.executionFunctions = new ManifestExecutionFunction[](3);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.onERC721Received.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.onERC1155Received.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
         manifest.executionFunctions[2] = ManifestExecutionFunction({
             executionSelector: this.onERC1155BatchReceived.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
 

@@ -117,7 +117,7 @@ contract MockUserOpValidationModule is MockBaseUserOpValidationModule {
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
-            isPublic: false,
+            skipRuntimeValidation: false,
             allowGlobalValidation: false
         });
 
@@ -149,7 +149,7 @@ contract MockUserOpValidation1HookModule is MockBaseUserOpValidationModule {
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
-            isPublic: false,
+            skipRuntimeValidation: false,
             allowGlobalValidation: false
         });
 
@@ -184,7 +184,7 @@ contract MockUserOpValidation2HookModule is MockBaseUserOpValidationModule {
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.baz.selector,
-            isPublic: false,
+            skipRuntimeValidation: false,
             allowGlobalValidation: false
         });
 

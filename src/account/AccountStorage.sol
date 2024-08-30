@@ -17,7 +17,7 @@ struct ExecutionData {
     // state changing if this flag is set to true.
     // Note that even if this is set to true, user op validation will still be required, otherwise anyone could
     // drain the account of native tokens by wasting gas.
-    bool isPublic;
+    bool skipRuntimeValidation;
     // Whether or not a global validation function may be used to validate this function.
     bool allowGlobalValidation;
     // The execution hooks for this function selector.

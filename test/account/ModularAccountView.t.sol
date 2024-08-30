@@ -48,7 +48,7 @@ contract ModularAccountViewTest is CustomValidationTestBase {
             ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);
             assertEq(data.module, address(account1));
             assertTrue(data.allowGlobalValidation);
-            assertFalse(data.isPublic);
+            assertFalse(data.skipRuntimeValidation);
         }
     }
 
@@ -63,7 +63,7 @@ contract ModularAccountViewTest is CustomValidationTestBase {
             ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);
             assertEq(data.module, expectedModuleAddress[i]);
             assertFalse(data.allowGlobalValidation);
-            assertFalse(data.isPublic);
+            assertFalse(data.skipRuntimeValidation);
 
             HookConfig[3] memory expectedHooks = [
                 HookConfigLib.packExecHook(
