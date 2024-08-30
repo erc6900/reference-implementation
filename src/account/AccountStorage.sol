@@ -33,8 +33,8 @@ struct ValidationData {
     bool isUserOpValidation;
     // The pre validation hooks for this validation function.
     ModuleEntity[] preValidationHooks;
-    // Permission hooks for this validation function.
-    EnumerableSet.Bytes32Set permissionHooks;
+    // Execution hooks to run with this validation function.
+    EnumerableSet.Bytes32Set executionHooks;
     // The set of selectors that may be validated by this validation function.
     EnumerableSet.Bytes32Set selectors;
 }

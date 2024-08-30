@@ -52,10 +52,10 @@ abstract contract ModularAccountView is IModularAccountView {
         data.isUserOpValidation = validationData.isUserOpValidation;
         data.preValidationHooks = validationData.preValidationHooks;
 
-        uint256 permissionHooksLen = validationData.permissionHooks.length();
-        data.permissionHooks = new HookConfig[](permissionHooksLen);
-        for (uint256 i = 0; i < permissionHooksLen; ++i) {
-            data.permissionHooks[i] = toHookConfig(validationData.permissionHooks.at(i));
+        uint256 execHooksLen = validationData.executionHooks.length();
+        data.executionHooks = new HookConfig[](execHooksLen);
+        for (uint256 i = 0; i < execHooksLen; ++i) {
+            data.executionHooks[i] = toHookConfig(validationData.executionHooks.at(i));
         }
 
         bytes32[] memory selectors = validationData.selectors.values();

@@ -84,13 +84,13 @@ contract ReferenceModularAccount is
     // Wraps execution of a native function with runtime validation and hooks
     // Used for upgradeTo, upgradeToAndCall, execute, executeBatch, installExecution, uninstallExecution
     modifier wrapNativeFunction() {
-        (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
+        (PostExecToRun[] memory postValidatorExecHooks, PostExecToRun[] memory postSelectorExecHooks) =
             _checkPermittedCallerAndAssociatedHooks();
 
         _;
 
-        _doCachedPostExecHooks(postExecHooks);
-        _doCachedPostExecHooks(postPermissionHooks);
+        _doCachedPostExecHooks(postSelectorExecHooks);
+        _doCachedPostExecHooks(postValidatorExecHooks);
     }
 
     constructor(IEntryPoint anEntryPoint) {
@@ -110,7 +110,7 @@ contract ReferenceModularAccount is
         if (execModule == address(0)) {
             revert UnrecognizedFunction(msg.sig);
         }
-        (PostExecToRun[] memory postPermissionHooks, PostExecToRun[] memory postExecHooks) =
+        (PostExecToRun[] memory postValidatorExecHooks, PostExecToRun[] memory postSelectorExecHooks) =
             _checkPermittedCallerAndAssociatedHooks();
 
         // execute the function, bubbling up any reverts
@@ -123,8 +123,8 @@ contract ReferenceModularAccount is
             }
         }
 
-        _doCachedPostExecHooks(postExecHooks);
-        _doCachedPostExecHooks(postPermissionHooks);
+        _doCachedPostExecHooks(postSelectorExecHooks);
+        _doCachedPostExecHooks(postValidatorExecHooks);
 
         return execReturnData;
     }
@@ -139,8 +139,8 @@ contract ReferenceModularAccount is
 
         ModuleEntity userOpValidationFunction = ModuleEntity.wrap(bytes24(userOp.signature[:24]));
 
-        PostExecToRun[] memory postPermissionHooks =
-            _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].permissionHooks, msg.data);
+        PostExecToRun[] memory postValidatorExecHooks =
+            _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].executionHooks, msg.data);
 
         (bool success, bytes memory result) = address(this).call(userOp.callData[4:]);
 
@@ -151,7 +151,7 @@ contract ReferenceModularAccount is
             }
         }
 
-        _doCachedPostExecHooks(postPermissionHooks);
+        _doCachedPostExecHooks(postValidatorExecHooks);
     }
 
     /// @inheritdoc IModularAccount
@@ -202,9 +202,9 @@ contract ReferenceModularAccount is
 
         _doRuntimeValidation(runtimeValidationFunction, data, authorization[25:]);
 
-        // If runtime validation passes, do runtime permission checks
-        PostExecToRun[] memory postPermissionHooks =
-            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].permissionHooks, data);
+        // If runtime validation passes, run exec hooks associated with the validator
+        PostExecToRun[] memory postValidatorExecHooks =
+            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].executionHooks, data);
 
         // Execute the call
         (bool success, bytes memory returnData) = address(this).call(data);
@@ -215,7 +215,7 @@ contract ReferenceModularAccount is
             }
         }
 
-        _doCachedPostExecHooks(postPermissionHooks);
+        _doCachedPostExecHooks(postValidatorExecHooks);
 
         return returnData;
     }
@@ -254,7 +254,7 @@ contract ReferenceModularAccount is
     /// @inheritdoc IModularAccount
     /// @notice May be validated by a global validation.
     /// @dev This function can be used to update (to a certain degree) previously installed validation functions.
-    ///      - preValidationHook, permissionHook, and selectors can be added later. Though they won't be deleted.
+    ///      - preValidationHook, executionHooks, and selectors can be added later. Though they won't be deleted.
     ///      - isGlobal and isSignatureValidation can also be updated later.
     function installValidation(
         ValidationConfig validationConfig,
@@ -360,12 +360,12 @@ contract ReferenceModularAccount is
             isGlobalValidation ? ValidationCheckingType.GLOBAL : ValidationCheckingType.SELECTOR
         );
 
-        // Check if there are permission hooks associated with the validator, and revert if the call isn't to
+        // Check if there are execution hooks associated with the validator, and revert if the call isn't to
         // `executeUserOp`
         // This check must be here because if context isn't passed, we can't tell in execution which hooks should
         // have ran
         if (
-            getAccountStorage().validationData[userOpValidationFunction].permissionHooks.length() > 0
+            getAccountStorage().validationData[userOpValidationFunction].executionHooks.length() > 0
                 && bytes4(userOp.callData[:4]) != this.executeUserOp.selector
         ) {
             revert RequireUserOperationContext();
@@ -538,24 +538,24 @@ contract ReferenceModularAccount is
     /**
      * Order of operations:
      *      1. Check if the sender is the entry point, the account itself, or the selector called is public.
-     *          - Yes: Return an empty array, there are no post permissionHooks.
+     *          - Yes: Return an empty array, there are no post executionHooks.
      *          - No: Continue
      *      2. Check if the called selector (msg.sig) is included in the set of selectors the msg.sender can
      *         directly call.
      *          - Yes: Continue
      *          - No: Revert, the caller is not allowed to call this selector
      *      3. If there are runtime validation hooks associated with this caller-sig combination, run them.
-     *      4. Run the pre permissionHooks associated with this caller-sig combination, and return the
-     *         post permissionHooks to run later.
+     *      4. Run the pre executionHooks associated with this caller-sig combination, and return the
+     *         post executionHooks to run later.
      */
     function _checkPermittedCallerAndAssociatedHooks()
         internal
         returns (PostExecToRun[] memory, PostExecToRun[] memory)
     {
         AccountStorage storage _storage = getAccountStorage();
-        PostExecToRun[] memory postPermissionHooks;
+        PostExecToRun[] memory postValidatorExecutionHooks;
 
-        // We only need to handle permission hooks when the sender is not the entry point or the account itself,
+        // We only need to handle execution hooks when the sender is not the entry point or the account itself,
         // and the selector isn't public.
         if (
             msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
@@ -566,7 +566,7 @@ contract ReferenceModularAccount is
 
             _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, ValidationCheckingType.EITHER);
 
-            // Direct call is allowed, run associated permission & validation hooks
+            // Direct call is allowed, run associated execution & validation hooks
 
             // Validation hooks
             ModuleEntity[] memory preRuntimeValidationHooks =
@@ -577,16 +577,16 @@ contract ReferenceModularAccount is
                 _doPreRuntimeValidationHook(preRuntimeValidationHooks[i], msg.data, "");
             }
 
-            // Permission hooks
-            postPermissionHooks =
-                _doPreHooks(_storage.validationData[directCallValidationKey].permissionHooks, msg.data);
+            // Execution hooks associated with the validator
+            postValidatorExecutionHooks =
+                _doPreHooks(_storage.validationData[directCallValidationKey].executionHooks, msg.data);
         }
 
-        // Exec hooks
-        PostExecToRun[] memory postExecutionHooks =
+        // Exec hooks associated with the selector
+        PostExecToRun[] memory postSelectorExecutionHooks =
             _doPreHooks(_storage.executionData[msg.sig].executionHooks, msg.data);
 
-        return (postPermissionHooks, postExecutionHooks);
+        return (postValidatorExecutionHooks, postSelectorExecutionHooks);
     }
 
     function _execUserOpValidation(
