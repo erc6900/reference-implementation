@@ -559,7 +559,7 @@ contract ReferenceModularAccount is
         // and the selector isn't public.
         if (
             msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
-                && !_storage.executionData[msg.sig].isPublic
+                && !_storage.executionData[msg.sig].skipRuntimeValidation
         ) {
             ModuleEntity directCallValidationKey =
                 ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);

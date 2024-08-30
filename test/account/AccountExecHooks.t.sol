@@ -33,7 +33,7 @@ contract AccountExecHooksTest is AccountTestBase {
         _m1.executionFunctions.push(
             ManifestExecutionFunction({
                 executionSelector: _EXEC_SELECTOR,
-                isPublic: true,
+                skipRuntimeValidation: true,
                 allowGlobalValidation: false
             })
         );

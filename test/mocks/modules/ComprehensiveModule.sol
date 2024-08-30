@@ -147,7 +147,7 @@ contract ComprehensiveModule is
         manifest.executionFunctions = new ManifestExecutionFunction[](1);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
-            isPublic: false,
+            skipRuntimeValidation: false,
             allowGlobalValidation: false
         });
 

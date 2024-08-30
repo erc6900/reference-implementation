@@ -28,7 +28,7 @@ abstract contract ModularAccountView is IModularAccountView {
         } else {
             ExecutionData storage executionData = getAccountStorage().executionData[selector];
             data.module = executionData.module;
-            data.isPublic = executionData.isPublic;
+            data.skipRuntimeValidation = executionData.skipRuntimeValidation;
             data.allowGlobalValidation = executionData.allowGlobalValidation;
 
             uint256 executionHooksLen = executionData.executionHooks.length();

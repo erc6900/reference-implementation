@@ -23,7 +23,7 @@ contract PermittedCallerModule is IExecutionModule, BaseModule {
         manifest.executionFunctions[1].executionSelector = this.usePermittedCallNotAllowed.selector;
 
         for (uint256 i = 0; i < manifest.executionFunctions.length; i++) {
-            manifest.executionFunctions[i].isPublic = true;
+            manifest.executionFunctions[i].skipRuntimeValidation = true;
         }
 
         return manifest;

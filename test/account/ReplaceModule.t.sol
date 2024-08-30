@@ -38,7 +38,7 @@ contract UpgradeModuleTest is AccountTestBase {
         ManifestExecutionFunction[] memory executionFunctions = new ManifestExecutionFunction[](1);
         executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: TestModule.testFunction.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: true
         });
         m.executionFunctions = executionFunctions;

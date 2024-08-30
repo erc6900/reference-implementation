@@ -45,12 +45,12 @@ contract ResultCreatorModule is IExecutionModule, BaseModule {
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.foo.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.bar.selector,
-            isPublic: false,
+            skipRuntimeValidation: false,
             allowGlobalValidation: false
         });
 
@@ -126,12 +126,12 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
         manifest.executionFunctions = new ManifestExecutionFunction[](2);
         manifest.executionFunctions[0] = ManifestExecutionFunction({
             executionSelector: this.checkResultFallback.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
         manifest.executionFunctions[1] = ManifestExecutionFunction({
             executionSelector: this.checkResultExecuteWithAuthorization.selector,
-            isPublic: true,
+            skipRuntimeValidation: true,
             allowGlobalValidation: false
         });
 
