@@ -39,7 +39,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
     error InterfaceNotSupported(address module);
     error NativeFunctionNotAllowed(bytes4 selector);
     error NullModule();
-    error PermissionAlreadySet(ModuleEntity validationFunction, HookConfig hookConfig);
+    error ExecutionHookAlreadySet(HookConfig hookConfig);
     error ModuleInstallCallbackFailed(address module, bytes revertReason);
     error ModuleNotInstalled(address module);
     error PreValidationHookLimitExceeded();
@@ -106,7 +106,9 @@ abstract contract ModuleManagerInternals is IModularAccount {
     }
 
     function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
-        hooks.add(toSetValue(hookConfig));
+        if (!hooks.add(toSetValue(hookConfig))) {
+            revert ExecutionHookAlreadySet(hookConfig);
+        }
     }
 
     function _removeExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
@@ -247,10 +249,8 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
                 continue;
             }
-            // Hook is a permission hook
-            if (!_validationData.permissionHooks.add(toSetValue(hookConfig))) {
-                revert PermissionAlreadySet(moduleEntity, hookConfig);
-            }
+            // Hook is an execution hook
+            _addExecHooks(_validationData.executionHooks, hookConfig);
 
             _onInstall(hookConfig.module(), hookData, type(IExecutionHookModule).interfaceId);
         }
@@ -285,12 +285,12 @@ abstract contract ModuleManagerInternals is IModularAccount {
             // If any uninstall data is provided, assert it is of the correct length.
             if (
                 hookUninstallDatas.length
-                    != _validationData.preValidationHooks.length + _validationData.permissionHooks.length()
+                    != _validationData.preValidationHooks.length + _validationData.executionHooks.length()
             ) {
                 revert ArrayLengthMismatch();
             }
 
-            // Hook uninstall data is provided in the order of pre validation hooks, then permission hooks.
+            // Hook uninstall data is provided in the order of pre validation hooks, then execution hooks.
             uint256 hookIndex = 0;
             for (uint256 i = 0; i < _validationData.preValidationHooks.length; ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
@@ -299,10 +299,10 @@ abstract contract ModuleManagerInternals is IModularAccount {
                 hookIndex++;
             }
 
-            for (uint256 i = 0; i < _validationData.permissionHooks.length(); ++i) {
+            for (uint256 i = 0; i < _validationData.executionHooks.length(); ++i) {
                 bytes calldata hookData = hookUninstallDatas[hookIndex];
                 (address hookModule,) =
-                    ModuleEntityLib.unpack(toModuleEntity(_validationData.permissionHooks.at(i)));
+                    ModuleEntityLib.unpack(toModuleEntity(_validationData.executionHooks.at(i)));
                 onUninstallSuccess = onUninstallSuccess && _onUninstall(hookModule, hookData);
                 hookIndex++;
             }
@@ -311,11 +311,11 @@ abstract contract ModuleManagerInternals is IModularAccount {
         // Clear all stored hooks
         delete _validationData.preValidationHooks;
 
-        EnumerableSet.Bytes32Set storage permissionHooks = _validationData.permissionHooks;
-        uint256 permissionHookLen = permissionHooks.length();
-        for (uint256 i = 0; i < permissionHookLen; ++i) {
-            bytes32 permissionHook = permissionHooks.at(0);
-            permissionHooks.remove(permissionHook);
+        EnumerableSet.Bytes32Set storage executionHooks = _validationData.executionHooks;
+        uint256 executionHookLen = executionHooks.length();
+        for (uint256 i = 0; i < executionHookLen; ++i) {
+            bytes32 executionHook = executionHooks.at(0);
+            executionHooks.remove(executionHook);
         }
 
         // Clear selectors

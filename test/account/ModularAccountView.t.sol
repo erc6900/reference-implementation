@@ -121,7 +121,7 @@ contract ModularAccountViewTest is CustomValidationTestBase {
             )
         );
 
-        assertEq(data.permissionHooks.length, 0);
+        assertEq(data.executionHooks.length, 0);
         assertEq(selectors.length, 1);
         assertEq(selectors[0], comprehensiveModule.foo.selector);
     }

@@ -107,8 +107,8 @@ interface IModularAccount {
     /// @param uninstallData Optional data to be decoded and used by the module to clear module data for the
     /// account.
     /// @param hookUninstallData Optional data to be used by hooks for cleanup. If any are provided, the array must
-    /// be of a length equal to existing pre validation hooks plus permission hooks. Hooks are indexed by
-    /// pre validation hook order first, then permission hooks.
+    /// be of a length equal to existing pre validation hooks plus execution hooks. Hooks are indexed by
+    /// pre validation hook order first, then execution hooks.
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,

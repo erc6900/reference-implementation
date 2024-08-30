@@ -28,8 +28,8 @@ struct ValidationDataView {
     bool isUserOpValidation;
     // The pre validation hooks for this validation function.
     ModuleEntity[] preValidationHooks;
-    // Permission hooks for this validation function.
-    HookConfig[] permissionHooks;
+    // Execution hooks to run with this validation function.
+    HookConfig[] executionHooks;
     // The set of selectors that may be validated by this validation function.
     bytes4[] selectors;
 }

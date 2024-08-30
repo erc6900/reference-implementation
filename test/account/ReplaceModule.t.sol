@@ -98,7 +98,7 @@ contract UpgradeModuleTest is AccountTestBase {
     }
 
     function test_upgradeModuleValidationFunction() public {
-        // Setup new validaiton with pre validation and permission hooks
+        // Setup new validaiton with pre validation and execution hooks associated with a validator
         SingleSignerValidationModule validation1 = new SingleSignerValidationModule();
         SingleSignerValidationModule validation2 = new SingleSignerValidationModule();
         uint32 validationEntityId1 = 10;

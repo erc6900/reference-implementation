@@ -32,7 +32,7 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
         override
         returns (bytes memory)
     {
-        require(sender == address(this), "mock direct call pre permission hook failed");
+        require(sender == address(this), "mock direct call pre execution hook failed");
         preHookRan = true;
         return abi.encode(keccak256(hex"04546b"));
     }
@@ -40,7 +40,7 @@ contract DirectCallModule is BaseModule, IExecutionHookModule {
     function postExecutionHook(uint32, bytes calldata preExecHookData) external override {
         require(
             abi.decode(preExecHookData, (bytes32)) == keccak256(hex"04546b"),
-            "mock direct call post permission hook failed"
+            "mock direct call post execution hook failed"
         );
         postHookRan = true;
     }
