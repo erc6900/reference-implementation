@@ -78,8 +78,8 @@ interface IModularAccount {
     /// @notice Install a module to the modular account.
     /// @param module The module to install.
     /// @param manifest the manifest describing functions to install
-    /// @param moduleInstallData Optional data to be decoded and used by the module to setup initial module data
-    /// for the modular account.
+    /// @param moduleInstallData Optional data to be used by the account to handle the initial execution setup,
+    /// data encoding is implementation-specific.
     function installExecution(
         address module,
         ExecutionManifest calldata manifest,
@@ -91,10 +91,10 @@ interface IModularAccount {
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
-    /// @param installData Optional data to be decoded and used by the module to setup initial module state.
-    /// @param hooks Optional hooks to install, associated with the validation function. These may be
-    /// pre validation hooks or execution hooks. The expected format is a bytes25 HookConfig, followed by the
-    /// install data, if any.
+    /// @param installData Optional data to be used by the account to handle the initial validation setup, data
+    /// encoding is implementation-specific.
+    /// @param hooks Optional hooks to install and associate with the validation function, data encoding is
+    /// implementation-specific.
     function installValidation(
         ValidationConfig validationConfig,
         bytes4[] calldata selectors,
@@ -104,11 +104,10 @@ interface IModularAccount {
 
     /// @notice Uninstall a validation function from a set of execution selectors.
     /// @param validationFunction The validation function to uninstall.
-    /// @param uninstallData Optional data to be decoded and used by the module to clear module data for the
-    /// account.
-    /// @param hookUninstallData Optional data to be used by hooks for cleanup. If any are provided, the array must
-    /// be of a length equal to existing pre validation hooks plus execution hooks. Hooks are indexed by
-    /// pre validation hook order first, then execution hooks.
+    /// @param uninstallData Optional data to be used by the account to handle the validation uninstallation, data
+    /// encoding is implementation-specific.
+    /// @param hookUninstallData Optional data to be used by the account to handle hook uninstallation, data
+    /// encoding is implementation-specific.
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,
@@ -118,8 +117,8 @@ interface IModularAccount {
     /// @notice Uninstall a module from the modular account.
     /// @param module The module to uninstall.
     /// @param manifest the manifest describing functions to uninstall.
-    /// @param moduleUninstallData Optional data to be decoded and used by the module to clear module data for the
-    /// modular account.
+    /// @param moduleUninstallData Optional data to be used by the account to handle the execution uninstallation,
+    /// data encoding is implementation-specific.
     function uninstallExecution(
         address module,
         ExecutionManifest calldata manifest,
