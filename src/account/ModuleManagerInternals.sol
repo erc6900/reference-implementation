@@ -97,6 +97,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
         _validationData.isGlobal = false;
         _validationData.isSignatureValidation = false;
+        _validationData.isUserOpValidation = false;
 
         // Clear the selectors
         uint256 length = _validationData.selectors.length();
