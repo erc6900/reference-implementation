@@ -97,12 +97,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
         _validationData.isGlobal = false;
         _validationData.isSignatureValidation = false;
-
-        // Clear the selectors
-        uint256 length = _validationData.selectors.length();
-        for (uint256 i = 0; i < length; ++i) {
-            _validationData.selectors.remove(_validationData.selectors.at(0));
-        }
+        _validationData.isUserOpValidation = false;
     }
 
     function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
