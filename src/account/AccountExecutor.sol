@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.20;
 
 abstract contract AccountExecutor {
     /// @param target The address of the contract to call.
