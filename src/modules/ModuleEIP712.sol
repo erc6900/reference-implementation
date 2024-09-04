@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.25;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.20;
 
 // A base for modules that use EIP-712 structured data signing.
 //

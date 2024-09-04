@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.20;
 
 import {IAccount} from "@eth-infinitism/account-abstraction/interfaces/IAccount.sol";
 import {IPaymaster} from "@eth-infinitism/account-abstraction/interfaces/IPaymaster.sol";

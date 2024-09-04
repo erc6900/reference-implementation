@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.25;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.20;
 
 function collectReturnData() pure returns (bytes memory returnData) {
     assembly ("memory-safe") {

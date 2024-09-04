@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.20;
 
 // solhint-disable-next-line private-vars-leading-underscore
 function _coalescePreValidation(uint256 validationRes1, uint256 validationRes2)
