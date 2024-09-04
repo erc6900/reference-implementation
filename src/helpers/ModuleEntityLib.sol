@@ -2,27 +2,29 @@
 pragma solidity ^0.8.20;
 
 import {ModuleEntity} from "../interfaces/IModularAccount.sol";
+// ModuleEntity is a packed representation of a module function
+// Layout:
+// 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
+// 0x________________________________________BBBBBBBB________________ // Entity ID
+// 0x________________________________________________0000000000000000 // unused
 
 library ModuleEntityLib {
-    // Magic value for hooks that should always revert.
-    ModuleEntity internal constant _PRE_HOOK_ALWAYS_DENY = ModuleEntity.wrap(bytes24(uint192(2)));
-
     function pack(address addr, uint32 entityId) internal pure returns (ModuleEntity) {
         return ModuleEntity.wrap(bytes24(bytes20(addr)) | bytes24(uint192(entityId)));
     }
 
-    function unpack(ModuleEntity fr) internal pure returns (address addr, uint32 entityId) {
-        bytes24 underlying = ModuleEntity.unwrap(fr);
+    function unpack(ModuleEntity moduleEntity) internal pure returns (address addr, uint32 entityId) {
+        bytes24 underlying = ModuleEntity.unwrap(moduleEntity);
         addr = address(bytes20(underlying));
         entityId = uint32(bytes4(underlying << 160));
     }
 
-    function isEmpty(ModuleEntity fr) internal pure returns (bool) {
-        return ModuleEntity.unwrap(fr) == bytes24(0);
+    function isEmpty(ModuleEntity moduleEntity) internal pure returns (bool) {
+        return ModuleEntity.unwrap(moduleEntity) == bytes24(0);
     }
 
-    function notEmpty(ModuleEntity fr) internal pure returns (bool) {
-        return ModuleEntity.unwrap(fr) != bytes24(0);
+    function notEmpty(ModuleEntity moduleEntity) internal pure returns (bool) {
+        return ModuleEntity.unwrap(moduleEntity) != bytes24(0);
     }
 
     function eq(ModuleEntity a, ModuleEntity b) internal pure returns (bool) {
