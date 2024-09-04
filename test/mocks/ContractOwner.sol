@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.20;
 
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 

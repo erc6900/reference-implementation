@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.20;
 
 import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 
