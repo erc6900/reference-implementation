@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
+
+import {ReferenceModularAccount} from "src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "src/account/SemiModularAccount.sol";
 import {ValidationConfig} from "src/helpers/ValidationConfigLib.sol";
 
@@ -11,14 +13,15 @@ contract SemiModularAccountTest is AccountTestBase {
     SemiModularAccount internal _sma;
 
     address internal _other;
+    address internal _other2; // Used to ensure slots are not warmed
 
     function setUp() public {
         // This is separate from the equivalence testing framework (with the env boolean variable "SMA_TEST") with
         // the goal of testing specific SMA functionality, rather than equivalence. This is also why we deploy a
         // new account.
         SemiModularAccount impl = new SemiModularAccount(entryPoint);
-
         _other = address(0x4546b);
+        _other2 = address(0x4546ab);
 
         bytes32 salt = bytes32(0);
         bytes memory immutables = abi.encodePacked(address(owner1));
@@ -97,7 +100,7 @@ contract SemiModularAccountTest is AccountTestBase {
     function _executeWithFallbackSigner() internal {
         // _signerValidation is already the ModuleEntity for fallback validation
         _sma.executeWithAuthorization(
-            abi.encodeCall(account1.execute, (address(owner1), 0, "")),
+            abi.encodeCall(account1.execute, (_other2, 0, "")),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
     }

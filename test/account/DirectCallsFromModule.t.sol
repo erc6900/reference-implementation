@@ -180,8 +180,4 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         emit ValidationUninstalled(module, entityId, true);
         account1.uninstallValidation(_moduleEntity, "", new bytes[](1));
     }
-
-    function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(ReferenceModularAccount.ValidationFunctionMissing.selector, selector);
-    }
 }
