@@ -68,7 +68,7 @@ contract MultiValidationTest is AccountTestBase {
                 abi.encodeWithSignature("NotAuthorized()")
             )
         );
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.execute, (address(0), 0, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""
@@ -76,7 +76,7 @@ contract MultiValidationTest is AccountTestBase {
         );
 
         vm.prank(owner2);
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.execute, (address(0), 0, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(validator2), TEST_DEFAULT_VALIDATION_ENTITY_ID), GLOBAL_VALIDATION, ""

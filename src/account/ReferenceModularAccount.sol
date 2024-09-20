@@ -184,7 +184,7 @@ contract ReferenceModularAccount is
     }
 
     /// @inheritdoc IModularAccount
-    function executeWithAuthorization(bytes calldata data, bytes calldata authorization)
+    function executeWithRuntimeValidation(bytes calldata data, bytes calldata authorization)
         external
         payable
         returns (bytes memory)
@@ -704,7 +704,7 @@ contract ReferenceModularAccount is
                         // To prevent arbitrarily-deep recursive checking, we limit the depth of self-calls to one
                         // for the purposes of batching.
                         // This means that all self-calls must occur at the top level of the batch.
-                        // Note that modules of other contracts using `executeWithAuthorization` may still
+                        // Note that modules of other contracts using `executeWithRuntimeValidation` may still
                         // independently call into this account with a different validation function, allowing
                         // composition of multiple batches.
                         revert SelfCallRecursionDepthExceeded();

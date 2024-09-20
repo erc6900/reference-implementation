@@ -104,7 +104,7 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
     // Check the return data through the execute with authorization case
     function checkResultExecuteWithAuthorization(address target, bytes32 expected) external returns (bool) {
         // This result should be allowed based on the manifest permission request
-        bytes memory returnData = IModularAccount(msg.sender).executeWithAuthorization(
+        bytes memory returnData = IModularAccount(msg.sender).executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
             abi.encodePacked(this, DIRECT_CALL_VALIDATION_ENTITYID, uint8(0), uint32(1), uint8(255)) // Validation
                 // function of self,

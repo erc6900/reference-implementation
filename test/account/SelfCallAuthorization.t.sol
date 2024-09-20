@@ -214,7 +214,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         calls[1] = Call(address(account1), 0, abi.encodeCall(ComprehensiveModule.foo, ()));
 
         vm.expectCall(address(comprehensiveModule), abi.encodeCall(ComprehensiveModule.foo, ()), 2);
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.executeBatch, (calls)),
             _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
@@ -286,7 +286,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         outerCalls[0] = Call(address(account1), 0, abi.encodeCall(IModularAccount.executeBatch, (innerCalls)));
 
         vm.expectRevert(abi.encodeWithSelector(ReferenceModularAccount.SelfCallRecursionDepthExceeded.selector));
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.executeBatch, (outerCalls)),
             _encodeSignature(comprehensiveModuleValidation, SELECTOR_ASSOCIATED_VALIDATION, "")
         );
@@ -300,7 +300,7 @@ contract SelfCallAuthorizationTest is AccountTestBase {
         selectors[0] = IModularAccount.executeBatch.selector;
 
         vm.prank(owner1);
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(
                 ReferenceModularAccount.installValidation,
                 (
