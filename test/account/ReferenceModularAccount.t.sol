@@ -497,7 +497,7 @@ contract ReferenceModularAccountTest is AccountTestBase {
 
         //show working rt validation
         vm.startPrank(address(owner1));
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId), GLOBAL_VALIDATION, ""

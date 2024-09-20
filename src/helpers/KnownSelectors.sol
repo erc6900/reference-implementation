@@ -28,7 +28,7 @@ library KnownSelectors {
             || selector == IModularAccount.installValidation.selector
             || selector == IModularAccount.uninstallValidation.selector || selector == IModularAccount.execute.selector
             || selector == IModularAccount.executeBatch.selector
-            || selector == IModularAccount.executeWithAuthorization.selector
+            || selector == IModularAccount.executeWithRuntimeValidation.selector
             || selector == IModularAccount.accountId.selector
         // check against IERC165 methods
         || selector == IERC165.supportsInterface.selector

@@ -24,6 +24,7 @@ interface IValidationHookModule is IModule {
     /// @param sender The caller address.
     /// @param value The call value.
     /// @param data The calldata sent.
+    /// @param authorization Additional data for the hook to use.
     function preRuntimeValidationHook(
         uint32 entityId,
         address sender,

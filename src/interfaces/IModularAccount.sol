@@ -70,7 +70,7 @@ interface IModularAccount {
     /// @param data The calldata to send to the account.
     /// @param authorization The authorization data to use for the call. The first 24 bytes specifies which runtime
     /// validation to use, and the rest is sent as a parameter to runtime validation.
-    function executeWithAuthorization(bytes calldata data, bytes calldata authorization)
+    function executeWithRuntimeValidation(bytes calldata data, bytes calldata authorization)
         external
         payable
         returns (bytes memory);
