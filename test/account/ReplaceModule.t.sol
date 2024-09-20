@@ -82,7 +82,7 @@ contract UpgradeModuleTest is AccountTestBase {
                 IModularAccount.installExecution, (address(moduleV2), moduleV2.executionManifest(), "")
             )
         });
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(account1.executeBatch, (calls)),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
@@ -147,7 +147,7 @@ contract UpgradeModuleTest is AccountTestBase {
             ),
             0
         );
-        account1.executeWithAuthorization(callData, _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, ""));
+        account1.executeWithRuntimeValidation(callData, _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, ""));
         assertEq(target.balance, sendAmount);
 
         // upgrade module by batching uninstall + install calls
@@ -181,7 +181,7 @@ contract UpgradeModuleTest is AccountTestBase {
                 )
             )
         });
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(account1.executeBatch, (calls)),
             _encodeSignature(_signerValidation, GLOBAL_VALIDATION, "")
         );
@@ -193,7 +193,7 @@ contract UpgradeModuleTest is AccountTestBase {
                 abi.encode(IModularAccount.execute.selector)
             )
         );
-        account1.executeWithAuthorization(
+        account1.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.execute, (target, sendAmount, "")),
             _encodeSignature(currModuleEntity, GLOBAL_VALIDATION, "")
         );
@@ -213,7 +213,7 @@ contract UpgradeModuleTest is AccountTestBase {
             ),
             0
         );
-        account1.executeWithAuthorization(callData, _encodeSignature(newModuleEntity, GLOBAL_VALIDATION, ""));
+        account1.executeWithRuntimeValidation(callData, _encodeSignature(newModuleEntity, GLOBAL_VALIDATION, ""));
         assertEq(target.balance, 2 * sendAmount);
     }
 }

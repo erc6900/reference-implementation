@@ -176,7 +176,9 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
 
     function test_runtime_executeLimit() public {
         assertEq(module.limits(0, address(acct)), 10 ether);
-        acct.executeWithAuthorization(_getExecuteWithValue(5 ether), _encodeSignature(validationFunction, 1, ""));
+        acct.executeWithRuntimeValidation(
+            _getExecuteWithValue(5 ether), _encodeSignature(validationFunction, 1, "")
+        );
         assertEq(module.limits(0, address(acct)), 5 ether);
     }
 
@@ -187,7 +189,7 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
         calls[2] = Call({target: recipient, value: 5 ether + 100_000, data: ""});
 
         assertEq(module.limits(0, address(acct)), 10 ether);
-        acct.executeWithAuthorization(
+        acct.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.executeBatch, (calls)), _encodeSignature(validationFunction, 1, "")
         );
         assertEq(module.limits(0, address(acct)), 4 ether - 100_001);

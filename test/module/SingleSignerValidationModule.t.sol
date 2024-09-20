@@ -71,7 +71,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
 
     function test_runtimeValidate() public {
         vm.prank(owner1);
-        account.executeWithAuthorization(
+        account.executeWithRuntimeValidation(
             abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidationModule), TEST_DEFAULT_VALIDATION_ENTITY_ID),
@@ -98,7 +98,7 @@ contract SingleSignerValidationModuleTest is AccountTestBase {
         );
 
         vm.prank(owner2);
-        account.executeWithAuthorization(
+        account.executeWithRuntimeValidation(
             abi.encodeCall(ReferenceModularAccount.execute, (ethRecipient, 1 wei, "")),
             _encodeSignature(
                 ModuleEntityLib.pack(address(singleSignerValidationModule), newEntityId), GLOBAL_VALIDATION, ""

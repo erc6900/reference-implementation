@@ -146,7 +146,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function test_runtime_executeLimit() public {
         assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
-        acct.executeWithAuthorization(
+        acct.executeWithRuntimeValidation(
             _getExecuteWithSpend(5 ether),
             _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
         );
@@ -166,7 +166,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         });
 
         assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
-        acct.executeWithAuthorization(
+        acct.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.executeBatch, (calls)),
             _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
         );
