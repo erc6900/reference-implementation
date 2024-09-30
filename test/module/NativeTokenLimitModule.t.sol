@@ -11,7 +11,7 @@ import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {Call, HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
 import {MockModule} from "../mocks/MockModule.sol";
 
@@ -35,8 +35,8 @@ contract NativeTokenLimitModuleTest is AccountTestBase {
 
         vm.deal(address(acct), 10 ether);
 
-        ModuleEntity[] memory preValidationHooks = new ModuleEntity[](1);
-        preValidationHooks[0] = ModuleEntityLib.pack(address(module), 0);
+        HookConfig[] memory validationHooks = new HookConfig[](1);
+        validationHooks[0] = HookConfigLib.packValidationHook(address(module), 0);
 
         uint256[] memory spendLimits = new uint256[](1);
         spendLimits[0] = spendLimit;

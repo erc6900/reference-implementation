@@ -7,8 +7,9 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
+import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {Call, HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";
@@ -20,6 +21,7 @@ import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.so
 /// @dev This contract handles common boilerplate setup for tests using ReferenceModularAccount with
 /// SingleSignerValidationModule.
 abstract contract AccountTestBase is OptimizedTest {
+    using HookConfigLib for HookConfig;
     using ModuleEntityLib for ModuleEntity;
     using MessageHashUtils for bytes32;
 
