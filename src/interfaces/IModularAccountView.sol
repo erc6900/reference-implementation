@@ -24,7 +24,7 @@ struct ValidationDataView {
     bool isGlobal;
     // Whether or not this validation function is a signature validator.
     bool isSignatureValidation;
-    // Whether or not this validation is a user operation validator.
+    // Whether or not this validation function is a user operation validation function.
     bool isUserOpValidation;
     // The pre validation hooks for this validation function.
     ModuleEntity[] preValidationHooks;
