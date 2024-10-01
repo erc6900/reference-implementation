@@ -50,7 +50,7 @@ abstract contract ModularAccountView is IModularAccountView {
         data.isGlobal = validationData.isGlobal;
         data.isSignatureValidation = validationData.isSignatureValidation;
         data.isUserOpValidation = validationData.isUserOpValidation;
-        data.preValidationHooks = validationData.preValidationHooks;
+        data.validationHooks = validationData.validationHooks;
 
         uint256 execHooksLen = validationData.executionHooks.length();
         data.executionHooks = new HookConfig[](execHooksLen);
