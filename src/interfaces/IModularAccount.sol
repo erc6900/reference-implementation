@@ -66,10 +66,10 @@ interface IModularAccount {
     /// @return An array containing the return data from the calls.
     function executeBatch(Call[] calldata calls) external payable returns (bytes[] memory);
 
-    /// @notice Execute a call using a specified runtime validation.
+    /// @notice Execute a call using the specified runtime validation.
     /// @param data The calldata to send to the account.
-    /// @param authorization The authorization data to use for the call. The first 24 bytes specifies which runtime
-    /// validation to use, and the rest is sent as a parameter to runtime validation.
+    /// @param authorization The authorization data to use for the call. The first 24 bytes is a ModuleEntity which
+    /// specifies which runtime validation to use, and the rest is sent as a parameter to runtime validation.
     function executeWithRuntimeValidation(bytes calldata data, bytes calldata authorization)
         external
         payable
@@ -77,23 +77,29 @@ interface IModularAccount {
 
     /// @notice Install a module to the modular account.
     /// @param module The module to install.
-    /// @param manifest the manifest describing functions to install
-    /// @param moduleInstallData Optional data to be used by the account to handle the initial execution setup,
-    /// data encoding is implementation-specific.
-    function installExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleInstallData
-    ) external;
+    /// @param manifest the manifest describing functions to install.
+    /// @param installData Optional data to be used by the account to handle the initial execution setup. Data
+    /// encoding
+    /// is implementation-specific.
+    function installExecution(address module, ExecutionManifest calldata manifest, bytes calldata installData)
+        external;
+
+    /// @notice Uninstall a module from the modular account.
+    /// @param module The module to uninstall.
+    /// @param manifest the manifest describing functions to uninstall.
+    /// @param uninstallData Optional data to be used by the account to handle the execution uninstallation. Data
+    /// encoding is implementation-specific.
+    function uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata uninstallData)
+        external;
 
     /// @notice Installs a validation function across a set of execution selectors, and optionally mark it as a
-    /// global validation.
+    /// global validation function.
     /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
-    /// @param installData Optional data to be used by the account to handle the initial validation setup, data
+    /// @param installData Optional data to be used by the account to handle the initial validation setup. Data
     /// encoding is implementation-specific.
-    /// @param hooks Optional hooks to install and associate with the validation function, data encoding is
+    /// @param hooks Optional hooks to install and associate with the validation function. Data encoding is
     /// implementation-specific.
     function installValidation(
         ValidationConfig validationConfig,
@@ -104,25 +110,15 @@ interface IModularAccount {
 
     /// @notice Uninstall a validation function from a set of execution selectors.
     /// @param validationFunction The validation function to uninstall.
-    /// @param uninstallData Optional data to be used by the account to handle the validation uninstallation, data
+    /// @param uninstallData Optional data to be used by the account to handle the validation uninstallation. Data
     /// encoding is implementation-specific.
-    /// @param hookUninstallData Optional data to be used by the account to handle hook uninstallation, data
-    /// encoding is implementation-specific.
+    /// @param hookUninstallData Optional data to be used by the account to handle hook uninstallation. Data
+    /// encoding
+    /// is implementation-specific.
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,
         bytes[] calldata hookUninstallData
-    ) external;
-
-    /// @notice Uninstall a module from the modular account.
-    /// @param module The module to uninstall.
-    /// @param manifest the manifest describing functions to uninstall.
-    /// @param moduleUninstallData Optional data to be used by the account to handle the execution uninstallation,
-    /// data encoding is implementation-specific.
-    function uninstallExecution(
-        address module,
-        ExecutionManifest calldata manifest,
-        bytes calldata moduleUninstallData
     ) external;
 
     /// @notice Return a unique identifier for the account implementation.
