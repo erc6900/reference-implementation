@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 
-// Represents data associated with a specifc function selector.
+/// @dev Represents data associated with a specific function selector.
 struct ExecutionDataView {
     // The module that implements this execution function.
     // If this is a native function, the address must remain address(0).
@@ -20,9 +20,9 @@ struct ExecutionDataView {
 }
 
 struct ValidationDataView {
-    // Whether or not this validation can be used as a global validation function.
+    // Whether or not this validation function can be used as a global validation function.
     bool isGlobal;
-    // Whether or not this validation is a signature validator.
+    // Whether or not this validation function is a signature validator.
     bool isSignatureValidation;
     // Whether or not this validation is a user operation validator.
     bool isUserOpValidation;
@@ -38,13 +38,13 @@ interface IModularAccountView {
     /// @notice Get the execution data for a selector.
     /// @dev If the selector is a native function, the module address will be the address of the account.
     /// @param selector The selector to get the data for.
-    /// @return ExecutionData The module address for this selector.
+    /// @return The execution data for this selector.
     function getExecutionData(bytes4 selector) external view returns (ExecutionDataView memory);
 
-    /// @notice Get the validation data for a validation.
+    /// @notice Get the validation data for a validation function.
     /// @dev If the selector is a native function, the module address will be the address of the account.
     /// @param validationFunction The validation function to get the data for.
-    /// @return ValidationData The module address for this selector.
+    /// @return The validation data for this validation function.
     function getValidationData(ModuleEntity validationFunction)
         external
         view

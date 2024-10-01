@@ -10,7 +10,7 @@ interface IExecutionHookModule is IModule {
     /// be more than one.
     /// @param sender The caller address.
     /// @param value The call value.
-    /// @param data The calldata sent.
+    /// @param data The calldata sent. For `executeUserOp` calls, hook modules should receive the full msg.data.
     /// @return Context to pass to a post execution hook, if present. An empty bytes array MAY be returned.
     function preExecutionHook(uint32 entityId, address sender, uint256 value, bytes calldata data)
         external
