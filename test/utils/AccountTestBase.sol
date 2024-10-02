@@ -277,4 +277,8 @@ abstract contract AccountTestBase is OptimizedTest {
     {
         return abi.encodePacked(uint32(validationData.length + 1), index, validationData);
     }
+
+    function _buildDirectCallDisallowedError(bytes4 selector) internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(ReferenceModularAccount.ValidationFunctionMissing.selector, selector);
+    }
 }
