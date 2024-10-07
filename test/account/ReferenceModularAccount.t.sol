@@ -12,11 +12,11 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
 import {Call} from "../../src/interfaces/IModularAccount.sol";
 import {ExecutionDataView} from "../../src/interfaces/IModularAccountView.sol";
+import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 

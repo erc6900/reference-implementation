@@ -5,7 +5,7 @@ import {ReferenceModularAccount} from "./ReferenceModularAccount.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
+import {ModuleEntityLib} from "../libraries/ModuleEntityLib.sol";
 
 import {IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 

@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {HookConfig, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
+import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
+import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 
 contract HookConfigLibTest is Test {
     using ModuleEntityLib for ModuleEntity;

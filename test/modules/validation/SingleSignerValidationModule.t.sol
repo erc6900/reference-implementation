@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ReferenceModularAccount} from "../../../src/account/ReferenceModularAccount.sol";
+import {ModuleEntityLib} from "../../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../../src/libraries/ValidationConfigLib.sol";
 
-import {ContractOwner} from "../mocks/ContractOwner.sol";
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
-import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../utils/TestConstants.sol";
+import {ContractOwner} from "../../mocks/ContractOwner.sol";
+import {AccountTestBase} from "../../utils/AccountTestBase.sol";
+import {TEST_DEFAULT_VALIDATION_ENTITY_ID} from "../../utils/TestConstants.sol";
 
 contract SingleSignerValidationModuleTest is AccountTestBase {
     using MessageHashUtils for bytes32;

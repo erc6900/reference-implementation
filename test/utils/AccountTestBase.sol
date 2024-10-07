@@ -7,8 +7,8 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "./OptimizedTest.sol";

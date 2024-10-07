@@ -9,8 +9,8 @@ import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntry
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 
 import {IModularAccount, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";

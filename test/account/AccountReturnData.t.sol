@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call} from "../../src/interfaces/IModularAccount.sol";
 import {IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 
 import {
     RegularResultContract,

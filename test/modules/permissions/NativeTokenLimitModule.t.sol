@@ -3,19 +3,17 @@ pragma solidity ^0.8.20;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
+import {ReferenceModularAccount} from "../../../src/account/ReferenceModularAccount.sol";
+import {ExecutionManifest} from "../../../src/interfaces/IExecutionModule.sol";
+import {Call, HookConfig, IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
+import {HookConfigLib} from "../../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity} from "../../../src/libraries/ModuleEntityLib.sol";
+import {ModuleEntityLib} from "../../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../../src/libraries/ValidationConfigLib.sol";
+import {NativeTokenLimitModule} from "../../../src/modules/permissions/NativeTokenLimitModule.sol";
 
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {Call, HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
-import {NativeTokenLimitModule} from "../../src/modules/NativeTokenLimitModule.sol";
-import {MockModule} from "../mocks/MockModule.sol";
-
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {MockModule} from "../../mocks/MockModule.sol";
+import {AccountTestBase} from "../../utils/AccountTestBase.sol";
 
 contract NativeTokenLimitModuleTest is AccountTestBase {
     address public recipient = address(1);
