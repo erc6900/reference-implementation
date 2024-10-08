@@ -43,7 +43,7 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         limits[0] = spendLimit;
 
         ERC20TokenLimitModule.ERC20SpendLimit[] memory limit = new ERC20TokenLimitModule.ERC20SpendLimit[](1);
-        limit[0] = ERC20TokenLimitModule.ERC20SpendLimit({token: address(erc20), limits: limits});
+        limit[0] = ERC20TokenLimitModule.ERC20SpendLimit({token: address(erc20), limit: spendLimit});
 
         bytes[] memory hooks = new bytes[](1);
         hooks[0] = abi.encodePacked(
@@ -82,9 +82,14 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
 
     function test_userOp_executeLimit() public {
         vm.startPrank(address(entryPoint));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+
+        assertEq(limit, 10 ether);
         acct.executeUserOp(_getPackedUO(_getExecuteWithSpend(5 ether)), bytes32(0));
-        assertEq(module.limits(0, address(erc20), address(acct)), 5 ether);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 5 ether);
     }
 
     function test_userOp_executeBatchLimit() public {
@@ -100,9 +105,12 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IModularAccount.executeBatch, (calls))), bytes32(0));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether - 6 ether - 100_001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit() public {
@@ -118,9 +126,12 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
         acct.executeUserOp(_getPackedUO(abi.encodeCall(IModularAccount.executeBatch, (calls))), bytes32(0));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether - 6 ether - 100_001);
     }
 
     function test_userOp_executeBatch_approveAndTransferLimit_fail() public {
@@ -136,21 +147,27 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
         });
 
         vm.startPrank(address(entryPoint));
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
         PackedUserOperation[] memory uos = new PackedUserOperation[](1);
         uos[0] = _getPackedUO(abi.encodeCall(IModularAccount.executeBatch, (calls)));
         entryPoint.handleOps(uos, bundler);
         // no spend consumed
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
     }
 
     function test_runtime_executeLimit() public {
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
         acct.executeWithRuntimeValidation(
             _getExecuteWithSpend(5 ether),
             _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
         );
-        assertEq(module.limits(0, address(erc20), address(acct)), 5 ether);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 5 ether);
     }
 
     function test_runtime_executeBatchLimit() public {
@@ -165,11 +182,14 @@ contract ERC20TokenLimitModuleTest is AccountTestBase {
             data: abi.encodeCall(IERC20.approve, (recipient, 5 ether + 100_000))
         });
 
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether);
+        (, uint256 limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether);
         acct.executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.executeBatch, (calls)),
             _encodeSignature(ModuleEntityLib.pack(address(validationModule), 0), 1, "")
         );
-        assertEq(module.limits(0, address(erc20), address(acct)), 10 ether - 6 ether - 100_001);
+
+        (, limit) = module.limits(0, address(erc20), address(acct));
+        assertEq(limit, 10 ether - 6 ether - 100_001);
     }
 }
