@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
+import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 
 import {HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IModularAccountView.sol";

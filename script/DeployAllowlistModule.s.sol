@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {AllowlistModule} from "../src/modules/permissionhooks/AllowlistModule.sol";
+import {AllowlistModule} from "../src/modules/permissions/AllowlistModule.sol";
 
 contract DeployAllowlistModuleScript is Script {
     address public allowlistModule = vm.envOr("ALLOWLIST_MODULE", address(0));

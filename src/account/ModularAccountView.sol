@@ -5,9 +5,9 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {HookConfigLib} from "../helpers/HookConfigLib.sol";
 import {HookConfig, IModularAccount, ModuleEntity} from "../interfaces/IModularAccount.sol";
 import {ExecutionDataView, IModularAccountView, ValidationDataView} from "../interfaces/IModularAccountView.sol";
+import {HookConfigLib} from "../libraries/HookConfigLib.sol";
 import {ExecutionData, ValidationData, getAccountStorage, toHookConfig} from "./AccountStorage.sol";
 
 abstract contract ModularAccountView is IModularAccountView {

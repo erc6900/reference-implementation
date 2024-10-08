@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfig, ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 
 contract ValidationConfigLibTest is Test {
     using ModuleEntityLib for ModuleEntity;

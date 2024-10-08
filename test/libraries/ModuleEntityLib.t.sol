@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
 import {ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
+import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 
 contract ModuleEntityLibTest is Test {
     using ModuleEntityLib for ModuleEntity;
