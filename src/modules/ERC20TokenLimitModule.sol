@@ -3,14 +3,7 @@ pragma solidity ^0.8.20;
 
 import {UserOperationLib} from "@eth-infinitism/account-abstraction/core/UserOperationLib.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-
-import {
-    AssociatedLinkedListSet,
-    AssociatedLinkedListSetLib,
-    SetValue
-} from "@modular-account-libs/libraries/AssociatedLinkedListSetLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
@@ -27,29 +20,24 @@ import {BaseModule, IERC165} from "./BaseModule.sol";
 /// token contract
 contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
     using UserOperationLib for PackedUserOperation;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using AssociatedLinkedListSetLib for AssociatedLinkedListSet;
 
     struct ERC20SpendLimit {
         address token;
-        uint256[] limits;
+        uint256 limit;
     }
 
-    string internal constant _NAME = "ERC20 Token Limit Module";
-    string internal constant _VERSION = "1.0.0";
-    string internal constant _AUTHOR = "ERC-6900 Authors";
+    struct SpendLimit {
+        bool hasLimit;
+        uint256 limit;
+    }
 
-    mapping(uint32 entityId => mapping(address token => mapping(address account => uint256 limit))) public limits;
-    AssociatedLinkedListSet internal _tokenList;
+    mapping(uint32 entityId => mapping(address token => mapping(address account => SpendLimit))) public limits;
 
+    error ERC20NotAllowed(address);
     error ExceededTokenLimit();
-    error ExceededNumberOfEntities();
+    error InvalidCalldataLength();
     error SelectorNotAllowed();
-
-    function updateLimits(uint32 entityId, address token, uint256 newLimit) external {
-        _tokenList.tryAdd(msg.sender, SetValue.wrap(bytes30(bytes20(token))));
-        limits[entityId][token][msg.sender] = newLimit;
-    }
+    error SpendingRequestNotAllowed(bytes4);
 
     /// @inheritdoc IExecutionHookModule
     function preExecutionHook(uint32 entityId, address, uint256, bytes calldata data)
@@ -60,52 +48,38 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
         (bytes4 selector, bytes memory callData) = _getSelectorAndCalldata(data);
 
         if (selector == IModularAccount.execute.selector) {
+            // when calling execute or ERC20 functions directly
             (address token,, bytes memory innerCalldata) = abi.decode(callData, (address, uint256, bytes));
-            if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(token))))) {
-                _decrementLimit(entityId, token, innerCalldata);
-            }
+            _decrementLimitIfApplies(entityId, token, innerCalldata);
         } else if (selector == IModularAccount.executeBatch.selector) {
             Call[] memory calls = abi.decode(callData, (Call[]));
             for (uint256 i = 0; i < calls.length; i++) {
-                if (_tokenList.contains(msg.sender, SetValue.wrap(bytes30(bytes20(calls[i].target))))) {
-                    _decrementLimit(entityId, calls[i].target, calls[i].data);
-                }
+                _decrementLimitIfApplies(entityId, calls[i].target, calls[i].data);
             }
+        } else {
+            revert SpendingRequestNotAllowed(selector);
         }
-
         return "";
     }
 
     /// @inheritdoc IModule
+    /// @param data should be encoded with the entityId of the validation and a list of ERC20 spend limits
     function onInstall(bytes calldata data) external override {
-        (uint32 startEntityId, ERC20SpendLimit[] memory spendLimits) =
-            abi.decode(data, (uint32, ERC20SpendLimit[]));
-
-        if (startEntityId + spendLimits.length > type(uint32).max) {
-            revert ExceededNumberOfEntities();
-        }
+        (uint32 entityId, ERC20SpendLimit[] memory spendLimits) = abi.decode(data, (uint32, ERC20SpendLimit[]));
 
         for (uint8 i = 0; i < spendLimits.length; i++) {
-            _tokenList.tryAdd(msg.sender, SetValue.wrap(bytes30(bytes20(spendLimits[i].token))));
-            for (uint256 j = 0; j < spendLimits[i].limits.length; j++) {
-                limits[i + startEntityId][spendLimits[i].token][msg.sender] = spendLimits[i].limits[j];
-            }
+            address token = spendLimits[i].token;
+            updateLimits(entityId, token, true, spendLimits[i].limit);
         }
     }
 
     /// @inheritdoc IModule
+    /// @notice uninstall this module can only clear limit for one token of one entity. To clear all limits, users
+    /// are recommended to use updateLimit for each token and entityId.
+    /// @param data should be encoded with the entityId of the validation and the token address to be uninstalled
     function onUninstall(bytes calldata data) external override {
         (address token, uint32 entityId) = abi.decode(data, (address, uint32));
         delete limits[entityId][token][msg.sender];
-    }
-
-    function getTokensForAccount(address account) external view returns (address[] memory tokens) {
-        SetValue[] memory set = _tokenList.getAll(account);
-        tokens = new address[](set.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            tokens[i] = address(bytes20(bytes32(SetValue.unwrap(set[i]))));
-        }
-        return tokens;
     }
 
     /// @inheritdoc IExecutionHookModule
@@ -118,27 +92,53 @@ contract ERC20TokenLimitModule is BaseModule, IExecutionHookModule {
         return "erc6900.erc20-token-limit-module.1.0.0";
     }
 
+    /// @notice Update the token limit of a validation
+    /// @param entityId The validation entityId to update
+    /// @param token The token address whose limit will be updated
+    /// @param newLimit The new limit of the token for the validation
+    function updateLimits(uint32 entityId, address token, bool hasLimit, uint256 newLimit) public {
+        if (token == address(0)) {
+            revert ERC20NotAllowed(address(0));
+        }
+        limits[entityId][token][msg.sender] = SpendLimit({hasLimit: hasLimit, limit: newLimit});
+    }
+
     /// @inheritdoc BaseModule
     function supportsInterface(bytes4 interfaceId) public view override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(IExecutionHookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _decrementLimit(uint32 entityId, address token, bytes memory innerCalldata) internal {
+    function _decrementLimitIfApplies(uint32 entityId, address token, bytes memory innerCalldata) internal {
+        SpendLimit storage spendLimit = limits[entityId][token][msg.sender];
+
+        if (!spendLimit.hasLimit) {
+            return;
+        }
+
+        if (innerCalldata.length < 68) {
+            revert InvalidCalldataLength();
+        }
+
         bytes4 selector;
         uint256 spend;
-        assembly {
+        assembly ("memory-safe") {
             selector := mload(add(innerCalldata, 32)) // 0:32 is arr len, 32:36 is selector
             spend := mload(add(innerCalldata, 68)) // 36:68 is recipient, 68:100 is spend
         }
-        if (selector == IERC20.transfer.selector || selector == IERC20.approve.selector) {
-            uint256 limit = limits[entityId][token][msg.sender];
+        if (_isAllowedERC20Function(selector)) {
+            uint256 limit = spendLimit.limit;
             if (spend > limit) {
                 revert ExceededTokenLimit();
             }
-            // solhint-disable-next-line reentrancy
-            limits[entityId][token][msg.sender] = limit - spend;
+            unchecked {
+                spendLimit.limit = limit - spend;
+            }
         } else {
             revert SelectorNotAllowed();
         }
+    }
+
+    function _isAllowedERC20Function(bytes4 selector) internal pure returns (bool) {
+        return selector == IERC20.transfer.selector || selector == IERC20.approve.selector;
     }
 }
