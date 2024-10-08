@@ -4,7 +4,9 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 
 import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
-import {ValidationConfig, ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
+import {
+    ValidationConfig, ValidationConfigLib, ValidationFlags
+} from "../../src/libraries/ValidationConfigLib.sol";
 
 contract ValidationConfigLibTest is Test {
     using ModuleEntityLib for ModuleEntity;
@@ -23,7 +25,7 @@ contract ValidationConfigLibTest is Test {
             ValidationConfigLib.pack(module, entityId, isGlobal, isSignatureValidation, isUserOpValidation);
 
         // Test unpacking underlying
-        (address module2, uint32 entityId2, uint8 flags2) = validationConfig.unpackUnderlying();
+        (address module2, uint32 entityId2, ValidationFlags flags2) = validationConfig.unpackUnderlying();
 
         assertEq(module, module2, "module mismatch");
         assertEq(entityId, entityId2, "entityId mismatch");
@@ -35,7 +37,7 @@ contract ValidationConfigLibTest is Test {
 
         ModuleEntity expectedModuleEntity = ModuleEntityLib.pack(module, entityId);
 
-        (ModuleEntity validationFunction, uint8 flags3) = validationConfig.unpack();
+        (ModuleEntity validationFunction, ValidationFlags flags3) = validationConfig.unpack();
 
         assertEq(
             ModuleEntity.unwrap(validationFunction),
@@ -73,7 +75,7 @@ contract ValidationConfigLibTest is Test {
 
         (address expectedModule, uint32 expectedEntityId) = validationFunction.unpack();
 
-        (address module, uint32 entityId, uint8 flags2) = validationConfig.unpackUnderlying();
+        (address module, uint32 entityId, ValidationFlags flags2) = validationConfig.unpackUnderlying();
 
         assertEq(expectedModule, module, "module mismatch");
         assertEq(expectedEntityId, entityId, "entityId mismatch");
@@ -83,7 +85,7 @@ contract ValidationConfigLibTest is Test {
 
         // Test unpacking to ModuleEntity
 
-        (ModuleEntity validationFunction2, uint8 flags3) = validationConfig.unpack();
+        (ModuleEntity validationFunction2, ValidationFlags flags3) = validationConfig.unpack();
 
         assertEq(
             ModuleEntity.unwrap(validationFunction),
