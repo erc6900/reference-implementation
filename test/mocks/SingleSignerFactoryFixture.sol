@@ -6,7 +6,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
 import {OptimizedTest} from "../utils/OptimizedTest.sol";

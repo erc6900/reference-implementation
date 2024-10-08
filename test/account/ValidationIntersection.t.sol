@@ -5,9 +5,9 @@ import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interface
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 
 import {
     MockBaseUserOpValidationModule,

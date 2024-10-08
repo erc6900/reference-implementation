@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
-import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockERC20} from "../../mocks/MockERC20.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-import {ModuleEntity} from "../../src/helpers/ModuleEntityLib.sol";
+import {ReferenceModularAccount} from "../../../src/account/ReferenceModularAccount.sol";
+import {ExecutionManifest} from "../../../src/interfaces/IExecutionModule.sol";
+import {Call, IModularAccount} from "../../../src/interfaces/IModularAccount.sol";
+import {HookConfigLib} from "../../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity} from "../../../src/libraries/ModuleEntityLib.sol";
+import {ModuleEntityLib} from "../../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../../src/libraries/ValidationConfigLib.sol";
+import {ERC20TokenLimitModule} from "../../../src/modules/permissions/ERC20TokenLimitModule.sol";
 
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
-import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
-import {ERC20TokenLimitModule} from "../../src/modules/ERC20TokenLimitModule.sol";
-import {MockModule} from "../mocks/MockModule.sol";
-
-import {AccountTestBase} from "../utils/AccountTestBase.sol";
+import {MockModule} from "../../mocks/MockModule.sol";
+import {AccountTestBase} from "../../utils/AccountTestBase.sol";
 
 contract ERC20TokenLimitModuleTest is AccountTestBase {
     address public recipient = address(1);

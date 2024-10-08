@@ -6,16 +6,16 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 import {collectReturnData} from "../helpers/CollectReturnData.sol";
 import {MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
-import {HookConfigLib} from "../helpers/HookConfigLib.sol";
-import {KnownSelectors} from "../helpers/KnownSelectors.sol";
-import {ModuleEntityLib} from "../helpers/ModuleEntityLib.sol";
-import {ValidationConfigLib} from "../helpers/ValidationConfigLib.sol";
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecutionModule.sol";
 import {HookConfig, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
 import {IModule} from "../interfaces/IModule.sol";
 import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
 import {IValidationModule} from "../interfaces/IValidationModule.sol";
+import {HookConfigLib} from "../libraries/HookConfigLib.sol";
+import {KnownSelectorsLib} from "../libraries/KnownSelectorsLib.sol";
+import {ModuleEntityLib} from "../libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../libraries/ValidationConfigLib.sol";
 
 import {
     AccountStorage,
@@ -61,12 +61,12 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
         // Make sure incoming execution function does not collide with any native functions (data are stored on the
         // account implementation contract)
-        if (KnownSelectors.isNativeFunction(selector)) {
+        if (KnownSelectorsLib.isNativeFunction(selector)) {
             revert NativeFunctionNotAllowed(selector);
         }
 
         // Make sure incoming execution function is not a function in IModule
-        if (KnownSelectors.isIModuleFunction(selector)) {
+        if (KnownSelectorsLib.isIModuleFunction(selector)) {
             revert IModuleFunctionNotAllowed(selector);
         }
 
@@ -75,7 +75,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
         // sneaking in a function with the same selector as e.g.
         // `validatePaymasterUserOp` and turning the account into their own
         // personal paymaster.
-        if (KnownSelectors.isErc4337Function(selector)) {
+        if (KnownSelectorsLib.isErc4337Function(selector)) {
             revert Erc4337FunctionNotAllowed(selector);
         }
 

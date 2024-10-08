@@ -7,7 +7,7 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {DeployAllowlistModuleScript} from "../../script/DeployAllowlistModule.s.sol";
 
-import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
+import {AllowlistModule} from "../../src/modules/permissions/AllowlistModule.sol";
 
 contract DeployAllowlistModuleTest is Test {
     DeployAllowlistModuleScript internal _deployScript;

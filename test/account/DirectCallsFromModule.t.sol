@@ -3,10 +3,10 @@ pragma solidity ^0.8.20;
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {ValidationConfig, ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
 import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfig, ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";

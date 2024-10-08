@@ -5,19 +5,19 @@ import {IAccount} from "@eth-infinitism/account-abstraction/interfaces/IAccount.
 import {IPaymaster} from "@eth-infinitism/account-abstraction/interfaces/IPaymaster.sol";
 import {Test} from "forge-std/Test.sol";
 
-import {KnownSelectors} from "../../src/helpers/KnownSelectors.sol";
 import {IModule} from "../../src/interfaces/IModule.sol";
+import {KnownSelectorsLib} from "../../src/libraries/KnownSelectorsLib.sol";
 
-contract KnownSelectorsTest is Test {
+contract KnownSelectorsLibTest is Test {
     function test_isNativeFunction() public {
-        assertTrue(KnownSelectors.isNativeFunction(IAccount.validateUserOp.selector));
+        assertTrue(KnownSelectorsLib.isNativeFunction(IAccount.validateUserOp.selector));
     }
 
     function test_isErc4337Function() public {
-        assertTrue(KnownSelectors.isErc4337Function(IPaymaster.validatePaymasterUserOp.selector));
+        assertTrue(KnownSelectorsLib.isErc4337Function(IPaymaster.validatePaymasterUserOp.selector));
     }
 
     function test_isIModuleFunction() public {
-        assertTrue(KnownSelectors.isIModuleFunction(IModule.moduleId.selector));
+        assertTrue(KnownSelectorsLib.isIModuleFunction(IModule.moduleId.selector));
     }
 }

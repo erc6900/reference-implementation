@@ -2,22 +2,19 @@
 pragma solidity ^0.8.20;
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-
-import {ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-
-import {ValidationConfigLib} from "../../src/helpers/ValidationConfigLib.sol";
+import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
 import {
     ExecutionManifest,
     ManifestExecutionFunction,
     ManifestExecutionHook
 } from "../../src/interfaces/IExecutionModule.sol";
-
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {IExecutionHookModule} from "../../src/interfaces/IExecutionHookModule.sol";
-
 import {Call, IModularAccount, ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
 import {IValidationHookModule} from "../../src/interfaces/IValidationHookModule.sol";
+import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
+import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
+
 import {MockModule} from "../mocks/MockModule.sol";
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 

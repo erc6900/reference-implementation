@@ -5,11 +5,11 @@ import {UserOperationLib} from "@eth-infinitism/account-abstraction/core/UserOpe
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
-import {Call, IModularAccount} from "../interfaces/IModularAccount.sol";
-import {IModule} from "../interfaces/IModule.sol";
-import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
-import {BaseModule, IERC165} from "./BaseModule.sol";
+import {IExecutionHookModule} from "../../interfaces/IExecutionHookModule.sol";
+import {Call, IModularAccount} from "../../interfaces/IModularAccount.sol";
+import {IModule} from "../../interfaces/IModule.sol";
+import {IValidationHookModule} from "../../interfaces/IValidationHookModule.sol";
+import {BaseModule, IERC165} from "../BaseModule.sol";
 
 /// @title Native Token Limit Module
 /// @author ERC-6900 Authors

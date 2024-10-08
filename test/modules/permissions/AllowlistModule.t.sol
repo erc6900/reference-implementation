@@ -3,14 +3,14 @@ pragma solidity ^0.8.20;
 
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 
-import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
-import {HookConfigLib} from "../../src/helpers/HookConfigLib.sol";
-import {ModuleEntity, ModuleEntityLib} from "../../src/helpers/ModuleEntityLib.sol";
-import {Call} from "../../src/interfaces/IModularAccount.sol";
-import {AllowlistModule} from "../../src/modules/permissionhooks/AllowlistModule.sol";
+import {ReferenceModularAccount} from "../../../src/account/ReferenceModularAccount.sol";
+import {Call} from "../../../src/interfaces/IModularAccount.sol";
+import {HookConfigLib} from "../../../src/libraries/HookConfigLib.sol";
+import {ModuleEntity, ModuleEntityLib} from "../../../src/libraries/ModuleEntityLib.sol";
+import {AllowlistModule} from "../../../src/modules/permissions/AllowlistModule.sol";
 
-import {Counter} from "../mocks/Counter.sol";
-import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
+import {Counter} from "../../mocks/Counter.sol";
+import {CustomValidationTestBase} from "../../utils/CustomValidationTestBase.sol";
 
 contract AllowlistModuleTest is CustomValidationTestBase {
     AllowlistModule public allowlistModule;
