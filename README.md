@@ -1,13 +1,13 @@
 # ERC-6900 Reference Implementation
 
-Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900). It is an early draft implementation.
+Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900).
 
-The implementation includes an upgradable modular account with three modules (`SingleSignerValidationModule`, `TokenReceiverModule`, and `AllowlistModule`). It is compliant with ERC-6900 with the latest updates.
+The implementation includes an upgradable modular account with 5 modules (`SingleSignerValidationModule`, `TokenReceiverModule`, `AllowlistModule`, `ERC20TokenLimitModule`, and `NativeTokenLimitModule`). It is compliant with the latest version of ERC-6900.
 
-## Important Callouts
+## Important callouts
 
-- **Not audited and should NOT be used in production**.
-- Not optimized in both deployments and execution. We’ve explicitly removed some optimizations for reader comprehension.
+- **Not audited and SHOULD NOT be used in production**.
+- Not optimized in both deployments and execution. We’ve explicitly removed some optimizations in favor of clarity.
 
 ## Development
 
@@ -31,7 +31,7 @@ FOUNDRY_PROFILE=optimized-test forge test -vvv
 
 ## Integration testing
 
-The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidationModule`. This is not auditted, nor intended for production use. Limitations set by the GPL-V3 license apply.
+The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidationModule`. This is not audited nor intended for production use. Limitations set by the GPLv3 license apply.
 
 To run this script, provide appropriate values in a `.env` file based on the `.env.example` template, then run:
 
