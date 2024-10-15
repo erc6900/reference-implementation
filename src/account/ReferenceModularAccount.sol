@@ -106,7 +106,7 @@ contract ReferenceModularAccount is
     /// @dev We route calls to execution functions based on incoming msg.sig
     /// @dev If there's no module associated with this function selector, revert
     fallback(bytes calldata) external payable returns (bytes memory) {
-        address execModule = getAccountStorage().executionData[msg.sig].module;
+        address execModule = getAccountStorage().executionStorage[msg.sig].module;
         if (execModule == address(0)) {
             revert UnrecognizedFunction(msg.sig);
         }
@@ -140,7 +140,7 @@ contract ReferenceModularAccount is
         ModuleEntity userOpValidationFunction = ModuleEntity.wrap(bytes24(userOp.signature[:24]));
 
         PostExecToRun[] memory postValidatorExecHooks =
-            _doPreHooks(getAccountStorage().validationData[userOpValidationFunction].executionHooks, msg.data);
+            _doPreHooks(getAccountStorage().validationStorage[userOpValidationFunction].executionHooks, msg.data);
 
         (bool success, bytes memory result) = address(this).call(userOp.callData[4:]);
 
@@ -204,7 +204,7 @@ contract ReferenceModularAccount is
 
         // If runtime validation passes, run exec hooks associated with the validator
         PostExecToRun[] memory postValidatorExecHooks =
-            _doPreHooks(getAccountStorage().validationData[runtimeValidationFunction].executionHooks, data);
+            _doPreHooks(getAccountStorage().validationStorage[runtimeValidationFunction].executionHooks, data);
 
         // Execute the call
         (bool success, bytes memory returnData) = address(this).call(data);
@@ -312,7 +312,7 @@ contract ReferenceModularAccount is
         signature = signature[24:];
 
         HookConfig[] memory preSignatureValidationHooks =
-            getAccountStorage().validationData[sigValidation].validationHooks;
+            getAccountStorage().validationStorage[sigValidation].validationHooks;
 
         for (uint256 i = 0; i < preSignatureValidationHooks.length; ++i) {
             (address hookModule, uint32 hookEntityId) = preSignatureValidationHooks[i].moduleEntity().unpack();
@@ -365,7 +365,7 @@ contract ReferenceModularAccount is
         // This check must be here because if context isn't passed, we can't tell in execution which hooks should
         // have ran
         if (
-            getAccountStorage().validationData[userOpValidationFunction].executionHooks.length() > 0
+            getAccountStorage().validationStorage[userOpValidationFunction].executionHooks.length() > 0
                 && bytes4(userOp.callData[:4]) != this.executeUserOp.selector
         ) {
             revert RequireUserOperationContext();
@@ -385,7 +385,7 @@ contract ReferenceModularAccount is
 
         // Do preUserOpValidation hooks
         HookConfig[] memory preUserOpValidationHooks =
-            getAccountStorage().validationData[userOpValidationFunction].validationHooks;
+            getAccountStorage().validationStorage[userOpValidationFunction].validationHooks;
 
         for (uint256 i = 0; i < preUserOpValidationHooks.length; ++i) {
             (userOp.signature, signature) = signature.advanceSegmentIfAtIndex(uint8(i));
@@ -425,7 +425,7 @@ contract ReferenceModularAccount is
     ) internal {
         // run all preRuntimeValidation hooks
         HookConfig[] memory preRuntimeValidationHooks =
-            getAccountStorage().validationData[runtimeValidationFunction].validationHooks;
+            getAccountStorage().validationStorage[runtimeValidationFunction].validationHooks;
 
         for (uint256 i = 0; i < preRuntimeValidationHooks.length; ++i) {
             bytes memory currentAuthSegment;
@@ -559,7 +559,7 @@ contract ReferenceModularAccount is
         // and the selector isn't public.
         if (
             msg.sender != address(_ENTRY_POINT) && msg.sender != address(this)
-                && !_storage.executionData[msg.sig].skipRuntimeValidation
+                && !_storage.executionStorage[msg.sig].skipRuntimeValidation
         ) {
             ModuleEntity directCallValidationKey =
                 ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
@@ -570,7 +570,7 @@ contract ReferenceModularAccount is
 
             // Validation hooks
             HookConfig[] memory preRuntimeValidationHooks =
-                _storage.validationData[directCallValidationKey].validationHooks;
+                _storage.validationStorage[directCallValidationKey].validationHooks;
 
             uint256 hookLen = preRuntimeValidationHooks.length;
             for (uint256 i = 0; i < hookLen; ++i) {
@@ -579,12 +579,12 @@ contract ReferenceModularAccount is
 
             // Execution hooks associated with the validator
             postValidatorExecutionHooks =
-                _doPreHooks(_storage.validationData[directCallValidationKey].executionHooks, msg.data);
+                _doPreHooks(_storage.validationStorage[directCallValidationKey].executionHooks, msg.data);
         }
 
         // Exec hooks associated with the selector
         PostExecToRun[] memory postSelectorExecutionHooks =
-            _doPreHooks(_storage.executionData[msg.sig].executionHooks, msg.data);
+            _doPreHooks(_storage.executionStorage[msg.sig].executionHooks, msg.data);
 
         return (postValidatorExecutionHooks, postSelectorExecutionHooks);
     }
@@ -598,7 +598,7 @@ contract ReferenceModularAccount is
 
         (address module, uint32 entityId) = userOpValidationFunction.unpack();
 
-        if (!_storage.validationData[userOpValidationFunction].isUserOpValidation) {
+        if (!_storage.validationStorage[userOpValidationFunction].isUserOpValidation) {
             revert UserOpValidationInvalid(module, entityId);
         }
 
@@ -633,7 +633,7 @@ contract ReferenceModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         (address module, uint32 entityId) = sigValidation.unpack();
-        if (!_storage.validationData[sigValidation].isSignatureValidation) {
+        if (!_storage.validationStorage[sigValidation].isSignatureValidation) {
             revert SignatureValidationInvalid(module, entityId);
         }
 
@@ -656,11 +656,11 @@ contract ReferenceModularAccount is
             return true;
         }
 
-        return getAccountStorage().executionData[selector].allowGlobalValidation;
+        return getAccountStorage().executionStorage[selector].allowGlobalValidation;
     }
 
     function _isValidationGlobal(ModuleEntity validationFunction) internal view virtual returns (bool) {
-        return getAccountStorage().validationData[validationFunction].isGlobal;
+        return getAccountStorage().validationStorage[validationFunction].isGlobal;
     }
 
     function _checkIfValidationAppliesCallData(
@@ -754,6 +754,6 @@ contract ReferenceModularAccount is
         view
         returns (bool)
     {
-        return getAccountStorage().validationData[validationFunction].selectors.contains(toSetValue(selector));
+        return getAccountStorage().validationStorage[validationFunction].selectors.contains(toSetValue(selector));
     }
 }
