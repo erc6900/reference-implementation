@@ -5,7 +5,7 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {collectReturnData} from "../helpers/CollectReturnData.sol";
-import {MAX_PRE_VALIDATION_HOOKS} from "../helpers/Constants.sol";
+import {MAX_VALIDATION_ASSOC_HOOKS} from "../helpers/Constants.sol";
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecutionModule.sol";
 import {HookConfig, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
@@ -236,7 +236,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
                 _validationStorage.validationHooks.push(hookConfig);
 
                 // Avoid collision between reserved index and actual indices
-                if (_validationStorage.validationHooks.length > MAX_PRE_VALIDATION_HOOKS) {
+                if (_validationStorage.validationHooks.length > MAX_VALIDATION_ASSOC_HOOKS) {
                     revert PreValidationHookLimitExceeded();
                 }
 
