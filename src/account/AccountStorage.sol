@@ -9,7 +9,7 @@ import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
 bytes32 constant _ACCOUNT_STORAGE_SLOT = 0xc531f081ecdb5a90f38c197521797881a6e5c752a7d451780f325a95f8b91f45;
 
 // Represents data associated with a specifc function selector.
-struct ExecutionData {
+struct ExecutionStorage {
     // The module that implements this execution function.
     // If this is a native function, the address must remain address(0).
     address module;
@@ -24,7 +24,7 @@ struct ExecutionData {
     EnumerableSet.Bytes32Set executionHooks;
 }
 
-struct ValidationData {
+struct ValidationStorage {
     // Whether or not this validation can be used as a global validation function.
     bool isGlobal;
     // Whether or not this validation is allowed to validate ERC-1271 signatures.
@@ -44,8 +44,8 @@ struct AccountStorage {
     uint8 initialized;
     bool initializing;
     // Execution functions and their associated functions
-    mapping(bytes4 selector => ExecutionData) executionData;
-    mapping(ModuleEntity validationFunction => ValidationData) validationData;
+    mapping(bytes4 selector => ExecutionStorage) executionStorage;
+    mapping(ModuleEntity validationFunction => ValidationStorage) validationStorage;
     // For ERC165 introspection
     mapping(bytes4 => uint256) supportedIfaces;
 }
