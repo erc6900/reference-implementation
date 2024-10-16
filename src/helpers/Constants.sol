@@ -8,4 +8,4 @@ uint8 constant RESERVED_VALIDATION_DATA_INDEX = type(uint8).max;
 uint8 constant MAX_VALIDATION_ASSOC_HOOKS = type(uint8).max;
 
 // Magic value for the Entity ID of direct call validation.
-uint32 constant DIRECT_CALL_VALIDATION_ENTITYID = type(uint32).max;
+uint32 constant DIRECT_CALL_VALIDATION_ENTITY_ID = type(uint32).max;
