@@ -12,7 +12,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {collectReturnData} from "../helpers/CollectReturnData.sol";
-import {DIRECT_CALL_VALIDATION_ENTITYID} from "../helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITY_ID} from "../helpers/Constants.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
 import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
 import {ExecutionManifest} from "../interfaces/IExecutionModule.sol";
@@ -562,7 +562,7 @@ contract ReferenceModularAccount is
                 && !_storage.executionStorage[msg.sig].skipRuntimeValidation
         ) {
             ModuleEntity directCallValidationKey =
-                ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITYID);
+                ModuleEntityLib.pack(msg.sender, DIRECT_CALL_VALIDATION_ENTITY_ID);
 
             _checkIfValidationAppliesCallData(msg.data, directCallValidationKey, ValidationCheckingType.EITHER);
 
