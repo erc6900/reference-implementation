@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
-import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITY_ID} from "../../src/helpers/Constants.sol";
 import {Call} from "../../src/interfaces/IModularAccount.sol";
 import {IModularAccount} from "../../src/interfaces/IModularAccount.sol";
 import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
@@ -44,7 +44,7 @@ contract AccountReturnDataTest is AccountTestBase {
         selectors[0] = IModularAccount.execute.selector;
         account1.installValidation(
             ValidationConfigLib.pack(
-                address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITYID, false, false, true
+                address(resultConsumerModule), DIRECT_CALL_VALIDATION_ENTITY_ID, false, false, true
             ), // todo: does this need UO validation permission?
             selectors,
             "",

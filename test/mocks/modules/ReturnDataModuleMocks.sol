@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../../src/helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITY_ID} from "../../../src/helpers/Constants.sol";
 import {
     ExecutionManifest,
     IExecutionModule,
@@ -106,7 +106,7 @@ contract ResultConsumerModule is IExecutionModule, BaseModule, IValidationModule
         // This result should be allowed based on the manifest permission request
         bytes memory returnData = IModularAccount(msg.sender).executeWithRuntimeValidation(
             abi.encodeCall(IModularAccount.execute, (target, 0, abi.encodeCall(RegularResultContract.foo, ()))),
-            _encodeSignature(ModuleEntityLib.pack(address(this), DIRECT_CALL_VALIDATION_ENTITYID), uint8(0), "")
+            _encodeSignature(ModuleEntityLib.pack(address(this), DIRECT_CALL_VALIDATION_ENTITY_ID), uint8(0), "")
         );
 
         bytes32 actual = abi.decode(abi.decode(returnData, (bytes)), (bytes32));

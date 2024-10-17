@@ -11,7 +11,7 @@ import {DirectCallModule} from "../mocks/modules/DirectCallModule.sol";
 
 import {AccountTestBase} from "../utils/AccountTestBase.sol";
 
-import {DIRECT_CALL_VALIDATION_ENTITYID} from "../../src/helpers/Constants.sol";
+import {DIRECT_CALL_VALIDATION_ENTITY_ID} from "../../src/helpers/Constants.sol";
 
 contract DirectCallsFromModuleTest is AccountTestBase {
     using ValidationConfigLib for ValidationConfig;
@@ -34,7 +34,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         _module = new DirectCallModule();
         assertFalse(_module.preHookRan());
         assertFalse(_module.postHookRan());
-        _moduleEntity = ModuleEntityLib.pack(address(_module), DIRECT_CALL_VALIDATION_ENTITYID);
+        _moduleEntity = ModuleEntityLib.pack(address(_module), DIRECT_CALL_VALIDATION_ENTITY_ID);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -128,7 +128,7 @@ contract DirectCallsFromModuleTest is AccountTestBase {
         vm.prank(address(entryPoint));
 
         account1.installValidation(
-            ValidationConfigLib.pack(extraOwner, DIRECT_CALL_VALIDATION_ENTITYID, false, false, false),
+            ValidationConfigLib.pack(extraOwner, DIRECT_CALL_VALIDATION_ENTITY_ID, false, false, false),
             selectors,
             "",
             new bytes[](0)
