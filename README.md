@@ -65,7 +65,7 @@ FOUNDRY_PROFILE=optimized-test forge test -vvv
 
 ### Integration testing
 
-The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidationModule`. This is not audited nor intended for production use. Limitations set by the GPLv3 license apply.
+The reference implementation provides a sample factory and deploy script for the factory, account implementation, and the demo validation module `SingleSignerValidationModule`. This is not audited nor intended for production use. Limitations set by the MIT license apply.
 
 To run this script, provide appropriate values in a `.env` file based on the `.env.example` template, then run:
 
