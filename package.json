@@ -1,7 +1,7 @@
 {
-  "name": "erc6900-reference-implementation",
+  "name": "@erc6900/reference-implementation",
   "description": "Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900).",
-  "version": "0.8.0-rc.6",
+  "version": "0.8.1",
   "devDependencies": {
     "pnpm": "^8.7.5",
     "solhint": "^3.6.2"
@@ -22,7 +22,7 @@
   "keywords": [
     "erc6900"
   ],
-  "author": "ERC6900 Community",
+  "author": "ERC-6900 Authors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/erc6900/reference-implementation/issues"
