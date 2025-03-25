@@ -1,17 +1,21 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {collectReturnData} from "../helpers/CollectReturnData.sol";
 import {MAX_VALIDATION_ASSOC_HOOKS} from "../helpers/Constants.sol";
-import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
-import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IExecutionModule.sol";
-import {HookConfig, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
-import {IModule} from "../interfaces/IModule.sol";
-import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
-import {IValidationModule} from "../interfaces/IValidationModule.sol";
+
+import {
+    HookConfig,
+    IERC6900Account,
+    ModuleEntity,
+    ValidationConfig,
+    ValidationFlags
+} from "../interfaces/IERC6900Account.sol";
+
+import {ExecutionManifest, ManifestExecutionHook} from "../interfaces/IERC6900ExecutionModule.sol";
+import {IERC6900Module} from "../interfaces/IERC6900Module.sol";
 import {HookConfigLib} from "../libraries/HookConfigLib.sol";
 import {KnownSelectorsLib} from "../libraries/KnownSelectorsLib.sol";
 import {ModuleEntityLib} from "../libraries/ModuleEntityLib.sol";
@@ -26,7 +30,7 @@ import {
     toSetValue
 } from "./AccountStorage.sol";
 
-abstract contract ModuleManagerInternals is IModularAccount {
+abstract contract ModuleManagerInternals is IERC6900Account {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
     using ValidationConfigLib for ValidationConfig;
@@ -65,7 +69,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
             revert NativeFunctionNotAllowed(selector);
         }
 
-        // Make sure incoming execution function is not a function in IModule
+        // Make sure incoming execution function is not a function in IERC6900Module
         if (KnownSelectorsLib.isIModuleFunction(selector)) {
             revert IModuleFunctionNotAllowed(selector);
         }
@@ -94,10 +98,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
 
     function _removeValidationFunction(ModuleEntity validationFunction) internal {
         ValidationStorage storage _validationStorage = getAccountStorage().validationStorage[validationFunction];
-
-        _validationStorage.isGlobal = false;
-        _validationStorage.isSignatureValidation = false;
-        _validationStorage.isUserOpValidation = false;
+        _validationStorage.validationFlags = ValidationFlags.wrap(0);
     }
 
     function _addExecHooks(EnumerableSet.Bytes32Set storage hooks, HookConfig hookConfig) internal {
@@ -149,7 +150,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
             _storage.supportedIfaces[manifest.interfaceIds[i]] += 1;
         }
 
-        _onInstall(module, moduleInstallData, type(IModule).interfaceId);
+        _onInstall(module, moduleInstallData);
 
         emit ExecutionInstalled(module, manifest);
     }
@@ -192,13 +193,10 @@ abstract contract ModuleManagerInternals is IModularAccount {
         emit ExecutionUninstalled(module, onUninstallSuccess, manifest);
     }
 
-    function _onInstall(address module, bytes calldata data, bytes4 interfaceId) internal {
+    function _onInstall(address module, bytes calldata data) internal {
         if (data.length > 0) {
-            if (!ERC165Checker.supportsInterface(module, interfaceId)) {
-                revert InterfaceNotSupported(module);
-            }
             // solhint-disable-next-line no-empty-blocks
-            try IModule(module).onInstall(data) {}
+            try IERC6900Module(module).onInstall(data) {}
             catch {
                 bytes memory revertReason = collectReturnData();
                 revert ModuleInstallCallbackFailed(module, revertReason);
@@ -211,7 +209,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
         if (data.length > 0) {
             // Clear the module storage for the account.
             // solhint-disable-next-line no-empty-blocks
-            try IModule(module).onUninstall(data) {}
+            try IERC6900Module(module).onUninstall(data) {}
             catch {
                 onUninstallSuccess = false;
             }
@@ -226,7 +224,7 @@ abstract contract ModuleManagerInternals is IModularAccount {
     ) internal {
         ValidationStorage storage _validationStorage =
             getAccountStorage().validationStorage[validationConfig.moduleEntity()];
-        ModuleEntity moduleEntity = validationConfig.moduleEntity();
+        (ModuleEntity moduleEntity, ValidationFlags validationFlags) = validationConfig.unpack();
 
         for (uint256 i = 0; i < hooks.length; ++i) {
             HookConfig hookConfig = HookConfig.wrap(bytes25(hooks[i][:25]));
@@ -240,14 +238,14 @@ abstract contract ModuleManagerInternals is IModularAccount {
                     revert PreValidationHookLimitExceeded();
                 }
 
-                _onInstall(hookConfig.module(), hookData, type(IValidationHookModule).interfaceId);
+                _onInstall(hookConfig.module(), hookData);
 
                 continue;
             }
             // Hook is an execution hook
             _addExecHooks(_validationStorage.executionHooks, hookConfig);
 
-            _onInstall(hookConfig.module(), hookData, type(IExecutionHookModule).interfaceId);
+            _onInstall(hookConfig.module(), hookData);
         }
 
         for (uint256 i = 0; i < selectors.length; ++i) {
@@ -257,11 +255,9 @@ abstract contract ModuleManagerInternals is IModularAccount {
             }
         }
 
-        _validationStorage.isGlobal = validationConfig.isGlobal();
-        _validationStorage.isSignatureValidation = validationConfig.isSignatureValidation();
-        _validationStorage.isUserOpValidation = validationConfig.isUserOpValidation();
+        _validationStorage.validationFlags = validationFlags;
 
-        _onInstall(validationConfig.module(), installData, type(IValidationModule).interfaceId);
+        _onInstall(validationConfig.module(), installData);
         emit ValidationInstalled(validationConfig.module(), validationConfig.entityId());
     }
 

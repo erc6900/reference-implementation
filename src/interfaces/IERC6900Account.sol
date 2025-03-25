@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
 
-import {ExecutionManifest} from "./IExecutionModule.sol";
+import {ExecutionManifest} from "./IERC6900ExecutionModule.sol";
 
 type ModuleEntity is bytes24;
 // ModuleEntity is a packed representation of a module function
@@ -15,10 +15,11 @@ type ValidationConfig is bytes25;
 // Layout:
 // 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA________________________ // Address
 // 0x________________________________________BBBBBBBB________________ // Entity ID
-// 0x________________________________________________CC______________ // validation flags
+// 0x________________________________________________CC______________ // ValidationFlags
 // 0x__________________________________________________00000000000000 // unused
-//
-// Validation flags layout:
+
+type ValidationFlags is uint8;
+// ValidationFlags layout:
 // 0b00000___ // unused
 // 0b_____A__ // isGlobal
 // 0b______B_ // isSignatureValidation
@@ -46,7 +47,7 @@ struct Call {
     bytes data;
 }
 
-interface IModularAccount {
+interface IERC6900Account {
     event ExecutionInstalled(address indexed module, ExecutionManifest manifest);
     event ExecutionUninstalled(address indexed module, bool onUninstallSucceeded, ExecutionManifest manifest);
     event ValidationInstalled(address indexed module, uint32 indexed entityId);
@@ -79,14 +80,13 @@ interface IModularAccount {
     /// @param module The module to install.
     /// @param manifest the manifest describing functions to install.
     /// @param installData Optional data to be used by the account to handle the initial execution setup. Data
-    /// encoding
-    /// is implementation-specific.
+    /// encoding is implementation-specific.
     function installExecution(address module, ExecutionManifest calldata manifest, bytes calldata installData)
         external;
 
     /// @notice Uninstall a module from the modular account.
     /// @param module The module to uninstall.
-    /// @param manifest the manifest describing functions to uninstall.
+    /// @param manifest The manifest describing functions to uninstall.
     /// @param uninstallData Optional data to be used by the account to handle the execution uninstallation. Data
     /// encoding is implementation-specific.
     function uninstallExecution(address module, ExecutionManifest calldata manifest, bytes calldata uninstallData)
@@ -94,7 +94,6 @@ interface IModularAccount {
 
     /// @notice Installs a validation function across a set of execution selectors, and optionally mark it as a
     /// global validation function.
-    /// @dev This does not validate anything against the manifest - the caller must ensure validity.
     /// @param validationConfig The validation function to install, along with configuration flags.
     /// @param selectors The selectors to install the validation function for.
     /// @param installData Optional data to be used by the account to handle the initial validation setup. Data
@@ -113,8 +112,7 @@ interface IModularAccount {
     /// @param uninstallData Optional data to be used by the account to handle the validation uninstallation. Data
     /// encoding is implementation-specific.
     /// @param hookUninstallData Optional data to be used by the account to handle hook uninstallation. Data
-    /// encoding
-    /// is implementation-specific.
+    /// encoding is implementation-specific.
     function uninstallValidation(
         ModuleEntity validationFunction,
         bytes calldata uninstallData,

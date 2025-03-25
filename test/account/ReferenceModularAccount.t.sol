@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {console} from "forge-std/Test.sol";
@@ -12,9 +12,11 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ModuleManagerInternals} from "../../src/account/ModuleManagerInternals.sol";
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {ExecutionManifest} from "../../src/interfaces/IExecutionModule.sol";
-import {Call} from "../../src/interfaces/IModularAccount.sol";
-import {ExecutionDataView} from "../../src/interfaces/IModularAccountView.sol";
+
+import {Call} from "../../src/interfaces/IERC6900Account.sol";
+
+import {ExecutionDataView} from "../../src/interfaces/IERC6900AccountView.sol";
+import {ExecutionManifest} from "../../src/interfaces/IERC6900ExecutionModule.sol";
 import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 import {TokenReceiverModule} from "../../src/modules/TokenReceiverModule.sol";
@@ -278,19 +280,6 @@ contract ReferenceModularAccountTest is AccountTestBase {
             manifest: mockModuleWithBadPermittedExec.executionManifest(),
             moduleInstallData: ""
         });
-    }
-
-    function test_installExecution_interfaceNotSupported() public {
-        vm.startPrank(address(entryPoint));
-
-        address badModule = address(1);
-        vm.expectRevert(
-            abi.encodeWithSelector(ModuleManagerInternals.InterfaceNotSupported.selector, address(badModule))
-        );
-
-        ExecutionManifest memory m;
-
-        account1.installExecution({module: address(badModule), manifest: m, moduleInstallData: "a"});
     }
 
     function test_installExecution_alreadyInstalled() public {

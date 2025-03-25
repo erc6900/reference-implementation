@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {BaseAccount} from "@eth-infinitism/account-abstraction/core/BaseAccount.sol";
 import {IAccountExecute} from "@eth-infinitism/account-abstraction/interfaces/IAccountExecute.sol";
 import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
-
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -14,11 +13,18 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {collectReturnData} from "../helpers/CollectReturnData.sol";
 import {DIRECT_CALL_VALIDATION_ENTITY_ID} from "../helpers/Constants.sol";
 import {_coalescePreValidation, _coalesceValidation} from "../helpers/ValidationResHelpers.sol";
-import {IExecutionHookModule} from "../interfaces/IExecutionHookModule.sol";
-import {ExecutionManifest} from "../interfaces/IExecutionModule.sol";
-import {Call, IModularAccount, ModuleEntity, ValidationConfig} from "../interfaces/IModularAccount.sol";
-import {IValidationHookModule} from "../interfaces/IValidationHookModule.sol";
-import {IValidationModule} from "../interfaces/IValidationModule.sol";
+
+import {
+    Call,
+    IERC6900Account,
+    ModuleEntity,
+    ValidationConfig,
+    ValidationFlags
+} from "../interfaces/IERC6900Account.sol";
+import {IERC6900ExecutionHookModule} from "../interfaces/IERC6900ExecutionHookModule.sol";
+import {ExecutionManifest} from "../interfaces/IERC6900ExecutionModule.sol";
+import {IERC6900ValidationHookModule} from "../interfaces/IERC6900ValidationHookModule.sol";
+import {IERC6900ValidationModule} from "../interfaces/IERC6900ValidationModule.sol";
 import {HookConfig, HookConfigLib} from "../libraries/HookConfigLib.sol";
 import {ModuleEntityLib} from "../libraries/ModuleEntityLib.sol";
 import {SparseCalldataSegmentLib} from "../libraries/SparseCalldataSegmentLib.sol";
@@ -30,7 +36,7 @@ import {ModularAccountView} from "./ModularAccountView.sol";
 import {ModuleManagerInternals} from "./ModuleManagerInternals.sol";
 
 contract ReferenceModularAccount is
-    IModularAccount,
+    IERC6900Account,
     AccountExecutor,
     ModularAccountView,
     AccountStorageInitializable,
@@ -43,7 +49,7 @@ contract ReferenceModularAccount is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ModuleEntityLib for ModuleEntity;
-    using ValidationConfigLib for ValidationConfig;
+    using ValidationConfigLib for ValidationFlags;
     using HookConfigLib for HookConfig;
     using SparseCalldataSegmentLib for bytes;
 
@@ -154,7 +160,7 @@ contract ReferenceModularAccount is
         _doCachedPostExecHooks(postValidatorExecHooks);
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation.
     function execute(address target, uint256 value, bytes calldata data)
         external
@@ -166,7 +172,7 @@ contract ReferenceModularAccount is
         result = _exec(target, value, data);
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation function.
     function executeBatch(Call[] calldata calls)
         external
@@ -183,7 +189,7 @@ contract ReferenceModularAccount is
         }
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     function executeWithRuntimeValidation(bytes calldata data, bytes calldata authorization)
         external
         payable
@@ -220,7 +226,7 @@ contract ReferenceModularAccount is
         return returnData;
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation.
     function installExecution(
         address module,
@@ -230,7 +236,7 @@ contract ReferenceModularAccount is
         _installExecution(module, manifest, moduleInstallData);
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation.
     function uninstallExecution(
         address module,
@@ -251,7 +257,7 @@ contract ReferenceModularAccount is
         _installValidation(validationConfig, selectors, installData, hooks);
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation.
     /// @dev This function can be used to update (to a certain degree) previously installed validation functions.
     ///      - preValidationHook, executionHooks, and selectors can be added later. Though they won't be deleted.
@@ -265,7 +271,7 @@ contract ReferenceModularAccount is
         _installValidation(validationConfig, selectors, installData, hooks);
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     /// @notice May be validated by a global validation.
     function uninstallValidation(
         ModuleEntity validationFunction,
@@ -290,7 +296,7 @@ contract ReferenceModularAccount is
         return getAccountStorage().supportedIfaces[interfaceId] > 0;
     }
 
-    /// @inheritdoc IModularAccount
+    /// @inheritdoc IERC6900Account
     function accountId() external pure virtual returns (string memory) {
         return "erc6900.reference-modular-account.0.8.0";
     }
@@ -300,6 +306,7 @@ contract ReferenceModularAccount is
     function upgradeToAndCall(address newImplementation, bytes memory data)
         public
         payable
+        virtual
         override
         onlyProxy
         wrapNativeFunction
@@ -322,7 +329,7 @@ contract ReferenceModularAccount is
             (currentSignatureSegment, signature) = signature.advanceSegmentIfAtIndex(uint8(i));
 
             // If this reverts, bubble up revert reason.
-            IValidationHookModule(hookModule).preSignatureValidationHook(
+            IERC6900ValidationHookModule(hookModule).preSignatureValidationHook(
                 hookEntityId, msg.sender, hash, currentSignatureSegment
             );
         }
@@ -392,7 +399,7 @@ contract ReferenceModularAccount is
 
             (address module, uint32 entityId) = preUserOpValidationHooks[i].moduleEntity().unpack();
             uint256 currentValidationRes =
-                IValidationHookModule(module).preUserOpValidationHook(entityId, userOp, userOpHash);
+                IERC6900ValidationHookModule(module).preUserOpValidationHook(entityId, userOp, userOpHash);
 
             if (uint160(currentValidationRes) > 1) {
                 // If the aggregator is not 0 or 1, it is an unexpected value
@@ -480,7 +487,7 @@ contract ReferenceModularAccount is
         returns (bytes memory preExecHookReturnData)
     {
         (address module, uint32 entityId) = preExecHook.unpack();
-        try IExecutionHookModule(module).preExecutionHook(entityId, msg.sender, msg.value, data) returns (
+        try IERC6900ExecutionHookModule(module).preExecutionHook(entityId, msg.sender, msg.value, data) returns (
             bytes memory returnData
         ) {
             preExecHookReturnData = returnData;
@@ -505,12 +512,14 @@ contract ReferenceModularAccount is
             }
 
             (address module, uint32 entityId) = postHookToRun.postExecHook.unpack();
-            // solhint-disable-next-line no-empty-blocks
-            try IExecutionHookModule(module).postExecutionHook(entityId, postHookToRun.preExecHookReturnData) {}
-            catch {
+            /* solhint-disable no-empty-blocks */
+            try IERC6900ExecutionHookModule(module).postExecutionHook(
+                entityId, postHookToRun.preExecHookReturnData
+            ) {} catch {
                 bytes memory revertReason = collectReturnData();
                 revert PostExecHookReverted(module, entityId, revertReason);
             }
+            /* solhint-enable no-empty-blocks */
         }
     }
 
@@ -520,7 +529,7 @@ contract ReferenceModularAccount is
         bytes memory currentAuthData
     ) internal {
         (address hookModule, uint32 hookEntityId) = validationHook.unpack();
-        try IValidationHookModule(hookModule).preRuntimeValidationHook(
+        try IERC6900ValidationHookModule(hookModule).preRuntimeValidationHook(
             hookEntityId, msg.sender, msg.value, callData, currentAuthData
         )
         // forgefmt: disable-start
@@ -598,11 +607,11 @@ contract ReferenceModularAccount is
 
         (address module, uint32 entityId) = userOpValidationFunction.unpack();
 
-        if (!_storage.validationStorage[userOpValidationFunction].isUserOpValidation) {
+        if (!_storage.validationStorage[userOpValidationFunction].validationFlags.isUserOpValidation()) {
             revert UserOpValidationInvalid(module, entityId);
         }
 
-        return IValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
+        return IERC6900ValidationModule(module).validateUserOp(entityId, userOp, userOpHash);
     }
 
     function _execRuntimeValidation(
@@ -612,7 +621,7 @@ contract ReferenceModularAccount is
     ) internal virtual {
         (address module, uint32 entityId) = runtimeValidationFunction.unpack();
 
-        try IValidationModule(module).validateRuntime(
+        try IERC6900ValidationModule(module).validateRuntime(
             address(this), entityId, msg.sender, msg.value, callData, authorization
         )
         // forgefmt: disable-start
@@ -633,13 +642,14 @@ contract ReferenceModularAccount is
         AccountStorage storage _storage = getAccountStorage();
 
         (address module, uint32 entityId) = sigValidation.unpack();
-        if (!_storage.validationStorage[sigValidation].isSignatureValidation) {
+        if (!_storage.validationStorage[sigValidation].validationFlags.isSignatureValidation()) {
             revert SignatureValidationInvalid(module, entityId);
         }
 
         if (
-            IValidationModule(module).validateSignature(address(this), entityId, msg.sender, hash, signature)
-                == _1271_MAGIC_VALUE
+            IERC6900ValidationModule(module).validateSignature(
+                address(this), entityId, msg.sender, hash, signature
+            ) == _1271_MAGIC_VALUE
         ) {
             return _1271_MAGIC_VALUE;
         }
@@ -660,7 +670,7 @@ contract ReferenceModularAccount is
     }
 
     function _isValidationGlobal(ModuleEntity validationFunction) internal view virtual returns (bool) {
-        return getAccountStorage().validationStorage[validationFunction].isGlobal;
+        return getAccountStorage().validationStorage[validationFunction].validationFlags.isGlobal();
     }
 
     function _checkIfValidationAppliesCallData(
@@ -678,7 +688,7 @@ contract ReferenceModularAccount is
 
         _checkIfValidationAppliesSelector(outerSelector, validationFunction, checkingType);
 
-        if (outerSelector == IModularAccount.execute.selector) {
+        if (outerSelector == IERC6900Account.execute.selector) {
             (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
 
             if (target == address(this)) {
@@ -686,7 +696,7 @@ contract ReferenceModularAccount is
                 // the calldata as a top-level call.
                 revert SelfCallRecursionDepthExceeded();
             }
-        } else if (outerSelector == IModularAccount.executeBatch.selector) {
+        } else if (outerSelector == IERC6900Account.executeBatch.selector) {
             // executeBatch may be used to batch account actions together, by targetting the account itself.
             // If this is done, we must ensure all of the inner calls are allowed by the provided validation
             // function.
@@ -698,8 +708,8 @@ contract ReferenceModularAccount is
                     bytes4 nestedSelector = bytes4(calls[i].data);
 
                     if (
-                        nestedSelector == IModularAccount.execute.selector
-                            || nestedSelector == IModularAccount.executeBatch.selector
+                        nestedSelector == IERC6900Account.execute.selector
+                            || nestedSelector == IERC6900Account.executeBatch.selector
                     ) {
                         // To prevent arbitrarily-deep recursive checking, we limit the depth of self-calls to one
                         // for the purposes of batching.

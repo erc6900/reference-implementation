@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ModuleEntity} from "../../src/interfaces/IModularAccount.sol";
+import {ModuleEntity} from "../../src/interfaces/IERC6900Account.sol";
 import {ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 
 contract ModuleEntityLibTest is Test {

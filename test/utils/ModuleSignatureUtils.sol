@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {RESERVED_VALIDATION_DATA_INDEX} from "../../src/helpers/Constants.sol";

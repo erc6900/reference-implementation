@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
 
-import {HookConfig, ModuleEntity} from "../interfaces/IModularAccount.sol";
+import {HookConfig, ModuleEntity, ValidationFlags} from "../interfaces/IERC6900Account.sol";
 
 /// @dev Represents data associated with a specific function selector.
 struct ExecutionDataView {
     // The module that implements this execution function.
-    // If this is a native function, the address must remain address(0).
+    // If this is a native function, the address must be the address of the account.
     address module;
     // Whether or not the function needs runtime validation, or can be called by anyone. The function can still be
     // state changing if this flag is set to true.
@@ -20,12 +20,12 @@ struct ExecutionDataView {
 }
 
 struct ValidationDataView {
-    // Whether or not this validation function can be used as a global validation function.
-    bool isGlobal;
-    // Whether or not this validation function is a signature validator.
-    bool isSignatureValidation;
-    // Whether or not this validation function is a user operation validation function.
-    bool isUserOpValidation;
+    // ValidationFlags layout:
+    // 0b00000___ // unused
+    // 0b_____A__ // isGlobal
+    // 0b______B_ // isSignatureValidation
+    // 0b_______C // isUserOpValidation
+    ValidationFlags validationFlags;
     // The validation hooks for this validation function.
     HookConfig[] validationHooks;
     // Execution hooks to run with this validation function.
@@ -34,7 +34,7 @@ struct ValidationDataView {
     bytes4[] selectors;
 }
 
-interface IModularAccountView {
+interface IERC6900AccountView {
     /// @notice Get the execution data for a selector.
     /// @dev If the selector is a native function, the module address will be the address of the account.
     /// @param selector The selector to get the data for.

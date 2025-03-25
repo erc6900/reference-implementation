@@ -23,7 +23,7 @@
     "erc6900"
   ],
   "author": "ERC6900 Community",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/erc6900/reference-implementation/issues"
   },

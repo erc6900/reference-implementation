@@ -1,28 +1,28 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {
     ExecutionManifest,
-    IExecutionModule,
+    IERC6900ExecutionModule,
     ManifestExecutionFunction,
     ManifestExecutionHook
-} from "../../../src/interfaces/IExecutionModule.sol";
+} from "../../../src/interfaces/IERC6900ExecutionModule.sol";
 
-import {IExecutionHookModule} from "../../../src/interfaces/IExecutionHookModule.sol";
-import {IExecutionModule} from "../../../src/interfaces/IExecutionModule.sol";
+import {IERC6900ExecutionHookModule} from "../../../src/interfaces/IERC6900ExecutionHookModule.sol";
+import {IERC6900ExecutionModule} from "../../../src/interfaces/IERC6900ExecutionModule.sol";
 
-import {IValidationHookModule} from "../../../src/interfaces/IValidationHookModule.sol";
-import {IValidationModule} from "../../../src/interfaces/IValidationModule.sol";
+import {IERC6900ValidationHookModule} from "../../../src/interfaces/IERC6900ValidationHookModule.sol";
+import {IERC6900ValidationModule} from "../../../src/interfaces/IERC6900ValidationModule.sol";
 
 import {BaseModule} from "../../../src/modules/BaseModule.sol";
 
 contract ComprehensiveModule is
-    IExecutionModule,
-    IValidationModule,
-    IValidationHookModule,
-    IExecutionHookModule,
+    IERC6900ExecutionModule,
+    IERC6900ValidationModule,
+    IERC6900ValidationHookModule,
+    IERC6900ExecutionHookModule,
     BaseModule
 {
     enum EntityId {

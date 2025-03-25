@@ -1,18 +1,20 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
+import {HookConfig, IERC6900Account, ValidationFlags} from "../../src/interfaces/IERC6900Account.sol";
+import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IERC6900AccountView.sol";
 import {HookConfigLib} from "../../src/libraries/HookConfigLib.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
-
-import {HookConfig, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
-import {ExecutionDataView, ValidationDataView} from "../../src/interfaces/IModularAccountView.sol";
+import {ValidationConfigLib} from "../../src/libraries/ValidationConfigLib.sol";
 
 import {ComprehensiveModule} from "../mocks/modules/ComprehensiveModule.sol";
 import {CustomValidationTestBase} from "../utils/CustomValidationTestBase.sol";
 
 contract ModularAccountViewTest is CustomValidationTestBase {
+    using ValidationConfigLib for ValidationFlags;
+
     ComprehensiveModule public comprehensiveModule;
 
     event ReceivedCall(bytes msgData, uint256 msgValue);
@@ -34,15 +36,15 @@ contract ModularAccountViewTest is CustomValidationTestBase {
     function test_moduleView_getExecutionData_native() public {
         bytes4[] memory selectorsToCheck = new bytes4[](5);
 
-        selectorsToCheck[0] = IModularAccount.execute.selector;
+        selectorsToCheck[0] = IERC6900Account.execute.selector;
 
-        selectorsToCheck[1] = IModularAccount.executeBatch.selector;
+        selectorsToCheck[1] = IERC6900Account.executeBatch.selector;
 
         selectorsToCheck[2] = UUPSUpgradeable.upgradeToAndCall.selector;
 
-        selectorsToCheck[3] = IModularAccount.installExecution.selector;
+        selectorsToCheck[3] = IERC6900Account.installExecution.selector;
 
-        selectorsToCheck[4] = IModularAccount.uninstallExecution.selector;
+        selectorsToCheck[4] = IERC6900Account.uninstallExecution.selector;
 
         for (uint256 i = 0; i < selectorsToCheck.length; i++) {
             ExecutionDataView memory data = account1.getExecutionData(selectorsToCheck[i]);
@@ -100,9 +102,9 @@ contract ModularAccountViewTest is CustomValidationTestBase {
         ValidationDataView memory data = account1.getValidationData(comprehensiveModuleValidation);
         bytes4[] memory selectors = data.selectors;
 
-        assertTrue(data.isGlobal);
-        assertTrue(data.isSignatureValidation);
-        assertTrue(data.isUserOpValidation);
+        assertTrue(data.validationFlags.isGlobal());
+        assertTrue(data.validationFlags.isSignatureValidation());
+        assertTrue(data.validationFlags.isUserOpValidation());
         assertEq(data.validationHooks.length, 2);
         assertEq(
             HookConfig.unwrap(data.validationHooks[0]),

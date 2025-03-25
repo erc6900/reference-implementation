@@ -1,16 +1,17 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {EntryPoint} from "@eth-infinitism/account-abstraction/core/EntryPoint.sol";
+import {IEntryPoint} from "@eth-infinitism/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@eth-infinitism/account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {ReferenceModularAccount} from "../../src/account/ReferenceModularAccount.sol";
 import {SemiModularAccount} from "../../src/account/SemiModularAccount.sol";
-import {Call, IModularAccount} from "../../src/interfaces/IModularAccount.sol";
+import {Call, IERC6900Account} from "../../src/interfaces/IERC6900Account.sol";
 import {ModuleEntity, ModuleEntityLib} from "../../src/libraries/ModuleEntityLib.sol";
 import {SingleSignerValidationModule} from "../../src/modules/validation/SingleSignerValidationModule.sol";
 
+import {EntryPointUtils} from "./EntryPointUtils.sol";
 import {ModuleSignatureUtils} from "./ModuleSignatureUtils.sol";
 import {OptimizedTest} from "./OptimizedTest.sol";
 import {TEST_DEFAULT_VALIDATION_ENTITY_ID as EXT_CONST_TEST_DEFAULT_VALIDATION_ENTITY_ID} from
@@ -20,11 +21,11 @@ import {SingleSignerFactoryFixture} from "../mocks/SingleSignerFactoryFixture.so
 
 /// @dev This contract handles common boilerplate setup for tests using ReferenceModularAccount with
 /// SingleSignerValidationModule.
-abstract contract AccountTestBase is OptimizedTest, ModuleSignatureUtils {
+abstract contract AccountTestBase is OptimizedTest, ModuleSignatureUtils, EntryPointUtils {
     using ModuleEntityLib for ModuleEntity;
     using MessageHashUtils for bytes32;
 
-    EntryPoint public entryPoint;
+    IEntryPoint public entryPoint;
     address payable public beneficiary;
 
     SingleSignerValidationModule public singleSignerValidationModule;
@@ -43,7 +44,7 @@ abstract contract AccountTestBase is OptimizedTest, ModuleSignatureUtils {
     uint256 public constant VERIFICATION_GAS_LIMIT = 1_200_000;
 
     constructor() {
-        entryPoint = new EntryPoint();
+        entryPoint = _deployEntryPoint();
         (owner1, owner1Key) = makeAddrAndKey("owner1");
         beneficiary = payable(makeAddr("beneficiary"));
 
@@ -64,19 +65,19 @@ abstract contract AccountTestBase is OptimizedTest, ModuleSignatureUtils {
     }
 
     function _runExecUserOp(address target, bytes memory callData) internal {
-        _runUserOp(abi.encodeCall(IModularAccount.execute, (target, 0, callData)));
+        _runUserOp(abi.encodeCall(IERC6900Account.execute, (target, 0, callData)));
     }
 
     function _runExecUserOp(address target, bytes memory callData, bytes memory revertReason) internal {
-        _runUserOp(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), revertReason);
+        _runUserOp(abi.encodeCall(IERC6900Account.execute, (target, 0, callData)), revertReason);
     }
 
     function _runExecBatchUserOp(Call[] memory calls) internal {
-        _runUserOp(abi.encodeCall(IModularAccount.executeBatch, (calls)));
+        _runUserOp(abi.encodeCall(IERC6900Account.executeBatch, (calls)));
     }
 
     function _runExecBatchUserOp(Call[] memory calls, bytes memory revertReason) internal {
-        _runUserOp(abi.encodeCall(IModularAccount.executeBatch, (calls)), revertReason);
+        _runUserOp(abi.encodeCall(IERC6900Account.executeBatch, (calls)), revertReason);
     }
 
     function _runUserOp(bytes memory callData) internal {
@@ -114,29 +115,29 @@ abstract contract AccountTestBase is OptimizedTest, ModuleSignatureUtils {
     }
 
     function _runtimeExec(address target, bytes memory callData) internal {
-        _runtimeCall(abi.encodeCall(IModularAccount.execute, (target, 0, callData)));
+        _runtimeCall(abi.encodeCall(IERC6900Account.execute, (target, 0, callData)));
     }
 
     function _runtimeExec(address target, bytes memory callData, bytes memory expectedRevertData) internal {
-        _runtimeCall(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), expectedRevertData);
+        _runtimeCall(abi.encodeCall(IERC6900Account.execute, (target, 0, callData)), expectedRevertData);
     }
 
     function _runtimeExecExpFail(address target, bytes memory callData, bytes memory expectedRevertData)
         internal
     {
-        _runtimeCallExpFail(abi.encodeCall(IModularAccount.execute, (target, 0, callData)), expectedRevertData);
+        _runtimeCallExpFail(abi.encodeCall(IERC6900Account.execute, (target, 0, callData)), expectedRevertData);
     }
 
     function _runtimeExecBatch(Call[] memory calls) internal {
-        _runtimeCall(abi.encodeCall(IModularAccount.executeBatch, (calls)));
+        _runtimeCall(abi.encodeCall(IERC6900Account.executeBatch, (calls)));
     }
 
     function _runtimeExecBatch(Call[] memory calls, bytes memory expectedRevertData) internal {
-        _runtimeCall(abi.encodeCall(IModularAccount.executeBatch, (calls)), expectedRevertData);
+        _runtimeCall(abi.encodeCall(IERC6900Account.executeBatch, (calls)), expectedRevertData);
     }
 
     function _runtimeExecBatchExpFail(Call[] memory calls, bytes memory expectedRevertData) internal {
-        _runtimeCallExpFail(abi.encodeCall(IModularAccount.executeBatch, (calls)), expectedRevertData);
+        _runtimeCallExpFail(abi.encodeCall(IERC6900Account.executeBatch, (calls)), expectedRevertData);
     }
 
     function _runtimeCall(bytes memory callData) internal {
