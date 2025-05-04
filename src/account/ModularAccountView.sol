@@ -17,6 +17,7 @@ abstract contract ModularAccountView is IERC6900AccountView {
 
     /// @inheritdoc IERC6900AccountView
     function getExecutionData(bytes4 selector) external view override returns (ExecutionDataView memory data) {
+        ExecutionStorage storage executionStorage = getAccountStorage().executionStorage[selector];
         if (
             selector == IERC6900Account.execute.selector || selector == IERC6900Account.executeBatch.selector
                 || selector == UUPSUpgradeable.upgradeToAndCall.selector
@@ -26,7 +27,6 @@ abstract contract ModularAccountView is IERC6900AccountView {
             data.module = address(this);
             data.allowGlobalValidation = true;
         } else {
-            ExecutionStorage storage executionStorage = getAccountStorage().executionStorage[selector];
             data.module = executionStorage.module;
             data.skipRuntimeValidation = executionStorage.skipRuntimeValidation;
             data.allowGlobalValidation = executionStorage.allowGlobalValidation;
