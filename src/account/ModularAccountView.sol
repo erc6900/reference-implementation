@@ -30,12 +30,11 @@ abstract contract ModularAccountView is IERC6900AccountView {
             data.module = executionStorage.module;
             data.skipRuntimeValidation = executionStorage.skipRuntimeValidation;
             data.allowGlobalValidation = executionStorage.allowGlobalValidation;
-
-            uint256 executionHooksLen = executionStorage.executionHooks.length();
-            data.executionHooks = new HookConfig[](executionHooksLen);
-            for (uint256 i = 0; i < executionHooksLen; ++i) {
-                data.executionHooks[i] = toHookConfig(executionStorage.executionHooks.at(i));
-            }
+        }
+        uint256 executionHooksLen = executionStorage.executionHooks.length();
+        data.executionHooks = new HookConfig[](executionHooksLen);
+        for (uint256 i = 0; i < executionHooksLen; ++i) {
+            data.executionHooks[i] = toHookConfig(executionStorage.executionHooks.at(i));
         }
     }
 
