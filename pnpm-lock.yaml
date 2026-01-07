@@ -6,8 +6,8 @@ settings:
 
 devDependencies:
   pnpm:
-    specifier: ^8.7.5
-    version: 8.7.5
+    specifier: ^10.27.0
+    version: 10.27.0
   solhint:
     specifier: ^3.6.2
     version: 3.6.2
@@ -341,9 +341,9 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /pnpm@8.7.5:
-    resolution: {integrity: sha512-WI8WZb89Uiq5x2jdz4PcQMG9ovTnXcDCEpoEckPYIT2zD8/+dEhVozPlT7bu3WkBgE0uTARtgyIKAFt+IpW2cQ==}
-    engines: {node: '>=16.14'}
+  /pnpm@10.27.0:
+    resolution: {integrity: sha512-ctaZ2haxF5wUup5k3HHJpAmIy9xlwmTLDkidt96RfyDc9NZNhyNiXylpulLUt+KhFwaC2awqXcrqq3MrfhbwSg==}
+    engines: {node: '>=18.12'}
     hasBin: true
     dev: true
 
