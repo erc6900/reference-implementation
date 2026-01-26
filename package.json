@@ -3,7 +3,7 @@
   "description": "Reference implementation for [ERC-6900](https://eips.ethereum.org/EIPS/eip-6900).",
   "version": "0.8.1",
   "devDependencies": {
-    "pnpm": "^8.7.5",
+    "pnpm": "^10.28.2",
     "solhint": "^3.6.2"
   },
   "files": [
